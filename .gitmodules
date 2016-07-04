@@ -1,0 +1,9 @@
+[submodule "libraries/am"]
+	path = libraries/am
+	url = ../am
+[submodule "libraries/cppformat"]
+	path = libraries/cppformat
+	url = ../cppformat
+[submodule "libraries/basis"]
+	path = libraries/basis
+	url = ../basis

@@ -1,0 +1,10 @@
+# general patterns
+*.[oa]
+*~
+*.tgz
+
+# unit test executables
+*_test
+
+# all executables on Cygwin
+*.exe
