@@ -30,7 +30,7 @@ arguments.  Expurgate "using" statements.
 
 #include <vector>
 
-namespace shell {
+namespace moshinsky {
 
 
   ////////////////////////////////////////////////////////////////

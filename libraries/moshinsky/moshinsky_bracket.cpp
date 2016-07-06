@@ -21,7 +21,7 @@
 #include "mcpp/memoizer.h"
 #include "mcpp/vector_tuple.h"
 
-namespace shell {
+namespace moshinsky {
 
   ////////////////////////////////////////////////////////////////
   // debugging flag

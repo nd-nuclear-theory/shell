@@ -19,7 +19,7 @@ modules := libraries/moshinsky
 # additional libraries -- static copy (perhaps to be converted to submodule)
 modules += libraries/mcpp
 
-# additional libraries -- cloned as submodules
+# additional libraries -- cloned as submodule
 modules += libraries/am libraries/basis libraries/cppformat
 
 
