@@ -20,7 +20,9 @@ modules := libraries/moshinsky
 modules += libraries/mcpp
 
 # additional libraries -- cloned as submodule
-modules += libraries/am libraries/basis libraries/cppformat
+#
+# Dependency: basis <- am
+modules += libraries/basis libraries/am libraries/cppformat
 
 
 #programs

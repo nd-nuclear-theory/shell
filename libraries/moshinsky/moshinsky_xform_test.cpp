@@ -1,35 +1,86 @@
 /****************************************************************
-  moshinsky.cpp
-
-  Perform Moshinsky transformation of general relative operator in
-  LSJT scheme.
-
-  Language: C++11
+  moshinsky_xform_test.cpp
 
   Mark A. Caprio
   University of Notre Dame
-
-  7/8/16 (mac): Created.
 
 ****************************************************************/
 
 #include <iomanip>
 
-#include "am/wigner_gsl.h"
-#include "basis/lsjt_scheme.h"
-#include "basis/lsjt_operator.h"
-// #include "basis/indexing_jjjt.h"
-#include "moshinsky/moshinsky_bracket.h"
+#include "moshinsky/moshinsky_xform.h"
 
-
-
-
-////////////////////////////////////////////////////////////////
-// main
-////////////////////////////////////////////////////////////////
-
-int main(int argc, char **argv)
+void test_moshinsky_matrix()
 {
+
+  std::cout << "Inspecting a Moshinsky matrix" << std::endl;
+
+  // set up sectors
+  int L=2;
+  int S=1;
+  int J=2;
+  int T=0;
+  int g=0;
+  int N=4;
+
+  std::cout << "  relative-cm" << std::endl;
+  basis::RelativeCMSubspaceNLSJT relative_cm_subspace(L,S,J,T,g,N);
+  std::cout << relative_cm_subspace.DebugStr();
+
+  std::cout << "  two-body" << std::endl;
+  basis::TwoBodySubspaceNLSJT two_body_subspace (L,S,J,T,g,N);
+  std::cout << two_body_subspace.DebugStr();
+
+  std::cout << "  Moshinsky matrix" << std::endl;
+  Eigen::MatrixXd matrix = moshinsky::MoshinskyMatrixNLSJT(relative_cm_subspace,two_body_subspace);
+  std::cout << matrix << std::endl;
+
+  std::cout << "  Orthogonality test" << std::endl;
+  std::cout << matrix.transpose()*matrix << std::endl;
+
+}
+
+void test_transform_isoscalar()
+{
+
+  ////////////////////////////////////////////////////////////////
+  // define relative identity operator
+  ////////////////////////////////////////////////////////////////
+
+  std::cout << "Setup" << std::endl;
+
+  // set up space
+  int Nmax = 2;
+  int Jmax = Nmax+1;
+  basis::RelativeSpaceLSJT space(Nmax,Jmax);
+
+  // set up operator containers
+  //
+  // These are vectors to store information for T0=0/1/2 components.
+  std::vector<basis::RelativeSectorsLSJT> component_sectors(3);
+  std::vector<basis::MatrixVector> component_matrices(3);
+
+  // populate operator containers
+  int J0 = 0;
+  int g0 = 0;
+  for (int T0=0; T0<=2; ++T0)
+    // for each isospin component
+    {
+
+      // enumerate sectors
+      component_sectors[T0] = basis::RelativeSectorsLSJT(space,J0,T0,g0);
+      std::cout << " T0 " << T0 << " size " << component_sectors[T0].size() << std::endl;
+          
+      // populate matrices
+      if (T0==0)
+        basis::SetOperatorToIdentity(component_sectors[T0],component_matrices[T0]);
+      else
+        basis::SetOperatorToZero(component_sectors[T0],component_matrices[T0]);
+    }
+
+  ////////////////////////////////////////////////////////////////
+  // augment to relative-cm
+  ////////////////////////////////////////////////////////////////
 
   // // configuration parameters
   // const int Nmax_relative = 2;
@@ -93,9 +144,20 @@ int main(int argc, char **argv)
   // std::cout << std::endl;
   // std::cout << "Two-body operator" << std::endl;
   // WriteTwoBodyOperator(std::cout,two_body_space,two_body_sectors,A_matrices);
-  WriteTwoBodyOperatorMatrices(std::cout,two_body_space,two_body_sectors,A_matrices,10,7);
+  // WriteTwoBodyOperatorMatrices(std::cout,two_body_space,two_body_sectors,A_matrices,10,7);
 
   
+}
+
+////////////////////////////////////////////////////////////////
+// main
+////////////////////////////////////////////////////////////////
+
+int main(int argc, char **argv)
+{
+
+  test_moshinsky_matrix();
+  // test_transform_isoscalar();
 
   // termination
   return 0;
