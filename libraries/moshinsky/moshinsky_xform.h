@@ -114,6 +114,34 @@ RelativeCMMatrixNLSJT(
 // Returns:
 //   (Eigen::MatrixXd) : the matrix representation of this sector
 
+  void TransformOperatorRelativeLSJTToRelativeCMNLSJT(
+      const basis::OperatorLabelsJT& operator_labels,
+      const basis::RelativeSpaceLSJT& relative_space,
+      const std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
+      const std::array<basis::MatrixVector,3>& relative_component_matrices,
+      const basis::RelativeCMSpaceNLSJT& relative_cm_nlsjt_space,
+      std::array<basis::RelativeCMSectorsNLSJT,3>& relative_cm_nlsjt_component_sectors,
+      std::array<basis::MatrixVector,3>& relative_cm_nlsjt_component_matrices
+    );
+  // Construct relative-cm representation of operator in NLSJT basis,
+  // from relative representation.
+  //
+  // See notes on "internal representation of an operator in JT
+  // scheme" in lsjt_operator.h for the general principles of how the
+  // operators are represented.
+  //
+  // The Nmax truncation on the source relative space should be at
+  // least as high as that on the target relative-cm space.
+  //
+  // Arguments:
+  //   operator_labels (basis::OperatorLabelsJT) : tensorial properties of operator
+  //   relative_space (...) : source space
+  //   relative_component_sectors (...) : source sectors
+  //   relative_component_matrices (...) : source matrices
+  //   relative_cm_nlsjt_space (...) : target space
+  //   relative_cm_nlsjt_component_sectors (..., output) : target sectors
+  //   relative_cm_nlsjt_component_matrices (..., output) : target matrices
+
 
 ////////////////////////////////////////////////////////////////
 // Moshinsky transformation
@@ -165,6 +193,31 @@ TwoBodyMatrixNLSJT(
 //   two_body_sector (basis::TwoBodySectorNLSJT::SectorType) :
 //     target sector information
 //    relative_cm_matrix (Eigen::MatrixXd) : source sector matrix
+
+  void TransformOperatorRelativeCMNLSJTToTwoBodyNLSJT(
+      const basis::OperatorLabelsJT& operator_labels,
+      const basis::RelativeCMSpaceNLSJT& relative_cm_nlsjt_space,
+      const std::array<basis::RelativeCMSectorsNLSJT,3>& relative_cm_nlsjt_component_sectors,
+      const std::array<basis::MatrixVector,3>& relative_cm_nlsjt_component_matrices,
+      const basis::TwoBodySpaceNLSJT& two_body_nlsjt_space,
+      std::array<basis::TwoBodySectorsNLSJT,3>& two_body_nlsjt_component_sectors,
+      std::array<basis::MatrixVector,3>& two_body_nlsjt_component_matrices
+    );
+  // Construct two-body representation of operator in NLSJT basis,
+  // from relative-cm representation.
+  //
+  // See notes on "internal representation of an operator in JT
+  // scheme" in lsjt_operator.h for the general principles of how the
+  // operators are represented.
+  //
+  // Arguments:
+  //   operator_labels (basis::OperatorLabelsJT) : tensorial properties of operator
+  //   relative_cm_nlsjt_space (...) : source space
+  //   relative_cm_nlsjt_component_sectors (...) : source sectors
+  //   relative_cm_nlsjt_component_matrices (...) : source matrices
+  //   two_body_nlsjt_space (...) : target space
+  //   two_body_nlsjt_component_sectors (..., output) : target sectors
+  //   two_body_nlsjt_component_matrices (..., output) : target matrices
 
 
   ////////////////////////////////////////////////////////////////

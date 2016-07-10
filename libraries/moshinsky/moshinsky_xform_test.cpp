@@ -140,35 +140,50 @@ void test_transform_identity()
   std::cout << "test_transform_identity" << std::endl;
 
   ////////////////////////////////////////////////////////////////
-  // define relative identity operator
+  // define operator labels
   ////////////////////////////////////////////////////////////////
 
   // define operator properties
-  int Nmax = 2;
-  int J0 = 0;
-  int T0 = 0;
-  int g0 = 0;
-  basis::SymmetryPhaseMode symmetry_phase_mode = basis::SymmetryPhaseMode::kHermitian;
+  int Nmax_relative = 4;
+  int Jmax_relative = Nmax_relative+1;
+  int Nmax = 2;  // target operator
 
+  basis::OperatorLabelsJT operator_labels;
+  operator_labels.J0 = 0;
+  operator_labels.g0 = 0;
+  operator_labels.T0_min = 0;
+  operator_labels.T0_max = 2;
+  operator_labels.symmetry_phase_mode = basis::SymmetryPhaseMode::kHermitian;
+
+  ////////////////////////////////////////////////////////////////
   // construct relative identity operator
-  int Jmax = Nmax+1;
-  basis::RelativeSpaceLSJT relative_space(Nmax,Jmax);
-  std::vector<basis::RelativeSectorsLSJT> relative_component_sectors(3);
-  std::vector<basis::MatrixVector> relative_component_matrices(3);
-  for (int T0=0; T0<=2; ++T0)
-    // for each isospin component
-    {
+  ////////////////////////////////////////////////////////////////
 
-      // enumerate sectors
-      relative_component_sectors[T0] = basis::RelativeSectorsLSJT(relative_space,J0,T0,g0);
-         
-      // populate matrices
-      relative_component_matrices[T0].resize(relative_component_sectors[T0].size());
-      if (T0==0)
-        basis::SetOperatorToIdentity(relative_component_sectors[T0],relative_component_matrices[T0]);
-      else
-        basis::SetOperatorToZero(relative_component_sectors[T0],relative_component_matrices[T0]);
-    }
+  // define space and operator containers
+  basis::RelativeSpaceLSJT relative_space(Nmax_relative,Jmax_relative);
+  std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
+  std::array<basis::MatrixVector,3> relative_component_matrices;
+
+  // do construction
+  ConstructIdentityOperatorRelativeLSJT(
+      operator_labels,
+      relative_space,relative_component_sectors,relative_component_matrices
+    );
+
+  // for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+  //   // for each isospin component
+  //   {
+  // 
+  //     // enumerate sectors
+  //     relative_component_sectors[T0] = basis::RelativeSectorsLSJT(relative_space,operator_labels.J0,T0,operator_labels.g0);
+  //        
+  //     // populate matrices
+  //     relative_component_matrices[T0].resize(relative_component_sectors[T0].size());
+  //     if (T0==0)
+  //       basis::SetOperatorToIdentity(relative_component_sectors[T0],relative_component_matrices[T0]);
+  //     else
+  //       basis::SetOperatorToZero(relative_component_sectors[T0],relative_component_matrices[T0]);
+  //   }
 
   ////////////////////////////////////////////////////////////////
   // augment to relative-cm NLSJT
@@ -176,36 +191,45 @@ void test_transform_identity()
 
   std::cout << "  relative-cm NLSJT" << std::endl;
 
-  // construct augmented operator
-  basis::RelativeCMSpaceNLSJT relative_cm_space(Nmax);
-  std::vector<basis::RelativeCMSectorsNLSJT> relative_cm_component_sectors(3);
-  std::vector<basis::MatrixVector> relative_cm_component_matrices(3);
-  for (int T0=0; T0<=2; ++T0)
-    // for each isospin component
-    {
+  // define space and operator containers
+  basis::RelativeCMSpaceNLSJT relative_cm_nlsjt_space(Nmax);
+  std::array<basis::RelativeCMSectorsNLSJT,3> relative_cm_nlsjt_component_sectors;
+  std::array<basis::MatrixVector,3> relative_cm_nlsjt_component_matrices;
 
-      // enumerate sectors
-      relative_cm_component_sectors[T0]
-        = basis::RelativeCMSectorsNLSJT(relative_cm_space,J0,T0,g0);
+  // do transformation
+  moshinsky::TransformOperatorRelativeLSJTToRelativeCMNLSJT(
+      operator_labels,
+      relative_space,relative_component_sectors,relative_component_matrices,
+      relative_cm_nlsjt_space,relative_cm_nlsjt_component_sectors,relative_cm_nlsjt_component_matrices
+    );
 
-      // std::cout << " T0 " << T0
-      //           << " sectors " << relative_cm_component_sectors[T0].size()
-      //           << std::endl;
-
-      // populate matrices
-      relative_cm_component_matrices[T0].resize(relative_cm_component_sectors[T0].size());
-      for (int sector_index=0; sector_index<relative_cm_component_sectors[T0].size(); ++sector_index)
-        {
-          const basis::RelativeCMSectorsNLSJT::SectorType& relative_cm_sector
-            = relative_cm_component_sectors[T0].GetSector(sector_index);
-          relative_cm_component_matrices[T0][sector_index] = moshinsky::RelativeCMMatrixNLSJT(
-              relative_space,relative_component_sectors[T0],relative_component_matrices[T0],
-              relative_cm_sector,
-              J0, T0, g0,
-              symmetry_phase_mode
-            );
-        }
-    }
+  // std::array<basis::MatrixVector,3> relative_cm_component_matrices;
+  // for (int T0=0; T0<=2; ++T0)
+  //   // for each isospin component
+  //   {
+  //
+  //     // enumerate sectors
+  //     relative_cm_component_sectors[T0]
+  //       = basis::RelativeCMSectorsNLSJT(relative_cm_space,J0,T0,g0);
+  //
+  //     // std::cout << " T0 " << T0
+  //     //           << " sectors " << relative_cm_component_sectors[T0].size()
+  //     //           << std::endl;
+  //
+  //     // populate matrices
+  //     relative_cm_component_matrices[T0].resize(relative_cm_component_sectors[T0].size());
+  //     for (int sector_index=0; sector_index<relative_cm_component_sectors[T0].size(); ++sector_index)
+  //       {
+  //         const basis::RelativeCMSectorsNLSJT::SectorType& relative_cm_sector
+  //           = relative_cm_component_sectors[T0].GetSector(sector_index);
+  //         relative_cm_component_matrices[T0][sector_index] = moshinsky::RelativeCMMatrixNLSJT(
+  //             relative_space,relative_component_sectors[T0],relative_component_matrices[T0],
+  //             relative_cm_sector,
+  //             J0, T0, g0,
+  //             symmetry_phase_mode
+  //           );
+  //       }
+  //   }
 
   ////////////////////////////////////////////////////////////////
   // transform to two-body NLSJT
@@ -213,68 +237,17 @@ void test_transform_identity()
 
   std::cout << "  two-body NLSJT" << std::endl;
 
-  // construct transformed operator
+  // define space and operator containers
   basis::TwoBodySpaceNLSJT two_body_nlsjt_space(Nmax);
-  std::vector<basis::TwoBodySectorsNLSJT> two_body_nlsjt_component_sectors(3);
-  std::vector<basis::MatrixVector> two_body_nlsjt_component_matrices(3);
-  for (int T0=0; T0<=2; ++T0)
-    // for each isospin component
-    {
+  std::array<basis::TwoBodySectorsNLSJT,3> two_body_nlsjt_component_sectors;
+  std::array<basis::MatrixVector,3> two_body_nlsjt_component_matrices;
 
-      // enumerate sectors
-      two_body_nlsjt_component_sectors[T0]
-        = basis::TwoBodySectorsNLSJT(two_body_nlsjt_space,J0,T0,g0);
-         
-      // std::cout << " T0 " << T0
-      //           << " sectors " << two_body_nlsjt_component_sectors[T0].size()
-      //           << std::endl;
-
-      // populate matrices
-      two_body_nlsjt_component_matrices[T0].resize(two_body_nlsjt_component_sectors[T0].size());
-      for (int sector_index=0; sector_index<two_body_nlsjt_component_sectors[T0].size(); ++sector_index)
-        {
-          // target sector
-          const basis::TwoBodySectorsNLSJT::SectorType& two_body_nlsjt_sector
-            = two_body_nlsjt_component_sectors[T0].GetSector(sector_index);
-
-          // look up source sector
-          int relative_cm_bra_subspace_index = relative_cm_space.LookUpSubspaceIndex(
-              basis::RelativeCMSubspaceNLSJTLabels(
-                  two_body_nlsjt_sector.bra_subspace().L(),
-                  two_body_nlsjt_sector.bra_subspace().S(),
-                  two_body_nlsjt_sector.bra_subspace().J(),
-                  two_body_nlsjt_sector.bra_subspace().T(),
-                  two_body_nlsjt_sector.bra_subspace().g(),
-                  two_body_nlsjt_sector.bra_subspace().N()
-                )
-            );
-          int relative_cm_ket_subspace_index = relative_cm_space.LookUpSubspaceIndex(
-              basis::RelativeCMSubspaceNLSJTLabels(
-                  two_body_nlsjt_sector.ket_subspace().L(),
-                  two_body_nlsjt_sector.ket_subspace().S(),
-                  two_body_nlsjt_sector.ket_subspace().J(),
-                  two_body_nlsjt_sector.ket_subspace().T(),
-                  two_body_nlsjt_sector.ket_subspace().g(),
-                  two_body_nlsjt_sector.ket_subspace().N()
-                )
-            );
-          int relative_cm_sector_index = relative_cm_component_sectors[T0].LookUpSectorIndex(
-                relative_cm_bra_subspace_index,
-                relative_cm_ket_subspace_index
-              );
-          const basis::RelativeCMSectorsNLSJT::SectorType& relative_cm_sector
-            = relative_cm_component_sectors[T0].GetSector(relative_cm_sector_index);
-          const Eigen::MatrixXd& relative_cm_matrix
-            = relative_cm_component_matrices[T0][relative_cm_sector_index];
-
-          // transform
-          two_body_nlsjt_component_matrices[T0][sector_index] = moshinsky::TwoBodyMatrixNLSJT(
-              relative_cm_sector,
-              two_body_nlsjt_sector,
-              relative_cm_matrix
-            );
-        }
-    }
+  // do transformation
+  moshinsky::TransformOperatorRelativeCMNLSJTToTwoBodyNLSJT(
+      operator_labels,
+      relative_cm_nlsjt_space,relative_cm_nlsjt_component_sectors,relative_cm_nlsjt_component_matrices,
+      two_body_nlsjt_space,two_body_nlsjt_component_sectors,two_body_nlsjt_component_matrices
+  );
 
   // write sector matrices for inspection
   //
@@ -284,7 +257,7 @@ void test_transform_identity()
   // for the diagonal sectors.  All other sectors should be vanishing.
 
   std::cout << "two-body NLSJT matrices" << std::endl;
-  for (int T0=0; T0<=2; ++T0)
+  for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
     for (int sector_index=0; sector_index<two_body_nlsjt_component_sectors[T0].size(); ++sector_index)
       {
       const basis::TwoBodySectorsNLSJT::SectorType& two_body_nlsjt_sector
@@ -310,166 +283,23 @@ void test_transform_identity()
 
   std::cout << "  two-body LSJT" << std::endl;
 
-  // construct reassembled operator
+  // define space and operator containers
   basis::TwoBodySpaceLSJT two_body_lsjt_space(Nmax);
-  std::vector<basis::TwoBodySectorsLSJT> two_body_lsjt_component_sectors(3);
-  std::vector<basis::MatrixVector> two_body_lsjt_component_matrices(3);
+  std::array<basis::TwoBodySectorsLSJT,3> two_body_lsjt_component_sectors;
+  std::array<basis::MatrixVector,3> two_body_lsjt_component_matrices;
 
-  for (int T0=0; T0<=2; ++T0)
-    // for each isospin component
-    {
-
-      // enumerate sectors
-      two_body_lsjt_component_sectors[T0]
-        = basis::TwoBodySectorsLSJT(two_body_lsjt_space,J0,T0,g0);
-
-      // populate matrices
-      two_body_lsjt_component_matrices[T0].resize(two_body_lsjt_component_sectors[T0].size());
-      for (int sector_index=0; sector_index<two_body_lsjt_component_sectors[T0].size(); ++sector_index)
-        {
-          // retrieve target sector
-          const basis::TwoBodySectorsLSJT::SectorType& two_body_lsjt_sector
-            = two_body_lsjt_component_sectors[T0].GetSector(sector_index);
-
-          // initialize matrix
-          Eigen::MatrixXd& two_body_lsjt_matrix = two_body_lsjt_component_matrices[T0][sector_index];
-          two_body_lsjt_matrix = Eigen::MatrixXd::Zero(
-              two_body_lsjt_sector.bra_subspace().size(),
-              two_body_lsjt_sector.ket_subspace().size()
-            );
-
-          // populate matrix elements
-          for (int bra_index = 0; bra_index < two_body_lsjt_sector.bra_subspace().size(); ++bra_index)
-            for (int ket_index = 0; ket_index < two_body_lsjt_sector.ket_subspace().size(); ++ket_index)
-              // for each target matrix element
-              {
-                
-                // retrieve target states
-                basis::TwoBodyStateLSJT two_body_lsjt_bra(two_body_lsjt_sector.bra_subspace(),bra_index);
-                basis::TwoBodyStateLSJT two_body_lsjt_ket(two_body_lsjt_sector.ket_subspace(),ket_index);
-
-                // look up source subspace indices
-                int two_body_nlsjt_bra_subspace_index = two_body_nlsjt_space.LookUpSubspaceIndex(
-                    basis::TwoBodySubspaceNLSJTLabels(
-                        two_body_lsjt_bra.L(),
-                        two_body_lsjt_bra.S(),
-                        two_body_lsjt_bra.J(),
-                        two_body_lsjt_bra.T(),
-                        two_body_lsjt_bra.g(),
-                        two_body_lsjt_bra.N()
-                      )
-                  );
-                int two_body_nlsjt_ket_subspace_index = two_body_nlsjt_space.LookUpSubspaceIndex(
-                    basis::TwoBodySubspaceNLSJTLabels(
-                        two_body_lsjt_ket.L(),
-                        two_body_lsjt_ket.S(),
-                        two_body_lsjt_ket.J(),
-                        two_body_lsjt_ket.T(),
-                        two_body_lsjt_ket.g(),
-                        two_body_lsjt_ket.N()
-                      )
-                  );
-
-                // look up source matrix element indices
-                const basis::TwoBodySubspaceNLSJT& two_body_nlsjt_bra_subspace
-                  = two_body_nlsjt_space.GetSubspace(two_body_nlsjt_bra_subspace_index);
-                const basis::TwoBodySubspaceNLSJT& two_body_nlsjt_ket_subspace
-                  = two_body_nlsjt_space.GetSubspace(two_body_nlsjt_ket_subspace_index);
-                int two_body_nlsjt_bra_index = two_body_nlsjt_bra_subspace.LookUpStateIndex(
-                    basis::TwoBodyStateNLSJT::StateLabelsType(
-                        two_body_lsjt_bra.N1(),
-                        two_body_lsjt_bra.l1(),
-                        two_body_lsjt_bra.N2(),
-                        two_body_lsjt_bra.l2()
-                      )
-                  );
-                int two_body_nlsjt_ket_index = two_body_nlsjt_ket_subspace.LookUpStateIndex(
-                    basis::TwoBodyStateNLSJT::StateLabelsType(
-                        two_body_lsjt_ket.N1(),
-                        two_body_lsjt_ket.l1(),
-                        two_body_lsjt_ket.N2(),
-                        two_body_lsjt_ket.l2()
-                      )
-                  );
-
-                // canonicalize indices for matrix element lookup
-                //
-                // We must ensure that we look up a canonical (upper
-                // triangular) NLSJT sector.  Looking up a canonical
-                // (upper triangular) matrix element within a diagonal
-                // sector is not essential, since the Moshinsky
-                // transformation machinery up until this point has
-                // actually been populating the full (square) matrices
-                // for the diagonal sectors.
-                //
-                // Note that no canonicalization factor is needed.
-                // Since N is the trailing entry in the subspace label
-                // tuple, used in the canonical ordering, canonical
-                // swaps will never entail swapping subspace LSJT
-                // labels, just the N labels.
-
-                // std::cout << " pre-lookup "
-                //           << " " << two_body_nlsjt_bra_subspace_index
-                //           << " " << two_body_nlsjt_ket_subspace_index
-                //           << " " << ";"
-                //           << " " << two_body_nlsjt_bra_index
-                //           << " " << two_body_nlsjt_ket_index
-                //           << " " << ";"
-                //           << " " << two_body_nlsjt_bra_subspace.size()
-                //           << " " << two_body_nlsjt_ket_subspace.size()
-                //           << std::endl;
-
-                bool swapped_subspaces, swapped_states;
-                basis::CanonicalizeIndices(
-                    two_body_nlsjt_bra_subspace_index,two_body_nlsjt_ket_subspace_index,
-                    swapped_subspaces,
-                    two_body_nlsjt_bra_index,two_body_nlsjt_ket_index,
-                    swapped_states
-                  );
-
-                // look up matrix element
-                int two_body_nlsjt_sector_index
-                  = two_body_nlsjt_component_sectors[T0].LookUpSectorIndex(
-                      two_body_nlsjt_bra_subspace_index,
-                      two_body_nlsjt_ket_subspace_index
-                    );
-
-                Eigen::MatrixXd& two_body_nlsjt_matrix
-                  = two_body_nlsjt_component_matrices[T0][two_body_nlsjt_sector_index];
-                // std::cout << " lookup "
-                //           << " " << two_body_nlsjt_bra_subspace_index
-                //           << " " << two_body_nlsjt_ket_subspace_index
-                //           << " " << ";"
-                //           << " " << two_body_nlsjt_bra_index
-                //           << " " << two_body_nlsjt_ket_index
-                //           << " " << ";"
-                //           << " " << two_body_nlsjt_matrix.rows()
-                //           << " " << two_body_nlsjt_matrix.cols()
-                //           << std::endl;
-                double two_body_nlsjt_matrix_element = two_body_nlsjt_matrix(
-                    two_body_nlsjt_bra_index,two_body_nlsjt_ket_index
-                  );
-
-                // re-save matrix element
-                // std::cout << " write "
-                //           << " " << bra_index
-                //           << " " << ket_index
-                //           << " " << ";"
-                //           << " " << two_body_lsjt_matrix.rows()
-                //           << " " << two_body_lsjt_matrix.cols()
-                //           << std::endl;
-
-                two_body_lsjt_matrix(bra_index,ket_index) = two_body_nlsjt_matrix_element;
-
-              }
-        }
-    }
+  // construct gathered operator
+  basis::GatherBlocksTwoBodyNLSJTToTwoBodyLSJT(
+      operator_labels,
+      two_body_nlsjt_space,two_body_nlsjt_component_sectors,two_body_nlsjt_component_matrices,
+      two_body_lsjt_space,two_body_lsjt_component_sectors,two_body_lsjt_component_matrices
+    );
 
 
   // write operator
-  std::string relative_cm_filename("test/moshinsky_xform_test_two_body_identity_AS.dat");
+  std::string two_body_lsjt_filename("test/moshinsky_xform_test_two_body_identity_AS.dat");
   std::ostringstream os;
-  for (int T0=0; T0<=2; ++T0)
+  for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
     {
       basis::WriteTwoBodyOperatorComponentLSJT(
           os,
@@ -478,11 +308,8 @@ void test_transform_identity()
           basis::NormalizationConversion::kNone
         );
     }
-  std::ofstream ofile(relative_cm_filename.c_str());
+  std::ofstream ofile(two_body_lsjt_filename.c_str());
   ofile << os.str();
-
-
-
   
 }
 
