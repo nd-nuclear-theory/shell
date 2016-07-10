@@ -16,7 +16,7 @@
     to interaction_lsjt.  Allow input of generic relative interaction.
   11/26/15 (mac): Initial running version.
   1/6/16 (mac): Documentation updates.
-  7/4/16 (mac): Overhaul:
+  7/9/16 (mac): Overhaul:
     - Revise for restructured shell directory structure.
     - Revise to use block-N structure, with updated lsjt_scheme indexing.
     - Update to group theory Wigner-Eckart convention.
@@ -34,13 +34,13 @@
 namespace moshinsky {
 
 ////////////////////////////////////////////////////////////////
-// Racah reduction factor
+// Obtaining relative-cm matrix elements from relative
 ////////////////////////////////////////////////////////////////
 
 double RacahReductionFactorFirstSystemGT(
-    const HalfInt& J1p, const HalfInt& Jp, 
-    const HalfInt& J1, const HalfInt& J, 
-    const HalfInt& J2, const HalfInt& J0
+    const HalfInt& J1p, const HalfInt& J2p, const HalfInt& Jp, 
+    const HalfInt& J1, const HalfInt& J2, const HalfInt& J, 
+    const HalfInt& J0
   );
 // Prefactor for first-system operator in Racah two-system 
 // reduction formula.
@@ -52,35 +52,12 @@ double RacahReductionFactorFirstSystemGT(
 //
 // Note: Under Edmonds convention, the Hat(J1') would be a Hat(J').
 //
+// Assertion: Arguments J2p and J2 must be equal.
+//
 // Arguments (all HalfInt):
-//   J1p, Jp: bra first-system and total a.m.
-//   J1, J: ket first-system and total a.m.
-//   J2: bra/ket second-system a.m.
-//   J0: operator a.m.
-//   
-
-////////////////////////////////////////////////////////////////
-// Moshinsky transformation
-////////////////////////////////////////////////////////////////
-
-Eigen::MatrixXd
-MoshinskyMatrixNLSJT(
-    const basis::RelativeCMSubspaceNLSJT& relative_cm_subspace,
-    const basis::TwoBodySubspaceNLSJT& two_body_subspace
-  );
-// Generate Moshinsky transformation matrix in given NLSJT sector.
-//
-// The result consists of Moshinsky brackets.
-//
-// The spectator SJT labels for the subspaces are assumed to be identical.
-//
-// Arguments:
-//   relative_cm_subspace (basis::RelativeCMSubspaceNLSJT) : the relative-cm subspace
-//   two_body_subspace (basis::TwoBodySubspaceNLSJT) : the two-body subspace
-//
-// Returns:
-//   (matrix) : the transformation brackets
-
+//   J1p, J2p, Jp: bra angular momenta
+//   J1, J2, J: ket angular momenta
+//   J0: operator angular momentum
 
 Eigen::MatrixXd
 RelativeCMMatrixNLSJT(
@@ -88,14 +65,12 @@ RelativeCMMatrixNLSJT(
     const basis::RelativeSectorsLSJT& relative_sectors,
     const basis::MatrixVector& relative_matrices,
     const typename basis::RelativeCMSectorsNLSJT::SectorType& relative_cm_sector,
-    int J0
+    int J0, int T0, int g0,
+    basis::SymmetryPhaseMode symmetry_phase_mode
   );
 // Generate JT-reduced matrix elements of an operator A^(J0,T0,g0) on
 // a single fixed-N relative-cm sector (NLSJT), from the relative
 // JT-reduced matrix elements.
-//
-// Since we are dealing with JT-reduced matrix elements, we work with
-// each individual isospin component (T0) of the operator separately.
 //
 // This function implements the relation
 //
@@ -109,6 +84,20 @@ RelativeCMMatrixNLSJT(
 //  reduction formula factor for a spherical tensor operator which
 //  only acts on the "first system".
 //
+// Symmetry of source matrix elements: Only canonical (upper
+// triangular) relative matrix elements are referenced.  The
+// canonicalization phase provided by CanonicalizeIndicesRelativeLSJT
+// is used to generate any noncanonical matrix elements that are
+// needed.
+//
+// Symmetry of target matrix elements: Only canonical (upper
+// triangular) "sectors" are generate.  However, within diagonal
+// sectors, the full square matrix is populated, to facilitate the
+// subsequent similarity transform.
+//
+// Since we are dealing with JT-reduced matrix elements, we work with
+// each individual isospin component (T0) of the operator separately.
+//
 // Arguments:
 //   relative_space (basis::RelativeSpaceLSJT) : relative space
 //     on which relative operator is defined
@@ -118,42 +107,64 @@ RelativeCMMatrixNLSJT(
 //     defining relative operator
 //   relative_cm_sector (basis::RelativeCMSectorsNLSJT::SectorType) : target sector
 //     for relative-cm operator
-//   J0 (int) : the angular momentum carried by the operator (needed
-//     in recoupling coefficient)
+//    J0, T0, g0 (int) : operator properties
+//    symmetry_phase_mode (basis::SymmetryPhaseMode) : specification of
+//      matrix element conjugation properties of the operator
 //
 // Returns:
 //   (Eigen::MatrixXd) : the matrix representation of this sector
 
-Eigen::MatrixXd 
-TransformedSector(
-    const basis::TwoBodySubspaceLSJT& two_body_subspace2,
-    const basis::TwoBodySubspaceLSJT& two_body_subspace1,
-    const basis::RelativeSpaceLSJT& relative_space,
-    const basis::RelativeSectorsLSJT& relative_sectors,
-    const basis::MatrixVector& relative_matrices,
-    int J0
+
+////////////////////////////////////////////////////////////////
+// Moshinsky transformation
+////////////////////////////////////////////////////////////////
+
+Eigen::MatrixXd
+TransformationMatrixRelativeCMTwoBodyNLSJT(
+    const basis::RelativeCMSubspaceNLSJT& relative_cm_subspace,
+    const basis::TwoBodySubspaceNLSJT& two_body_subspace
   );
-// Carries out Moshinsky transform to generate the reduced matrix
-// elements on a LSTJ-coupled two-body sector.  
-// 
-// Important: The input relative matrices must contain *reduced*
-// matrix elements, not plain matrix elements.  The present code is
-// oriented towards the tranformation of general spherical tensor
-// relative operators, for which it is appropriate to work with
-// reduced metrix elements.  In contrast, for simple scalar
-// (interaction-type) relative operators, common convention is to
-// specify the relative interaction in terms of its plain, unreduced
-// matrix elements (which are M-independent) in the relative subspace.
+// Generate Moshinsky transformation matrix in given NLSJT sector.
+//
+// The result consists of Moshinsky brackets, but multiplied by
+// sqrt(2.) to account for antisymmetry.  The resulting matrix
+// transforms from antisymmetry-allowed relative-cm states to
+// *antisymmetrized* (AS) two-body states, which one must recall are
+// not the same as normalized antisymmetrized (NAS) two-body states.
+//
+// The spectator SJT labels for the subspaces are assumed to be identical.
+//
+// Arguments:
+//   relative_cm_subspace (basis::RelativeCMSubspaceNLSJT) : the relative-cm subspace
+//   two_body_subspace (basis::TwoBodySubspaceNLSJT) : the two-body subspace
+//
+// Returns:
+//   (matrix) : the transformation brackets
+
+
+Eigen::MatrixXd 
+TwoBodyMatrixNLSJT(
+    const basis::RelativeCMSectorsNLSJT::SectorType& relative_cm_sector,
+    const basis::TwoBodySectorsNLSJT::SectorType& two_body_sector,
+    const Eigen::MatrixXd& relative_cm_matrix
+  );
+// Obtain two-body LSJT sector by Moshinsky transformation on
+// relative-cm LSJT sector.
+//
+// It is assumed that all matrix elements are JT-reduced matrix
+// elements under group theoretical conventions, although this
+// Moshinsky transformation step is actually independent of
+// Wigner-Eckart convention.
 //
 // The output matrix element are antisymmetrized (AS) matrix elements,
-// rather than normalized antisymmetrized (NAS) matrix elements (on
-// the one hand) or distinguishable-particle matrix elements (on the
-// other).
+// rather than normalized antisymmetrized (NAS) matrix elements.
 //
-// Note inclusion of factor of 2 relative two "naive" application of
-// Moshinsky transform on distinguishable-particle states, arising
-// from the bookkeeping since our two-body states are antisymmetrized,
-// rather than distinguishable-particle states.
+// Arguments:
+//   relative_cm_sector (basis::RelativeCMSectorNLSJT::SectorType) :
+//     source sector information
+//   two_body_sector (basis::TwoBodySectorNLSJT::SectorType) :
+//     target sector information
+//    relative_cm_matrix (Eigen::MatrixXd) : source sector matrix
 
 
   ////////////////////////////////////////////////////////////////
