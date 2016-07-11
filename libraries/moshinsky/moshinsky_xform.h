@@ -27,6 +27,8 @@
 #ifndef MOSHINSKY_XFORM_H_
 #define MOSHINSKY_XFORM_H_
 
+#include "eigen3/Eigen/Sparse"
+
 #include "am/wigner_gsl.h"
 #include "basis/lsjt_scheme.h"
 #include "basis/lsjt_operator.h"
@@ -176,8 +178,8 @@ namespace moshinsky {
         const basis::TwoBodySectorsNLSJT::SectorType& two_body_sector,
         const Eigen::MatrixXd& relative_cm_matrix
       );
-  // Obtain two-body LSJT sector by Moshinsky transformation on
-  // relative-cm LSJT sector.
+  // Obtain two-body NLSJT sector by Moshinsky transformation on
+  // relative-cm NLSJT sector.
   //
   // It is assumed that all matrix elements are JT-reduced matrix
   // elements under group theoretical conventions, although this
@@ -222,6 +224,69 @@ namespace moshinsky {
   ////////////////////////////////////////////////////////////////
   // recoupling to jjJT scheme
   ////////////////////////////////////////////////////////////////
+
+  Eigen::SparseMatrix<double>
+    TransformationMatrixTwoBodyNLSJTToTwoBodyNJJJT(
+        const basis::TwoBodySubspaceNLSJT& two_body_nlsjt_subspace,
+        const basis::TwoBodySubspaceNJJJT& two_body_njjjt_subspace
+      );
+  // Generate recoupling transformation matrix between given NLSJT and
+  // NJJJT sectors.
+  //
+  // The state
+  //
+  //   |(N1,l1)(N2,l1);NLSJT>
+  //
+  // in a given NLSJT subspace connects only to the states
+  //
+  //   |(N1,l1,j1)(N2,l1,j2);NJT>
+  //
+  // of the same (N1,l1)(N2,l1) and various j1 and j2 in the target
+  // subspace, so the resulting transformation matrix is relatively
+  // sparse.  There are at most four nonzero entries per row, from the
+  // coupling of l with spin to give j as Delta(l,1/2,j).  There is at
+  // most one entry per column, since the target state
+  // (N1,l1,j1)(N2,l2,j2) derives only from the source state
+  // (N1,l1)(N2,l2).
+  //
+  // Therefore, we use a sparse matrix, and rely upon Eigen's
+  // sparse-dense matrix multiplication.
+  //
+  // The overlap bracket is the *unitary* 9-J recoupling coefficient
+  //
+  //     [ l1 s1 j1 ]
+  //     [ l2 s2 j2 ]
+  //     [ L  S  J  ]
+  //
+  // Arguments:
+  //   two_body_nlsjt_subspace (...) : the source subspace
+  //   two_body_njjjt_subspace (...) : the target subspace
+  //
+  // Returns:
+  //   (sparse matrix) : the transformation brackets
+
+  Eigen::MatrixXd 
+    TwoBodyMatrixNJJJT(
+        const basis::TwoBodySectorsNLSJT& two_body_nlsjt_sectors,
+        const basis::MatrixVector& two_body_nlsjt_matrices,
+        const basis::TwoBodySectorsNJJJT::SectorType& two_body_njjjt_sector
+      );
+  // Obtain two-body NJJJT sector by Moshinsky transformation on
+  // relative-cm LSJT sector.
+  //
+  // We need all source sectors since we are performing a sum over
+  // source L and S labels, for both bra and ket.
+  //
+  // The output matrix element are antisymmetrized (AS) matrix elements,
+  // rather than normalized antisymmetrized (NAS) matrix elements.
+  //
+  // Arguments:
+  //   two_body_nlsjt_sectors (basis::TwoBodySectorsNLSJT) :
+  //     all source sectors in given isospin component
+  //   two_body_nlsjt_matrices (basis::MatrixVector) :
+  //     all source matrices in given isospin component
+  //   two_body_njjjt_sector (basis::TwoBodySectorNJJJT::SectorType) :
+  //     target sector information
 
   void TransformOperatorTwoBodyNLSJTToTwoBodyNJJJT(
       const basis::OperatorLabelsJT& operator_labels,

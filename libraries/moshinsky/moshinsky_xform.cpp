@@ -269,6 +269,7 @@ namespace moshinsky {
     assert(relative_cm_subspace.S()==two_body_subspace.S());
     assert(relative_cm_subspace.J()==two_body_subspace.J());
     assert(relative_cm_subspace.T()==two_body_subspace.T());
+    assert(relative_cm_subspace.g()==two_body_subspace.g());
 
     // retrieve L for sector
     int L = relative_cm_subspace.L();
@@ -405,6 +406,192 @@ namespace moshinsky {
       }
 
   }
+
+
+  ////////////////////////////////////////////////////////////////
+  // recoupling to jjJT scheme
+  ////////////////////////////////////////////////////////////////
+
+  Eigen::SparseMatrix<double>
+    TransformationMatrixTwoBodyNLSJTToTwoBodyNJJJT(
+        const basis::TwoBodySubspaceNLSJT& two_body_nlsjt_subspace,
+        const basis::TwoBodySubspaceNJJJT& two_body_njjjt_subspace
+      )
+  {
+
+    // Since it is possible to know an upper bound on the number of
+    // entries per column in advance and perform insertions in
+    //  row order within each column, we can follow the pattern of a
+    // "sorted insertion" as described in the Eigen 3.2.8
+    // documentation:
+    //
+    //   eigen-doc-3.2.8/group__TutorialSparse.html
+    //
+    //     SparseMatrix<double> mat(rows,cols);         // default is column major
+    //     mat.reserve(VectorXi::Constant(cols,6));
+    //     for each i,j such that v_ij != 0
+    //        mat.insert(i,j) = v_ij;                   // alternative: mat.coeffRef(i,j) += v_ij;
+    //     mat.makeCompressed();                        // optional
+    //
+    // Is there a preferred row/column major order for multiplication
+    // against a dense matrix?
+    //
+    // dv2 = sm1 * dv1;
+    // dm2 = dm1 * sm1.adjoint();
+    // dm2 = 2. * sm1 * dm1;
+
+    // set up matrix to hold results
+    Eigen::SparseMatrix<double> matrix(
+        two_body_nlsjt_subspace.size(),
+        two_body_njjjt_subspace.size()
+      );
+    matrix.reserve(1);  // we expect maximum one entry per column
+
+    // guard against call with mismatched subspaces
+    assert(two_body_nlsjt_subspace.N()==two_body_njjjt_subspace.N());
+    assert(two_body_nlsjt_subspace.J()==two_body_njjjt_subspace.J());
+    assert(two_body_nlsjt_subspace.T()==two_body_njjjt_subspace.T());
+    assert(two_body_nlsjt_subspace.g()==two_body_njjjt_subspace.g());
+
+    // retrieve subspace angular momentum labels
+    int L = two_body_nlsjt_subspace.L();
+    int S = two_body_nlsjt_subspace.S();
+    int J = two_body_nlsjt_subspace.J();
+
+    // populate matrix -- scan columns
+    for (int index_two_body_njjjt=0; index_two_body_njjjt<two_body_njjjt_subspace.size(); ++index_two_body_njjjt)
+      {
+        // retrieve target NJJJT state
+        basis::TwoBodyStateNJJJT two_body_njjjt_state(two_body_njjjt_subspace,index_two_body_njjjt);
+        int N1 = two_body_njjjt_state.N1();
+        int l1 = two_body_njjjt_state.l1();
+        HalfInt j1 = two_body_njjjt_state.j1();
+        int N2 = two_body_njjjt_state.N2();
+        int l2 = two_body_njjjt_state.l2();
+        HalfInt j2 = two_body_njjjt_state.j2();
+
+        // look up corresponding source NLSJT state
+
+        // basis::TwoBodyStateNLSJT two_body_nlsjt_state(
+        //     two_body_nlsjt_subspace,
+        //     basis::TwoBodyStateNLSJTLabels(N1,l1,N2,l2)
+        //   );
+        // int index_two_body_nlsjtt = two_body_nlsjt_state.index();
+
+        int index_two_body_nlsjt = two_body_nlsjt_subspace.LookUpStateIndex(
+            basis::TwoBodyStateNLSJTLabels(N1,l1,N2,l2)
+          );
+
+        // evaluate bracket
+        const HalfInt s(1,2);
+        double matrix_element = am::Unitary9J(
+            l1,s,j1,
+            l2,s,j2,
+            L,S,J
+          );
+
+        matrix.insert(index_two_body_nlsjt,index_two_body_njjjt) = matrix_element;
+        }
+
+    // compress matrix
+    //   (does this matter?)
+    matrix.makeCompressed();
+
+    // return matrix
+    return matrix;
+  }
+
+  Eigen::MatrixXd 
+    TwoBodyMatrixNJJJT(
+        const basis::TwoBodySectorsNLSJT& two_body_nlsjt_sectors,
+        const basis::MatrixVector& two_body_nlsjt_matrices,
+        const basis::TwoBodySectorsNJJJT::SectorType& two_body_njjjt_sector
+      )
+  {
+    // We have two options for how we complete the quadruple sum over
+    // source (L',S')(L,S) labels:
+    //
+    // (1) Source subspace lookup: (a) For the given target NJTg ket
+    // subspace, we can scan over all S(=0,1,2) and L which are
+    // triangular with J, and look up the corresponding source ket
+    // subspace.  (b) Similarly, the given target NJTg bra subspace we
+    // can scan over all S'(=0,1,2) and L' which are triangular with
+    // J', and look up the corresponding source bra subspace.  These
+    // lookups require access to the TwoBodyNLSJT space (unless lookup
+    // by labels is implemented as part of BaseSectors).
+    //
+    // (2) Source sector scan: We can just scan through all source
+    // sectors and pick off all sectors where the source bra/ket NJTg
+    // labels match the target bra/ket NJTg labels.  As the source
+    // sector list grows long, this brute force approach might become
+    // slightly inefficient, but it is the simplest to code and does
+    // avoid lookups.
+
+    // set up matrix to hold results
+    Eigen::MatrixXd matrix(
+        two_body_njjjt_sector.bra_subspace().size(),
+        two_body_njjjt_sector.ket_subspace().size()
+      );
+
+    // scan source sectors
+    for (int two_body_nlsjt_sector_index=0; two_body_nlsjt_sector_index<two_body_nlsjt_sectors.size(); ++two_body_nlsjt_sector_index)
+      {
+        // retrieve source sector
+        const basis::TwoBodySectorsNLSJT::SectorType& two_body_nlsjt_sector
+          = two_body_nlsjt_sectors.GetSector(two_body_nlsjt_sector_index);
+
+        // check for sector match
+        if (!(
+                true
+                // bra subspace match
+                && (two_body_nlsjt_sector.bra_subspace().N()==two_body_njjjt_sector.bra_subspace().N())
+                && (two_body_nlsjt_sector.bra_subspace().J()==two_body_njjjt_sector.bra_subspace().J())
+                && (two_body_nlsjt_sector.bra_subspace().T()==two_body_njjjt_sector.bra_subspace().T())
+                && (two_body_nlsjt_sector.bra_subspace().g()==two_body_njjjt_sector.bra_subspace().g())
+                // ket subspace match
+                && (two_body_nlsjt_sector.ket_subspace().N()==two_body_njjjt_sector.ket_subspace().N())
+                && (two_body_nlsjt_sector.ket_subspace().J()==two_body_njjjt_sector.ket_subspace().J())
+                && (two_body_nlsjt_sector.ket_subspace().T()==two_body_njjjt_sector.ket_subspace().T())
+                && (two_body_nlsjt_sector.ket_subspace().g()==two_body_njjjt_sector.ket_subspace().g())
+              ))
+          continue;
+
+        // obtain transformation matrices
+        Eigen::SparseMatrix<double> bra_transformation_matrix = TransformationMatrixTwoBodyNLSJTToTwoBodyNJJJT(
+            two_body_nlsjt_sector.bra_subspace(),
+            two_body_njjjt_sector.bra_subspace()
+          );
+        Eigen::SparseMatrix<double> ket_transformation_matrix = TransformationMatrixTwoBodyNLSJTToTwoBodyNJJJT(
+            two_body_nlsjt_sector.ket_subspace(),
+            two_body_njjjt_sector.ket_subspace()
+          );
+
+        // obtain target matrix
+        const Eigen::MatrixXd& two_body_nlsjt_cm_matrix = two_body_nlsjt_matrices[two_body_nlsjt_sector_index];
+        matrix
+          += bra_transformation_matrix.transpose()
+          * two_body_nlsjt_cm_matrix
+          * ket_transformation_matrix;
+      }
+
+    // return target matrix
+    return matrix;
+  }
+
+
+  void TransformOperatorTwoBodyNLSJTToTwoBodyNJJJT(
+      const basis::OperatorLabelsJT& operator_labels,
+      const basis::TwoBodySpaceNLSJT& two_body_nlsjt_space,
+      const std::array<basis::TwoBodySectorsNLSJT,3>& two_body_nlsjt_component_sectors,
+      const std::array<basis::MatrixVector,3>& two_body_nlsjt_component_matrices,
+      const basis::TwoBodySpaceNJJJT& two_body_njjjt_space,
+      std::array<basis::TwoBodySectorsNJJJT,3>& two_body_njjjt_component_sectors,
+      std::array<basis::MatrixVector,3>& two_body_njjjt_component_matrices
+    )
+  {
+    // TODO
+  }
+
 
 
   ////////////////////////////////////////////////////////////////
