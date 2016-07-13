@@ -5,7 +5,7 @@ $(eval $(begin-module))
 ################################################################
 
 module_units_h := 
-module_units_cpp-h := moshinsky_bracket moshinsky_xform
+module_units_cpp-h := moshinsky_bracket moshinsky_xform construct_relative
 # module_units_f := 
 module_programs_cpp := moshinsky_test moshinsky_xform_test
 # module_programs_cpp += moshinsky_bracket_table moshinsky

@@ -299,7 +299,8 @@ namespace moshinsky {
           int n2 = (N2 - l2)/2;
 
           // evaluate bracket
-          matrix(index_relative_cm,index_two_body) = sqrt(2.)*moshinsky::MoshinskyBracket(nr,lr,nc,lc,n1,l1,n2,l2,L);
+          matrix(index_relative_cm,index_two_body)
+            = sqrt(2.)*moshinsky::MoshinskyBracket(nr,lr,nc,lc,n1,l1,n2,l2,L);
 				  
         }
 

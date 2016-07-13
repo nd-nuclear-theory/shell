@@ -9,7 +9,9 @@
 #include <fstream>
 #include <iomanip>
 
+#include "moshinsky/construct_relative.h"
 #include "moshinsky/moshinsky_xform.h"
+
 
 void test_relative_cm()
 {
@@ -134,10 +136,10 @@ void test_moshinsky_matrix()
 
 }
 
-void test_transform_identity()
+void test_transform_simple(std::string lsjt_filename, char operator_code)
 {
 
-  std::cout << "test_transform_identity" << std::endl;
+  std::cout << "test_transform_simple" << " " << operator_code << std::endl;
 
   ////////////////////////////////////////////////////////////////
   // define operator labels
@@ -152,7 +154,7 @@ void test_transform_identity()
   operator_labels.J0 = 0;
   operator_labels.g0 = 0;
   operator_labels.T0_min = 0;
-  operator_labels.T0_max = 2;
+  operator_labels.T0_max = 0;
   operator_labels.symmetry_phase_mode = basis::SymmetryPhaseMode::kHermitian;
 
   ////////////////////////////////////////////////////////////////
@@ -165,10 +167,17 @@ void test_transform_identity()
   std::array<basis::MatrixVector,3> relative_component_matrices;
 
   // do construction
-  ConstructIdentityOperatorRelativeLSJT(
-      operator_labels,
-      relative_space,relative_component_sectors,relative_component_matrices
-    );
+  if (operator_code=='I')
+    ConstructIdentityOperatorRelativeLSJT(
+        operator_labels,
+        relative_space,relative_component_sectors,relative_component_matrices
+      );
+  else if (operator_code=='K')
+     ConstructKinematicOperator(
+         operator_labels,
+         relative_space,relative_component_sectors,relative_component_matrices,
+         relative::KinematicOperator::kKSqr
+       );
 
   ////////////////////////////////////////////////////////////////
   // augment to relative-cm NLSJT
@@ -253,7 +262,7 @@ void test_transform_identity()
     );
 
   // write operator
-  std::string two_body_lsjt_filename("test/moshinsky_xform_test_two_body_identity_AS.dat");
+  std::string two_body_lsjt_filename(lsjt_filename);
   std::ostringstream os;
   for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
     {
@@ -292,7 +301,8 @@ int main(int argc, char **argv)
 
   test_relative_cm();
   test_moshinsky_matrix();
-  test_transform_identity();
+  test_transform_simple("test/moshinsky_xform_test_two_body_identity_AS.dat",'I');
+  test_transform_simple("test/moshinsky_xform_test_two_body_kinetic_AS.dat",'I');
 
   // termination
   return 0;
