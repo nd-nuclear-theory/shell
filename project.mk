@@ -48,3 +48,5 @@ CPPFLAGS += -DHAVE_INLINE
 #   map vs. hash for space lookup in basis library
 CPPFLAGS += -DINDEXING_HASH
 
+# debugging mode
+CXXFLAGS += -g

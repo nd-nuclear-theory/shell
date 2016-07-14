@@ -139,6 +139,7 @@ void test_moshinsky_matrix()
 
 }
 
+////////////////////////////////////////////////////////////////
 void test_transform_simple(
     std::string lsjt_filename,
     std::string jjjt_filename,
@@ -381,7 +382,143 @@ void test_transform_simple(
   std::ofstream jjjt_stream(two_body_jjjt_filename.c_str());
   jjjt_stream << jjjt_sstream.str();
 
+}
 
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+void test_transform_timing(
+  )
+{
+
+  std::cout << "test_transform_timing" << std::endl;
+
+  ////////////////////////////////////////////////////////////////
+  // define operator labels
+  ////////////////////////////////////////////////////////////////
+
+  // define operator properties
+  int Nmax_relative = 26;
+  int Jmax_relative = Nmax_relative+1;
+  int Nmax = 10;  // target operator
+
+  basis::OperatorLabelsJT operator_labels;
+  operator_labels.J0 = 0;
+  operator_labels.g0 = 0;
+  operator_labels.T0_min = 0;
+  operator_labels.T0_max = 0;
+  operator_labels.symmetry_phase_mode = basis::SymmetryPhaseMode::kHermitian;
+
+  std::cout << " Nmax_relative " << Nmax_relative << " Nmax " << Nmax << std::endl;
+
+  ////////////////////////////////////////////////////////////////
+  // construct relative identity operator
+  ////////////////////////////////////////////////////////////////
+
+  std::cout << "  relative LSJT" << std::endl;
+
+  // define space and operator containers
+  basis::RelativeSpaceLSJT relative_space(Nmax_relative,Jmax_relative);
+  std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
+  std::array<basis::MatrixVector,3> relative_component_matrices;
+
+  // do construction
+  Timer relative_lsjt_timer;
+  relative_lsjt_timer.Start();
+  ConstructIdentityOperatorRelativeLSJT(
+      operator_labels,
+      relative_space,relative_component_sectors,relative_component_matrices
+    );
+  relative_lsjt_timer.Stop();
+  std::cout << "Time: " << relative_lsjt_timer.ElapsedTime() << std::endl;
+
+  ////////////////////////////////////////////////////////////////
+  // augment to relative-cm NLSJT
+  ////////////////////////////////////////////////////////////////
+
+  std::cout << "  relative-cm NLSJT" << std::endl;
+
+  // define space and operator containers
+  basis::RelativeCMSpaceNLSJT relative_cm_nlsjt_space(Nmax);
+  std::array<basis::RelativeCMSectorsNLSJT,3> relative_cm_nlsjt_component_sectors;
+  std::array<basis::MatrixVector,3> relative_cm_nlsjt_component_matrices;
+
+  // do transformation
+  Timer relative_cm_nlsjt_timer;
+  relative_cm_nlsjt_timer.Start();
+  moshinsky::TransformOperatorRelativeLSJTToRelativeCMNLSJT(
+      operator_labels,
+      relative_space,relative_component_sectors,relative_component_matrices,
+      relative_cm_nlsjt_space,relative_cm_nlsjt_component_sectors,relative_cm_nlsjt_component_matrices
+    );
+  relative_cm_nlsjt_timer.Stop();
+  std::cout << "Time: " << relative_cm_nlsjt_timer.ElapsedTime() << std::endl;
+
+  ////////////////////////////////////////////////////////////////
+  // transform to two-body NLSJT
+  ////////////////////////////////////////////////////////////////
+
+  std::cout << "  two-body NLSJT" << std::endl;
+
+  // define space and operator containers
+  basis::TwoBodySpaceNLSJT two_body_nlsjt_space(Nmax);
+  std::array<basis::TwoBodySectorsNLSJT,3> two_body_nlsjt_component_sectors;
+  std::array<basis::MatrixVector,3> two_body_nlsjt_component_matrices;
+
+  // do transformation
+  Timer two_body_nlsjt_timer;
+  two_body_nlsjt_timer.Start();
+  moshinsky::TransformOperatorRelativeCMNLSJTToTwoBodyNLSJT(
+      operator_labels,
+      relative_cm_nlsjt_space,relative_cm_nlsjt_component_sectors,relative_cm_nlsjt_component_matrices,
+      two_body_nlsjt_space,two_body_nlsjt_component_sectors,two_body_nlsjt_component_matrices
+  );
+  two_body_nlsjt_timer.Stop();
+  std::cout << "Time: " << two_body_nlsjt_timer.ElapsedTime() << std::endl;
+
+  ////////////////////////////////////////////////////////////////
+  // recouple to two-body NJJJT
+  ////////////////////////////////////////////////////////////////
+
+  std::cout << "  two-body NJJJT" << std::endl;
+
+  // define space and operator containers
+  basis::TwoBodySpaceNJJJT two_body_njjjt_space(Nmax);
+  std::array<basis::TwoBodySectorsNJJJT,3> two_body_njjjt_component_sectors;
+  std::array<basis::MatrixVector,3> two_body_njjjt_component_matrices;
+
+  // do recoupling
+  Timer two_body_njjjt_timer;
+  two_body_njjjt_timer.Start();
+  moshinsky::TransformOperatorTwoBodyNLSJTToTwoBodyNJJJT(
+      operator_labels,
+      two_body_nlsjt_space,two_body_nlsjt_component_sectors,two_body_nlsjt_component_matrices,
+      two_body_njjjt_space,two_body_njjjt_component_sectors,two_body_njjjt_component_matrices
+    );
+  two_body_njjjt_timer.Stop();
+  std::cout << "Time: " << two_body_njjjt_timer.ElapsedTime() << std::endl;
+
+  ////////////////////////////////////////////////////////////////
+  // gather to two-body JJJT
+  ////////////////////////////////////////////////////////////////
+
+  std::cout << "  two-body JJJT" << std::endl;
+
+  // define space and operator containers
+  basis::TwoBodySpaceJJJT two_body_jjjt_space(Nmax);
+  std::array<basis::TwoBodySectorsJJJT,3> two_body_jjjt_component_sectors;
+  std::array<basis::MatrixVector,3> two_body_jjjt_component_matrices;
+
+  // construct gathered operator
+  Timer two_body_jjjt_timer;
+  two_body_jjjt_timer.Start();
+  basis::GatherOperatorTwoBodyNJJJTToTwoBodyJJJT(
+      operator_labels,
+      two_body_njjjt_space,two_body_njjjt_component_sectors,two_body_njjjt_component_matrices,
+      two_body_jjjt_space,two_body_jjjt_component_sectors,two_body_jjjt_component_matrices
+    );
+  two_body_jjjt_timer.Stop();
+  std::cout << "Time: " << two_body_jjjt_timer.ElapsedTime() << std::endl;
 
 }
 
@@ -392,18 +529,19 @@ void test_transform_simple(
 int main(int argc, char **argv)
 {
 
-  test_relative_cm();
-  test_moshinsky_matrix();
-  test_transform_simple(
-      "test/moshinsky_xform_test_two_body_lsjt_identity_AS.dat",
-      "test/moshinsky_xform_test_two_body_jjjt_identity_AS.dat",
-      'I'
-    );
-  test_transform_simple(
-      "test/moshinsky_xform_test_two_body_lsjt_kinetic_AS.dat",
-      "test/moshinsky_xform_test_two_body_jjjt_kinetic_AS.dat",
-      'K'
-    );
+  // test_relative_cm();
+  // test_moshinsky_matrix();
+  // test_transform_simple(
+  //     "test/moshinsky_xform_test_two_body_lsjt_identity_AS.dat",
+  //     "test/moshinsky_xform_test_two_body_jjjt_identity_AS.dat",
+  //     'I'
+  //   );
+  // test_transform_simple(
+  //     "test/moshinsky_xform_test_two_body_lsjt_kinetic_AS.dat",
+  //     "test/moshinsky_xform_test_two_body_jjjt_kinetic_AS.dat",
+  //     'K'
+  //   );
+  test_transform_timing();
 
   // termination
   return 0;
