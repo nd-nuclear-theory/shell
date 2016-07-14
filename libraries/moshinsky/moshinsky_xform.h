@@ -33,6 +33,7 @@
 #include "basis/lsjt_scheme.h"
 #include "basis/lsjt_operator.h"
 #include "basis/jjjt_scheme.h"
+#include "basis/jjjpn_scheme_general.h"
 
 namespace moshinsky {
 

@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iomanip>
 
+#include "mcpp/profiling.h"
 #include "moshinsky/construct_relative.h"
 #include "moshinsky/moshinsky_xform.h"
 
@@ -209,11 +210,15 @@ void test_transform_simple(std::string lsjt_filename, char operator_code)
   std::array<basis::MatrixVector,3> two_body_nlsjt_component_matrices;
 
   // do transformation
+  Timer two_body_nlsjt_timer;
+  two_body_nlsjt_timer.Start();
   moshinsky::TransformOperatorRelativeCMNLSJTToTwoBodyNLSJT(
       operator_labels,
       relative_cm_nlsjt_space,relative_cm_nlsjt_component_sectors,relative_cm_nlsjt_component_matrices,
       two_body_nlsjt_space,two_body_nlsjt_component_sectors,two_body_nlsjt_component_matrices
   );
+  two_body_nlsjt_timer.Stop();
+  std::cout << "Time: " << two_body_nlsjt_timer.ElapsedTime() << std::endl;
 
   // write sector matrices for inspection
   //
@@ -222,17 +227,20 @@ void test_transform_simple(std::string lsjt_filename, char operator_code)
   // state.  To aid in checking this, we display the subspace contents
   // for the diagonal sectors.  All other sectors should be vanishing.
 
-  std::cout << "two-body NLSJT matrices" << std::endl;
+  std::cout << "writing two-body NLSJT matrices" << std::endl;
   for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
     for (int sector_index=0; sector_index<two_body_nlsjt_component_sectors[T0].size(); ++sector_index)
       {
       const basis::TwoBodySectorsNLSJT::SectorType& two_body_nlsjt_sector
         = two_body_nlsjt_component_sectors[T0].GetSector(sector_index);
+      const Eigen::MatrixXd& two_body_nlsjt_matrix
+        = two_body_nlsjt_component_matrices[T0][sector_index];
+
 
       std::cout << " T0 " << T0
                 << " sector " << sector_index
                 << " diagonal " << two_body_nlsjt_sector.IsDiagonal() << std::endl;
-      std::cout << two_body_nlsjt_component_matrices[T0][sector_index] << std::endl;
+      std::cout << two_body_nlsjt_matrix << std::endl;
       if (two_body_nlsjt_sector.IsDiagonal())
         {
           // std::cout << two_body_nlsjt_sector.ket_subspace().LabelStr() << std::endl;
@@ -288,7 +296,48 @@ void test_transform_simple(std::string lsjt_filename, char operator_code)
   std::array<basis::MatrixVector,3> two_body_njjjt_component_matrices;
 
   // do recoupling
-  // TODO
+  Timer two_body_njjjt_timer;
+  two_body_njjjt_timer.Start();
+  moshinsky::TransformOperatorTwoBodyNLSJTToTwoBodyNJJJT(
+      operator_labels,
+      two_body_nlsjt_space,two_body_nlsjt_component_sectors,two_body_nlsjt_component_matrices,
+      two_body_njjjt_space,two_body_njjjt_component_sectors,two_body_njjjt_component_matrices
+    );
+  two_body_njjjt_timer.Stop();
+  std::cout << "Time: " << two_body_njjjt_timer.ElapsedTime() << std::endl;
+
+  // write sector matrices for inspection
+  //
+  // Discussion: The T0=0 diagonal sectors should be identity-like,
+  // but with 2's on the diagonal if the state is a like-orbital
+  // state.  To aid in checking this, we display the subspace contents
+  // for the diagonal sectors.  All other sectors should be vanishing.
+
+  std::cout << "writing two-body NJJJT matrices" << std::endl;
+  for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+    for (int sector_index=0; sector_index<two_body_njjjt_component_sectors[T0].size(); ++sector_index)
+      {
+      const basis::TwoBodySectorsNJJJT::SectorType& two_body_njjjt_sector
+        = two_body_njjjt_component_sectors[T0].GetSector(sector_index);
+      const Eigen::MatrixXd& two_body_njjjt_matrix
+        = two_body_njjjt_component_matrices[T0][sector_index];
+
+      std::cout << " T0 " << T0
+                << " sector " << sector_index
+                << " diagonal " << two_body_njjjt_sector.IsDiagonal() << std::endl;
+      std::cout << two_body_njjjt_matrix << std::endl;
+      if (two_body_njjjt_sector.IsDiagonal())
+        {
+          // std::cout << two_body_nlsjt_sector.ket_subspace().LabelStr() << std::endl;
+          std::cout << two_body_njjjt_sector.ket_subspace().DebugStr();
+          std::cout << std::endl;
+        }
+      std::cout << std::endl;
+  
+    }
+
+
+
 
 }
 

@@ -363,7 +363,7 @@ namespace moshinsky {
         two_body_nlsjt_component_matrices[T0].resize(two_body_nlsjt_component_sectors[T0].size());
         for (int sector_index=0; sector_index<two_body_nlsjt_component_sectors[T0].size(); ++sector_index)
           {
-            // target sector
+            // make reference to target sector
             const basis::TwoBodySectorsNLSJT::SectorType& two_body_nlsjt_sector
               = two_body_nlsjt_component_sectors[T0].GetSector(sector_index);
 
@@ -471,17 +471,23 @@ namespace moshinsky {
         int l2 = two_body_njjjt_state.l2();
         HalfInt j2 = two_body_njjjt_state.j2();
 
-        // look up corresponding source NLSJT state
+        // check for corresponding source NLSJT state
+        bool source_state_exists = two_body_nlsjt_subspace.ContainsState(
+            basis::TwoBodyStateNLSJTLabels(N1,l1,N2,l2)
+          );
+        if (!source_state_exists)
+          continue;
+        int index_two_body_nlsjt = two_body_nlsjt_subspace.LookUpStateIndex(
+            basis::TwoBodyStateNLSJTLabels(N1,l1,N2,l2)
+          );
 
+        // Alternately:
+        //
         // basis::TwoBodyStateNLSJT two_body_nlsjt_state(
         //     two_body_nlsjt_subspace,
         //     basis::TwoBodyStateNLSJTLabels(N1,l1,N2,l2)
         //   );
         // int index_two_body_nlsjtt = two_body_nlsjt_state.index();
-
-        int index_two_body_nlsjt = two_body_nlsjt_subspace.LookUpStateIndex(
-            basis::TwoBodyStateNLSJTLabels(N1,l1,N2,l2)
-          );
 
         // evaluate bracket
         const HalfInt s(1,2);
@@ -529,7 +535,7 @@ namespace moshinsky {
     // avoid lookups.
 
     // set up matrix to hold results
-    Eigen::MatrixXd matrix(
+    Eigen::MatrixXd matrix = Eigen::MatrixXd::Zero(
         two_body_njjjt_sector.bra_subspace().size(),
         two_body_njjjt_sector.ket_subspace().size()
       );
@@ -568,6 +574,8 @@ namespace moshinsky {
           );
 
         // obtain target matrix
+        //
+        // We are assuming that diagonal sector matrices are fully-poplulated square matrices.
         const Eigen::MatrixXd& two_body_nlsjt_cm_matrix = two_body_nlsjt_matrices[two_body_nlsjt_sector_index];
         matrix
           += bra_transformation_matrix.transpose()
@@ -590,7 +598,36 @@ namespace moshinsky {
       std::array<basis::MatrixVector,3>& two_body_njjjt_component_matrices
     )
   {
-    // TODO
+    for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+      // for each isospin component
+      {
+
+        // enumerate target sectors
+        two_body_njjjt_component_sectors[T0]
+          = basis::TwoBodySectorsNJJJT(two_body_njjjt_space,operator_labels.J0,T0,operator_labels.g0);
+
+        // populate matrices
+        two_body_njjjt_component_matrices[T0].resize(two_body_njjjt_component_sectors[T0].size());
+        for (int sector_index=0; sector_index<two_body_njjjt_component_sectors[T0].size(); ++sector_index)
+          {
+            // make reference to target sector
+            const basis::TwoBodySectorsNJJJT::SectorType& two_body_njjjt_sector
+              = two_body_njjjt_component_sectors[T0].GetSector(sector_index);
+
+            // make references to isospin component of source operator
+            const basis::TwoBodySectorsNLSJT& two_body_nlsjt_sectors = two_body_nlsjt_component_sectors[T0];
+            const basis::MatrixVector& two_body_nlsjt_matrices = two_body_nlsjt_component_matrices[T0];
+         
+            // transform
+            Eigen::MatrixXd& matrix = two_body_njjjt_component_matrices[T0][sector_index];
+            matrix = TwoBodyMatrixNJJJT(
+                two_body_nlsjt_sectors,
+                two_body_nlsjt_matrices,
+                two_body_njjjt_sector
+              );
+          }
+      }
+
   }
 
 
