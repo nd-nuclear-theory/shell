@@ -78,10 +78,13 @@ namespace relative {
         int Nmax = subspace.Nmax();
         int L = subspace.L();
         int nmax = (Nmax-L)/2;   // max radial quantum number
+        std::cout << " Nmax " << Nmax << " L " << L << " nmax " << nmax << " size " << subspace.size() << std::endl;
+        std::cout << subspace.LabelStr() << std::endl;
+        std::cout << subspace.DebugStr();
 
         // Although actually we could get nmax just from the
         // subspace dimension...
-        assert(nmax==subspace.size()+1);
+        assert(nmax==subspace.size()-1);
 
         // select which kinematic operator
         //

@@ -9,6 +9,8 @@
 #include <fstream>
 #include <iomanip>
 
+#include "basis/jjjt_operator.h"
+
 #include "mcpp/profiling.h"
 #include "moshinsky/construct_relative.h"
 #include "moshinsky/moshinsky_xform.h"
@@ -137,7 +139,11 @@ void test_moshinsky_matrix()
 
 }
 
-void test_transform_simple(std::string lsjt_filename, char operator_code)
+void test_transform_simple(
+    std::string lsjt_filename,
+    std::string jjjt_filename,
+    char operator_code
+  )
 {
 
   std::cout << "test_transform_simple" << " " << operator_code << std::endl;
@@ -252,7 +258,7 @@ void test_transform_simple(std::string lsjt_filename, char operator_code)
     }
 
   ////////////////////////////////////////////////////////////////
-  // reassemble to two-body LSJT as intermediate diagnostic output
+  // gather to two-body LSJT as intermediate diagnostic output
   ////////////////////////////////////////////////////////////////
 
   std::cout << "  two-body LSJT" << std::endl;
@@ -263,26 +269,29 @@ void test_transform_simple(std::string lsjt_filename, char operator_code)
   std::array<basis::MatrixVector,3> two_body_lsjt_component_matrices;
 
   // construct gathered operator
-  basis::GatherBlocksTwoBodyNLSJTToTwoBodyLSJT(
+  basis::GatherOperatorTwoBodyNLSJTToTwoBodyLSJT(
       operator_labels,
       two_body_nlsjt_space,two_body_nlsjt_component_sectors,two_body_nlsjt_component_matrices,
       two_body_lsjt_space,two_body_lsjt_component_sectors,two_body_lsjt_component_matrices
     );
 
-  // write operator
+  ////////////////////////////////////////////////////////////////
+  // write as two-body LSJT
+  ////////////////////////////////////////////////////////////////
+
   std::string two_body_lsjt_filename(lsjt_filename);
-  std::ostringstream os;
+  std::ostringstream lsjt_sstream;
   for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
     {
       basis::WriteTwoBodyOperatorComponentLSJT(
-          os,
+          lsjt_sstream,
           T0,
           two_body_lsjt_component_sectors[T0],two_body_lsjt_component_matrices[T0],
           basis::NormalizationConversion::kNone
         );
     }
-  std::ofstream ofile(two_body_lsjt_filename.c_str());
-  ofile << os.str();
+  std::ofstream lsjt_stream(two_body_lsjt_filename.c_str());
+  lsjt_stream << lsjt_sstream.str();
 
   ////////////////////////////////////////////////////////////////
   // recouple to two-body NJJJT
@@ -336,6 +345,41 @@ void test_transform_simple(std::string lsjt_filename, char operator_code)
   
     }
 
+  ////////////////////////////////////////////////////////////////
+  // gather to two-body JJJT
+  ////////////////////////////////////////////////////////////////
+
+  std::cout << "  two-body JJJT" << std::endl;
+
+  // define space and operator containers
+  basis::TwoBodySpaceJJJT two_body_jjjt_space(Nmax);
+  std::array<basis::TwoBodySectorsJJJT,3> two_body_jjjt_component_sectors;
+  std::array<basis::MatrixVector,3> two_body_jjjt_component_matrices;
+
+  // construct gathered operator
+  basis::GatherOperatorTwoBodyNJJJTToTwoBodyJJJT(
+      operator_labels,
+      two_body_njjjt_space,two_body_njjjt_component_sectors,two_body_njjjt_component_matrices,
+      two_body_jjjt_space,two_body_jjjt_component_sectors,two_body_jjjt_component_matrices
+    );
+
+  ////////////////////////////////////////////////////////////////
+  // write as two-body JJJT
+  ////////////////////////////////////////////////////////////////
+
+  std::string two_body_jjjt_filename(jjjt_filename);
+  std::ostringstream jjjt_sstream;
+  for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+    {
+      basis::WriteTwoBodyOperatorComponentJJJT(
+          jjjt_sstream,
+          T0,
+          two_body_jjjt_component_sectors[T0],two_body_jjjt_component_matrices[T0],
+          basis::NormalizationConversion::kNone
+        );
+    }
+  std::ofstream jjjt_stream(two_body_jjjt_filename.c_str());
+  jjjt_stream << jjjt_sstream.str();
 
 
 
@@ -350,8 +394,16 @@ int main(int argc, char **argv)
 
   test_relative_cm();
   test_moshinsky_matrix();
-  test_transform_simple("test/moshinsky_xform_test_two_body_identity_AS.dat",'I');
-  test_transform_simple("test/moshinsky_xform_test_two_body_kinetic_AS.dat",'I');
+  test_transform_simple(
+      "test/moshinsky_xform_test_two_body_lsjt_identity_AS.dat",
+      "test/moshinsky_xform_test_two_body_jjjt_identity_AS.dat",
+      'I'
+    );
+  test_transform_simple(
+      "test/moshinsky_xform_test_two_body_lsjt_kinetic_AS.dat",
+      "test/moshinsky_xform_test_two_body_jjjt_kinetic_AS.dat",
+      'K'
+    );
 
   // termination
   return 0;
