@@ -8,7 +8,7 @@ libname = mcpp
 modules_h = arithmetic vector_tuple memoizer profiling
 
 # modules -- header-plus-object 
-modules_ho = 
+modules_ho = parsing
 
 # programs
 programs = test_arithmetic test_vector_tuple 
@@ -30,5 +30,7 @@ include $(COMMON_MAKE_DIR)/common.mk
 CC := $(CXX)
 
 # external libraries
-LDLIBS += -lhalfint
+LDFLAGS += -L../am
+LDLIBS += -lam
 
+CXXFLAGS += -std=c++11
