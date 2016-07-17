@@ -12,6 +12,12 @@
     operator_name [parameters]
     filename
 
+  The parameters are
+
+    J0 g0 T0_min T0_max : relative operator tensor properties
+
+    Nmax : relative basis trunctation
+
   The operator_name line may be:
 
     zero
@@ -52,9 +58,8 @@
 #include "moshinsky/construct_relative.h"
 
 ////////////////////////////////////////////////////////////////
-// parameter input from stdin
+// parameter input
 ////////////////////////////////////////////////////////////////
-
 
 struct UnitTensorLabels
 // Labels for a single relative matrix element, as needed to define a
@@ -154,9 +159,13 @@ void ReadParameters(Parameters& parameters)
 
 }
 
+////////////////////////////////////////////////////////////////
+// operator work
+////////////////////////////////////////////////////////////////
+
 void PopulateOperator(
     const Parameters& parameters,
-    const basis::RelativeSpaceLSJT& relative_space,
+    basis::RelativeSpaceLSJT& relative_space,
     std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
     std::array<basis::MatrixVector,3>& relative_component_matrices
   )
@@ -165,7 +174,7 @@ void PopulateOperator(
 // Arguments:
 //   parameters (Parameters) : includes tensorial properties of operator
 //      choice of operator to use 
-//   relative_space (...) : target space
+//   relative_space (..., output) : target space
 //   relative_component_sectors (..., output) : target sectors
 //   relative_component_matrices (..., output) : target matrices
 {
@@ -174,8 +183,12 @@ void PopulateOperator(
   const basis::RelativeOperatorParametersLSJT& operator_parameters
     = parameters.operator_parameters;
 
-  // populate operator containers
+  // set up relative space
+  relative_space = basis::RelativeSpaceLSJT(
+      operator_parameters.Nmax,operator_parameters.Jmax
+    );
 
+  // populate operator containers
   if (parameters.operator_name == "zero")
     {
       relative::ConstructDiagonalConstantOperator(
@@ -339,22 +352,21 @@ int main(int argc, char **argv)
   Parameters parameters;
   ReadParameters(parameters);
 
-  // set up relative space
-  const basis::RelativeOperatorParametersLSJT& operator_parameters
-    = parameters.operator_parameters;
-  basis::RelativeSpaceLSJT relative_space(operator_parameters.Nmax,operator_parameters.Jmax);
-  //std::cout << relative_space.DebugStr();
-
   // set up operator
+  basis::RelativeSpaceLSJT relative_space;
   std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
   std::array<basis::MatrixVector,3> relative_component_matrices;
   PopulateOperator(
-      parameters,relative_space,relative_component_sectors,relative_component_matrices
+      parameters,
+      relative_space,
+      relative_component_sectors,relative_component_matrices
     );
 
   // write operator
   WriteOperator(
-      parameters,relative_space,relative_component_sectors,relative_component_matrices
+      parameters,
+      relative_space,
+      relative_component_sectors,relative_component_matrices
     );
 
 
