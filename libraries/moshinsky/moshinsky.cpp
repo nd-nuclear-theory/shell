@@ -7,7 +7,7 @@
   relative operator file format.
 
   Standard input:
-    N1max N2max coupling
+    ob|tb truncation_cutoff coupling
     relative_filename
     two_body_filename
 
@@ -42,7 +42,7 @@
 struct Parameters
 // Container for run input parameters.
 {
-  int N1max, N2max;
+  int truncation_rank, truncation_cutoff;
   std::string coupling;
   std::string relative_filename;
   std::string two_body_filename;
@@ -66,10 +66,23 @@ void ReadParameters(Parameters& parameters)
     ++line_count;
     std::getline(std::cin,line);
     std::istringstream line_stream(line);
-    line_stream >> parameters.N1max
-                >> parameters.N2max
+    std::string truncation_rank_code;
+    line_stream >> truncation_rank_code
+                >> parameters.truncation_cutoff
                 >> parameters.coupling;
     ParsingCheck(line_stream,line_count,line);
+
+    // process truncation rank code
+    if (truncation_rank_code == "ob")
+      parameters.truncation_rank = 1;
+    else if (truncation_rank_code == "tb")
+      parameters.truncation_rank = 2;
+    else
+    {
+      std::cerr << "ERROR: unrecognized truncation rank code" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
   }
 
   // line 2: relative (source) filename
@@ -176,7 +189,7 @@ int main(int argc, char **argv)
   // be refactored and extended to jjjt and jjjpn
 
   // int N1max = parameters.N1max; // TODO
-  int Nmax = parameters.N2max;
+  int Nmax = parameters.truncation_cutoff;
 
   ////////////////////////////////////////////////////////////////
   // augment to relative-cm NLSJT
@@ -198,7 +211,7 @@ int main(int argc, char **argv)
       relative_cm_nlsjt_space,relative_cm_nlsjt_component_sectors,relative_cm_nlsjt_component_matrices
     );
   relative_cm_nlsjt_timer.Stop();
-  std::cout << "Time: " << relative_cm_nlsjt_timer.ElapsedTime() << std::endl;
+  std::cout << "  Time: " << relative_cm_nlsjt_timer.ElapsedTime() << std::endl;
 
   ////////////////////////////////////////////////////////////////
   // transform to two-body NLSJT
@@ -220,7 +233,7 @@ int main(int argc, char **argv)
       two_body_nlsjt_space,two_body_nlsjt_component_sectors,two_body_nlsjt_component_matrices
   );
   two_body_nlsjt_timer.Stop();
-  std::cout << "Time: " << two_body_nlsjt_timer.ElapsedTime() << std::endl;
+  std::cout << "  Time: " << two_body_nlsjt_timer.ElapsedTime() << std::endl;
 
   ////////////////////////////////////////////////////////////////
   // gather to two-body LSJT
@@ -242,7 +255,7 @@ int main(int argc, char **argv)
       two_body_lsjt_space,two_body_lsjt_component_sectors,two_body_lsjt_component_matrices
     );
   two_body_lsjt_timer.Stop();
-  std::cout << "Time: " << two_body_lsjt_timer.ElapsedTime() << std::endl;
+  std::cout << "  Time: " << two_body_lsjt_timer.ElapsedTime() << std::endl;
 
   ////////////////////////////////////////////////////////////////
   // write as two-body LSJT
@@ -283,7 +296,7 @@ int main(int argc, char **argv)
   //     two_body_njjjt_space,two_body_njjjt_component_sectors,two_body_njjjt_component_matrices
   //   );
   // two_body_njjjt_timer.Stop();
-  // std::cout << "Time: " << two_body_njjjt_timer.ElapsedTime() << std::endl;
+  // std::cout << "  Time: " << two_body_njjjt_timer.ElapsedTime() << std::endl;
 
 
 
