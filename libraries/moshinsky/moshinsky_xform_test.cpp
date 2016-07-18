@@ -102,7 +102,7 @@ void test_moshinsky_matrix()
   std::cout << relative_cm_subspace.DebugStr();
 
   std::cout << "  two-body" << std::endl;
-  basis::TwoBodySubspaceLSJTN two_body_subspace(L,S,J,T,g,N);
+  basis::TwoBodySubspaceLSJTN two_body_subspace(L,S,J,T,g,N,N);
   std::cout << two_body_subspace.DebugStr();
 
   std::cout << "  Moshinsky transform matrix (includes antisymmetry factor)" << std::endl;
