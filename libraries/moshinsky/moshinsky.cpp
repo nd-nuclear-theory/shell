@@ -192,48 +192,48 @@ int main(int argc, char **argv)
   int Nmax = parameters.truncation_cutoff;
 
   ////////////////////////////////////////////////////////////////
-  // augment to relative-cm NLSJT
+  // augment to relative-cm LSJTN
   ////////////////////////////////////////////////////////////////
 
-  std::cout << "Augment to relative-cm NLSJT..." << std::endl;
+  std::cout << "Augment to relative-cm LSJTN..." << std::endl;
 
   // define space and operator containers
-  basis::RelativeCMSpaceNLSJT relative_cm_nlsjt_space(Nmax);
-  std::array<basis::RelativeCMSectorsNLSJT,3> relative_cm_nlsjt_component_sectors;
-  std::array<basis::MatrixVector,3> relative_cm_nlsjt_component_matrices;
+  basis::RelativeCMSpaceLSJTN relative_cm_lsjtn_space(Nmax);
+  std::array<basis::RelativeCMSectorsLSJTN,3> relative_cm_lsjtn_component_sectors;
+  std::array<basis::MatrixVector,3> relative_cm_lsjtn_component_matrices;
 
   // do transformation
-  Timer relative_cm_nlsjt_timer;
-  relative_cm_nlsjt_timer.Start();
-  moshinsky::TransformOperatorRelativeLSJTToRelativeCMNLSJT(
+  Timer relative_cm_lsjtn_timer;
+  relative_cm_lsjtn_timer.Start();
+  moshinsky::TransformOperatorRelativeLSJTToRelativeCMLSJTN(
       operator_labels,
       relative_space,relative_component_sectors,relative_component_matrices,
-      relative_cm_nlsjt_space,relative_cm_nlsjt_component_sectors,relative_cm_nlsjt_component_matrices
+      relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_matrices
     );
-  relative_cm_nlsjt_timer.Stop();
-  std::cout << "  Time: " << relative_cm_nlsjt_timer.ElapsedTime() << std::endl;
+  relative_cm_lsjtn_timer.Stop();
+  std::cout << "  Time: " << relative_cm_lsjtn_timer.ElapsedTime() << std::endl;
 
   ////////////////////////////////////////////////////////////////
-  // transform to two-body NLSJT
+  // transform to two-body LSJTN
   ////////////////////////////////////////////////////////////////
 
-  std::cout << "Transform to two-body NLSJT..." << std::endl;
+  std::cout << "Transform to two-body LSJTN..." << std::endl;
 
   // define space and operator containers
-  basis::TwoBodySpaceNLSJT two_body_nlsjt_space(Nmax);
-  std::array<basis::TwoBodySectorsNLSJT,3> two_body_nlsjt_component_sectors;
-  std::array<basis::MatrixVector,3> two_body_nlsjt_component_matrices;
+  basis::TwoBodySpaceLSJTN two_body_lsjtn_space(Nmax);
+  std::array<basis::TwoBodySectorsLSJTN,3> two_body_lsjtn_component_sectors;
+  std::array<basis::MatrixVector,3> two_body_lsjtn_component_matrices;
 
   // do transformation
-  Timer two_body_nlsjt_timer;
-  two_body_nlsjt_timer.Start();
-  moshinsky::TransformOperatorRelativeCMNLSJTToTwoBodyNLSJT(
+  Timer two_body_lsjtn_timer;
+  two_body_lsjtn_timer.Start();
+  moshinsky::TransformOperatorRelativeCMLSJTNToTwoBodyLSJTN(
       operator_labels,
-      relative_cm_nlsjt_space,relative_cm_nlsjt_component_sectors,relative_cm_nlsjt_component_matrices,
-      two_body_nlsjt_space,two_body_nlsjt_component_sectors,two_body_nlsjt_component_matrices
+      relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_matrices,
+      two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_matrices
   );
-  two_body_nlsjt_timer.Stop();
-  std::cout << "  Time: " << two_body_nlsjt_timer.ElapsedTime() << std::endl;
+  two_body_lsjtn_timer.Stop();
+  std::cout << "  Time: " << two_body_lsjtn_timer.ElapsedTime() << std::endl;
 
   ////////////////////////////////////////////////////////////////
   // gather to two-body LSJT
@@ -249,9 +249,9 @@ int main(int argc, char **argv)
   // construct gathered operator
   Timer two_body_lsjt_timer;
   two_body_lsjt_timer.Start();
-  basis::GatherOperatorTwoBodyNLSJTToTwoBodyLSJT(
+  basis::GatherOperatorTwoBodyLSJTNToTwoBodyLSJT(
       operator_labels,
-      two_body_nlsjt_space,two_body_nlsjt_component_sectors,two_body_nlsjt_component_matrices,
+      two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_matrices,
       two_body_lsjt_space,two_body_lsjt_component_sectors,two_body_lsjt_component_matrices
     );
   two_body_lsjt_timer.Stop();
@@ -261,7 +261,7 @@ int main(int argc, char **argv)
   // write as two-body LSJT
   ////////////////////////////////////////////////////////////////
 
-  std::cout << "Write two-body NLSJT..." << std::endl;
+  std::cout << "Write two-body LSJTN..." << std::endl;
   std::string two_body_lsjt_filename(parameters.two_body_filename);
   std::ostringstream lsjt_sstream;
   for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
@@ -277,26 +277,26 @@ int main(int argc, char **argv)
   lsjt_stream << lsjt_sstream.str();
 
   ////////////////////////////////////////////////////////////////
-  // recouple to two-body NJJJT
+  // recouple to two-body JJJTN
   ////////////////////////////////////////////////////////////////
 
-  // std::cout << "Recouple to two-body NJJJT..." << std::endl;
+  // std::cout << "Recouple to two-body JJJTN..." << std::endl;
   // 
   // // define space and operator containers
-  // basis::TwoBodySpaceNJJJT two_body_njjjt_space(Nmax);
-  // std::array<basis::TwoBodySectorsNJJJT,3> two_body_njjjt_component_sectors;
-  // std::array<basis::MatrixVector,3> two_body_njjjt_component_matrices;
+  // basis::TwoBodySpaceJJJTN two_body_jjjtn_space(Nmax);
+  // std::array<basis::TwoBodySectorsJJJTN,3> two_body_jjjtn_component_sectors;
+  // std::array<basis::MatrixVector,3> two_body_jjjtn_component_matrices;
   // 
   // // do recoupling
-  // Timer two_body_njjjt_timer;
-  // two_body_njjjt_timer.Start();
-  // moshinsky::TransformOperatorTwoBodyNLSJTToTwoBodyNJJJT(
+  // Timer two_body_jjjtn_timer;
+  // two_body_jjjtn_timer.Start();
+  // moshinsky::TransformOperatorTwoBodyLSJTNToTwoBodyJJJTN(
   //     operator_labels,
-  //     two_body_nlsjt_space,two_body_nlsjt_component_sectors,two_body_nlsjt_component_matrices,
-  //     two_body_njjjt_space,two_body_njjjt_component_sectors,two_body_njjjt_component_matrices
+  //     two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_matrices,
+  //     two_body_jjjtn_space,two_body_jjjtn_component_sectors,two_body_jjjtn_component_matrices
   //   );
-  // two_body_njjjt_timer.Stop();
-  // std::cout << "  Time: " << two_body_njjjt_timer.ElapsedTime() << std::endl;
+  // two_body_jjjtn_timer.Stop();
+  // std::cout << "  Time: " << two_body_jjjtn_timer.ElapsedTime() << std::endl;
 
 
 
