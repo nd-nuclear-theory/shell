@@ -42,7 +42,8 @@
 struct Parameters
 // Container for run input parameters.
 {
-  int truncation_rank, truncation_cutoff;
+  basis::Rank truncation_rank;
+  int truncation_cutoff;
   std::string coupling;
   std::string relative_filename;
   std::string two_body_filename;
@@ -74,9 +75,9 @@ void ReadParameters(Parameters& parameters)
 
     // process truncation rank code
     if (truncation_rank_code == "ob")
-      parameters.truncation_rank = 1;
+      parameters.truncation_rank = basis::Rank::kOneBody;
     else if (truncation_rank_code == "tb")
-      parameters.truncation_rank = 2;
+      parameters.truncation_rank = basis::Rank::kTwoBody;
     else
     {
       std::cerr << "ERROR: unrecognized truncation rank code" << std::endl;
@@ -134,10 +135,17 @@ void ReadRelative(
   basis::ReadRelativeOperatorParametersLSJT(is,operator_parameters);
   operator_labels = static_cast<basis::OperatorLabelsJT>(operator_parameters);
   std::cout
-    << " J0 " << operator_parameters.J0 << " g0 " << operator_parameters.g0
-    << " T0 " << operator_parameters.T0_min << " .. " << operator_parameters.T0_max
-    << " symmetry " << int(operator_parameters.symmetry_phase_mode) << std::endl
-    << " Nmax " << operator_parameters.Nmax << " Jmax " << operator_parameters.Jmax << std::endl;
+    << " "
+    << " J0 " << operator_parameters.J0
+    << " g0 " << operator_parameters.g0
+    << " T0_min " << operator_parameters.T0_min
+    << " T0_max " << operator_parameters.T0_max
+    << " symmetry " << int(operator_parameters.symmetry_phase_mode)
+    << std::endl
+    << " "
+    << " Nmax " << operator_parameters.Nmax
+    << " Jmax " << operator_parameters.Jmax
+    << std::endl;
 
   // set up relative space
   relative_space = basis::RelativeSpaceLSJT(
@@ -159,6 +167,13 @@ void ReadRelative(
           relative_component_sectors[T0],relative_component_matrices[T0]
         );
     }
+
+  // write diagnostics
+  std::cout << "  Allocated matrix elements:";
+  for (int T0=operator_parameters.T0_min; T0<=operator_parameters.T0_max; ++T0)
+    std::cout << " " << basis::AllocatedEntries(relative_component_matrices[T0]);
+  std::cout << std::endl;
+
 }
 
 
@@ -173,6 +188,17 @@ int main(int argc, char **argv)
   // parameter input
   Parameters parameters;
   ReadParameters(parameters);
+  std::cout << "Parameters"
+            << std::endl
+            << " "
+            << " rank " << int(parameters.truncation_rank)
+            << " cutoff " << parameters.truncation_cutoff
+            << std::endl;
+
+
+  // process truncation cutoff
+  int N1max, N2max;
+  std::tie(N1max,N2max) = basis::TwoBodyCutoffs(parameters.truncation_rank,parameters.truncation_cutoff);
 
   // set up operator
   basis::RelativeSpaceLSJT relative_space;
@@ -185,11 +211,9 @@ int main(int argc, char **argv)
       operator_labels,relative_component_sectors,relative_component_matrices
     );
 
+  
   // AD HOC: following is initial working code for two-body lsjt, to
   // be refactored and extended to jjjt and jjjpn
-
-  // int N1max = parameters.N1max; // TODO
-  int Nmax = parameters.truncation_cutoff;
 
   ////////////////////////////////////////////////////////////////
   // augment to relative-cm LSJTN
@@ -198,7 +222,7 @@ int main(int argc, char **argv)
   std::cout << "Augment to relative-cm LSJTN..." << std::endl;
 
   // define space and operator containers
-  basis::RelativeCMSpaceLSJTN relative_cm_lsjtn_space(Nmax);
+  basis::RelativeCMSpaceLSJTN relative_cm_lsjtn_space(N2max);
   std::array<basis::RelativeCMSectorsLSJTN,3> relative_cm_lsjtn_component_sectors;
   std::array<basis::MatrixVector,3> relative_cm_lsjtn_component_matrices;
 
@@ -213,6 +237,12 @@ int main(int argc, char **argv)
   relative_cm_lsjtn_timer.Stop();
   std::cout << "  Time: " << relative_cm_lsjtn_timer.ElapsedTime() << std::endl;
 
+  // write diagnostics
+  std::cout << "  Allocated matrix elements:";
+  for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+    std::cout << " " << basis::AllocatedEntries(relative_cm_lsjtn_component_matrices[T0]);
+  std::cout << std::endl;
+
   ////////////////////////////////////////////////////////////////
   // transform to two-body LSJTN
   ////////////////////////////////////////////////////////////////
@@ -220,7 +250,7 @@ int main(int argc, char **argv)
   std::cout << "Transform to two-body LSJTN..." << std::endl;
 
   // define space and operator containers
-  basis::TwoBodySpaceLSJTN two_body_lsjtn_space(Nmax);
+  basis::TwoBodySpaceLSJTN two_body_lsjtn_space(parameters.truncation_rank,parameters.truncation_cutoff);
   std::array<basis::TwoBodySectorsLSJTN,3> two_body_lsjtn_component_sectors;
   std::array<basis::MatrixVector,3> two_body_lsjtn_component_matrices;
 
@@ -235,6 +265,12 @@ int main(int argc, char **argv)
   two_body_lsjtn_timer.Stop();
   std::cout << "  Time: " << two_body_lsjtn_timer.ElapsedTime() << std::endl;
 
+  // write diagnostics
+  std::cout << "  Allocated matrix elements:";
+  for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+    std::cout << " " << basis::AllocatedEntries(two_body_lsjtn_component_matrices[T0]);
+  std::cout << std::endl;
+
   ////////////////////////////////////////////////////////////////
   // gather to two-body LSJT
   ////////////////////////////////////////////////////////////////
@@ -242,7 +278,7 @@ int main(int argc, char **argv)
   std::cout << "Gather two-body LSJT..." << std::endl;
 
   // define space and operator containers
-  basis::TwoBodySpaceLSJT two_body_lsjt_space(Nmax);
+  basis::TwoBodySpaceLSJT two_body_lsjt_space(parameters.truncation_rank,parameters.truncation_cutoff);
   std::array<basis::TwoBodySectorsLSJT,3> two_body_lsjt_component_sectors;
   std::array<basis::MatrixVector,3> two_body_lsjt_component_matrices;
 

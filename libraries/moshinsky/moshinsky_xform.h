@@ -33,7 +33,7 @@
 #include "basis/lsjt_scheme.h"
 #include "basis/lsjt_operator.h"
 #include "basis/jjjt_scheme.h"
-#include "basis/jjjpn_scheme_general.h"
+#include "basis/jjjpnorb_scheme.h"
 
 namespace moshinsky {
 
@@ -222,6 +222,8 @@ namespace moshinsky {
   //   two_body_lsjtn_component_sectors (..., output) : target sectors
   //   two_body_lsjtn_component_matrices (..., output) : target matrices
 
+
+
   ////////////////////////////////////////////////////////////////
   // recoupling to jjJT scheme
   ////////////////////////////////////////////////////////////////
@@ -290,6 +292,37 @@ namespace moshinsky {
   //     target sector information
 
   void TransformOperatorTwoBodyLSJTNToTwoBodyJJJTN(
+      const basis::OperatorLabelsJT& operator_labels,
+      const basis::TwoBodySpaceLSJTN& two_body_lsjtn_space,
+      const std::array<basis::TwoBodySectorsLSJTN,3>& two_body_lsjtn_component_sectors,
+      const std::array<basis::MatrixVector,3>& two_body_lsjtn_component_matrices,
+      const basis::TwoBodySpaceJJJTN& two_body_jjjtn_space,
+      std::array<basis::TwoBodySectorsJJJTN,3>& two_body_jjjtn_component_sectors,
+      std::array<basis::MatrixVector,3>& two_body_jjjtn_component_matrices
+    );
+  // Recouple operator to two-body jjJT scheme representation (in
+  // TwoBodyJJJTN basis), from two-body LSJT representation (in
+  // TwoBodyLSJTN basis).
+  //
+  // See notes on "internal representation of an operator in JT
+  // scheme" in lsjt_operator.h for the general principles of how the
+  // operators are represented.
+  //
+  // Arguments:
+  //   operator_labels (basis::OperatorLabelsJT) : tensorial properties of operator
+  //   two_body_lsjtn_space (...) : source space
+  //   two_body_lsjtn_component_sectors (...) : source sectors
+  //   two_body_lsjtn_component_matrices (...) : source matrices
+  //   two_body_jjjtn_space (...) : target space
+  //   two_body_jjjtn_component_sectors (..., output) : target sectors
+  //   two_body_jjjtn_component_matrices (..., output) : target matrices
+
+  ////////////////////////////////////////////////////////////////
+  // branching to jjJpn scheme
+  ////////////////////////////////////////////////////////////////
+
+  void TransformOperatorTwoBodyJJJTToTwoBodyJJJPN(
+      //TODO
       const basis::OperatorLabelsJT& operator_labels,
       const basis::TwoBodySpaceLSJTN& two_body_lsjtn_space,
       const std::array<basis::TwoBodySectorsLSJTN,3>& two_body_lsjtn_component_sectors,

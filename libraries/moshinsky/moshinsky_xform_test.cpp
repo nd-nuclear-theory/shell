@@ -102,7 +102,7 @@ void test_moshinsky_matrix()
   std::cout << relative_cm_subspace.DebugStr();
 
   std::cout << "  two-body" << std::endl;
-  basis::TwoBodySubspaceLSJTN two_body_subspace(L,S,J,T,g,N,N);
+  basis::TwoBodySubspaceLSJTN two_body_subspace(L,S,J,T,g,N,basis::Rank::kTwoBody,N);
   std::cout << two_body_subspace.DebugStr();
 
   std::cout << "  Moshinsky transform matrix (includes antisymmetry factor)" << std::endl;
@@ -212,7 +212,7 @@ void test_transform_simple(
   std::cout << "  two-body LSJTN" << std::endl;
 
   // define space and operator containers
-  basis::TwoBodySpaceLSJTN two_body_lsjtn_space(Nmax);
+  basis::TwoBodySpaceLSJTN two_body_lsjtn_space(basis::Rank::kTwoBody,Nmax);
   std::array<basis::TwoBodySectorsLSJTN,3> two_body_lsjtn_component_sectors;
   std::array<basis::MatrixVector,3> two_body_lsjtn_component_matrices;
 
@@ -265,7 +265,7 @@ void test_transform_simple(
   std::cout << "  two-body LSJT" << std::endl;
 
   // define space and operator containers
-  basis::TwoBodySpaceLSJT two_body_lsjt_space(Nmax);
+  basis::TwoBodySpaceLSJT two_body_lsjt_space(basis::Rank::kTwoBody,Nmax);
   std::array<basis::TwoBodySectorsLSJT,3> two_body_lsjt_component_sectors;
   std::array<basis::MatrixVector,3> two_body_lsjt_component_matrices;
 
@@ -301,7 +301,7 @@ void test_transform_simple(
   std::cout << "  two-body JJJTN" << std::endl;
 
   // define space and operator containers
-  basis::TwoBodySpaceJJJTN two_body_jjjtn_space(Nmax);
+  basis::TwoBodySpaceJJJTN two_body_jjjtn_space(basis::Rank::kTwoBody,Nmax);
   std::array<basis::TwoBodySectorsJJJTN,3> two_body_jjjtn_component_sectors;
   std::array<basis::MatrixVector,3> two_body_jjjtn_component_matrices;
 
@@ -353,7 +353,7 @@ void test_transform_simple(
   std::cout << "  two-body JJJT" << std::endl;
 
   // define space and operator containers
-  basis::TwoBodySpaceJJJT two_body_jjjt_space(Nmax);
+  basis::TwoBodySpaceJJJT two_body_jjjt_space(basis::Rank::kTwoBody,Nmax);
   std::array<basis::TwoBodySectorsJJJT,3> two_body_jjjt_component_sectors;
   std::array<basis::MatrixVector,3> two_body_jjjt_component_matrices;
 
@@ -400,7 +400,12 @@ void test_transform_timing(
   // define operator properties
   int Nmax_relative = 26;
   int Jmax_relative = Nmax_relative+1;
-  int Nmax = 10;  // target operator
+  basis::Rank truncation_rank = basis::Rank::kOneBody;
+  int truncation_cutoff = 10;
+
+  // process truncation cutoff
+  int N1max, N2max;
+  std::tie(N1max,N2max) = basis::TwoBodyCutoffs(truncation_rank,truncation_cutoff);
 
   basis::OperatorLabelsJT operator_labels;
   operator_labels.J0 = 0;
@@ -409,7 +414,10 @@ void test_transform_timing(
   operator_labels.T0_max = 0;
   operator_labels.symmetry_phase_mode = basis::SymmetryPhaseMode::kHermitian;
 
-  std::cout << " Nmax_relative " << Nmax_relative << " Nmax " << Nmax << std::endl;
+  std::cout << " Nmax_relative " << Nmax_relative
+            << " N1max " << N1max
+            << " N2max " << N2max
+            << std::endl;
 
   ////////////////////////////////////////////////////////////////
   // construct relative identity operator
@@ -439,7 +447,7 @@ void test_transform_timing(
   std::cout << "  relative-cm LSJTN" << std::endl;
 
   // define space and operator containers
-  basis::RelativeCMSpaceLSJTN relative_cm_lsjtn_space(Nmax);
+  basis::RelativeCMSpaceLSJTN relative_cm_lsjtn_space(N2max);
   std::array<basis::RelativeCMSectorsLSJTN,3> relative_cm_lsjtn_component_sectors;
   std::array<basis::MatrixVector,3> relative_cm_lsjtn_component_matrices;
 
@@ -461,7 +469,7 @@ void test_transform_timing(
   std::cout << "  two-body LSJTN" << std::endl;
 
   // define space and operator containers
-  basis::TwoBodySpaceLSJTN two_body_lsjtn_space(Nmax);
+  basis::TwoBodySpaceLSJTN two_body_lsjtn_space(truncation_rank,truncation_cutoff);
   std::array<basis::TwoBodySectorsLSJTN,3> two_body_lsjtn_component_sectors;
   std::array<basis::MatrixVector,3> two_body_lsjtn_component_matrices;
 
@@ -483,7 +491,7 @@ void test_transform_timing(
   std::cout << "  two-body JJJTN" << std::endl;
 
   // define space and operator containers
-  basis::TwoBodySpaceJJJTN two_body_jjjtn_space(Nmax);
+  basis::TwoBodySpaceJJJTN two_body_jjjtn_space(truncation_rank,truncation_cutoff);
   std::array<basis::TwoBodySectorsJJJTN,3> two_body_jjjtn_component_sectors;
   std::array<basis::MatrixVector,3> two_body_jjjtn_component_matrices;
 
@@ -505,7 +513,7 @@ void test_transform_timing(
   std::cout << "  two-body JJJT" << std::endl;
 
   // define space and operator containers
-  basis::TwoBodySpaceJJJT two_body_jjjt_space(Nmax);
+  basis::TwoBodySpaceJJJT two_body_jjjt_space(truncation_rank,truncation_cutoff);
   std::array<basis::TwoBodySectorsJJJT,3> two_body_jjjt_component_sectors;
   std::array<basis::MatrixVector,3> two_body_jjjt_component_matrices;
 
