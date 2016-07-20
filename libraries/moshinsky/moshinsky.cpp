@@ -29,6 +29,7 @@
 #include "am/wigner_gsl.h"
 #include "basis/lsjt_operator.h"
 #include "basis/jjjt_operator.h"
+#include "basis/jjjpnorb_operator.h"
 #include "mcpp/parsing.h"
 #include "mcpp/profiling.h"
 
@@ -39,12 +40,14 @@
 // parameter input
 ////////////////////////////////////////////////////////////////
 
+enum class Coupling {kLSJT, kJJJT, kJJJPN};
+
 struct Parameters
 // Container for run input parameters.
 {
   basis::Rank truncation_rank;
   int truncation_cutoff;
-  std::string coupling;
+  Coupling coupling;
   std::string relative_filename;
   std::string two_body_filename;
 };
@@ -67,10 +70,10 @@ void ReadParameters(Parameters& parameters)
     ++line_count;
     std::getline(std::cin,line);
     std::istringstream line_stream(line);
-    std::string truncation_rank_code;
+    std::string truncation_rank_code, coupling_code;
     line_stream >> truncation_rank_code
                 >> parameters.truncation_cutoff
-                >> parameters.coupling;
+                >> coupling_code;
     ParsingCheck(line_stream,line_count,line);
 
     // process truncation rank code
@@ -81,6 +84,19 @@ void ReadParameters(Parameters& parameters)
     else
     {
       std::cerr << "ERROR: unrecognized truncation rank code" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
+    // process coupling
+    if (coupling_code == "lsjt")
+      parameters.coupling = Coupling::kLSJT;
+    else if (coupling_code == "jjjt")
+      parameters.coupling = Coupling::kJJJT;
+    else if (coupling_code == "jjjpn")
+      parameters.coupling = Coupling::kJJJPN;
+    else
+    {
+      std::cerr << "ERROR: unrecognized coupling scheme code" << std::endl;
       std::exit(EXIT_FAILURE);
     }
 
@@ -212,8 +228,8 @@ int main(int argc, char **argv)
     );
 
   
-  // AD HOC: following is initial working code for two-body lsjt, to
-  // be refactored and extended to jjjt and jjjpn
+  // AD HOC: following is initial working code, to be refactored and
+  // extended to jjjt and jjjpn
 
   ////////////////////////////////////////////////////////////////
   // augment to relative-cm LSJTN
@@ -272,70 +288,202 @@ int main(int argc, char **argv)
   std::cout << std::endl;
 
   ////////////////////////////////////////////////////////////////
-  // gather to two-body LSJT
+  // BEGIN: LSJT coupling only
   ////////////////////////////////////////////////////////////////
 
-  std::cout << "Gather two-body LSJT..." << std::endl;
-
-  // define space and operator containers
-  basis::TwoBodySpaceLSJT two_body_lsjt_space(parameters.truncation_rank,parameters.truncation_cutoff);
-  std::array<basis::TwoBodySectorsLSJT,3> two_body_lsjt_component_sectors;
-  std::array<basis::MatrixVector,3> two_body_lsjt_component_matrices;
-
-  // construct gathered operator
-  Timer two_body_lsjt_timer;
-  two_body_lsjt_timer.Start();
-  basis::GatherOperatorTwoBodyLSJTNToTwoBodyLSJT(
-      operator_labels,
-      two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_matrices,
-      two_body_lsjt_space,two_body_lsjt_component_sectors,two_body_lsjt_component_matrices
-    );
-  two_body_lsjt_timer.Stop();
-  std::cout << "  Time: " << two_body_lsjt_timer.ElapsedTime() << std::endl;
-
-  ////////////////////////////////////////////////////////////////
-  // write as two-body LSJT
-  ////////////////////////////////////////////////////////////////
-
-  std::cout << "Write two-body LSJTN..." << std::endl;
-  std::string two_body_lsjt_filename(parameters.two_body_filename);
-  std::ostringstream lsjt_sstream;
-  for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+  if (parameters.coupling == Coupling::kLSJT)
     {
-      basis::WriteTwoBodyOperatorComponentLSJT(
-          lsjt_sstream,
-          T0,
-          two_body_lsjt_component_sectors[T0],two_body_lsjt_component_matrices[T0],
-          basis::NormalizationConversion::kNone
+
+      ////////////////////////////////////////////////////////////////
+      // gather to two-body LSJT
+      ////////////////////////////////////////////////////////////////
+
+      std::cout << "Gather two-body LSJT..." << std::endl;
+
+      // define space and operator containers
+      basis::TwoBodySpaceLSJT two_body_lsjt_space(parameters.truncation_rank,parameters.truncation_cutoff);
+      std::array<basis::TwoBodySectorsLSJT,3> two_body_lsjt_component_sectors;
+      std::array<basis::MatrixVector,3> two_body_lsjt_component_matrices;
+
+      // construct gathered operator
+      Timer two_body_lsjt_timer;
+      two_body_lsjt_timer.Start();
+      basis::GatherOperatorTwoBodyLSJTNToTwoBodyLSJT(
+          operator_labels,
+          two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_matrices,
+          two_body_lsjt_space,two_body_lsjt_component_sectors,two_body_lsjt_component_matrices
         );
+      two_body_lsjt_timer.Stop();
+      std::cout << "  Time: " << two_body_lsjt_timer.ElapsedTime() << std::endl;
+
+      ////////////////////////////////////////////////////////////////
+      // write as two-body LSJT
+      ////////////////////////////////////////////////////////////////
+
+      std::cout << "Write two-body LSJT..." << std::endl;
+      std::ostringstream lsjt_sstream;
+      for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+        {
+          basis::WriteTwoBodyOperatorComponentLSJT(
+              lsjt_sstream,
+              T0,
+              two_body_lsjt_component_sectors[T0],two_body_lsjt_component_matrices[T0],
+              basis::NormalizationConversion::kASToNAS
+            );
+        }
+      std::ofstream lsjt_stream(parameters.two_body_filename.c_str());
+      lsjt_stream << lsjt_sstream.str();
+
+      ////////////////////////////////////////////////////////////////
+      // termination
+      ////////////////////////////////////////////////////////////////
+
+      std::exit(0);
     }
-  std::ofstream lsjt_stream(two_body_lsjt_filename.c_str());
-  lsjt_stream << lsjt_sstream.str();
+
+  ////////////////////////////////////////////////////////////////
+  // END: LSJT coupling only
+  ////////////////////////////////////////////////////////////////
 
   ////////////////////////////////////////////////////////////////
   // recouple to two-body JJJTN
   ////////////////////////////////////////////////////////////////
 
-  // std::cout << "Recouple to two-body JJJTN..." << std::endl;
-  // 
-  // // define space and operator containers
-  // basis::TwoBodySpaceJJJTN two_body_jjjtn_space(Nmax);
-  // std::array<basis::TwoBodySectorsJJJTN,3> two_body_jjjtn_component_sectors;
-  // std::array<basis::MatrixVector,3> two_body_jjjtn_component_matrices;
-  // 
-  // // do recoupling
-  // Timer two_body_jjjtn_timer;
-  // two_body_jjjtn_timer.Start();
-  // moshinsky::TransformOperatorTwoBodyLSJTNToTwoBodyJJJTN(
-  //     operator_labels,
-  //     two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_matrices,
-  //     two_body_jjjtn_space,two_body_jjjtn_component_sectors,two_body_jjjtn_component_matrices
-  //   );
-  // two_body_jjjtn_timer.Stop();
-  // std::cout << "  Time: " << two_body_jjjtn_timer.ElapsedTime() << std::endl;
+  std::cout << "Recouple to two-body JJJTN..." << std::endl;
+  
+  // define space and operator containers
+  basis::TwoBodySpaceJJJTN two_body_jjjtn_space(parameters.truncation_rank,parameters.truncation_cutoff);
+  std::array<basis::TwoBodySectorsJJJTN,3> two_body_jjjtn_component_sectors;
+  std::array<basis::MatrixVector,3> two_body_jjjtn_component_matrices;
+  
+  // do recoupling
+  Timer two_body_jjjtn_timer;
+  two_body_jjjtn_timer.Start();
+  moshinsky::TransformOperatorTwoBodyLSJTNToTwoBodyJJJTN(
+      operator_labels,
+      two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_matrices,
+      two_body_jjjtn_space,two_body_jjjtn_component_sectors,two_body_jjjtn_component_matrices
+    );
+  two_body_jjjtn_timer.Stop();
+  std::cout << "  Time: " << two_body_jjjtn_timer.ElapsedTime() << std::endl;
 
+  ////////////////////////////////////////////////////////////////
+  // gather to two-body JJJT
+  ////////////////////////////////////////////////////////////////
 
+  std::cout << "Gather to two-body JJJT..." << std::endl;
 
+  // define space and operator containers
+  basis::TwoBodySpaceJJJT two_body_jjjt_space(parameters.truncation_rank,parameters.truncation_cutoff);
+  std::array<basis::TwoBodySectorsJJJT,3> two_body_jjjt_component_sectors;
+  std::array<basis::MatrixVector,3> two_body_jjjt_component_matrices;
+
+  // construct gathered operator
+  Timer two_body_jjjt_timer;
+  two_body_jjjt_timer.Start();
+  basis::GatherOperatorTwoBodyJJJTNToTwoBodyJJJT(
+      operator_labels,
+      two_body_jjjtn_space,two_body_jjjtn_component_sectors,two_body_jjjtn_component_matrices,
+      two_body_jjjt_space,two_body_jjjt_component_sectors,two_body_jjjt_component_matrices
+    );
+  two_body_jjjt_timer.Stop();
+  std::cout << "Time: " << two_body_jjjt_timer.ElapsedTime() << std::endl;
+
+  ////////////////////////////////////////////////////////////////
+  // BEGIN: JJJT coupling only
+  ////////////////////////////////////////////////////////////////
+
+  if (parameters.coupling == Coupling::kJJJT)
+    {
+
+      ////////////////////////////////////////////////////////////////
+      // write as two-body JJJT
+      ////////////////////////////////////////////////////////////////
+
+      std::cout << "Write two-body JJJT..." << std::endl;
+      std::string two_body_jjjt_filename(parameters.two_body_filename);
+      std::ostringstream jjjt_sstream;
+      for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+        {
+          basis::WriteTwoBodyOperatorComponentJJJT(
+              jjjt_sstream,
+              T0,
+              two_body_jjjt_component_sectors[T0],two_body_jjjt_component_matrices[T0],
+              basis::NormalizationConversion::kASToNAS
+            );
+        }
+      std::ofstream jjjt_stream(parameters.two_body_filename.c_str());
+      jjjt_stream << jjjt_sstream.str();
+
+      ////////////////////////////////////////////////////////////////
+      // termination
+      ////////////////////////////////////////////////////////////////
+
+      std::exit(0);
+    }
+
+  ////////////////////////////////////////////////////////////////
+  // END: JJJT coupling only
+  ////////////////////////////////////////////////////////////////
+
+  ////////////////////////////////////////////////////////////////
+  // BEGIN: JJJPN coupling only
+  ////////////////////////////////////////////////////////////////
+
+  if (parameters.coupling == Coupling::kJJJPN)
+    {
+
+      ////////////////////////////////////////////////////////////////
+      // branch to two-body JJJPN
+      ////////////////////////////////////////////////////////////////
+
+      std::cout << "Branch to two-body JJJPN..." << std::endl;
+
+      // define space and operator containers
+      basis::OrbitalSpacePN orbital_space(N1max);
+      basis::TwoBodySpaceJJJPN two_body_jjjpn_space(
+          orbital_space,
+          basis::WeightMax(parameters.truncation_rank,parameters.truncation_cutoff)
+        );
+      basis::TwoBodySectorsJJJPN two_body_jjjpn_sectors;
+      basis::MatrixVector two_body_jjjpn_matrices;
+
+      // do branching
+      Timer two_body_jjjpn_timer;
+      two_body_jjjpn_timer.Start();
+      moshinsky::TransformOperatorTwoBodyJJJTToTwoBodyJJJPN(
+          operator_labels,
+          two_body_jjjt_space,two_body_jjjt_component_sectors,two_body_jjjt_component_matrices,
+          two_body_jjjpn_space,two_body_jjjpn_sectors,two_body_jjjpn_matrices
+        );
+      two_body_jjjpn_timer.Stop();
+      std::cout << "Time: " << two_body_jjjpn_timer.ElapsedTime() << std::endl;
+
+      ////////////////////////////////////////////////////////////////
+      // write as two-body JJJPN
+      ////////////////////////////////////////////////////////////////
+
+      // output as NAS and with 1-based indexing for comparison with MFDn
+      // h2 format
+
+      std::ostringstream jjjpn_sstream;
+      basis::WriteTwoBodyOperatorJJJPN(
+          jjjpn_sstream,
+          two_body_jjjpn_sectors,two_body_jjjpn_matrices,
+          basis::NormalizationConversion::kASToNAS,
+          1
+        );
+      std::ofstream jjjpn_stream(parameters.two_body_filename.c_str());
+      jjjpn_stream << jjjpn_sstream.str();
+
+      ////////////////////////////////////////////////////////////////
+      // termination
+      ////////////////////////////////////////////////////////////////
+
+      std::exit(0);
+    }
+
+  // We should never get here...
 
   // termination
   return 0;

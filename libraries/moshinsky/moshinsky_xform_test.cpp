@@ -401,7 +401,7 @@ void test_transform_simple(
   basis::TwoBodySectorsJJJPN two_body_jjjpn_sectors;
   basis::MatrixVector two_body_jjjpn_matrices;
 
-  // do recoupling
+  // do branching
   Timer two_body_jjjpn_timer;
   two_body_jjjpn_timer.Start();
   moshinsky::TransformOperatorTwoBodyJJJTToTwoBodyJJJPN(
@@ -584,20 +584,20 @@ void test_transform_timing(
 int main(int argc, char **argv)
 {
 
-  test_relative_cm();
-  test_moshinsky_matrix();
-  test_transform_simple(
-      "test/moshinsky_xform_test_two_body_lsjt_identity_AS.dat",
-      "test/moshinsky_xform_test_two_body_jjjt_identity_AS.dat",
-      "test/moshinsky_xform_test_two_body_jjjpn_identity_NAS.dat",
-      'I'
-    );
+  // test_relative_cm();
+  // test_moshinsky_matrix();
   // test_transform_simple(
-  //     "test/moshinsky_xform_test_two_body_lsjt_kinetic_AS.dat",
-  //     "test/moshinsky_xform_test_two_body_jjjt_kinetic_AS.dat",
-  //     "test/moshinsky_xform_test_two_body_jjjpn_kinetic_NAS.dat",
-  //     'K'
+  //     "test/moshinsky_xform_test_two_body_lsjt_identity_AS.dat",
+  //     "test/moshinsky_xform_test_two_body_jjjt_identity_AS.dat",
+  //     "test/moshinsky_xform_test_two_body_jjjpn_identity_NAS.dat",
+  //     'I'
   //   );
+  test_transform_simple(
+      "test/moshinsky_xform_test_two_body_lsjt_kinetic_AS.dat",
+      "test/moshinsky_xform_test_two_body_jjjt_kinetic_AS.dat",
+      "test/moshinsky_xform_test_two_body_jjjpn_kinetic_NAS.dat",
+      'K'
+    );
   // test_transform_timing();
 
   // termination
