@@ -321,19 +321,49 @@ namespace moshinsky {
   // branching to jjJpn scheme
   ////////////////////////////////////////////////////////////////
 
+  Eigen::MatrixXd 
+    TwoBodyMatrixJJJPN(
+        const basis::OperatorLabelsJT& operator_labels,
+        const basis::TwoBodySpaceJJJT& two_body_jjjt_space,
+        const std::array<basis::TwoBodySectorsJJJT,3>& two_body_jjjt_component_sectors,
+        const std::array<basis::MatrixVector,3>& two_body_jjjt_component_matrices,
+        const basis::TwoBodySectorsJJJPN::SectorType& two_body_jjjpn_sector
+      );
+  // Obtain two-body JJJPN sector by isospin branching, from isospin
+  // component JJJT sectors.
+  //
+  // We need all source isospin components, since we are performing a sum over
+  // source isospin components.
+  //
+  // The output matrix element are antisymmetrized (AS) matrix elements,
+  // rather than normalized antisymmetrized (NAS) matrix elements.
+  //
+  // Arguments:
+  //   operator_labels (basis::OperatorLabelsJT) : tensorial properties of operator
+  //   two_body_jjjt_space (...) : source space
+  //   two_body_jjjt_component_sectors (...) :
+  //     all source sectors, for all isospin components
+  //   two_body_jjjt_component_matrices (...) :
+  //     all source matrices, for all isospin components
+  //   two_body_jjjpn_sector (basis::TwoBodySectorJJJPN::SectorType) :
+  //     target sector information
+
   void TransformOperatorTwoBodyJJJTToTwoBodyJJJPN(
-      //TODO
       const basis::OperatorLabelsJT& operator_labels,
-      const basis::TwoBodySpaceLSJTN& two_body_lsjtn_space,
-      const std::array<basis::TwoBodySectorsLSJTN,3>& two_body_lsjtn_component_sectors,
-      const std::array<basis::MatrixVector,3>& two_body_lsjtn_component_matrices,
-      const basis::TwoBodySpaceJJJTN& two_body_jjjtn_space,
-      std::array<basis::TwoBodySectorsJJJTN,3>& two_body_jjjtn_component_sectors,
-      std::array<basis::MatrixVector,3>& two_body_jjjtn_component_matrices
+      const basis::TwoBodySpaceJJJT& two_body_jjjt_space,
+      const std::array<basis::TwoBodySectorsJJJT,3>& two_body_jjjt_component_sectors,
+      const std::array<basis::MatrixVector,3>& two_body_jjjt_component_matrices,
+      const basis::TwoBodySpaceJJJPN& two_body_jjjpn_space,
+      basis::TwoBodySectorsJJJPN& two_body_jjjpn_sectors,
+      basis::MatrixVector& two_body_jjjpn_matrices
     );
-  // Recouple operator to two-body jjJT scheme representation (in
-  // TwoBodyJJJTN basis), from two-body LSJT representation (in
-  // TwoBodyLSJTN basis).
+  // Branch operator to two-body jjJpn scheme representation (in
+  // TwoBodyJJJPN basis), from two-body JJJT representation (in
+  // TwoBodyJJJT basis).
+  //
+  // This transformation could have been defined directly from the
+  // JJJTN representation, but it is conceptually simpler to transform
+  // between more closely matched source and target sectors.
   //
   // See notes on "internal representation of an operator in JT
   // scheme" in lsjt_operator.h for the general principles of how the
@@ -341,12 +371,12 @@ namespace moshinsky {
   //
   // Arguments:
   //   operator_labels (basis::OperatorLabelsJT) : tensorial properties of operator
-  //   two_body_lsjtn_space (...) : source space
-  //   two_body_lsjtn_component_sectors (...) : source sectors
-  //   two_body_lsjtn_component_matrices (...) : source matrices
-  //   two_body_jjjtn_space (...) : target space
-  //   two_body_jjjtn_component_sectors (..., output) : target sectors
-  //   two_body_jjjtn_component_matrices (..., output) : target matrices
+  //   two_body_jjjt_space (...) : source space
+  //   two_body_jjjt_component_sectors (...) : source sectors
+  //   two_body_jjjt_component_matrices (...) : source matrices
+  //   two_body_jjjpn_space (...) : target space
+  //   two_body_jjjpn_sectors (..., output) : target sectors
+  //   two_body_jjjpn_matrices (..., output) : target matrices
 
 
   ////////////////////////////////////////////////////////////////

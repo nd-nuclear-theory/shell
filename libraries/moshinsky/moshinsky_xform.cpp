@@ -630,6 +630,245 @@ namespace moshinsky {
 
   }
 
+  ////////////////////////////////////////////////////////////////
+  // branching to jjJpn scheme
+  ////////////////////////////////////////////////////////////////
+
+  Eigen::MatrixXd 
+    TwoBodyMatrixJJJPN(
+        const basis::OperatorLabelsJT& operator_labels,
+        const basis::TwoBodySpaceJJJT& two_body_jjjt_space,
+        const std::array<basis::TwoBodySectorsJJJT,3>& two_body_jjjt_component_sectors,
+        const std::array<basis::MatrixVector,3>& two_body_jjjt_component_matrices,
+        const basis::TwoBodySectorsJJJPN::SectorType& two_body_jjjpn_sector
+      )
+  {
+
+    // isospin Clebsch-Gordan coefficients
+    //
+    // as arrays over T0
+    static const double kPPCoefficients[] = {+1,+sqrt(1/2.),+sqrt(1/10.)};
+    static const double kNNCoefficients[] = {+1,-sqrt(1/2.),+sqrt(1/10.)};
+    static const double kPNCoefficients11[] = {+1,0,-sqrt(2./5.)};
+    static const double kPNCoefficient10 = 1.;
+    static const double kPNCoefficient01 = -sqrt(1/3.);
+    static const double kPNCoefficient00 = 1.;
+
+    // set up matrix to hold results
+    Eigen::MatrixXd matrix = Eigen::MatrixXd::Zero(
+        two_body_jjjpn_sector.bra_subspace().size(),
+        two_body_jjjpn_sector.ket_subspace().size()
+      );
+
+    // identify sector type
+    basis::TwoBodySpeciesPN two_body_species = two_body_jjjpn_sector.bra_subspace().two_body_species();
+
+    // TEMPORARY LIMITATION for initial implementation
+    assert(operator_labels.T0_max==0);
+
+    // scan source sectors
+    for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+      // for each isospin component
+      {
+        for (int Tp=0; Tp<=1; ++Tp)
+          // for bra isospin
+          for (int T=0; T<=1; ++T)
+            // for ket isospin
+            {
+              // impose isospin triangularity
+              if (!am::AllowedTriangle(Tp,T0,T))
+                continue;
+
+              // impose Tz sufficiency
+              if (!(
+                      (two_body_species==basis::TwoBodySpeciesPN::kPN)
+                      || ((Tp==1)&&(T==1))
+                    ))
+                continue;
+
+              // look up source sector
+              int two_body_jjjt_subspace_index_bra = two_body_jjjt_space.LookUpSubspaceIndex(
+                  basis::TwoBodySubspaceJJJTLabels(
+                      two_body_jjjpn_sector.bra_subspace().J(),
+                      Tp,
+                      two_body_jjjpn_sector.bra_subspace().g()
+                    )
+                );
+              const basis::TwoBodySubspaceJJJT& two_body_jjjt_subspace_bra
+                = two_body_jjjt_space.GetSubspace(two_body_jjjt_subspace_index_bra);
+              int two_body_jjjt_subspace_index_ket = two_body_jjjt_space.LookUpSubspaceIndex(
+                  basis::TwoBodySubspaceJJJTLabels(
+                      two_body_jjjpn_sector.ket_subspace().J(),
+                      T,
+                      two_body_jjjpn_sector.ket_subspace().g()
+                    )
+                );
+              const basis::TwoBodySubspaceJJJT& two_body_jjjt_subspace_ket
+                = two_body_jjjt_space.GetSubspace(two_body_jjjt_subspace_index_ket);
+
+              // TEMPORARY limitation
+              //
+              // With isoscalar operator, there are no <T=0|...|T=1>
+              // cross sectors.  We can therefore assume canonicality
+              // of source matrix elements, since (J,g,s) canonicality
+              // (fixed s between bra and ket) ensures (J,T,g)
+              // canonicality (fixed T between bra and ket).
+              assert(two_body_jjjt_subspace_index_bra<=two_body_jjjt_subspace_index_ket);
+
+              int two_body_jjjt_sector_index = two_body_jjjt_component_sectors[T0].LookUpSectorIndex(
+                  two_body_jjjt_subspace_index_bra,
+                  two_body_jjjt_subspace_index_ket
+                );
+              const basis::TwoBodySectorsJJJT::SectorType& two_body_jjjt_sector
+                = two_body_jjjt_component_sectors[T0].GetSector(two_body_jjjt_sector_index);
+              const Eigen::MatrixXd& two_body_jjjt_matrix
+                = two_body_jjjt_component_matrices[T0][two_body_jjjt_sector_index];
+
+              // identify coefficient to apply to this source sector
+              double coefficient;
+              if (two_body_species==basis::TwoBodySpeciesPN::kPP)
+                {
+                  coefficient = kPPCoefficients[T0];
+                }
+              else if (two_body_species==basis::TwoBodySpeciesPN::kPP)
+                {
+                  coefficient = kNNCoefficients[T0];
+                }
+              else if (two_body_species==basis::TwoBodySpeciesPN::kPN)
+                {
+                  if ((Tp==1)&&(T==1))
+                    coefficient = kPNCoefficients11[T0];
+                  else if ((Tp==0)&&(T==1))
+                    coefficient = kPNCoefficient01;
+                  else if ((Tp==1)&&(T==0))
+                    coefficient = kPNCoefficient10;
+                  else if ((Tp==0)&&(T==0))
+                    coefficient = kPNCoefficient00;
+                }
+
+
+              // populate matrix elements
+              for (int bra_index = 0; bra_index < two_body_jjjpn_sector.bra_subspace().size(); ++bra_index)
+                for (int ket_index = 0; ket_index < two_body_jjjpn_sector.ket_subspace().size(); ++ket_index)
+                  // for each target matrix element
+                  {
+                
+                    // ensure canonical matrix element if diagonal sector
+                    if (two_body_jjjpn_sector.IsDiagonal())
+                      if (!(bra_index<=ket_index))
+                        continue;
+
+                    // retrieve target states
+                    basis::TwoBodyStateJJJPN two_body_jjjpn_bra(two_body_jjjpn_sector.bra_subspace(),bra_index);
+                    basis::TwoBodyStateJJJPN two_body_jjjpn_ket(two_body_jjjpn_sector.ket_subspace(),ket_index);
+                
+                    // ensure corresponding source states are allowed by antisymmetry
+                    //
+                    // That is, in a T=1 subspace, identical orbitals
+                    // imply even J.
+                    if (Tp==1)
+                      if (
+                          (two_body_jjjpn_bra.index1()==two_body_jjjpn_bra.index2())
+                          && !(two_body_jjjt_subspace_bra.J()%2==0)
+                        )
+                        continue;
+                    if (T==1)
+                      if (
+                          (two_body_jjjpn_ket.index1()==two_body_jjjpn_ket.index2())
+                          && !(two_body_jjjt_subspace_ket.J()%2==0)
+                        )
+                        continue;
+
+                    // extract source states
+                    std::cout << "testing bra" << std::endl;
+                    std::cout
+                      << " size " << two_body_jjjpn_bra.orbital_subspace1().size()
+                      << " index " << two_body_jjjpn_bra.index1()
+                      << " size " << two_body_jjjpn_bra.orbital_subspace2().size()
+                      << " index " << two_body_jjjpn_bra.index2()
+                      << std::endl;
+                    
+                    two_body_jjjpn_bra.GetOrbital1();
+                    two_body_jjjpn_bra.GetOrbital2();
+
+                    std::cout << "testing ket" << std::endl;
+                    two_body_jjjpn_ket.GetOrbital1();
+                    two_body_jjjpn_ket.GetOrbital2();
+                    std::cout << "done" << std::endl;
+
+                    basis::TwoBodyStateJJJTLabels two_body_jjjt_state_labels_bra(
+                        two_body_jjjpn_bra.GetOrbital1().N(),
+                        two_body_jjjpn_bra.GetOrbital1().j(),
+                        two_body_jjjpn_bra.GetOrbital2().N(),
+                        two_body_jjjpn_bra.GetOrbital2().j()
+                      );
+                    int two_body_jjjt_state_index_bra
+                      = two_body_jjjt_subspace_bra.LookUpStateIndex(
+                          two_body_jjjt_state_labels_bra
+                        );
+                    basis::TwoBodyStateJJJTLabels two_body_jjjt_state_labels_ket(
+                        two_body_jjjpn_ket.GetOrbital1().N(),
+                        two_body_jjjpn_ket.GetOrbital1().j(),
+                        two_body_jjjpn_ket.GetOrbital2().N(),
+                        two_body_jjjpn_ket.GetOrbital2().j()
+                      );
+                    int two_body_jjjt_state_index_ket
+                      = two_body_jjjt_subspace_ket.LookUpStateIndex(
+                          two_body_jjjt_state_labels_ket
+                        );
+
+                    // look up source matrix element
+                    double two_body_jjjt_matrix_element = two_body_jjjt_matrix(
+                        two_body_jjjt_state_index_bra,two_body_jjjt_state_index_ket
+                      );
+
+                    // incorporate contribution
+                    matrix(bra_index,ket_index) += coefficient * two_body_jjjt_matrix_element;
+
+                  }
+            }
+      }
+
+    // return target matrix
+    return matrix;
+
+  }
+
+  void TransformOperatorTwoBodyJJJTToTwoBodyJJJPN(
+      const basis::OperatorLabelsJT& operator_labels,
+      const basis::TwoBodySpaceJJJT& two_body_jjjt_space,
+      const std::array<basis::TwoBodySectorsJJJT,3>& two_body_jjjt_component_sectors,
+      const std::array<basis::MatrixVector,3>& two_body_jjjt_component_matrices,
+      const basis::TwoBodySpaceJJJPN& two_body_jjjpn_space,
+      basis::TwoBodySectorsJJJPN& two_body_jjjpn_sectors,
+      basis::MatrixVector& two_body_jjjpn_matrices
+    )
+  {
+    // enumerate target sectors
+    two_body_jjjpn_sectors
+      = basis::TwoBodySectorsJJJPN(two_body_jjjpn_space,operator_labels.J0,operator_labels.g0);
+
+    // populate matrices
+    two_body_jjjpn_matrices.resize(two_body_jjjpn_sectors.size());
+    for (int sector_index=0; sector_index<two_body_jjjpn_sectors.size(); ++sector_index)
+      {
+        // make reference to target sector
+        const basis::TwoBodySectorsJJJPN::SectorType& two_body_jjjpn_sector
+          = two_body_jjjpn_sectors.GetSector(sector_index);
+
+        // transform
+        Eigen::MatrixXd& matrix = two_body_jjjpn_matrices[sector_index];
+        matrix = TwoBodyMatrixJJJPN(
+            operator_labels,
+            two_body_jjjt_space,
+            two_body_jjjt_component_sectors,
+            two_body_jjjt_component_matrices,
+            two_body_jjjpn_sector
+          );
+      }
+
+  }
+
 
 
   ////////////////////////////////////////////////////////////////

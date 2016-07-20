@@ -10,6 +10,7 @@
 #include <iomanip>
 
 #include "basis/jjjt_operator.h"
+#include "basis/jjjpnorb_operator.h"
 
 #include "mcpp/profiling.h"
 #include "moshinsky/construct_relative.h"
@@ -141,8 +142,9 @@ void test_moshinsky_matrix()
 
 ////////////////////////////////////////////////////////////////
 void test_transform_simple(
-    std::string lsjt_filename,
-    std::string jjjt_filename,
+    std::string two_body_lsjt_filename,
+    std::string two_body_jjjt_filename,
+    std::string two_body_jjjpn_filename,
     char operator_code
   )
 {
@@ -227,8 +229,10 @@ void test_transform_simple(
   two_body_lsjtn_timer.Stop();
   std::cout << "Time: " << two_body_lsjtn_timer.ElapsedTime() << std::endl;
 
-  // write sector matrices for inspection
-  //
+  ////////////////////////////////////////////////////////////////
+  // write two-body LSJTN sector matrices for inspection
+  ////////////////////////////////////////////////////////////////
+
   // Discussion: The T0=0 diagonal sectors should be identity-like,
   // but with 2's on the diagonal if the state is a like-orbital
   // state.  To aid in checking this, we display the subspace contents
@@ -280,7 +284,6 @@ void test_transform_simple(
   // write as two-body LSJT
   ////////////////////////////////////////////////////////////////
 
-  std::string two_body_lsjt_filename(lsjt_filename);
   std::ostringstream lsjt_sstream;
   for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
     {
@@ -316,8 +319,10 @@ void test_transform_simple(
   two_body_jjjtn_timer.Stop();
   std::cout << "Time: " << two_body_jjjtn_timer.ElapsedTime() << std::endl;
 
-  // write sector matrices for inspection
-  //
+  ////////////////////////////////////////////////////////////////
+  // write two-body JJJTN sector matrices for inspection
+  ////////////////////////////////////////////////////////////////
+
   // Discussion: The T0=0 diagonal sectors should be identity-like,
   // but with 2's on the diagonal if the state is a like-orbital
   // state.  To aid in checking this, we display the subspace contents
@@ -368,7 +373,6 @@ void test_transform_simple(
   // write as two-body JJJT
   ////////////////////////////////////////////////////////////////
 
-  std::string two_body_jjjt_filename(jjjt_filename);
   std::ostringstream jjjt_sstream;
   for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
     {
@@ -382,6 +386,49 @@ void test_transform_simple(
   std::ofstream jjjt_stream(two_body_jjjt_filename.c_str());
   jjjt_stream << jjjt_sstream.str();
 
+  ////////////////////////////////////////////////////////////////
+  // branch to two-body JJJpn
+  ////////////////////////////////////////////////////////////////
+
+  std::cout << "  two-body JJJPN" << std::endl;
+
+  // define space and operator containers
+  basis::OrbitalSpacePN orbital_space(Nmax);
+  basis::TwoBodySpaceJJJPN two_body_jjjpn_space(
+      orbital_space,
+      basis::WeightMax(basis::Rank::kTwoBody,Nmax)
+    );
+  basis::TwoBodySectorsJJJPN two_body_jjjpn_sectors;
+  basis::MatrixVector two_body_jjjpn_matrices;
+
+  // do recoupling
+  Timer two_body_jjjpn_timer;
+  two_body_jjjpn_timer.Start();
+  moshinsky::TransformOperatorTwoBodyJJJTToTwoBodyJJJPN(
+      operator_labels,
+      two_body_jjjt_space,two_body_jjjt_component_sectors,two_body_jjjt_component_matrices,
+      two_body_jjjpn_space,two_body_jjjpn_sectors,two_body_jjjpn_matrices
+    );
+  two_body_jjjpn_timer.Stop();
+  std::cout << "Time: " << two_body_jjjpn_timer.ElapsedTime() << std::endl;
+
+  ////////////////////////////////////////////////////////////////
+  // write as two-body JJJPN
+  ////////////////////////////////////////////////////////////////
+
+  // output as NAS and with 1-based indexing for comparison with MFDn
+  // h2 format
+
+  std::ostringstream jjjpn_sstream;
+  basis::WriteTwoBodyOperatorJJJPN(
+          jjjpn_sstream,
+          two_body_jjjpn_sectors,two_body_jjjpn_matrices,
+          basis::NormalizationConversion::kASToNAS,
+          1
+        );
+  std::ofstream jjjpn_stream(two_body_jjjpn_filename.c_str());
+  jjjpn_stream << jjjpn_sstream.str();
+  
 }
 
 ////////////////////////////////////////////////////////////////
@@ -537,19 +584,21 @@ void test_transform_timing(
 int main(int argc, char **argv)
 {
 
-  // test_relative_cm();
-  // test_moshinsky_matrix();
-  // test_transform_simple(
-  //     "test/moshinsky_xform_test_two_body_lsjt_identity_AS.dat",
-  //     "test/moshinsky_xform_test_two_body_jjjt_identity_AS.dat",
-  //     'I'
-  //   );
+  test_relative_cm();
+  test_moshinsky_matrix();
+  test_transform_simple(
+      "test/moshinsky_xform_test_two_body_lsjt_identity_AS.dat",
+      "test/moshinsky_xform_test_two_body_jjjt_identity_AS.dat",
+      "test/moshinsky_xform_test_two_body_jjjpn_identity_NAS.dat",
+      'I'
+    );
   // test_transform_simple(
   //     "test/moshinsky_xform_test_two_body_lsjt_kinetic_AS.dat",
   //     "test/moshinsky_xform_test_two_body_jjjt_kinetic_AS.dat",
+  //     "test/moshinsky_xform_test_two_body_jjjpn_kinetic_NAS.dat",
   //     'K'
   //   );
-  test_transform_timing();
+  // test_transform_timing();
 
   // termination
   return 0;
