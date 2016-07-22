@@ -586,12 +586,12 @@ int main(int argc, char **argv)
 
   // test_relative_cm();
   // test_moshinsky_matrix();
-  // test_transform_simple(
-  //     "test/moshinsky_xform_test_two_body_lsjt_identity_AS.dat",
-  //     "test/moshinsky_xform_test_two_body_jjjt_identity_AS.dat",
-  //     "test/moshinsky_xform_test_two_body_jjjpn_identity_NAS.dat",
-  //     'I'
-  //   );
+  test_transform_simple(
+      "test/moshinsky_xform_test_two_body_lsjt_identity_AS.dat",
+      "test/moshinsky_xform_test_two_body_jjjt_identity_AS.dat",
+      "test/moshinsky_xform_test_two_body_jjjpn_identity_NAS.dat",
+      'I'
+    );
   test_transform_simple(
       "test/moshinsky_xform_test_two_body_lsjt_kinetic_AS.dat",
       "test/moshinsky_xform_test_two_body_jjjt_kinetic_AS.dat",

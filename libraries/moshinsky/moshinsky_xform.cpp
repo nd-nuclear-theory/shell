@@ -145,48 +145,56 @@ namespace moshinsky {
 
                 // look up relative subspace indices
                 int grp = lrp%2;
-                int relative_bra_subspace_index = relative_space.LookUpSubspaceIndex(
+                int relative_subspace_index_bra = relative_space.LookUpSubspaceIndex(
                     basis::RelativeSubspaceLSJT::SubspaceLabelsType(lrp,Sp,Jrp,Tp,grp)
                   );
                 int gr = lr%2;
-                int relative_ket_subspace_index = relative_space.LookUpSubspaceIndex(
+                int relative_subspace_index_ket = relative_space.LookUpSubspaceIndex(
                     basis::RelativeSubspaceLSJT::SubspaceLabelsType(lr,S,Jr,T,gr)
                   );
 
                 // look up relative matrix element indices
                 const basis::RelativeSubspaceLSJT& relative_bra_subspace = relative_space.GetSubspace(
-                    relative_bra_subspace_index
+                    relative_subspace_index_bra
                   );
                 const basis::RelativeSubspaceLSJT& relative_ket_subspace = relative_space.GetSubspace(
-                    relative_ket_subspace_index
+                    relative_subspace_index_ket
                   );
-                int relative_bra_index = relative_bra_subspace.LookUpStateIndex(
+                int relative_state_index_bra = relative_bra_subspace.LookUpStateIndex(
                     basis::RelativeStateLSJT::StateLabelsType(Nrp)
                   );
-                int relative_ket_index = relative_ket_subspace.LookUpStateIndex(
+                int relative_state_index_ket = relative_ket_subspace.LookUpStateIndex(
                     basis::RelativeStateLSJT::StateLabelsType(Nr)
                   );
                 // std::cout << relative_bra_subspace.LabelStr() << relative_ket_subspace.LabelStr() << std::endl;
 
 
                 // canonicalize indices for matrix element lookup
+                int canonical_relative_subspace_index_bra, canonical_relative_subspace_index_ket;
+                int canonical_relative_state_index_bra, canonical_relative_state_index_ket;
                 double canonicalization_factor;
-                basis::CanonicalizeIndicesRelativeLSJT(
-                    relative_space,
-                    relative_bra_subspace_index, relative_ket_subspace_index,
-                    relative_bra_index, relative_ket_index,
-                    canonicalization_factor,
-                    J0, T0, g0,
-                    symmetry_phase_mode
-                  );
+                std::tie(
+                    canonical_relative_subspace_index_bra, canonical_relative_subspace_index_ket,
+                    canonical_relative_state_index_bra, canonical_relative_state_index_ket,
+                    canonicalization_factor
+                  )
+                  = basis::CanonicalizeIndicesLSJT(
+                      relative_space,
+                      J0, T0, g0,
+                      symmetry_phase_mode,
+                      relative_subspace_index_bra, relative_subspace_index_ket,
+                      relative_state_index_bra, relative_state_index_ket
+                    );
 
                 // look up matrix element
                 int relative_sector_index = relative_sectors.LookUpSectorIndex(
-                    relative_bra_subspace_index,
-                    relative_ket_subspace_index
+                    canonical_relative_subspace_index_bra,
+                    canonical_relative_subspace_index_ket
                   );
                 double relative_matrix_element = canonicalization_factor
-                  * relative_matrices[relative_sector_index](relative_bra_index,relative_ket_index);
+                  * relative_matrices[relative_sector_index](
+                      canonical_relative_state_index_bra, canonical_relative_state_index_ket
+                    );
               
                 // accumulate contribution to relative-cm matrix element
                 double contribution 
@@ -644,9 +652,9 @@ namespace moshinsky {
       )
   {
 
-    // isospin Clebsch-Gordan coefficients
+    // define isospin Clebsch-Gordan coefficients
     //
-    // as arrays over T0
+    // as static arrays over T0
     static const double kPPCoefficients[] = {+1,+sqrt(1/2.),+sqrt(1/10.)};
     static const double kNNCoefficients[] = {+1,-sqrt(1/2.),+sqrt(1/10.)};
     static const double kPNCoefficients11[] = {+1,0,-sqrt(2./5.)};
@@ -660,10 +668,13 @@ namespace moshinsky {
         two_body_jjjpn_sector.ket_subspace().size()
       );
 
-    // identify sector type
+    // extract sector labels
     basis::TwoBodySpeciesPN two_body_species = two_body_jjjpn_sector.bra_subspace().two_body_species();
+    int Jp = two_body_jjjpn_sector.bra_subspace().J();
+    int J = two_body_jjjpn_sector.ket_subspace().J();
 
-    // TEMPORARY LIMITATION for initial implementation
+    // limit to isoscalar operator -- TEMPORARY LIMITATION for initial
+    // implementation
     assert(operator_labels.T0_max==0);
 
     // scan source sectors
@@ -679,14 +690,14 @@ namespace moshinsky {
               if (!am::AllowedTriangle(Tp,T0,T))
                 continue;
 
-              // impose Tz sufficiency
+              // impose Tz sufficiency for current sector two-body species
               if (!(
                       (two_body_species==basis::TwoBodySpeciesPN::kPN)
                       || ((Tp==1)&&(T==1))
                     ))
                 continue;
 
-              // look up source sector
+              // look up source subspaces
               int two_body_jjjt_subspace_index_bra = two_body_jjjt_space.LookUpSubspaceIndex(
                   basis::TwoBodySubspaceJJJTLabels(
                       two_body_jjjpn_sector.bra_subspace().J(),
@@ -706,25 +717,64 @@ namespace moshinsky {
               const basis::TwoBodySubspaceJJJT& two_body_jjjt_subspace_ket
                 = two_body_jjjt_space.GetSubspace(two_body_jjjt_subspace_index_ket);
 
-              // TEMPORARY limitation
+              // std::cout
+              //   << " JJJT bra subspace " << two_body_jjjt_subspace_bra.LabelStr()
+              //   << " JJJT ket subspace " << two_body_jjjt_subspace_ket.LabelStr()
+              //   << std::endl;
+              // std::cout
+              //   << " JJJT bra subspace contents " << std::endl
+              //   << two_body_jjjt_subspace_bra.DebugStr()
+              //   << " JJJT ket subspace contents " << std::endl
+              //   << two_body_jjjt_subspace_ket.DebugStr();
+
+              // look up *canonicalized* source sector
               //
-              // With isoscalar operator, there are no <T=0|...|T=1>
-              // cross sectors.  We can therefore assume canonicality
-              // of source matrix elements, since (J,g,s) canonicality
-              // (fixed s between bra and ket) ensures (J,T,g)
-              // canonicality (fixed T between bra and ket).
-              assert(two_body_jjjt_subspace_index_bra<=two_body_jjjt_subspace_index_ket);
+              // Note on canonicalization:
+              //
+              // With an isoscalar operator, there are no
+              // <T=0|...|T=1> cross sectors.  When bra and ket have
+              // the same T, (J,g,s) canonicality of subspaces (fixed
+              // s between bra and ket) ensures (J,T,g) canonicality
+              // of subspaces (fixed T between bra and ket).  We can
+              // therefore assume canonicality of source bra and ket
+              // subspaces.
+              //
+              // However, when <T=0|...|T=1> sectors are present, we
+              // must canonicalize the sector bra and ket subspaces
+              // before looking up the sector.
+              //
+              // We can do this "early", outside the loop over matrix
+              // elements, for efficiency, or "late", inside the usual
+              // full canonicalization of the matrix element.
+              //
+              // In either case, we will have to go back and
+              // canonicalize the matrix element indices as well,
+              // since two-body state indices in the jjJpn subspaces
+              // do not map trivially to indices in the jjJT
+              // subspaces.  In fact, subspace dimensions can be quite
+              // different, and two-body state labels are not in 1-1
+              // correspondence between jjJT and jjJpn subspaces.
+              //
+              // Notably, orbitals (i1,i2) can appear in the order
+              // i1>i2 in the pn subspaces of the jjJpn scheme but
+              // only in the order i1<i2 in the jjJT subspaces.
+              // (Slight differences in the sets of state labels also
+              // arise due to the antisymmetry constraint on J and T
+              // for like-orbital states.)  This ordering constraint
+              // (and swap) must be taken into account in the state
+              // index lookup in the pn sectors.
 
               int two_body_jjjt_sector_index = two_body_jjjt_component_sectors[T0].LookUpSectorIndex(
-                  two_body_jjjt_subspace_index_bra,
-                  two_body_jjjt_subspace_index_ket
+                  std::min(two_body_jjjt_subspace_index_bra,two_body_jjjt_subspace_index_ket),
+                  std::max(two_body_jjjt_subspace_index_bra,two_body_jjjt_subspace_index_ket)
                 );
               const basis::TwoBodySectorsJJJT::SectorType& two_body_jjjt_sector
                 = two_body_jjjt_component_sectors[T0].GetSector(two_body_jjjt_sector_index);
               const Eigen::MatrixXd& two_body_jjjt_matrix
                 = two_body_jjjt_component_matrices[T0][two_body_jjjt_sector_index];
 
-              // identify coefficient to apply to this source sector
+              // identify isospin Clebsch-Gordan coefficient to apply
+              // to this source sector
               double coefficient;
               if (two_body_species==basis::TwoBodySpeciesPN::kPP)
                 {
@@ -747,13 +797,14 @@ namespace moshinsky {
                 }
 
 
-              // populate matrix elements
+              // accumulate contributions to target sector matrix elements
               for (int bra_index = 0; bra_index < two_body_jjjpn_sector.bra_subspace().size(); ++bra_index)
                 for (int ket_index = 0; ket_index < two_body_jjjpn_sector.ket_subspace().size(); ++ket_index)
                   // for each target matrix element
                   {
                 
-                    // ensure canonical matrix element if diagonal sector
+                    // ensure target matrix element is canonical, if
+                    // diagonal sector
                     if (two_body_jjjpn_sector.IsDiagonal())
                       if (!(bra_index<=ket_index))
                         continue;
@@ -761,65 +812,128 @@ namespace moshinsky {
                     // retrieve target states
                     basis::TwoBodyStateJJJPN two_body_jjjpn_bra(two_body_jjjpn_sector.bra_subspace(),bra_index);
                     basis::TwoBodyStateJJJPN two_body_jjjpn_ket(two_body_jjjpn_sector.ket_subspace(),ket_index);
+
+                    // std::cout << " JJJPN target states "
+                    //           << two_body_jjjpn_bra.LabelStr() 
+                    //           << two_body_jjjpn_ket.LabelStr() << std::endl;
                 
-                    // ensure corresponding source states are allowed by antisymmetry
+                    // verify source states allowed by antisymmetry
                     //
-                    // That is, in a T=1 subspace, identical orbitals
-                    // imply even J.
-                    if (Tp==1)
-                      if (
-                          (two_body_jjjpn_bra.index1()==two_body_jjjpn_bra.index2())
-                          && !(two_body_jjjt_subspace_bra.J()%2==0)
-                        )
+                    // Recall jjJT antisymmetry constraint:
+                    //   J+T~1 if (N1,j1)==(N2,j2)   
+                    if (two_body_jjjpn_bra.index1()==two_body_jjjpn_bra.index2())
+                      if (!((Jp+Tp)%2==1))
                         continue;
-                    if (T==1)
-                      if (
-                          (two_body_jjjpn_ket.index1()==two_body_jjjpn_ket.index2())
-                          && !(two_body_jjjt_subspace_ket.J()%2==0)
-                        )
+                    if (two_body_jjjpn_ket.index1()==two_body_jjjpn_ket.index2())
+                      if (!((J+T)%2==1))
                         continue;
 
-                    // extract source states
-                    std::cout << "testing bra" << std::endl;
-                    std::cout
-                      << " size " << two_body_jjjpn_bra.orbital_subspace1().size()
-                      << " index " << two_body_jjjpn_bra.index1()
-                      << " size " << two_body_jjjpn_bra.orbital_subspace2().size()
-                      << " index " << two_body_jjjpn_bra.index2()
-                      << std::endl;
-                    
-                    two_body_jjjpn_bra.GetOrbital1();
-                    two_body_jjjpn_bra.GetOrbital2();
+                    // retrieve source state indices
+                    int N1_bra = two_body_jjjpn_bra.GetOrbital1().N();
+                    int N2_bra = two_body_jjjpn_bra.GetOrbital2().N();
+                    int N1_ket = two_body_jjjpn_ket.GetOrbital1().N();
+                    int N2_ket = two_body_jjjpn_ket.GetOrbital2().N();
+                    HalfInt j1_bra = two_body_jjjpn_bra.GetOrbital1().j();
+                    HalfInt j2_bra = two_body_jjjpn_bra.GetOrbital2().j();
+                    HalfInt j1_ket = two_body_jjjpn_ket.GetOrbital1().j();
+                    HalfInt j2_ket = two_body_jjjpn_ket.GetOrbital2().j();
 
-                    std::cout << "testing ket" << std::endl;
-                    two_body_jjjpn_ket.GetOrbital1();
-                    two_body_jjjpn_ket.GetOrbital2();
-                    std::cout << "done" << std::endl;
+                    // canonicalize state indices
+                    //
+                    // Orbitals may need to be swapped going from
+                    // |ab;J>_pn to |ab;JT>, if a>b, inducing a phase
+                    // factor ~(ja+jb+J+T).
 
-                    basis::TwoBodyStateJJJTLabels two_body_jjjt_state_labels_bra(
-                        two_body_jjjpn_bra.GetOrbital1().N(),
-                        two_body_jjjpn_bra.GetOrbital1().j(),
-                        two_body_jjjpn_bra.GetOrbital2().N(),
-                        two_body_jjjpn_bra.GetOrbital2().j()
-                      );
+                    double canonicalization_factor_bra;
+                    basis::TwoBodyStateJJJTLabels two_body_jjjt_state_labels_bra;
+                    if (std::pair<int,HalfInt>(N1_bra,j1_bra) <= std::pair<int,HalfInt>(N2_bra,j2_bra))
+                      // state is canonical
+                      {
+                        canonicalization_factor_bra = 1.;
+                        two_body_jjjt_state_labels_bra = basis::TwoBodyStateJJJTLabels(
+                            N1_bra,j1_bra,N2_bra,j2_bra
+                          );
+                      }
+                    else
+                      // state is non-canonical
+                      {
+                        canonicalization_factor_bra = ParitySign(int(j1_bra+j2_bra)+Jp+Tp);
+                        two_body_jjjt_state_labels_bra = basis::TwoBodyStateJJJTLabels(
+                            N2_bra,j2_bra,N1_bra,j1_bra
+                          );
+                      }
+
+                    // std::cout << " JJJT bra lookup "
+                    //           << " " << two_body_jjjpn_bra.GetOrbital1().N()
+                    //           << " " << two_body_jjjpn_bra.GetOrbital1().j()
+                    //           << " " << two_body_jjjpn_bra.GetOrbital2().N()
+                    //           << " " << two_body_jjjpn_bra.GetOrbital2().j()
+                    //           << std::endl;
+
                     int two_body_jjjt_state_index_bra
                       = two_body_jjjt_subspace_bra.LookUpStateIndex(
                           two_body_jjjt_state_labels_bra
                         );
-                    basis::TwoBodyStateJJJTLabels two_body_jjjt_state_labels_ket(
-                        two_body_jjjpn_ket.GetOrbital1().N(),
-                        two_body_jjjpn_ket.GetOrbital1().j(),
-                        two_body_jjjpn_ket.GetOrbital2().N(),
-                        two_body_jjjpn_ket.GetOrbital2().j()
-                      );
+
+                    double canonicalization_factor_ket;
+                    basis::TwoBodyStateJJJTLabels two_body_jjjt_state_labels_ket;
+                    if (std::pair<int,HalfInt>(N1_ket,j1_ket) <= std::pair<int,HalfInt>(N2_ket,j2_ket))
+                      // state is canonical
+                      {
+                        canonicalization_factor_ket = 1.;
+                        two_body_jjjt_state_labels_ket = basis::TwoBodyStateJJJTLabels(
+                            N1_ket,j1_ket,N2_ket,j2_ket
+                          );
+                      }
+                    else
+                      // state is non-canonical
+                      {
+                        canonicalization_factor_ket = ParitySign(int(j1_ket+j2_ket)+Jp+Tp);
+                        two_body_jjjt_state_labels_ket = basis::TwoBodyStateJJJTLabels(
+                            N2_ket,j2_ket,N1_ket,j1_ket
+                          );
+                      }
+
+                    // std::cout << " JJJT ket lookup "
+                    //           << " " << two_body_jjjpn_ket.GetOrbital1().N()
+                    //           << " " << two_body_jjjpn_ket.GetOrbital1().j()
+                    //           << " " << two_body_jjjpn_ket.GetOrbital2().N()
+                    //           << " " << two_body_jjjpn_ket.GetOrbital2().j()
+                    //           << std::endl;
+
                     int two_body_jjjt_state_index_ket
                       = two_body_jjjt_subspace_ket.LookUpStateIndex(
                           two_body_jjjt_state_labels_ket
                         );
 
+                    // canonicalize indices for matrix element lookup
+                    //
+                    // Recall that we have already looked up the
+                    // canonicalized sector index, so we do not care
+                    // any more about the subspace indices returned by
+                    // this call.
+                    int canonical_two_body_jjjt_subspace_index_bra, canonical_two_body_jjjt_subspace_index_ket;
+                    int canonical_two_body_jjjt_state_index_bra, canonical_two_body_jjjt_state_index_ket;
+                    double canonicalization_factor;
+                    std::tie(
+                        canonical_two_body_jjjt_subspace_index_bra, canonical_two_body_jjjt_subspace_index_ket,
+                        canonical_two_body_jjjt_state_index_bra, canonical_two_body_jjjt_state_index_ket,
+                        canonicalization_factor
+                      )
+                      = basis::CanonicalizeIndicesLSJT(
+                          two_body_jjjt_space,
+                          operator_labels.J0, T0, operator_labels.g0,
+                          operator_labels.symmetry_phase_mode,
+                          two_body_jjjt_subspace_index_bra, two_body_jjjt_subspace_index_ket,
+                          two_body_jjjt_state_index_bra, two_body_jjjt_state_index_ket
+                        );
+
+
                     // look up source matrix element
-                    double two_body_jjjt_matrix_element = two_body_jjjt_matrix(
-                        two_body_jjjt_state_index_bra,two_body_jjjt_state_index_ket
+                    double two_body_jjjt_matrix_element
+                      = canonicalization_factor_bra * canonicalization_factor_ket * canonicalization_factor
+                      * two_body_jjjt_matrix(
+                        canonical_two_body_jjjt_state_index_bra,canonical_two_body_jjjt_state_index_ket
                       );
 
                     // incorporate contribution

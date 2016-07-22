@@ -338,6 +338,12 @@ namespace moshinsky {
   // The output matrix element are antisymmetrized (AS) matrix elements,
   // rather than normalized antisymmetrized (NAS) matrix elements.
   //
+  // PRECONDITION: The proton and neutron orbitals must be identical
+  // (and the label sets must be defined identically).  This is
+  // assumed when proton and neutrons orbital labels are exchanged to
+  // place them in canonical order when looking up isospin-scheme
+  // matrix elements.
+  //
   // Arguments:
   //   operator_labels (basis::OperatorLabelsJT) : tensorial properties of operator
   //   two_body_jjjt_space (...) : source space
