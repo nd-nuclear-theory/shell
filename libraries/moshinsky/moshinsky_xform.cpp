@@ -775,25 +775,32 @@ namespace moshinsky {
 
               // identify isospin Clebsch-Gordan coefficient to apply
               // to this source sector
-              double coefficient;
+              double isospin_coefficient;
               if (two_body_species==basis::TwoBodySpeciesPN::kPP)
                 {
-                  coefficient = kPPCoefficients[T0];
+                  isospin_coefficient = kPPCoefficients[T0];
                 }
               else if (two_body_species==basis::TwoBodySpeciesPN::kPP)
                 {
-                  coefficient = kNNCoefficients[T0];
+                  isospin_coefficient = kNNCoefficients[T0];
                 }
               else if (two_body_species==basis::TwoBodySpeciesPN::kPN)
                 {
+                  // Note: There are just the isospin Clebsch-Gordan
+                  // coefficients for the Wigner-Eckhart branching of
+                  // the isospin reduced matrix elements.  These do not
+                  // include the Clebsch/normalization factors in the
+                  // expansion of the pn states in terms of T=0/1
+                  // states, which are treated below at the level of
+                  // individual matrix elements.
                   if ((Tp==1)&&(T==1))
-                    coefficient = kPNCoefficients11[T0];
+                    isospin_coefficient = kPNCoefficients11[T0];
                   else if ((Tp==0)&&(T==1))
-                    coefficient = kPNCoefficient01;
+                    isospin_coefficient = kPNCoefficient01;
                   else if ((Tp==1)&&(T==0))
-                    coefficient = kPNCoefficient10;
+                    isospin_coefficient = kPNCoefficient10;
                   else if ((Tp==0)&&(T==0))
-                    coefficient = kPNCoefficient00;
+                    isospin_coefficient = kPNCoefficient00;
                 }
 
 
@@ -829,6 +836,10 @@ namespace moshinsky {
                         continue;
 
                     // retrieve source state indices
+                    int index1_bra = two_body_jjjpn_bra.index1();
+                    int index2_bra = two_body_jjjpn_bra.index2();
+                    int index1_ket = two_body_jjjpn_ket.index1();
+                    int index2_ket = two_body_jjjpn_ket.index2();
                     int N1_bra = two_body_jjjpn_bra.GetOrbital1().N();
                     int N2_bra = two_body_jjjpn_bra.GetOrbital2().N();
                     int N1_ket = two_body_jjjpn_ket.GetOrbital1().N();
@@ -838,15 +849,27 @@ namespace moshinsky {
                     HalfInt j1_ket = two_body_jjjpn_ket.GetOrbital1().j();
                     HalfInt j2_ket = two_body_jjjpn_ket.GetOrbital2().j();
 
-                    // canonicalize state indices
+                    // calculate pn state expansion coefficients
+                    double pn_normalization_factor = 1.0;
+                    if (two_body_species==basis::TwoBodySpeciesPN::kPN)
+                      {
+                        pn_normalization_factor = 0.5;
+                        if (index1_bra==index2_bra)
+                          pn_normalization_factor *= sqrt(2.);
+                        if (index1_ket==index2_ket)
+                          pn_normalization_factor *= sqrt(2.);
+                      }
+
+                    // canonicalize indices of orbitals within
+                    // two-body states
                     //
                     // Orbitals may need to be swapped going from
                     // |ab;J>_pn to |ab;JT>, if a>b, inducing a phase
                     // factor ~(ja+jb+J+T).
-
                     double canonicalization_factor_bra;
                     basis::TwoBodyStateJJJTLabels two_body_jjjt_state_labels_bra;
-                    if (std::pair<int,HalfInt>(N1_bra,j1_bra) <= std::pair<int,HalfInt>(N2_bra,j2_bra))
+                    if (index1_bra <= index2_bra)
+                      // OR: (std::pair<int,HalfInt>(N1_bra,j1_bra) <= std::pair<int,HalfInt>(N2_bra,j2_bra))
                       // state is canonical
                       {
                         canonicalization_factor_bra = 1.;
@@ -877,7 +900,8 @@ namespace moshinsky {
 
                     double canonicalization_factor_ket;
                     basis::TwoBodyStateJJJTLabels two_body_jjjt_state_labels_ket;
-                    if (std::pair<int,HalfInt>(N1_ket,j1_ket) <= std::pair<int,HalfInt>(N2_ket,j2_ket))
+                    if (index1_ket <= index2_ket)
+                      // OR: (std::pair<int,HalfInt>(N1_ket,j1_ket) <= std::pair<int,HalfInt>(N2_ket,j2_ket))
                       // state is canonical
                       {
                         canonicalization_factor_ket = 1.;
@@ -931,13 +955,14 @@ namespace moshinsky {
 
                     // look up source matrix element
                     double two_body_jjjt_matrix_element
-                      = canonicalization_factor_bra * canonicalization_factor_ket * canonicalization_factor
+                      = pn_normalization_factor
+                      * canonicalization_factor_bra * canonicalization_factor_ket * canonicalization_factor
                       * two_body_jjjt_matrix(
                         canonical_two_body_jjjt_state_index_bra,canonical_two_body_jjjt_state_index_ket
                       );
 
                     // incorporate contribution
-                    matrix(bra_index,ket_index) += coefficient * two_body_jjjt_matrix_element;
+                    matrix(bra_index,ket_index) += isospin_coefficient * two_body_jjjt_matrix_element;
 
                   }
             }

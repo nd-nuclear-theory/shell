@@ -21,6 +21,7 @@
     - Revise to use block-N structure, with updated lsjt_scheme indexing.
     - Update to group theory Wigner-Eckart convention.
     - Extract transformation routines from program file into header.
+  7/22/16 (mac): Implement isospin branching.
 
 ****************************************************************/
 
@@ -338,11 +339,12 @@ namespace moshinsky {
   // The output matrix element are antisymmetrized (AS) matrix elements,
   // rather than normalized antisymmetrized (NAS) matrix elements.
   //
-  // PRECONDITION: The proton and neutron orbitals must be identical
-  // (and the label sets must be defined identically).  This is
-  // assumed when proton and neutrons orbital labels are exchanged to
-  // place them in canonical order when looking up isospin-scheme
-  // matrix elements.
+  // PRECONDITION: The proton and neutron orbital label sets must be
+  // defined identically, and the indexing order must be
+  // lexicographical in (N,j).  This is assumed when (1) proton and
+  // neutrons orbital labels are exchanged to place them in canonical
+  // order when looking up isospin-scheme matrix elements (2) orbital
+  // indices are compared to test canonicality.
   //
   // Arguments:
   //   operator_labels (basis::OperatorLabelsJT) : tensorial properties of operator
