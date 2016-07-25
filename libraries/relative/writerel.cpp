@@ -10,7 +10,7 @@
     J0 g0 T0_min T0_max
     Nmax
     operator_name [parameters]
-    filename
+    target_filename
 
   The parameters are
 
@@ -46,16 +46,13 @@
   University of Notre Dame
 
   7/16/16 (mac): Created.
+  7/25/16 (mac): Update to use WriteRelativeOperatorLSJT.
 
 ****************************************************************/
 
-#include <fstream>
-#include <iomanip>
-
 #include "basis/lsjt_operator.h"
 #include "mcpp/parsing.h"
-#include "mcpp/profiling.h"
-#include "moshinsky/construct_relative.h"
+#include "relative/construct_relative.h"
 
 ////////////////////////////////////////////////////////////////
 // parameter input
@@ -73,7 +70,7 @@ struct Parameters
 {
   basis::RelativeOperatorParametersLSJT operator_parameters;
   std::string operator_name;
-  std::string filename;
+  std::string target_filename;
   UnitTensorLabels unit_tensor_labels;
 };
 
@@ -112,7 +109,6 @@ void ReadParameters(Parameters& parameters)
   }
 
   // set miscellaneous operator_parameters fields
-  parameters.operator_parameters.version = 1;
   parameters.operator_parameters.Jmax = parameters.operator_parameters.Nmax+1;
   parameters.operator_parameters.symmetry_phase_mode = basis::SymmetryPhaseMode::kHermitian;
 
@@ -153,7 +149,7 @@ void ReadParameters(Parameters& parameters)
     ++line_count;
     std::getline(std::cin,line);
     std::istringstream line_stream(line);
-    line_stream >> parameters.filename;
+    line_stream >> parameters.target_filename;
     ParsingCheck(line_stream,line_count,line);
   }
 
@@ -309,38 +305,6 @@ void PopulateOperator(
     }
 }
 
-void WriteOperator(
-    const Parameters& parameters,
-    const basis::RelativeSpaceLSJT& relative_space,
-    const std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-    const std::array<basis::MatrixVector,3>& relative_component_matrices
-  )
-// Write operator to output file.
-{
-
-  // define shortcut reference to operator parameters
-  const basis::RelativeOperatorParametersLSJT& operator_parameters
-    = parameters.operator_parameters;
-
-  // set up stream for output
-  std::ofstream os(parameters.filename.c_str());
-
-  // write header parameters
-  basis::WriteRelativeOperatorParametersLSJT(os,operator_parameters);
-
-  // write matrices
-  for (int T0=operator_parameters.T0_min; T0<=operator_parameters.T0_max; ++T0)
-    {
-      basis::WriteRelativeOperatorComponentLSJT(
-          os,
-          T0,
-          relative_component_sectors[T0],relative_component_matrices[T0]
-        );
-    }
-
-}
-
-
 ////////////////////////////////////////////////////////////////
 // main
 ////////////////////////////////////////////////////////////////
@@ -363,12 +327,14 @@ int main(int argc, char **argv)
     );
 
   // write operator
-  WriteOperator(
-      parameters,
+  basis::WriteRelativeOperatorLSJT(
+      parameters.target_filename,
       relative_space,
-      relative_component_sectors,relative_component_matrices
+      parameters.operator_parameters,  // only need operator labels
+      relative_component_sectors,
+      relative_component_matrices,
+      true  // verbose
     );
-
 
   // termination
   return 0;

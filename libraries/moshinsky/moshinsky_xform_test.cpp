@@ -13,7 +13,7 @@
 #include "basis/jjjpnorb_operator.h"
 
 #include "mcpp/profiling.h"
-#include "moshinsky/construct_relative.h"
+#include "relative/construct_relative.h"
 #include "moshinsky/moshinsky_xform.h"
 
 

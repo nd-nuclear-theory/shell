@@ -2,9 +2,15 @@
 *.[oa]
 *~
 *.tgz
+*.stackdump
+*#
 
 # unit test executables
 *_test
 
 # all executables on Cygwin
 *.exe
+
+# noise files
+*.dat
+*.pdf

@@ -14,7 +14,7 @@ project_name := shellutils
 # Caution: Order is important since used also in linking.  Caller must
 # precede callee.
 
-modules := libraries/moshinsky
+modules := libraries/moshinsky libraries/relative
 
 # additional libraries -- static copy (perhaps to be converted to submodule)
 modules += libraries/mcpp
