@@ -21,8 +21,10 @@ void OpenCheck(bool success, const std::string& filename);
 // Terminates with error message on stream open failure.
 //
 // Arguments:
-//   success (bool) : meant to be used as automatic conversion from string state
+//   success (bool) : meant to be used as automatic conversion from stream
 //   filename (string) : file name to use in error messasge
+//
+// Explicit conversion bool(stream) may be needed (gcc 5).
 //
 // Example:
 //   OpenCheck(in_stream,in_stream_name);
