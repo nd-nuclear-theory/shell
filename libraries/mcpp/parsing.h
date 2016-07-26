@@ -7,6 +7,7 @@
   University of Notre Dame
 
   3/10/16 (mac): Extracted from mfdn_h2.
+  7/26/16 (mac): Add function StreamCheck.
 
 ****************************************************************/
 
@@ -18,16 +19,34 @@
 #include <string>
 
 void OpenCheck(bool success, const std::string& filename);
-// Terminates with error message on stream open failure.
+// Terminates with error message indicating stream open failure.
 //
 // Arguments:
-//   success (bool) : meant to be used as automatic conversion from stream
+//   success (bool) : access status
 //   filename (string) : file name to use in error messasge
 //
-// Explicit conversion bool(stream) may be needed (gcc 5).
+// The success parameter was meant to be used with automatic
+// conversion from stream to bool, but explicit conversion
+// bool(stream) may be needed (e.g., C++11 under gcc 5) and is thus
+// more portable.
 //
 // Example:
-//   OpenCheck(in_stream,in_stream_name);
+//   OpenCheck(bool(in_stream),in_stream_name);
+
+void StreamCheck(bool success, const std::string& filename);
+// Terminates with error message indicating stream access failure.
+//
+// Arguments:
+//   success (bool) : access status
+//   filename (string) : file name to use in error messasge
+//
+// The success parameter was meant to be used with automatic
+// conversion from stream to bool, but explicit conversion
+// bool(stream) may be needed (e.g., C++11 under gcc 5) and is thus
+// more portable.
+//
+// Example:
+//   StreamCheck(bool(in_stream),in_stream_name);
 
 void ParsingCheck(std::istringstream& line_stream, int line_count, const std::string& line);
 // Provide error message upon parsing failure for line of input.

@@ -20,6 +20,16 @@ void OpenCheck(bool success, const std::string& filename)
     }
 }
 
+void StreamCheck(bool success, const std::string& filename)
+{
+  if (!success)
+    {
+      std::cerr << std::endl;
+      std::cerr << "File access failure: " << filename << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+}
+
 void ParsingError(const std::string& message, int line_count, const std::string& line)
 {
   std::cerr << std::endl;
