@@ -387,7 +387,7 @@ int main(int argc, char **argv)
       two_body_jjjt_space,two_body_jjjt_component_sectors,two_body_jjjt_component_matrices
     );
   two_body_jjjt_timer.Stop();
-  std::cout << "Time: " << two_body_jjjt_timer.ElapsedTime() << std::endl;
+  std::cout << "  Time: " << two_body_jjjt_timer.ElapsedTime() << std::endl;
 
   ////////////////////////////////////////////////////////////////
   // BEGIN: JJJT coupling only
@@ -457,7 +457,7 @@ int main(int argc, char **argv)
           two_body_jjjpn_space,two_body_jjjpn_sectors,two_body_jjjpn_matrices
         );
       two_body_jjjpn_timer.Stop();
-      std::cout << "Time: " << two_body_jjjpn_timer.ElapsedTime() << std::endl;
+      std::cout << "  Time: " << two_body_jjjpn_timer.ElapsedTime() << std::endl;
 
       ////////////////////////////////////////////////////////////////
       // write as two-body JJJPN
