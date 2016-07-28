@@ -30,7 +30,7 @@
 ****************************************************************/
 
 #define NO_REVERSE_L_VALUES
-#define REVERSE_RADIAL_CONVENTION
+#define NO_REVERSE_RADIAL_CONVENTION
 
 // JPV relative interaction readme file from NERSC m94 project space
 // (2014):
@@ -115,6 +115,114 @@
 //       write(12,1300)((VECP(i,j),i=1,j),j=1,ipsiz)
 // 
 // * * * * *  END OF THE README FILE * * * * * 
+
+// JPV relative interaction readme file README_Heff_notes_v2.txt
+// (2015):
+//
+// c**    Important updates added November 27, 2015 for Version 2
+// c**    
+// 
+// c**    For the relative HO matrix element files stored in
+// c**    this directory, the following parameters and 
+// c**    conventions are employed.
+// 
+//       idmaxp = 120
+// 
+// c**   For uncoupled channels and subchannels of coupled channels:
+//       ipsiz = (2*idmaxp-min0(LR,LL))/2
+// 
+// c**   Thus, the full coupled-channel matrix is dimensioned at (2*ipsiz) X (2*ipsiz)
+// 
+// c**   Conventions for storing the coupled-channels matrices
+// c**   and writing them out to the file.
+// c**
+// c**   Commands to write the file and their formats are provided
+// c**   below.  Each square of the coupled channels matrices and 
+// c**   the uncoupled channel matrices is stored in a triangle
+// c**   form (be careful about the row-col ordering - see below). 
+// c** 
+// c**   The ordering of the orbital angular momenta in the
+// c**   bras and the kets is shown in the following figure.
+// c**
+// c**     -------------------------------
+// c**     |               |             |
+// c**     |   IPART= 1    |      2      |
+// c**     |     {L,L}     |   {L,L+2}   |
+// c**     -------------------------------
+// c**     |               |             |
+// c**     |       3       |      4      |
+// c**     |   {L+2,L}     |  {L+2,L+2}  |
+// c**     -------------------------------
+// c**
+// c**     For IPART = 1 and 4 
+// c**     Within these square subchannels, the ordering of the stored
+// c**     matrix elements is:
+// c**
+// c**         1 -> 2   4   7  11
+// c**              3   5   8  etc
+// c**                  6   9
+// c**                     10
+// c**
+// c**	However, one may transpose each of these sub channels 
+// c**     due to symmetry - i.e. interchange the rows and columns.
+// c**
+// c**     For the "off-diagonal subchannels" i.e. for IPART = 2 & 3
+// c**     the row-col ordering is as follows (see the write statements
+// c**     below for explicit indexing):
+// c**
+// c**         1
+// c**         2    3
+// c**         4    5   6
+// c**         7    8   9  10
+// c**         etc
+// c**
+// c**    From this stored triangle, the symmetric part of the matrix
+// c**    in the complementary IPART area is obtained.
+// c**
+// c**   Variables defined:
+// c**   OMEGF = nucleon mass in MeV
+// c**   HOP   = HO energy
+// c**   ipcut = ignorable
+// c**   IDENT = ignorable
+// c**
+// c**   Stop reading when you encounter JT = 99999 on input.
+// c**
+// c**   Output the IPART = 1 subchannel                                                                                 
+// c**   Note that ordering does not matter as it is symmetric                                                           
+//       WRITE(12,1250) JT,IS,LR-2,LL-2,ipcut, ipsiz, OMEGF,HOP,IDENT
+//  1250 FORMAT(6I5,2(1PE16.6),I5)
+//       write(12,1300)((VECP(i,j),i=1,j),j=1,ipsiz)
+//  1300  format(7(1PE15.6))
+// 
+// c**   Note that if IS = 1 and JT = "LR-2" + 1, this is a coupled-channel.
+// c**   In this case all 4 "IPART" subsections follow in the file in the
+// c**   sequence 1, 2, 3 & 4.
+// 
+//       ipsizc = 2*ipsiz - 1
+// 
+// c**   Output the IPART = 2 subchannel (as a square submatrix with                                                     
+// c**   zeroes padding it)                                                                                              
+//       WRITE(12,1250) JT,IS,LR-2,LL,ipcut, ipsiz, OMEGF,HOP,IDENT
+//       write(12,1300)((VECP(i,j),j=ipsiz+1,i+ipsiz),i=1,ipsiz)
+// 
+// c**   Output the IPART = 3 subchannel (as a square submatrix with                                                     
+// c**   zeroes padding it)                                                                                              
+//       WRITE(12,1250) JT,IS,LR,LL-2,ipcut, ipsiz, OMEGF,HOP,IDENT
+//       write(12,1300)((VECP(i,j),j=1,i-ipsiz),i=ipsiz+1,ipsizc+1)
+// 
+// c**   Output the IPART = 4 subchannel (as a square submatrix with                                                     
+// c**   zeroes padding it)                                                                                              
+// c**   Note that ordering does not matter as it is symmetric                                                           
+//       WRITE(12,1250) JT,IS,LR,LL,ipcut, ipsiz, OMEGF,HOP,IDENT
+//       write(12,1300)((VECP(i,j),i=ipsiz+1,j),j=ipsiz+1,ipsizc+1)
+// 
+// c**   Uncoupled channels are stored similar to IPART = 1 of the
+// c**   coupled channels.
+//       WRITE(12,12) JT,IS,LR,LL,ipcut, ipsiz, OMEGF,HOP,IDENT
+//       write(12,1300)((VECP(i,j),i=1,j),j=1,ipsiz)
+// 
+// * * * * *  END OF THE README FILE * * * * * 
+
 
 // Further comments in convert_MFDn_to_Hagen.f from NERSC m94 project
 // space (2014):
