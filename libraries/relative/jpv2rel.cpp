@@ -26,6 +26,7 @@
   University of Notre Dame
 
   7/25/16 (mac): Created, based upon writerel.cpp.
+  8/10/16 (mac): Fix input indexing.
 
 ****************************************************************/
 
@@ -673,6 +674,8 @@ void ReadJPVOperator(
       //   until (read enough matrix elements)
 
       int matrix_element_count = 0;
+      int row_index = 0;
+      int column_index = 0;
       bool done = (matrix_element_count == expected_matrix_elements);
       while (!done)
         {
@@ -698,9 +701,9 @@ void ReadJPVOperator(
               // deduce matrix element indices
               //
               // Recall we have adopted the interpretation that matrix
-              // elements (np,n) are row major in upper triangle.
-              int np = matrix_element_count / nmax;  // row index less rapidly varying
-              int n = matrix_element_count % nmax;  // column index more rapidly varying
+              // elements (np,n) are column major in upper triangle.
+              int np = row_index;
+              int n = column_index;
               if (flip)
                 std::swap(np,n);
               
@@ -717,6 +720,17 @@ void ReadJPVOperator(
               // advance counter and check for completion
               ++matrix_element_count;
               done = (matrix_element_count == expected_matrix_elements);
+
+              // advance to next matrix element (row,column) indices
+              //
+              // column major ordering in upper triangle
+              ++row_index;
+              if (row_index>column_index)
+                {
+                  row_index = 0;
+                  ++column_index;
+                }
+
             }
           //            for (int np=0; np<=nmax; np++)
           //                for(int n=0; n<=np; n++)
