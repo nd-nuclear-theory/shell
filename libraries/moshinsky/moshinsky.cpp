@@ -13,7 +13,11 @@
 
     N1max, N2max : one-body and two-body basis truncations
 
-    coupling : target coupling scheme (lsjt, ...)
+    coupling : target coupling scheme
+      "rcmlsjt" -- relative-cm matrix elements
+      "lsjt" -- two-body LSJT-coupled matrix elements
+      "jjjt" -- two-body jjJT-coupled matrix elements
+      "jjjpn" -- two-body jjJpn-coupled matrix elements
 
   Language: C++11
 
@@ -21,6 +25,7 @@
   University of Notre Dame
 
   7/16/16 (mac): Created.
+  8/16/16 (mac): Add diagnostic output of relative-cm matrix elements.
 
 ****************************************************************/
 
@@ -40,7 +45,9 @@
 // parameter input
 ////////////////////////////////////////////////////////////////
 
-enum class Coupling {kLSJT, kJJJT, kJJJPN};
+enum class Coupling {
+  kRelativeCMLSJT, kLSJT, kJJJT, kJJJPN
+    };
 
 struct Parameters
 // Container for run input parameters.
@@ -88,7 +95,9 @@ void ReadParameters(Parameters& parameters)
     }
 
     // process coupling
-    if (coupling_code == "lsjt")
+    if (coupling_code == "rcmlsjt")
+      parameters.coupling = Coupling::kRelativeCMLSJT;
+    else if (coupling_code == "lsjt")
       parameters.coupling = Coupling::kLSJT;
     else if (coupling_code == "jjjt")
       parameters.coupling = Coupling::kJJJT;
@@ -259,8 +268,66 @@ int main(int argc, char **argv)
     std::cout << " " << basis::AllocatedEntries(relative_cm_lsjtn_component_matrices[T0]);
   std::cout << std::endl;
 
+
   ////////////////////////////////////////////////////////////////
-  // transform to two-body LSJTN
+  // BEGIN: relative-cm LSJT coupling only
+  ////////////////////////////////////////////////////////////////
+
+  if (parameters.coupling == Coupling::kRelativeCMLSJT)
+    {
+
+      ////////////////////////////////////////////////////////////////
+      // gather to relative-cm LSJT
+      ////////////////////////////////////////////////////////////////
+
+      std::cout << "Gather relative-cm LSJT..." << std::endl;
+
+      // define space and operator containers
+      basis::RelativeCMSpaceLSJT relative_cm_lsjt_space(N2max);
+      std::array<basis::RelativeCMSectorsLSJT,3> relative_cm_lsjt_component_sectors;
+      std::array<basis::MatrixVector,3> relative_cm_lsjt_component_matrices;
+
+      // construct gathered operator
+      Timer relative_cm_lsjt_timer;
+      relative_cm_lsjt_timer.Start();
+      basis::GatherOperatorRelativeCMLSJTNToRelativeCMLSJT(
+          operator_labels,
+          relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_matrices,
+          relative_cm_lsjt_space,relative_cm_lsjt_component_sectors,relative_cm_lsjt_component_matrices
+        );
+      relative_cm_lsjt_timer.Stop();
+      std::cout << "  Time: " << relative_cm_lsjt_timer.ElapsedTime() << std::endl;
+
+      ////////////////////////////////////////////////////////////////
+      // write as two-body LSJT
+      ////////////////////////////////////////////////////////////////
+
+      std::cout << "Write relative-cm LSJT..." << std::endl;
+      std::ostringstream lsjt_sstream;
+      for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+        {
+          basis::WriteRelativeCMOperatorComponentLSJT(
+              lsjt_sstream,
+              T0,
+              relative_cm_lsjt_component_sectors[T0],relative_cm_lsjt_component_matrices[T0]
+            );
+        }
+      std::ofstream lsjt_stream(parameters.two_body_filename.c_str());
+      lsjt_stream << lsjt_sstream.str();
+
+      ////////////////////////////////////////////////////////////////
+      // termination
+      ////////////////////////////////////////////////////////////////
+
+      std::exit(0);
+    }
+
+  ////////////////////////////////////////////////////////////////
+  // END: relative-cm LSJT coupling only
+  ////////////////////////////////////////////////////////////////
+
+  ////////////////////////////////////////////////////////////////
+  // Moshinsky transform to two-body LSJTN
   ////////////////////////////////////////////////////////////////
 
   std::cout << "Transform to two-body LSJTN..." << std::endl;

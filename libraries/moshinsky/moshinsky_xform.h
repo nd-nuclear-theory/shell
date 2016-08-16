@@ -96,7 +96,7 @@ namespace moshinsky {
   // needed.
   //
   // Symmetry of target matrix elements: Only canonical (upper
-  // triangular) "sectors" are generate.  However, within diagonal
+  // triangular) "sectors" are generated.  However, within diagonal
   // sectors, the full square matrix is populated, to facilitate the
   // subsequent similarity transform.
   //
