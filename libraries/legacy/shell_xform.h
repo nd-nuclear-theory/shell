@@ -12,18 +12,20 @@
   shell_radial generic radial ME code.
 
   4/25/15 (mac): Reformatted source file.
+  8/26/16 (mac): Minimal patches to serve as deprecated legacy 
+    library w/in shell project.
 
 ****************************************************************/
 
 #ifndef shell_xform_h
 #define shell_xform_h
 
-#include <shell/shell_2body.h>
 #include <iostream>
 #include <vector>
 
+#include "legacy/shell_2body.h"
 
-namespace shell {
+namespace legacy {
 
 
   typedef std::vector< PairLookupArray< double > > TransformationContainer;

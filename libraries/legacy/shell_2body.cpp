@@ -2,14 +2,14 @@
   shell_2body.cpp
 
   Created by Mark A. Caprio, University of Notre Dame.
-  Last modified 4/25/15.
 
 ****************************************************************/
 
-#include <shell/shell_2body.h>
+#include "legacy/shell_2body.h"
+
 #include <cmath>
 
-namespace shell {
+namespace legacy {
 
   ////////////////////////////////////////////////////////////////
   // arithmetic constants
@@ -219,7 +219,7 @@ namespace shell {
 
     for (SPOrbitalNlj a1 = a_min; a1 <= a_max; ++a1)
       for (SPOrbitalNlj a2 = a_min; a2 <= a_max; ++a2)
-	for (int J = IValue(abs( a1.Getj() - a2.Getj() )); J <= IValue( a1.Getj() + a2.Getj() ); ++J) 
+	for (int J = int(abs( a1.Getj() - a2.Getj() )); J <= int( a1.Getj() + a2.Getj() ); ++J) 
 	  {
 	    // triage state by parity
 	    int g = (a1.Getl() + a2.Getl()) % 2;

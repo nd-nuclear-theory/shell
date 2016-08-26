@@ -13,6 +13,8 @@
                 TwoBodyMatrixSectorAdd allows copy from smaller sector to larger.
   8/10/12 (mac): SectorNljTzJP constructor from (N1b,N2b) truncation.  
   4/25/15 (mac): Reformat source file
+  8/26/16 (mac): Minimal patches to serve as deprecated legacy 
+    library w/in shell project.
 
   TODO: simplify horrendous two-body matrix storage scheme, by only
   allowing for storage of one sector at a time
@@ -22,19 +24,19 @@
 #ifndef shell_2body_h
 #define shell_2body_h
 
-#include <shell/shell_indexing_nlj.h>
-#include <shell/pair_indexing.h>
-
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
 #include <vector>
 
-#include <halfint/halfint.h>
-#include <am/angular_momentum.h>
+#include "am/halfint.h"
+#include "am/am.h"
 
-namespace shell {
+#include "legacy/shell_indexing_nlj.h"
+#include "legacy/pair_indexing.h"
+
+namespace legacy {
 
   ////////////////////////////////////////////////////////////////
   // arithmetic constants
@@ -165,7 +167,7 @@ namespace shell {
 	//  <ab;J1| = (-)^(1+J1+ja+jb) <ba;J1|
 	if (s1.a1 > s1.a2)
 	  {
-	    grade += s1.J + IValue(s1.a1.Getj() + s1.a2.Getj()) + 1;  
+	    grade += s1.J + int(s1.a1.Getj() + s1.a2.Getj()) + 1;  
 	    std::swap(s1.a1,s1.a2);
 			
 	  }
@@ -174,7 +176,7 @@ namespace shell {
 	//  |cd;J2> = (-)^(1+J2+jc+jd) |dc;J2>
 	if (s2.a1 > s2.a2)
 	  {
-	    grade += s2.J + IValue(s2.a1.Getj() + s2.a2.Getj()) + 1;  
+	    grade += s2.J + int(s2.a1.Getj() + s2.a2.Getj()) + 1;  
 	    std::swap(s2.a1,s2.a2);
 	  }
       }

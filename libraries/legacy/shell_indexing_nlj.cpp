@@ -2,15 +2,14 @@
   shell_indexing_nlj.cpp
 
   Mark A. Caprio, University of Notre Dame.
-  Last modified 4/25/15.
 
 ****************************************************************/
 
 #include <sstream>
 
-#include <shell/shell_indexing_nlj.h>
+#include "legacy/shell_indexing_nlj.h"
 
-namespace shell {
+namespace legacy {
 
   ////////////////////////////////////////////////////////////////
   // SPOrbitalNlj cache static variable definitions

@@ -2,17 +2,17 @@
   shell_xform.cpp
 
   Mark A. Caprio, University of Notre Dame.
-  Last modified 4/25/15.
 
 ****************************************************************/
 
-#include <shell/shell_xform.h>
 
 #include <sstream>
 
+#include "legacy/shell_xform.h"
+
 using namespace std;
 
-namespace shell {
+namespace legacy {
 
   void ReadRadialTransformation(istream& xs, TransformationContainer& transformation)
   {

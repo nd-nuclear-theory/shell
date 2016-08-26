@@ -8,6 +8,8 @@
   4/15/11 (mac): Originated.
   4/23/11 (mac): Basic range checking via assertions.
   4/25/15 (mac): Reformatted source file.
+  8/26/16 (mac): Minimal patches to serve as deprecated legacy 
+    library w/in shell project.
 
 ****************************************************************/
 
@@ -19,7 +21,7 @@
 #include <iostream>
 #include <vector>
 
-namespace shell {
+namespace legacy {
 
   ////////////////////////////////////////////////////////////////
   // predefined constants

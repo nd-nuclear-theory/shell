@@ -21,6 +21,9 @@
     -- Upgrade documentation.  
     -- Adde String() member function.
     -- Rename from shell_indexing.h to shell_indexing_nlj.h.
+  8/26/16 (mac): Minimal patches to serve as deprecated legacy 
+    library w/in shell project.
+
 
 TODO: rename accessors to Google conventions, e.g., Getl() -> l(), and
 in general update indexing to scheme in shell_indexing_lstj
@@ -35,9 +38,9 @@ in general update indexing to scheme in shell_indexing_lstj
 #include <iostream>
 #include <vector>
 
-#include <halfint/halfint.h>
+#include "am/halfint.h"
 
-namespace shell {
+namespace legacy {
 
   ////////////////////////////////////////////////////////////////
   // Dimension and quantum number formulas

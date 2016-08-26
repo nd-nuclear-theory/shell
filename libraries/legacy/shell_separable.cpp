@@ -2,16 +2,16 @@
   shell_separable.cpp
 
   Created by Mark A. Caprio, University of Notre Dame.
-  Last modified 5/25/15.
 
 ****************************************************************/
 
-#include <shell/shell_separable.h>
+#include "legacy/shell_separable.h"
+
 #include <cmath>
 
-#include <am/wigner_gsl.h>
+#include "am/wigner_gsl.h"
 
-namespace shell {
+namespace legacy {
 
   ////////////////////////////////////////////////////////////////
   // angular momentum calculation
@@ -48,7 +48,7 @@ namespace shell {
 	  }
 	else if (angular_momentum_operator == kTotal)
 	  {
- 	    matrix_element += ja.DValue()*(ja.DValue()+1);
+ 	    matrix_element += double(ja)*(double(ja)+1);
 	  }
       }
 
@@ -80,12 +80,12 @@ namespace shell {
   	if ((angular_momentum_operator == kOrbital) || (angular_momentum_operator == kTotal))
   	  {
   	    int phase = ParitySign(la+ja+HalfInt(3,2));
-  	    matrix_element += Hat(jb)*Hat(ja)*sqrt(la*(la+1)*(2*la+1))*phase*Wigner6J(la,la,1,ja,jb,HalfInt(1,2));
+  	    matrix_element += Hat(jb)*Hat(ja)*sqrt(la*(la+1)*(2*la+1))*phase*am::Wigner6J(la,la,1,ja,jb,HalfInt(1,2));
   	  }
   	if ((angular_momentum_operator == kSpin) || (angular_momentum_operator == kTotal))
   	  {
   	    int phase = ParitySign(la+jb+HalfInt(3,2));
-  	    matrix_element += sqrt(3./2.)*Hat(jb)*Hat(ja)*phase*Wigner6J(HalfInt(1,2),HalfInt(1,2),1,ja,jb,la);
+  	    matrix_element += sqrt(3./2.)*Hat(jb)*Hat(ja)*phase*am::Wigner6J(HalfInt(1,2),HalfInt(1,2),1,ja,jb,la);
   	  }
       }
       
@@ -163,13 +163,13 @@ namespace shell {
   {
 
     // short circuit check on triangularity of each one-body factor
-    bool triangle_allowed = ( AllowedTriangle(a.Getj(),c.Getj(),1) && AllowedTriangle(b.Getj(),d.Getj(),1));
+    bool triangle_allowed = ( am::AllowedTriangle(a.Getj(),c.Getj(),1) && am::AllowedTriangle(b.Getj(),d.Getj(),1));
     if (!triangle_allowed )
       return 0.;
 
     // evaluate matrix element
     int phase = ParitySign(d.Getj() + a.Getj() + J);
-    double matrix_element = phase * Wigner6J(c.Getj(),d.Getj(),J,b.Getj(),a.Getj(),1)
+    double matrix_element = phase * am::Wigner6J(c.Getj(),d.Getj(),J,b.Getj(),a.Getj(),1)
       * ShellAngularMomentumVectorOBRME(angular_momentum_operator,c,a) * ShellAngularMomentumVectorOBRME(angular_momentum_operator,d,b);
   	
     return matrix_element;

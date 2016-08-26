@@ -11,13 +11,13 @@
 #include <iostream>
 #include <iomanip>
 
-#include <halfint/halfint.h>
-#include <mcpp/profiling.h>
+#include "am/halfint.h"
+#include "mcpp/profiling.h"
 
-#include <shell/pair_indexing.h>
+#include "legacy/pair_indexing.h"
 
 using namespace std;
-using namespace shell;
+using namespace legacy;
 
 int main(int argc, char **argv)
 {

@@ -8,9 +8,9 @@
 
 #include <sstream>
 
-#include <shell/shell_radial_nl.h>
+#include "legacy/shell_radial_nl.h"
 
-namespace shell {
+namespace legacy {
 
   void RadialMatrices::Initialize(std::istream& is)
   {

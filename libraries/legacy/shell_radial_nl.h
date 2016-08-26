@@ -48,7 +48,10 @@
   4/25/15 (mac): 
     -- Source file reformatted.
     -- Renamed from shell_radial to shell_radial_nl.
-  DEPRECATED 4/25/13 in favor of shell_radial_nlj module.
+  DEPRECATED 4/25/15 in favor of shell_radial_nlj module.
+  UNDEPRECATED AND REDEPRECATED 8/26/16 in favor of getting rid of this whole module.
+  8/26/16 (mac): Minimal patches to serve as deprecated legacy 
+    library w/in shell project.
 
 ****************************************************************/
 
@@ -60,10 +63,9 @@
 #include <vector>
 #include <string>
 
-#include <shell/pair_indexing.h>
-// #include <shell/shell_indexing_lj.h>
+#include "legacy/pair_indexing.h"
 
-namespace shell {
+namespace legacy {
 
 
   class RadialMatrices{
