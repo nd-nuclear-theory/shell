@@ -9,6 +9,7 @@ module_units_cpp-h := mfdn_file_processing
 
 # module_units_f := 
 module_programs_cpp := nogen noradial noxform
+## module_programs_cpp += h2gen_no h2xform_no  # TODO
 
 # omit for now: noradial_iter noxform_iter
 
