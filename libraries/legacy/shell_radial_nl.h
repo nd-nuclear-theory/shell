@@ -51,7 +51,7 @@
   DEPRECATED 4/25/15 in favor of shell_radial_nlj module.
   UNDEPRECATED AND REDEPRECATED 8/26/16 in favor of getting rid of this whole module.
   8/26/16 (mac): Minimal patches to serve as deprecated legacy 
-    library w/in shell project.
+    library w/in shell project.  Add parameter accessors.
 
 ****************************************************************/
 
@@ -94,6 +94,10 @@ namespace legacy {
     // GetMatrixElement -- returns NAS ME, arguments must be canonical
     MatrixElementType GetMatrixElement (int lp, int l, int np, int n) const;
 
+    
+    int l_max() const {return l_max_;}
+    int dl() const {return dl_;}
+    int n_max() const {return n_max_;}
 
     ////////////////////////////////////////////////////////////////
     // deallocation
