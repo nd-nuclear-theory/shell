@@ -7,3 +7,6 @@
 [submodule "libraries/basis"]
 	path = libraries/basis
 	url = ../basis
+[submodule "libraries/spline"]
+	path = libraries/spline
+	url = ../spline
