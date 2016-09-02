@@ -30,6 +30,8 @@
 
 ****************************************************************/
 
+//  TODO: remove these options
+
 #define NO_REVERSE_L_VALUES
 #define NO_REVERSE_RADIAL_CONVENTION
 
