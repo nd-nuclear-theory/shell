@@ -21,11 +21,14 @@
 #
 #     <base1>/lib  <base2>/lib
 
-# Note: You may wish to simply define an *empty* search path here, and
-# then append to it in a separate config.mk which "include"s this
-# file.
+# Note: If you have anything to add to the search path, you may wish
+# to leave this definition of the search_prefix as it is, and then
+# append to it in a separate config.mk which includes this generic
+# config file.
+#
+#   include config_generic-gcc4.mk
 
-search_prefix := $(HOME)/local/opt/eigen-3.2.7
+search_prefix := $(EIGEN3_DIR) $(GSL_DIR) $(BOOST_ROOT)
 
 # directories to directly include in include path or lib path
 #
