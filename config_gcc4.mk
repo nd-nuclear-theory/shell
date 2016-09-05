@@ -26,7 +26,7 @@
 # append to it in a separate config.mk which includes this generic
 # config file.
 #
-#   include config_generic-gcc4.mk
+#   include config_gcc4.mk
 
 search_prefix := $(EIGEN3_DIR) $(GSL_DIR) $(BOOST_ROOT)
 
