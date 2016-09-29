@@ -9,4 +9,5 @@
 	url = ../basis
 [submodule "libraries/spline"]
 	path = libraries/spline
+        branch = submodule
 	url = ../spline

@@ -15,6 +15,7 @@ project_name := shellutils
 # precede callee.
 
 modules := libraries/moshinsky libraries/relative libraries/legacy libraries/no
+modules += libraries/spline
 
 # additional libraries -- static copy (perhaps to be converted to submodule)
 modules += libraries/mcpp
@@ -44,9 +45,14 @@ LDLIBS += -lgsl
 LDLIBS += -lgslcblas 
 CPPFLAGS += -DHAVE_INLINE
 
+# spline submodule
+CPPFLAGS += -DSPLINE_NO_FANCY_INTEGRATION
+
 # program algorithm choices
 #   map vs. hash for space lookup in basis library
 CPPFLAGS += -DINDEXING_HASH
+
+
 
 # debugging mode
 CXXFLAGS += -g
