@@ -1,0 +1,413 @@
+\documentclass[aps,groupedaddress,onecolumn,11pt,floatfix]{revtex4}
+
+
+% \ifproofpre{twocolumn version}{onecolumn version}
+%   for proof (twocolumn) -- #1
+%   for preprint -- #2
+\newcommand{\ifproofpre}[2]{#1}
+
+% float placement 
+\setcounter{topnumber}{99}
+\setcounter{bottomnumber}{99}
+\setcounter{totalnumber}{99}
+\renewcommand{\topfraction}{.99}
+\renewcommand{\bottomfraction}{0.99}
+\renewcommand{\textfraction}{0.01}
+\setcounter{dbltopnumber}{99}
+\renewcommand{\dbltopfraction}{.99}
+%%\renewcommand{\floatpagefraction}{0.01}
+%%\renewcommand{\dblfloatpagefraction}{0.01}
+
+% standard packages
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{isotope}
+%%\usepackage{dsfont} % for \mathds{1}
+\newcommand{\mathds}{}
+
+% mc packages
+\usepackage{wigner}
+\usepackage{liealg}
+
+% notation
+
+\newcommand{\MeV}{{\mathrm{MeV}}}
+\newcommand{\keV}{{\mathrm{keV}}}
+\newcommand{\fm}{{\mathrm{fm}}}
+
+\newcommand{\Nmax}{N_\text{max}}
+\newcommand{\Trel}{T_\text{rel}}
+\newcommand{\Arel}{A_\text{rel}}
+
+%% \newcommand{\Nrel}{{N_\text{rel}}}
+%% \newcommand{\Ncm}{{N_\text{c.m.}}}
+%% \newcommand{\nrel}{{n_\text{rel}}}
+%% \newcommand{\ncm}{{n_\text{c.m.}}}
+%% \newcommand{\lrel}{{l_\text{rel}}}
+%% \newcommand{\lcm}{{l_\text{c.m.}}}
+
+% abbreviated
+\newcommand{\Nr}{N_r}
+\newcommand{\Nc}{N_c}
+\newcommand{\nr}{n_r}
+\newcommand{\nc}{n_c}
+\newcommand{\lr}{l_r}
+\newcommand{\lc}{l_c}
+\newcommand{\Jr}{J_r}
+
+
+\newcommand{\unity}{\mathds{1}}
+\newcommand{\unitycm}{{\mathds{1}_{\text{c.m.}}}}
+
+
+
+\newcommand{\hw}{{\hbar\omega}}
+\newcommand{\bint}{{b_{\text{int}}}}
+\newcommand{\hwint}{{\hbar\omega_{\text{int}}}}
+\newcommand{\Ncut}{{N_\text{cut}}}  
+\newcommand{\Ncm}{{N_\text{c.m.}}}  
+\newcommand{\Nex}{{N_\text{ex}}}  
+\newcommand{\Nv}{{N_v}}  
+
+\newcommand{\Einf}{{E_\infty}}  
+\newcommand{\kinf}{{k_\infty}}  
+\newcommand{\rinf}{r_\infty}  % used in square, so do not nest braces
+
+\newcommand{\scrN}{{\mathcal{N}}}  % lowercase missing
+
+%% \newcommand{\rp}{r_p}  
+%% \newcommand{\rn}{r_n}  
+%% \newcommand{\rm}{r_m}    % symbol clash with \rm font directive
+
+% references
+\newcommand{\pref}[1]{(\ref{#1})}
+
+% recoupling
+
+% \overlapZ{j1}{j2}{j3}{J12}{J13}{J}
+%%\overlap[3]{\begin{matrix}j_1&&j_2&&j_3\\&\mathclap{J_{12}}\\&&J\end{matrix}}{\begin{matrix}j_1&&j_2&&j_3\\&&\mathclap{J_{13}}\\&&J\end{matrix}}
+\newcommand{\overlapZ}[6]{\overlap[3]{\begin{matrix}#1&&#2&&#3\\&\mathclap{#4}\\&&#6\end{matrix}}{\begin{matrix}#1&&#2&&#3\\&&\mathclap{#5}\\&&#6\end{matrix}}}
+
+% \ketcoupled{j1}{j2}{j3}{J12}{J}
+\newcommand{\ketcoupled}[5]{\ket[3]{\begin{matrix}#1&&#2&&#3\\&\mathclap{#4}\\&&#5\end{matrix}}}
+
+% \ketcoupledmid{j1}{j2}{j3}{J13}{J}
+\newcommand{\ketcoupledmid}[5]{\ket[3]{\begin{matrix}#1&&#2&&#3\\&&\mathclap{#4}\\&&#5\end{matrix}}}
+
+
+\begin{document}
+
+\title{\texttt{moshinsky}: Moshinsky transformation}
+
+\author{Mark A. Caprio}
+\affiliation{Department of Physics, University of Notre Dame, Notre Dame, Indiana 46556-5670, USA}
+
+\date{\today}
+
+\begin{abstract}
+\textit{Ab initio} calculations of nuclei face the challenge of
+simultaneously describing strong short-range internucleon correlations
+and the long-range properties of weakly-bound halo nucleons.  Natural
+orbitals, which diagonalize the one-body density matrix, provide a
+basis which is better matched to the physical structure of the
+many-body wave function.  We demonstrate that the use of natural
+orbitals significantly improves convergence for \textit{ab initio}
+no-core configuration interaction calculations of the neutron halo
+nucleus $\isotope[6]{He}$, relative to the traditional oscillator
+basis.
+\end{abstract}
+
+
+\maketitle
+
+
+%%\section{Introduction}
+%%\label{sec-intro}
+
+\section{Moshinsky transformation}
+
+\subsection{Transformation of $LSJT$-scheme matrix elements}
+
+We consider a relative operator $\Arel^{J_0T_0g_0}$ of definite
+angular momentum $J_0$, isospin $T_0$ and parity $P_0$, which we will
+find it convenient to express
+in terms of a grade label $g_0$ as $P_0=(-)^{g_0}$.  The
+corresponding operator $A^{J_0T_0P_0}$ on the full two-body fermionic
+space, which 
+ has these same symmetry
+properties, is simply $A\equiv\Arel\times\unitycm$.
+
+The Moshinsky brackets $\toverlap{\Nr\lr\Nc\lc;L}{N_1l_1N_2l_2;L}$ are
+the unitary transformation brackets relating relative-c.m. states and two-body
+states.  In particular, since we are working with fermions, it is
+important to realize that the Moshinsky brackets are defined for
+\textit{distinguishable} particle states, and we will need to
+explicitly account for antisymmetry later.  We follow Negele's
+convention of using a parenthesis to denote distinguishable particle
+states here, as $\tpket{N_1 l_1 N_2 l_2;LSJTg}$.  Thus, in particular,
+\begin{equation}
+\label{eqn-moshinsky-xform-ket-dist}
+\tpket{N_1 l_1 N_2 l_2;LSJTg}
+=\sum_{\substack{\Nr\lr\\\Nc\lc}}
+\toverlap{\Nr\lr\Nc\lc;L}{N_1l_1N_2l_2;L}
+\,
+\tket{\Nr \lr \Nc \lc;LSJTg}.
+\end{equation}
+There are a few things worth noting in this relation:
+
+(1) The non-orbital angular momentum labels $SJT$ are purely spectator
+labels in the summation.
+
+(2) The values for the $l$ labels follow from those for the $N$ labels
+by the usual oscillator branching rule [\textit{e.g.}, for the
+  relative oscillator labels, $\lr= (\Nr \bmod 2), (\Nr
+  \bmod 2)+2,\ldots,\Nr$].  Then the
+Moshinsky brackets enforce triangularity constraints $\Delta(\lr\lc L)$
+and $\Delta(l_1l_2L)$.
+
+(3) The Moshinsky bracket
+preserves total
+oscillator quanta
+\begin{equation}
+\Nr+\Nc = N_1 + N_2 \quad(\equiv N).
+\end{equation}
+Therefore, in the summation, the values of the indices $\Nr$ and $\Nc$
+are in direct correspondence.  That is, if we sum over $\Nr$, then the
+summation over $\Nc$ is trivial, and \textit{vice versa}.
+
+(4) The parity of a two-body or relative-c.m.~state is determined by
+the total oscillator quantum number.  Consequently, the Moshinsky
+bracket also conserves parity.  Again using a grade label $g$ to indicate the parity
+[$P=(-)^g$], we have, in terms of relative-c.m.~or two-body labels, respectively,
+\begin{equation}
+\begin{aligned}
+g&\cong \lr + \lc &&\cong \Nr+\Nc &&\cong N\\
+g&\cong l_1 + l_2 &&\cong N_1+N_2 &&\cong N,
+\end{aligned}
+\end{equation}
+where congruence indicates equivalence modulo~$2$.  The parity label
+is thus redundant to the oscillator labels.  However, we include the
+parity labels explicitly on the states in this derivation, since the
+classification of states according to their parity subspaces is an
+essential aspect of the basis indexing in the implementation of the
+Moshinsky transformation.
+
+(5) Although the 
+Moshinsky bracket is traditionally notated in terms of the
+\textit{radial} quantum numbers ($n_1$, $n_2$, $\nr$, and $\nc$), we have
+chosen to notate it in terms of the \textit{principal} oscillator
+quantum numbers ($N_1$, $N_2$, $\Nr$, and $\Nc$), to better reflect the above
+conservation properties.
+
+
+We express two-body matrix
+elements (TBMEs) in terms of relative-c.m.~matrix elements by
+transforming the bra and ket spaces separately.
+In particular, we relate $JT$-reduced
+matrix elements (RMEs) between $LSJT$-scheme states:
+\begin{multline}
+\label{eqn-moshinsky-xform-op-dist-redundant}
+\tprme{N_1' l_1' N_2' l_2';L'S'J'T'g'}{A^{J_0T_0g_0}}{N_1 l_1 N_2 l_2;LSJTg}
+\\
+=\sum_{\substack{\Nr'\lr'[\Nc'\lc']\\ \Nr\lr\Nc\lc}}
+\toverlap{\Nr'\lr'\Nc'\lc';L'}{N_1'l_1'N_2'l_2';L'}
+\toverlap{\Nr\lr\Nc\lc;L}{N_1l_1N_2l_2;L}
+\\
+\times
+\trme{\Nr' \Nr' \Nc' \lc';L'S'J'T'g'}{A^{J_0T_0g_0}}{\Nr \lr \Nc \lc; LSJTg}.
+\end{multline}
+The symmetry properties of the operator enforce $\Delta{J'J_0J}$,
+$\Delta{T'T_oT}$, and $g'+g_0+g\cong0$.
+ Again, it will be important to realize that, so far,
+we have been working with distinguishable-particle states: on the LHS, note that we have
+\textit{distinguishable}-particle TBMEs, and, more subtly, we have not
+imposed any restrictions on the summation due to antisymmetry
+constraints on the labels of relative states.
+
+The particular
+Wigner-Eckhart normalization convention adopted for the $JT$-reduced
+matrix elements should
+be kept in mind, since it enters into the derivation at various points
+below, both on the angular momentum side and the isospin side.  Under
+the \textit{group theoretic} convention (used by Rose),
+\begin{equation}
+\label{eqn-we-group}
+\me[2]{J'T'\\M_J'M_T'}{A^{J_0T_0}_{M_{J0}M_{T0}}}{JT\\M_JM_T}
+=
+\cg{J}{M_J}{J_0}{M_{J0}}{J'}{M_J'}
+\cg{T}{M_T}{T_0}{M_{T0}}{T'}{M_T'}
+\trme{J'T'}{A^{J_0T_0}}{JT},
+\end{equation}
+ while, under the common \textit{angular momentum} convention of
+ Racah (used by Edmonds),
+\begin{equation}
+\label{eqn-we-racah}
+\me[2]{J'T'\\M_J'M_T'}{A^{J_0T_0}_{M_{J0}M_{T0}}}{JT\\M_JM_T}
+=
+(-)^{2J_0+2T_0} \frac1{\hat{J}'\hat{T}'}
+\cg{J}{M_J}{J_0}{M_{J0}}{J'}{M_J'}
+\cg{T}{M_T}{T_0}{M_{T0}}{T'}{M_T'}
+\trme{J'T'}{A^{J_0T_0}}{JT}.
+\end{equation}
+Thus, reduced matrix elements under angular momentum (a.m.) and group
+theory (g.t.) conventions are related by
+\begin{equation}
+\trme{J'T'}{A^{J_0T_0}}{JT}_{\text{a.m.}}=
+(-)^{2J_0+2T_0} {\hat{J}'\hat{T}'}
+\trme{J'T'}{A^{J_0T_0}}{JT}_{\text{g.t.}}.
+\end{equation}
+For the identity operator, 
+$\trme{J'T'}{\unity^{00}}{JT}_{\text{g.t.}}= 1$, but
+$\trme{J'T'}{\unity^{00}}{JT}_{\text{a.m.}}= {\hat{J}'\hat{T}'}$.
+
+We shall adhere to the group theoretic convention
+of~(\ref{eqn-we-group}) below, but beware that
+Racah's conventions are widely followed in the shell model literature
+(\textit{e.g.}, Talmi and Suhonen).  
+The phase factors
+in~(\ref{eqn-we-racah}), which arise
+from the relation between $3j$ symbols and Clebsch-Gordan
+coefficients, are only relevant to operators carrying an odd fermion
+number and thus do not affect the two-body operators under
+consideration here in the Moshinsky transformation.  However, the dimension factors
+[$\hat{J}\equiv(2J+1)^{1/2}$] do enter into the derivation below: in
+Racah's reduction formula for matrix elements of products of operators
+and in the branching from isospin scheme to $pn$ scheme.  
+
+
+Since $A$ is obtained from a \textit{relative} operator
+$\Arel$, the relative-c.m.~matrix element imposes the Kronecker delta
+constraint $(\Nc'\lc')=(\Nc\lc)$.  It may therefore seem natural to eliminate
+the summation over $(\Nc'\lc')$ in~\ref{eqn-moshinsky-xform-op-dist-redundant}, to obtain
+\begin{multline}
+\label{eqn-moshinsky-xform-op-dist-NcmLcm}
+\tprme{N_1' l_1' N_2' l_2';L'S'J'T'g'}{A^{J_0T_0g_0}}{N_1 l_1 N_2
+  l_2;LSJTg}
+\\
+=\sum_{\Nc\lc}\sum_{\substack{\Nr'\lr'\\ \Nr\lr}}
+\toverlap{\Nr'\lr'\Nc\lc;L'}{N_1'l_1'N_2'l_2';L'}
+\toverlap{\Nr\lr\Nc\lc;L}{N_1l_1N_2l_2;L}
+\\
+\times
+\trme{\Nr' \Nr' \Nc \lc;L'S'J'T'g'}{A^{J_0T_0g_0}}{\Nr \lr \Nc \lc; LSJTg}.
+\end{multline}
+
+However, we shall find it useful to base our implementation on the
+original expression~\pref{eqn-moshinsky-xform-op-dist-NcmLcm} for the
+transformation, which reflects the simple ``matrix-matrix-matrix
+multiplication'' structure which one expects of a similarity
+transformation.  The constraint that the Moshinsky brackets conserve
+$N$ enforces a block-diagonal structure to the transformation
+matrices, if we organize our bases by $N$.  While the reduction in
+the number of summation indices obtained
+in~\pref{eqn-moshinsky-xform-op-dist-NcmLcm} may seem like a
+``natural'' simplification, it has the disadvantage that it destroys
+the simple matrix-matrix-matrix mutliplication structure.  The RHS
+of~\pref{eqn-moshinsky-xform-op-dist-NcmLcm} may still be interpreted
+as a \textit{sum}, over $(\Nc\lc)$, of matrix-matrix-matrix products,
+where the transformation matrices are indexed by
+$(\Nr\lr,N_1l_1N_2l_2)$ at fixed $(\Nc\lc)$, and the untransformed
+matrices are indexed by the relative quantum numbers only, as
+$(\Nr'\lr',\Nr\lr)$, at fixed $(\Nc\lc)$.  However, this formulation
+is not as conducive to making use of the block structure in $N$.
+
+We must still evaluate the relative-c.m.~matrix elements $\trme{\Nr'
+  \lr' \Nc \lc;L'S'J'T'g'}{A^{J_0T_0g_0}}{\Nr \lr \Nc \lc; LSJTg}$ in
+terms of the underlying relative matrix elements $\trme{\Nr' \Nr'
+  ;\lr' S'\Jr'T'g'}{\Arel^{J_0T_0g_0}}{\Nr \lr; \lr S\Jr Tg}$.  These
+relative matrix elements are the starting point for the Moshinsky
+transformation.  The difference between relative and
+relative-c.m.~matrix elements arises from the presence ``spectator''
+c.m.~excitations.  Although the operator $A$ acts as the identity on
+the c.m.~space (recall $A\equiv\Arel\times\unitycm$), the angular
+momentum of the c.m.~excitation affects the value of the
+relative-c.m.~matrix element through the angular momentum coupling.
+
+The basic idea is to use
+Racah's reduction formula for reduced matrix elements of the product
+of two spherical tensor operators acting on two different spaces, to
+factorize $\trme{}{A^{J_0}}{}\propto\trme{}{\Arel^{J_0}}{}\trme{}{\unity^{0}}{}$.
+If the second operator is the
+identity operator, Racah's reduction formula becomes, under the group theoretic convention, 
+\begin{equation}
+\rme[2]{J_1' J_2\\J'}{(A_1^{\lambda}\times\unity^0)^\lambda}{J_1J_2\\J}
+=(-)^{J_1'+J_2+J+\lambda}\hat{J}_1'\hat{J}\sixj{J_1'}{J'}{J_2}{J}{J_1}{\lambda}
+\trme{J_1'}{A_1^\lambda}{J_1}.
+\end{equation}
+We shall denote this prefactor for first-system operators by
+\begin{equation}
+R_{1,\text{g.t.}}(J_1'J';J_1J;J_2\lambda)\equiv(-)^{J_1'+J_2+J+\lambda}\hat{J}_1'\hat{J}\sixj{J_1'}{J'}{J_2}{J}{J_1}{\lambda}.
+\end{equation}
+Alternatively, under the angular momentum convention,
+\begin{equation}
+\rme[2]{J_1' J_2\\J'}{(A_1^{\lambda}\times\unity^0)^\lambda}{J_1J_2\\J}
+=(-)^{J_1'+J_2+J+\lambda}\hat{J}'\hat{J}\sixj{J_1'}{J'}{J_2}{J}{J_1}{\lambda}
+\trme{J_1'}{A_1^\lambda}{J_1}.
+\end{equation}
+
+However, to make use of such a factorization in evaluating the
+relative-c.m.~matrix element, we must first separate out the angular
+momentum of the c.m.~excitation from the other angular momenta in the
+coupling, so that it can fulfil the role of the ``second system''
+angular momentum.  
+In general, the
+$(12)3-(13)2$ recoupling transformation bracket is given by
+\begin{equation}
+\overlapZ{j_1}{j_2}{j_3}{J_{12}}{J_{13}}{J}
+=(-)^{j_2+j_3+J_{12}+J_{13}}
+\hat{J}_{12}\hat{J}_{13}\sixj{j_1}{j_2}{J_{12}}{J}{j_3}{J_{13}}
+\equiv Z(j_1j_2j_3;J_{12}J_{13};J),
+\end{equation}
+where the horizontal alignment of the angular momentum labels on the
+LHS is intended to indicate that it is $j_1$ and $j_2$ which couple to give $J_{12}$ in
+the bra, but that it is $j_1$ and $j_3$ which couple to give $J_{13}$ in the ket.  We
+adopt the letter $Z$ for this $(12)3-(13)2$ ``unitary recoupling
+coefficient'', following Millener's usage in the $\grpsu{3}$ scheme,
+although in Millener's notation the arrangement of arguments would be
+$Z(j_2j_1Jj_3J_{12}J_{13})$, which is somewhat less transparent for
+present purposes.  
+In particular, for the present problem the
+angular momenta recouple as
+\begin{equation}
+\begin{aligned}
+\ketcoupled{\lr}{\lc}{S}{L}{J}
+&=\sum_{\Jr} \overlapZ{\lr}{\lc}{S}{L}{\Jr}{J}\,\ketcoupledmid{\lr}{\lc}{S}{\Jr}{J}\\
+&=\sum_{\Jr}Z(\lr\lc S;L\Jr;J)\,\ketcoupled{\lr}{S}{\lc}{\Jr}{J}
+.
+\end{aligned}
+\end{equation}
+We thus have
+\begin{multline}
+\trme{\Nr' \lr' \Nc \lc;L'S'J'T'g'}{A^{J_0T_0g_0}}{\Nr \lr \Nc \lc; LSJTg}
+\\=\sum_{\Jr'\Jr}
+Z(\lr'\lc S';L'\Jr';J')
+Z(\lr\lc S;L\Jr;J)
+R_{1,\text{g.t.}}(\Jr' J';\Jr J;\lc J_0)
+\\
+\times
+\trme{\Nr' \Nr' ;\lr' S'\Jr'T'g'}{\Arel^{J_0T_0g_0}}{\Nr \lr; \lr S\Jr Tg}.
+\end{multline}
+
+\subsection{Recoupling to $jjJT$-scheme matrix elements}
+
+\subsection{Accounting for the fermionic nature of the states}
+
+\subsection{Branching to $jjJpn$-scheme matrix elements}
+
+\subsection{Summary of basis indexing schemes}
+
+%%\section*{Acknowledgements}
+%%\label{sec-acknowledgements} 
+
+\bibliographystyle{apsrev4-1}
+%%\bibliographystyle{apsrevm}
+\bibliography{master,mc,theory,expt,data,books,proc,misc,natorb}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document} 
