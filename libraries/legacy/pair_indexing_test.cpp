@@ -3,7 +3,7 @@
   Created by M. A. Caprio, University of Notre Dame.
 
   4/23/11 (mac): Originated.
-  Last modified 4/23/11.
+  10/9/16 (pjf): Rename mcpp -> mcutils.
 
 ******************************************************************************/
 
@@ -12,7 +12,7 @@
 #include <iomanip>
 
 #include "am/halfint.h"
-#include "mcpp/profiling.h"
+#include "mcutils/profiling.h"
 
 #include "legacy/pair_indexing.h"
 

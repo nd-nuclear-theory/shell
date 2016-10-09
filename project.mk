@@ -17,13 +17,10 @@ project_name := shellutils
 modules := libraries/moshinsky libraries/relative libraries/legacy libraries/no
 modules += libraries/spline
 
-# additional libraries -- static copy (perhaps to be converted to submodule)
-modules += libraries/mcpp
-
 # additional libraries -- cloned as submodule
 #
 # Dependency: basis <- am
-modules += libraries/basis libraries/am libraries/cppformat
+modules += libraries/basis libraries/am libraries/mcutils libraries/cppformat
 
 
 #programs

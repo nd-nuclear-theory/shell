@@ -47,11 +47,12 @@
 
   7/16/16 (mac): Created.
   7/25/16 (mac): Update to use WriteRelativeOperatorLSJT.
+  10/9/16 (pjf): Rename mcpp -> mcutils.
 
 ****************************************************************/
 
 #include "basis/lsjt_operator.h"
-#include "mcpp/parsing.h"
+#include "mcutils/parsing.h"
 #include "relative/construct_relative.h"
 
 ////////////////////////////////////////////////////////////////

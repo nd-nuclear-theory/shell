@@ -26,6 +26,7 @@
 
   7/16/16 (mac): Created.
   8/16/16 (mac): Add diagnostic output of relative-cm matrix elements.
+  10/9/16 (pjf): Rename mcpp -> mcutils.
 
 ****************************************************************/
 
@@ -35,8 +36,8 @@
 #include "basis/lsjt_operator.h"
 #include "basis/jjjt_operator.h"
 #include "basis/jjjpnorb_operator.h"
-#include "mcpp/parsing.h"
-#include "mcpp/profiling.h"
+#include "mcutils/parsing.h"
+#include "mcutils/profiling.h"
 
 #include "moshinsky/moshinsky_xform.h"
 

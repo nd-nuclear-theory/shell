@@ -4,6 +4,8 @@
   Mark A. Caprio
   University of Notre Dame
 
+  10/9/16 (pjf): Rename mcpp -> mcutils.
+
 ****************************************************************/
 
 #include <fstream>
@@ -12,7 +14,7 @@
 #include "basis/jjjt_operator.h"
 #include "basis/jjjpnorb_operator.h"
 
-#include "mcpp/profiling.h"
+#include "mcutils/profiling.h"
 #include "relative/construct_relative.h"
 #include "moshinsky/moshinsky_xform.h"
 

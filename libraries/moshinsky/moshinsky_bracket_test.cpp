@@ -5,6 +5,8 @@
   M. A. Caprio
   University of Notre Dame
 
+  10/9/16 (pjf): Rename mcpp -> mcutils.
+
 ******************************************************************************/
 
 
@@ -14,8 +16,8 @@
 #include <iomanip>
 #include <algorithm>
 
-#include "mcpp/arithmetic.h"
-#include "mcpp/profiling.h"
+#include "mcutils/arithmetic.h"
+#include "mcutils/profiling.h"
 
 #include "moshinsky/moshinsky_bracket.h"
 

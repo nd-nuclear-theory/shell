@@ -8,6 +8,7 @@
   4/25/25 (mac): Tests of lj space indexing.
   8/26/16 (mac): Minimal patches to serve as unit test for deprecated legacy 
     library w/in shell project.
+  10/9/16 (pjf): Rename mcpp -> mcutils.
 
 ******************************************************************************/
 
@@ -20,7 +21,7 @@
 #include <iomanip>
 
 #include "am/halfint.h"
-#include "mcpp/profiling.h"
+#include "mcutils/profiling.h"
 
 using namespace std;
 using namespace legacy;
