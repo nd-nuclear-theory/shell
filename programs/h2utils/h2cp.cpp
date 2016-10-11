@@ -9,15 +9,6 @@
 
   Syntax: h2cp infile [ outfile [ N1b N2b ] ]
 
-  Created by M. A. Caprio, University of Notre Dame.
-  4/18/11 (mac): Originated.
-  4/25/11 (mac): Update required headers.
-  9/1/11 (mac): Extract sector copy function to library.
-  3/12/12 (mac): Update to new protocol for iteration over two-body state types.
-  1/29/23 (mac): Update to mfdn_h2 class-based I/O.  Generalized master loop to allow 
-    unrestricted output truncation.
-  4/25/15 (mac): Reformat source file.
-
   Outline for seqential transfer of sectors:
 
     for each (J,Tz,g) sector defined in maximum of input and output truncations
@@ -30,19 +21,28 @@
         write sector
       free sector (input and output)
 
+  Mark A. Caprio
+  University of Notre Dame
+
+  4/18/11 (mac): Originated.
+  4/25/11 (mac): Update required headers.
+  9/1/11 (mac): Extract sector copy function to library.
+  3/12/12 (mac): Update to new protocol for iteration over two-body state types.
+  1/29/23 (mac): Update to mfdn_h2 class-based I/O.  Generalized master loop to allow 
+    unrestricted output truncation.
+  4/25/15 (mac): Reformat source file.
+  10/11/16 (mac): Integrate into shell project.
+
 ******************************************************************************/
 
-
-#include <shell/shell_2body.h>
-#include <shell/mfdn_h2.h>
 
 #include <iostream>
 #include <iomanip>
 #include <string>
 
-#include <mcpp/profiling.h>
-
-using namespace shell;
+#include "tbme/h2_io.h"
+#include "legacy/shell_2body.h"
+#include "mcpp/profiling.h"
 
 int main(int argc, char **argv)
 {
@@ -104,16 +104,16 @@ int main(int argc, char **argv)
   ////////////////////////////////////////////////////////////////
 
   // input stream initialization
-  InMFDnH2Stream is;
-  MFDnH2Header is_header;
+  shell::InMFDnH2Stream is;
+  shell::MFDnH2Header is_header;
   is.Open (is_name, is_header);
   is.PrintDiagnostic ();
   std::cout << std::endl;
 
   // input basis/matrix initialization
-  TwoBodyBasisNljTzJP input_basis;
+  legacy::TwoBodyBasisNljTzJP input_basis;
   input_basis.InitializeN1bN2b(is_header.N1b, is_header.N2b);
-  TwoBodyMatrixNljTzJP input_matrix(input_basis);
+  legacy::TwoBodyMatrixNljTzJP input_matrix(input_basis);
 
   ////////////////////////////////////////////////////////////////
   // output initialization
@@ -128,14 +128,14 @@ int main(int argc, char **argv)
 
   // output basis/matrix initialization
   //   only needed if target_defined but defined in any case to avoid complicated definitions due to scoping issues
-  TwoBodyBasisNljTzJP output_basis;
+  legacy::TwoBodyBasisNljTzJP output_basis;
   output_basis.InitializeN1bN2b(N1b, N2b);
-  TwoBodyMatrixNljTzJP output_matrix(output_basis);
+  legacy::TwoBodyMatrixNljTzJP output_matrix(output_basis);
 
   // output stream initialization
-  OutMFDnH2Stream os;
+  shell::OutMFDnH2Stream os;
   // take header contents from input
-  MFDnH2Header os_header; 
+  shell::MFDnH2Header os_header; 
   os_header.Initialize(output_basis);
 	
   // open output stream (if target defined)
@@ -161,7 +161,7 @@ int main(int argc, char **argv)
   int N2b_master = std::max( is_header.N2b, os_header.N2b );
 
   // iterate over sectors
-  for (SectorNljTzJP sector(N1b_master,N2b_master); sector.InRange(); ++sector)
+  for (legacy::SectorNljTzJP sector(N1b_master,N2b_master); sector.InRange(); ++sector)
     {
 
       // determine whether sector exists in output
@@ -206,7 +206,7 @@ int main(int argc, char **argv)
 	  // populate matrix elements (if input exists)
 	  //   else matrix elements are left undisturbed (initialized to zero)
 	  if (input_matrix.HasSector(sector))
-	    TwoBodyMatrixSectorCopy(input_matrix, output_matrix, sector);
+	    legacy::TwoBodyMatrixSectorCopy(input_matrix, output_matrix, sector);
 			
 	  // write sector
 	  os.WriteSector(output_matrix);

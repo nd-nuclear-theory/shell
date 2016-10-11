@@ -1,42 +1,35 @@
 /****************************************************************
-  mfdn_h2.h                       
+  h2_io.h                       
 
   Defines I/O class for MFDn H2 interaction file formats.
                                   
   Mark A. Caprio
   University of Notre Dame
 
-  8/31/12 (mac): Adapted from mfdn_io.h.  
+  8/31/12 (mac): Adapted from mfdn_io.h (as mfdn_h2).  
      -- Converted I/O to class, from functions acting on stream
      argument.
      -- Added support for binary I/O and format code.
-  1/28/13 (mac): Completed implementation.
+  1/28/13 (mac): Complete implementation.
   7/25/14 (mac): Add matrix (".mat") format for H2 files.
-  4/25/15 (mac): Source file reformatted.
-   
+  4/25/15 (mac): Reformat source file.
+  10/11/16 (mac):
+    -- Rename to h2_io.
+    -- Integrate into shell project build.
+     
 ****************************************************************/
 
-#ifndef mfdn_h2_h
-#define mfdn_h2_h
-
-#include <shell/shell_2body.h>
+#ifndef H2_IO_H_
+#define H2_IO_H_
 
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <string>
 
+#include "legacy/shell_2body.h"
+
 namespace shell {
-
-
-  ////////////////////////////////////////////////////////////////
-  // error handling utilities for h2utils
-  //   (admittedly not at all specific to H2 format so perhaps 
-  //   be abstracted to another module)
-  ////////////////////////////////////////////////////////////////
-
-  void ParsingError (const std::string& message, int line_count, const std::string& line);
-  void ParsingCheck (std::istringstream& line_stream, int line_count, const std::string& line);
 
   ////////////////////////////////////////////////////////////////
   // H2 header data
@@ -51,7 +44,7 @@ namespace shell {
     int N1b, N2b;
     int matrix_size_PPNN, matrix_size_PN;
 
-    void Initialize(const TwoBodyBasisNljTzJP& basis);
+    void Initialize(const legacy::TwoBodyBasisNljTzJP& basis);
   };
 
   ////////////////////////////////////////////////////////////////
@@ -80,23 +73,23 @@ namespace shell {
     ~OutMFDnH2Stream ()  {delete stream_;};
     void Open (const std::string& filename, const MFDnH2Header& header);
     void PrintDiagnostic (std::ostream& log_stream = std::cout);
-    void WriteSector (const TwoBodyMatrixNljTzJP& matrix);
+    void WriteSector (const legacy::TwoBodyMatrixNljTzJP& matrix);
     void Close ();
 
   private:
     // specialized methods
     void WriteHeaderText() const;
     void WriteHeaderBin() const;
-    void WriteSectorText (const TwoBodyMatrixNljTzJP& matrix);
-    void WriteSectorMatrix (const TwoBodyMatrixNljTzJP& matrix);
-    void WriteSectorBin (const TwoBodyMatrixNljTzJP& matrix);
+    void WriteSectorText (const legacy::TwoBodyMatrixNljTzJP& matrix);
+    void WriteSectorMatrix (const legacy::TwoBodyMatrixNljTzJP& matrix);
+    void WriteSectorBin (const legacy::TwoBodyMatrixNljTzJP& matrix);
 
     // data
     std::ofstream* stream_;
     std::string filename_;
     H2TextBinaryMode text_binary_mode_;  
     MFDnH2Header header_;
-    SectorNljTzJP sector_;
+    legacy::SectorNljTzJP sector_;
   };
 
 
@@ -110,24 +103,24 @@ namespace shell {
     ~InMFDnH2Stream ()  {delete stream_;};
     void Open (const std::string& filename, MFDnH2Header& header);
     void PrintDiagnostic (std::ostream& log_stream = std::cout);
-    void ReadSector (TwoBodyMatrixNljTzJP& matrix, bool store = true);
-    void SkipSector (TwoBodyMatrixNljTzJP& matrix); // wrapper for ReadSector with no storage
+    void ReadSector (legacy::TwoBodyMatrixNljTzJP& matrix, bool store = true);
+    void SkipSector (legacy::TwoBodyMatrixNljTzJP& matrix); // wrapper for ReadSector with no storage
     void Close ();
 
   private:
     // specialized methods
     void ReadHeaderText();
     void ReadHeaderBin();
-    void ReadSectorText (TwoBodyMatrixNljTzJP& matrix, bool store);
-    void ReadSectorMatrix (TwoBodyMatrixNljTzJP& matrix, bool store);
-    void ReadSectorBin (TwoBodyMatrixNljTzJP& matrix, bool store);
+    void ReadSectorText (legacy::TwoBodyMatrixNljTzJP& matrix, bool store);
+    void ReadSectorMatrix (legacy::TwoBodyMatrixNljTzJP& matrix, bool store);
+    void ReadSectorBin (legacy::TwoBodyMatrixNljTzJP& matrix, bool store);
 
     // data
     std::ifstream* stream_;
     std::string filename_;
     H2TextBinaryMode text_binary_mode_;  
     MFDnH2Header header_;
-    SectorNljTzJP sector_;
+    legacy::SectorNljTzJP sector_;
   };
 
 

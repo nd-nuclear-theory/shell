@@ -1,13 +1,12 @@
 /****************************************************************
-  mfdn_scaling.cpp
+  oscillator_parameters.cpp
 
-  Mark A. Caprio, University of Notre Dame.
-
-  Last modified 4/25/15.
+  Mark A. Caprio
+  University of Notre Dame
 
 ****************************************************************/
 
-#include <shell/mfdn_scaling.h>
+#include <tbme/oscillator_parameters.h>
 
 namespace shell {
 

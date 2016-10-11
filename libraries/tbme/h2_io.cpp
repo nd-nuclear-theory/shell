@@ -1,14 +1,12 @@
 /****************************************************************
-  mfdn_h2.cpp
+  h2_io.cpp
 
   Mark A. Caprio
   University of Notre Dame
 
-  Last modified 4/25/15.
-
 ****************************************************************/
 
-#include <shell/mfdn_h2.h>
+#include "tbme/h2_io.h"
 
 #include <iostream>
 #include <fstream>
@@ -16,28 +14,9 @@
 #include <sstream>
 #include <string>
 
+#include "mcpp/parsing.h"
+
 namespace shell {
-
-
-  ////////////////////////////////////////////////////////////////
-  // error handling utilities for h2utils
-  //   (admittedly not at all specific to H2 format so perhaps 
-  //   be abstracted to another module)
-  ////////////////////////////////////////////////////////////////
-
-  void ParsingError (const std::string& message, int line_count, const std::string& line)
-  {
-    std::cerr << std::endl;
-    std::cerr << message << std::endl;
-    std::cerr << "Input line " << line_count << ": " << line  << std::endl;
-    std::exit(EXIT_FAILURE);
-  }
-	
-  void ParsingCheck (std::istringstream& line_stream, int line_count, const std::string& line)
-  {
-    if (!line_stream)
-      ParsingError("Failed parsing line (missing or incorrect arguments)", line_count, line);
-  }
 
   ////////////////////////////////////////////////////////////////
   // file format code
@@ -89,9 +68,9 @@ namespace shell {
   ////////////////////////////////////////////////////////////////
   // order of state types in file
 	
-  TwoSpeciesStateType StateTypeOrderingMFDnH2 (int i)
+  legacy::TwoSpeciesStateType StateTypeOrderingMFDnH2 (int i)
   {
-    static const TwoSpeciesStateType state_type[] = {kPP, kNN, kPN};
+    static const legacy::TwoSpeciesStateType state_type[] = {legacy::kPP, legacy::kNN, legacy::kPN};
     return state_type[i];
   }
 
@@ -107,36 +86,36 @@ namespace shell {
   const TwoSpeciesStateTypeOnsager kPNOnsager = 12;
   const TwoSpeciesStateTypeOnsager kNNOnsager = 22;
 
-  TwoSpeciesStateType TwoSpeciesStateTypeFromOnsager (TwoSpeciesStateTypeOnsager state_type_onsager)
+  legacy::TwoSpeciesStateType TwoSpeciesStateTypeFromOnsager (TwoSpeciesStateTypeOnsager state_type_onsager)
   {
-    TwoSpeciesStateType state_type;
+    legacy::TwoSpeciesStateType state_type;
     switch (state_type_onsager)
       {
       case kPPOnsager : 
-	state_type = kPP;
+	state_type = legacy::kPP;
 	break;
       case kPNOnsager : 
-	state_type = kPN;
+	state_type = legacy::kPN;
 	break;
       case kNNOnsager : 
-	state_type = kNN;
+	state_type = legacy::kNN;
 	break;
       }
     return state_type;
   }
 
-  TwoSpeciesStateTypeOnsager TwoSpeciesStateTypeToOnsager (TwoSpeciesStateType state_type)
+  TwoSpeciesStateTypeOnsager TwoSpeciesStateTypeToOnsager (legacy::TwoSpeciesStateType state_type)
   {
     TwoSpeciesStateTypeOnsager state_type_onsager;
     switch (state_type)
       {
-      case kPP : 
+      case legacy::kPP : 
 	state_type_onsager = kPPOnsager;
 	break;
-      case kPN : 
+      case legacy::kPN : 
 	state_type_onsager = kPNOnsager;
 	break;
-      case kNN : 
+      case legacy::kNN : 
 	state_type_onsager = kNNOnsager;
 	break;
       }
@@ -173,14 +152,14 @@ namespace shell {
 
   // currently hard-coded for two-species (pn) work, but this could easily be adjusted
 
-  void MFDnH2Header::Initialize(const TwoBodyBasisNljTzJP& basis)
+  void MFDnH2Header::Initialize(const legacy::TwoBodyBasisNljTzJP& basis)
   {
     format = kH2FileFormat;
     num_types = 2;
     N1b = basis.GetN1b(); 
     N2b = basis.GetN2b();
-    matrix_size_PPNN = TwoBodyMatrixNljTzJPDimension(basis,kPP); 
-    matrix_size_PN = TwoBodyMatrixNljTzJPDimension(basis,kPN);
+    matrix_size_PPNN = legacy::TwoBodyMatrixNljTzJPDimension(basis,legacy::kPP); 
+    matrix_size_PN = legacy::TwoBodyMatrixNljTzJPDimension(basis,legacy::kPN);
   }
 
   ////////////////////////////////////////////////////////////////
@@ -306,7 +285,7 @@ namespace shell {
 
   }
 
-  void OutMFDnH2Stream::WriteSector (const TwoBodyMatrixNljTzJP& matrix)
+  void OutMFDnH2Stream::WriteSector (const legacy::TwoBodyMatrixNljTzJP& matrix)
   {
     // invoke basic write code
     if (text_binary_mode_ == kText)
@@ -328,10 +307,10 @@ namespace shell {
 
   }
 
-  void OutMFDnH2Stream::WriteSectorText (const TwoBodyMatrixNljTzJP& matrix)
+  void OutMFDnH2Stream::WriteSectorText (const legacy::TwoBodyMatrixNljTzJP& matrix)
   {
     // recover sector properties
-    const TwoSpeciesStateType state_type = sector_.GetStateType();
+    const legacy::TwoSpeciesStateType state_type = sector_.GetStateType();
     const int J = sector_.GetJ();
     const int g = sector_.GetGrade();
     const int dimension = matrix.GetTwoBodyBasis().GetDimension(state_type,J,g);
@@ -345,8 +324,8 @@ namespace shell {
     for (int k1 = 0; k1 < dimension; ++k1)
       for (int k2 = k1; k2 < dimension; ++k2)
 	{
-	  TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
-	  TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
+	  legacy::TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
+	  legacy::TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
 				
 	  int twice_J = 2*J;
 				
@@ -361,10 +340,10 @@ namespace shell {
 	}
   }
 
-  void OutMFDnH2Stream::WriteSectorMatrix (const TwoBodyMatrixNljTzJP& matrix)
+  void OutMFDnH2Stream::WriteSectorMatrix (const legacy::TwoBodyMatrixNljTzJP& matrix)
   {
     // recover sector properties
-    const TwoSpeciesStateType state_type = sector_.GetStateType();
+    const legacy::TwoSpeciesStateType state_type = sector_.GetStateType();
     const int J = sector_.GetJ();
     const int g = sector_.GetGrade();
     const int dimension = matrix.GetTwoBodyBasis().GetDimension(state_type,J,g);
@@ -386,18 +365,18 @@ namespace shell {
     for (int k1 = 0; k1 < dimension; ++k1)
       for (int k2 = k1; k2 < dimension; ++k2)
 	{
-	  TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
-	  TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
+	  legacy::TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
+	  legacy::TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
 				
 	  *stream_ << std::setw(16) << matrix.GetMatrixElementNAS(state_type, s1, s2) 
 		   << std::endl;
 	}
   }
 
-  void OutMFDnH2Stream::WriteSectorBin (const TwoBodyMatrixNljTzJP& matrix)
+  void OutMFDnH2Stream::WriteSectorBin (const legacy::TwoBodyMatrixNljTzJP& matrix)
   {
     // recover sector properties
-    const TwoSpeciesStateType state_type = sector_.GetStateType();
+    const legacy::TwoSpeciesStateType state_type = sector_.GetStateType();
     const int J = sector_.GetJ();
     const int g = sector_.GetGrade();
     const int dimension = matrix.GetTwoBodyBasis().GetDimension(state_type,J,g);
@@ -413,8 +392,8 @@ namespace shell {
     for (int k1 = 0; k1 < dimension; ++k1)
       for (int k2 = k1; k2 < dimension; ++k2)
 	{
-	  TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
-	  TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
+	  legacy::TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
+	  legacy::TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
 				
 	  float value = matrix.GetMatrixElementNAS(state_type, s1, s2);
 	  WriteFloat(*stream_,value);
@@ -570,7 +549,7 @@ namespace shell {
 
   }
 
-  void InMFDnH2Stream::ReadSector (TwoBodyMatrixNljTzJP& matrix, bool store)
+  void InMFDnH2Stream::ReadSector (legacy::TwoBodyMatrixNljTzJP& matrix, bool store)
   // default for store is given in class prototype
   {
     // DEBUG: std::cout << "(" << sector_.GetStateType() << sector_.GetJ() << sector_.GetGrade() << ")" << std::flush;
@@ -596,16 +575,16 @@ namespace shell {
 
   }
 
-  void InMFDnH2Stream::SkipSector (TwoBodyMatrixNljTzJP& matrix)
+  void InMFDnH2Stream::SkipSector (legacy::TwoBodyMatrixNljTzJP& matrix)
   {
     // Note that matrix object is still needed as dummy, to use ReadSector machinery, even though matrix is not used
     ReadSector (matrix, false);
   }
 
-  void InMFDnH2Stream::ReadSectorText (TwoBodyMatrixNljTzJP& matrix, bool store)
+  void InMFDnH2Stream::ReadSectorText (legacy::TwoBodyMatrixNljTzJP& matrix, bool store)
   {
     // recover sector properties
-    const TwoSpeciesStateType state_type = sector_.GetStateType();
+    const legacy::TwoSpeciesStateType state_type = sector_.GetStateType();
     const int J = sector_.GetJ();
     const int g = sector_.GetGrade();
     const int dimension = matrix.GetTwoBodyBasis().GetDimension(state_type,J,g);
@@ -617,8 +596,8 @@ namespace shell {
 
 	  // determine expected states
 
-	  TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
-	  TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
+	  legacy::TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
+	  legacy::TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
 				
 	  // read input data
 
@@ -656,10 +635,10 @@ namespace shell {
 	}
   }
 
-  void InMFDnH2Stream::ReadSectorMatrix (TwoBodyMatrixNljTzJP& matrix, bool store)
+  void InMFDnH2Stream::ReadSectorMatrix (legacy::TwoBodyMatrixNljTzJP& matrix, bool store)
   {
     // recover sector properties
-    const TwoSpeciesStateType state_type = sector_.GetStateType();
+    const legacy::TwoSpeciesStateType state_type = sector_.GetStateType();
     const int J = sector_.GetJ();
     const int g = sector_.GetGrade();
     const int dimension = matrix.GetTwoBodyBasis().GetDimension(state_type,J,g);
@@ -693,8 +672,8 @@ namespace shell {
 
 	  // determine expected states
 
-	  TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
-	  TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
+	  legacy::TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
+	  legacy::TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
 				
 	  float input_me;
 				
@@ -709,10 +688,10 @@ namespace shell {
 	}
   }
 
-  void InMFDnH2Stream::ReadSectorBin (TwoBodyMatrixNljTzJP& matrix, bool store)
+  void InMFDnH2Stream::ReadSectorBin (legacy::TwoBodyMatrixNljTzJP& matrix, bool store)
   {
     // recover sector properties
-    const TwoSpeciesStateType state_type = sector_.GetStateType();
+    const legacy::TwoSpeciesStateType state_type = sector_.GetStateType();
     const int J = sector_.GetJ();
     const int g = sector_.GetGrade();
     const int dimension = matrix.GetTwoBodyBasis().GetDimension(state_type,J,g);
@@ -730,8 +709,8 @@ namespace shell {
 	{
 	  // determine expected states
 
-	  TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
-	  TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
+	  legacy::TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
+	  legacy::TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
 				
 	  // read matrix element
 

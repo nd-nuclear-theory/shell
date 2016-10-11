@@ -9,13 +9,17 @@
     h2write output_filename N1b_max N2b_max 
     h2write --count N1b_max N2b_max 
   
-  Created by M. A. Caprio, University of Notre Dame.
+  Mark A. Caprio
+  University of Notre Dame
+
   4/18/11 (mac): Originated.
   4/25/11 (mac): Update required headers.
   3/12/12 (mac): Update to new protocol for iteration over two-body state types.
   8/31/12 (mac): Update to mfdn_h2 class-based I/O.
   10/20/13 (mac): Add special counting-only mode.
   4/25/15 (mac): Reformat source file.
+  10/11/16 (mac): Integrate into shell project.
+
 
 ******************************************************************************/
 
@@ -23,11 +27,9 @@
 #include <fstream>
 #include <iomanip>
 
-#include <mcpp/profiling.h>
+#include "mcpp/profiling.h"
 
-#include <shell/mfdn_h2.h>
-
-using namespace shell;
+#include "tbme/h2_io.h"
 
 int main(int argc, char **argv)
 {
@@ -46,7 +48,7 @@ int main(int argc, char **argv)
   int N2b_max = std::atoi(argv[3]);
 
   // basis initialization
-  TwoBodyBasisNljTzJP output_basis;
+  legacy::TwoBodyBasisNljTzJP output_basis;
   output_basis.InitializeN1bN2b(N1b_max, N2b_max);
 	
   // diagnostic output
@@ -54,8 +56,8 @@ int main(int argc, char **argv)
   std::cout << "File: " << os_name << std::endl;
   std::cout << "Truncation: " << N1b_max << " " << N2b_max << std::endl;
   std::cout << "Matrix size: ";
-  for (TwoSpeciesStateType state_type = kTwoSpeciesStateTypeBegin; state_type <= kTwoSpeciesStateTypeEnd; ++state_type)
-    std::cout << TwoBodyMatrixNljTzJPDimension(output_basis, state_type)  << " ";
+  for (legacy::TwoSpeciesStateType state_type = legacy::kTwoSpeciesStateTypeBegin; state_type <= legacy::kTwoSpeciesStateTypeEnd; ++state_type)
+    std::cout << legacy::TwoBodyMatrixNljTzJPDimension(output_basis, state_type)  << " ";
   std::cout << std::endl;
 
   // abort on special filename "--count"
@@ -67,15 +69,15 @@ int main(int argc, char **argv)
 
   // matrix initialization
 
-  TwoBodyMatrixNljTzJP output_matrix(output_basis);
+  legacy::TwoBodyMatrixNljTzJP output_matrix(output_basis);
 
   // file header
 
-  MFDnH2Header header;
+  shell::MFDnH2Header header;
   header.Initialize(output_basis);
 
   // output stream initialization
-  OutMFDnH2Stream os;
+  shell::OutMFDnH2Stream os;
   os.Open (os_name, header);
   os.PrintDiagnostic (std::cout);
 	
@@ -84,10 +86,10 @@ int main(int argc, char **argv)
   Timer write_time;
   write_time.Start();
   // set matrix to identity matrix
-  for (SectorNljTzJP sector(output_basis); sector.InRange(); ++sector)
+  for (legacy::SectorNljTzJP sector(output_basis); sector.InRange(); ++sector)
     {
       output_matrix.Initialize(sector);
-      TwoBodyMatrixSectorAddIdentity (1.0, output_matrix, sector);
+      legacy::TwoBodyMatrixSectorAddIdentity (1.0, output_matrix, sector);
       os.WriteSector(output_matrix);
       output_matrix.Free(sector);
 	

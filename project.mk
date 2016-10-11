@@ -9,13 +9,18 @@ project_name := shellutils
 # for module.mk include files
 ################################################################
 
+# programs
+
+modules += programs/h2utils
+
 # libraries
 
 # Caution: Order is important since used also in linking.  Caller must
 # precede callee.
 
-modules := libraries/moshinsky libraries/relative libraries/legacy libraries/no
-modules += libraries/spline
+modules += libraries/moshinsky libraries/relative libraries/tbme libraries/no
+
+modules += libraries/legacy  # DEPRECATED
 
 # additional libraries -- static copy (perhaps to be converted to submodule)
 modules += libraries/mcpp
@@ -23,7 +28,7 @@ modules += libraries/mcpp
 # additional libraries -- cloned as submodule
 #
 # Dependency: basis <- am
-modules += libraries/basis libraries/am libraries/cppformat
+modules += libraries/basis libraries/am libraries/cppformat libraries/spline
 
 
 #programs

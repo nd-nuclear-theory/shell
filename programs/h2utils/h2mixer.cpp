@@ -42,21 +42,19 @@
   defined for on-the-fly operators which may be used in linear
   combinations.
 
-  Created by M. A. Caprio, University of Notre Dame.
+  Mark A. Caprio
+  University of Notre Dame
+
   3/14/12 (mac): Originated.
   4/8/12 (mac): Add hw rescaling of homogeneous operators.
   4/11/12 (mac): Fix error in scale input for N!=Z.
   6/22/12 (mac): Add R20 and K20 operators for <NCM> calculations.
   1/30/13 (mac): Update to mfdn_h2 class-based I/O.
   5/24/15 (mac): Add squared angular momentum operator support.
-  Last modified 5/25/15 (mac).
+  10/11/16 (mac): Integrate into shell project.
 
 ******************************************************************************/
 
-
-#include <shell/mfdn_h2.h>
-#include <shell/mfdn_scaling.h>
-#include <shell/shell_separable.h>
 
 #include <cmath>
 #include <iostream>
@@ -65,10 +63,12 @@
 #include <sstream>
 #include <string>
 
-#include <mcpp/profiling.h>
+#include "mcpp/profiling.h"
+#include "mcpp/parsing.h"
+#include "tbme/h2_io.h"
+#include "tbme/oscillator_parameters.h"
+#include "legacy/shell_separable.h"
 
-using namespace std;
-using namespace shell;
 
 ////////////////////////////////////////////////////////////////
 // run parameter storage
@@ -120,35 +120,35 @@ struct MixingAmplitude
   std::string identifier;  // to distinguish various on-the-fly operators
 };
 
-typedef vector<MixingAmplitude> MixingAmplitudes;
+typedef std::vector<MixingAmplitude> MixingAmplitudes;
 
 // input and output matrix descriptors
 //    stream is pointer and allocated dynamically to prevent horrible
 //    compiler errors from default/copy/assignment issues with stream member
 struct InMatrixStream
 {
-  InMatrixStream (const string& filename_) : matrix(), stream() {
+  InMatrixStream (const std::string& filename_) : matrix(), stream() {
     filename=filename_;
   };
-  string filename;
-  InMFDnH2Stream stream;
-  TwoBodyMatrixNljTzJP matrix;
+  std::string filename;
+  shell::InMFDnH2Stream stream;
+  legacy::TwoBodyMatrixNljTzJP matrix;
 };
 
-typedef vector< InMatrixStream > InMatrixStreams;
+typedef std::vector< InMatrixStream > InMatrixStreams;
 
 struct OutMatrixStream
 {
-  OutMatrixStream (const string& filename_) : matrix(), stream() {
+  OutMatrixStream (const std::string& filename_) : matrix(), stream() {
     filename=filename_;
   };
-  string filename;
-  OutMFDnH2Stream stream;
-  TwoBodyMatrixNljTzJP matrix;
+  std::string filename;
+  shell::OutMFDnH2Stream stream;
+  legacy::TwoBodyMatrixNljTzJP matrix;
   MixingAmplitudes mixing_amplitudes;
 };
 
-typedef vector< OutMatrixStream > OutMatrixStreams;
+typedef std::vector< OutMatrixStream > OutMatrixStreams;
 	
 
 ////////////////////////////////////////////////////////////////
@@ -162,7 +162,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
   std::cout << "Parameter input" << std::endl;
   std::cout << std::endl;
 
-  string line;
+  std::string line;
   int line_count = 0;
 
   while ( getline(std::cin, line) )
@@ -171,7 +171,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
       ++line_count;
 
       // set up for parsing
-      istringstream line_stream(line);
+      std::istringstream line_stream(line);
 
       if (line_count == 1)
 	{
@@ -191,12 +191,15 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 
 	  // validate as subset of input truncation
 	  if ( (mixing_parameters.N1b_out > mixing_parameters.N1b_in) || (mixing_parameters.N2b_out > mixing_parameters.N2b_in) )
-	    ParsingError("N1b or N2b values for output exceed corresponding values for input", line_count, line);
+            {
+              std::cerr << "N1b or N2b values for output exceed corresponding values for input" << std::endl;
+              std::exit(EXIT_FAILURE);
+            }
 	}
       else
 	{
 	  // process keyword line
-	  string keyword;
+	  std::string keyword;
 	  line_stream >> keyword;
 	  // no parsing check since blank line is OK
 			
@@ -220,7 +223,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 	    }
 	  else if (keyword == "in")
 	    {
-	      string filename;
+	      std::string filename;
 	      line_stream >> filename;
 	      ParsingCheck (line_stream, line_count, line);
 				
@@ -232,7 +235,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 		  if (in_matrix_streams.size() > 0)
 		    ParsingError("r2k2 basename must be defined before any other input files", line_count, line);
 
-		  string basename;
+		  std::string basename;
 		  line_stream >> basename;
 		  ParsingCheck (line_stream, line_count, line);
 
@@ -252,7 +255,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 	    }			
 	  else if (keyword == "out")
 	    {
-	      string filename;
+	      std::string filename;
 	      line_stream >> filename;
 	      ParsingCheck (line_stream, line_count, line);
 				
@@ -264,7 +267,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 	    {
 	      int out_id = out_matrix_streams.size();
 				
-	      string subkeyword;
+	      std::string subkeyword;
 	      line_stream >> subkeyword;
 	      ParsingCheck (line_stream, line_count, line);
 
@@ -336,7 +339,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 
 		  // one-body term
 		  in_id = kInID_r2;
-		  multiplier = pow(OscillatorLength(mixing_parameters.hw),2) / (mixing_parameters.A * mixing_parameters.A);
+		  multiplier = pow(shell::OscillatorLength(mixing_parameters.hw),2) / (mixing_parameters.A * mixing_parameters.A);
 		  // Note: pow(mixing_parameters.A,2) is fine under gcc but requires cast under PGI
 		  out_matrix_streams.back().mixing_amplitudes.push_back(MixingAmplitude(in_id,multiplier));
 		  std::cout << "Adding to (out#" << out_id << "): (in#" << in_id << ") * " << multiplier 
@@ -344,7 +347,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 
 		  // two-body term
 		  in_id = kInID_r1r2;
-		  multiplier = -2 * pow(OscillatorLength(mixing_parameters.hw),2) / (mixing_parameters.A * mixing_parameters.A);
+		  multiplier = -2 * pow(shell::OscillatorLength(mixing_parameters.hw),2) / (mixing_parameters.A * mixing_parameters.A);
 		  out_matrix_streams.back().mixing_amplitudes.push_back(MixingAmplitude(in_id,multiplier));
 		  std::cout << "Adding to (out#" << out_id << "): (in#" << in_id << ") * " << multiplier 
 		       << " <== rrel2" << std::endl;
@@ -520,7 +523,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 ////////////////////////////////////////////////////////////////
 
 void InitializeInput (const MixingParameters& mixing_parameters, 
-		      TwoBodyBasisNljTzJP& in_basis, 
+		      legacy::TwoBodyBasisNljTzJP& in_basis, 
 		      InMatrixStreams& in_matrix_streams)
 {
   std::cout << std::endl;
@@ -536,7 +539,7 @@ void InitializeInput (const MixingParameters& mixing_parameters,
       it->matrix.SetBasis(in_basis);
 
       // attempt to open file
-      MFDnH2Header header;
+      shell::MFDnH2Header header;
       it->stream.Open(it->filename,header);
       it->stream.PrintDiagnostic();
 		
@@ -544,8 +547,8 @@ void InitializeInput (const MixingParameters& mixing_parameters,
 	
       if ( !((header.N1b == mixing_parameters.N1b_in) && (header.N2b == mixing_parameters.N2b_in)) )
 	{
-	  cerr << "Input file does not match expected input truncation" << std::endl;
-	  exit(EXIT_FAILURE);
+	  std::cerr << "Input file does not match expected input truncation" << std::endl;
+	  std::exit(EXIT_FAILURE);
 	}
 
     }
@@ -557,7 +560,7 @@ void InitializeInput (const MixingParameters& mixing_parameters,
 ////////////////////////////////////////////////////////////////
 
 void InitializeOutput (const MixingParameters& mixing_parameters, 
-		       TwoBodyBasisNljTzJP& out_basis, 
+		       legacy::TwoBodyBasisNljTzJP& out_basis, 
 		       OutMatrixStreams& out_matrix_streams)
 {
   std::cout << std::endl;
@@ -573,7 +576,7 @@ void InitializeOutput (const MixingParameters& mixing_parameters,
       it->matrix.SetBasis(out_basis);
 
       // populate header
-      MFDnH2Header header;
+      shell::MFDnH2Header header;
       header.Initialize(it->matrix.GetTwoBodyBasis());
 
       // open file
@@ -592,19 +595,19 @@ void InitializeOutput (const MixingParameters& mixing_parameters,
 
 
 void ProcessMatrices(const MixingParameters& mixing_parameters, 
-		     const TwoBodyBasisNljTzJP& in_basis, 
+		     const legacy::TwoBodyBasisNljTzJP& in_basis, 
 		     InMatrixStreams& in_matrix_streams,
-		     const TwoBodyBasisNljTzJP& out_basis, 
+		     const legacy::TwoBodyBasisNljTzJP& out_basis, 
 		     OutMatrixStreams& out_matrix_streams)
 {
-  for (SectorNljTzJP sector(in_basis); sector.InRange(); ++sector)
+  for (legacy::SectorNljTzJP sector(in_basis); sector.InRange(); ++sector)
     {
       // progress indicator
-      std::cout << "." << flush;
+      std::cout << "." << std::flush;
 
 
       // recover sector properties
-      const TwoSpeciesStateType state_type = sector.GetStateType();
+      const legacy::TwoSpeciesStateType state_type = sector.GetStateType();
       const int J = sector.GetJ();
       const int g = sector.GetGrade();
 
@@ -639,7 +642,7 @@ void ProcessMatrices(const MixingParameters& mixing_parameters,
 		    {
 		      // process identity 
  
-		      TwoBodyMatrixSectorAddIdentity (
+		      legacy::TwoBodyMatrixSectorAddIdentity (
 						      // multiplier
 						      ampl_it->multiplier, 
 						      // destination matrix
@@ -652,29 +655,29 @@ void ProcessMatrices(const MixingParameters& mixing_parameters,
 
 		      // process angular momentum
 
-		      AngularMomentumType angular_momentum_operator;
-		      TwoSpeciesStateType operator_species;
+		      legacy::AngularMomentumType angular_momentum_operator;
+		      legacy::TwoSpeciesStateType operator_species;
 
 		      // process operator identifier
 		      const std::string identifier = ampl_it->identifier;
 		      // identify operator type (orbital, spin, total)
 		      if (identifier[0] == 'L')
-			angular_momentum_operator = kOrbital;
+			angular_momentum_operator = legacy::kOrbital;
 		      else if (identifier[0] == 'S')
-			angular_momentum_operator = kSpin;
+			angular_momentum_operator = legacy::kSpin;
 		      else if (identifier[0] == 'J')
-			angular_momentum_operator = kTotal;
+			angular_momentum_operator = legacy::kTotal;
 		      // identify nucleon species (proton, neutron, total)
 		      if (identifier.size() == 1)
-			operator_species = kPN;
+			operator_species = legacy::kPN;
 		      else if (identifier[1] == 'p')
-			operator_species = kPP;
+			operator_species = legacy::kPP;
 		      else if (identifier[1] == 'n')
-			operator_species = kNN;
+			operator_species = legacy::kNN;
 		      // std::cout << "DEBUG: identified am " << ampl_it->in_id  << " " << identifier << " " << angular_momentum_operator << " " << operator_species << std::endl;
 
 		      // append operator to linear combination
-		      TwoBodyMatrixSectorAddAngularMomentum (// multiplier
+		      legacy::TwoBodyMatrixSectorAddAngularMomentum (// multiplier
 							     ampl_it->multiplier, 
 							     // operator parameters
 							     angular_momentum_operator,operator_species,
@@ -689,7 +692,7 @@ void ProcessMatrices(const MixingParameters& mixing_parameters,
 		  else
 		    {
 		      // process normal source 
-		      TwoBodyMatrixSectorAdd (
+		      legacy::TwoBodyMatrixSectorAdd (
 					      // source matrix
 					      in_matrix_streams[ampl_it->in_id-1].matrix,  // beware 1-based id
 					      // multiplier
@@ -759,7 +762,7 @@ int main(int argc, char **argv)
   MixingParameters mixing_parameters;
   InMatrixStreams in_matrix_streams;
   OutMatrixStreams out_matrix_streams;
-  TwoBodyBasisNljTzJP in_basis, out_basis;
+  legacy::TwoBodyBasisNljTzJP in_basis, out_basis;
 
   // parse input instructions
   ReadInstructions(mixing_parameters, in_matrix_streams, out_matrix_streams); 

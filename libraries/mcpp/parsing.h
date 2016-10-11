@@ -8,6 +8,7 @@
 
   3/10/16 (mac): Extracted from mfdn_h2.
   7/26/16 (mac): Add function StreamCheck.
+  10/11/16 (mac): Introduce prototype for ParsingError to header file.
 
 ****************************************************************/
 
@@ -49,7 +50,7 @@ void StreamCheck(bool success, const std::string& filename);
 //   StreamCheck(bool(in_stream),in_stream_name);
 
 void ParsingCheck(std::istringstream& line_stream, int line_count, const std::string& line);
-// Provide error message upon parsing failure for line of input.
+// Provide error message upon stream extraction failure for line of input.
 //
 // Limitations: Would ideally also support arguments to give filename
 // and optional supplementary information on expected content.
@@ -80,5 +81,17 @@ void ParsingCheck(std::istringstream& line_stream, int line_count, const std::st
 //      // do stuff with input
 //      ...
 //    }
+
+void ParsingError(const std::string& message, int line_count, const std::string& line);
+// Provide error message on general error in interpreting line of input.
+//
+// Limitations: Would ideally also support arguments to give filename
+// and optional supplementary information on expected content.
+//
+// Arguments:
+//   message (string) : general error message
+//   line_count (int) : line count for error message
+//   line (string) : line text for error message
+
 
 #endif

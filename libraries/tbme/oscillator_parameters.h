@@ -1,17 +1,19 @@
 /****************************************************************
-  mfdn_scaling.h                       
+  oscillator_parameters.h
 
   Defines NCSM scaling parameters, using MFDn values for physical constants.
                                   
-  Mark A. Caprio, University of Notre Dame.
+  Mark A. Caprio
+  University of Notre Dame
 
-  3/14/12 (mac): Initiated.
+  3/14/12 (mac): Initiated (mfdn_scaling).
   4/25/15 (mac): Source file reformatted.
+  10/11/16 (mac): Renamed oscillator_parameters.
 
 ****************************************************************/
 
-#ifndef mfdn_scaling_h
-#define mfdn_scaling_h
+#ifndef OSCILLATOR_PARAMETERS_H_
+#define OSCILLATOR_PARAMETERS_H_
 
 #include <cmath>
 namespace shell {

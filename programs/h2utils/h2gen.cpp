@@ -12,12 +12,15 @@
     beta_p beta_n
     output_basename
 
-  Created by M. A. Caprio, University of Notre Dame.  
+  Mark A. Caprio
+  University of Notre Dame
+
   3/13/12 (mac): Originated.  
   4/4/12 (mac): Phase patch.  
   1/30/13 (mac): Updated to mfdn_h2 class-based I/O.  
   2/14/13 (mac): Updated to pn bases.  
   4/25/15 (mac): Reformat source file.
+  10/11/16 (mac): Integrate into shell project.
 
 ******************************************************************************/
 
@@ -29,14 +32,11 @@
 #include <sstream>
 #include <string>
 
-#include <mcpp/profiling.h>
-#include <am/wigner_gsl.h>
-
-#include <shell/shell_radial_nl.h>
-#include <shell/mfdn_h2.h>
-
-using namespace shell;
-
+#include "mcpp/profiling.h"
+#include "mcpp/parsing.h"
+#include "am/wigner_gsl.h"
+#include "legacy/shell_radial_nl.h"
+#include "tbme/h2_io.h"
 
 ////////////////////////////////////////////////////////////////
 // parameter input from stdin
@@ -108,8 +108,8 @@ void ReadInput(RunParameters& run_parameters)
 struct R2K2RadialMatrices 
 {
   // RadialMatrices r2, r1, k2, k1;
-  RadialMatrices r2_p, r1_p, k2_p, k1_p;
-  RadialMatrices r2_n, r1_n, k2_n, k1_n;
+  legacy::RadialMatrices r2_p, r1_p, k2_p, k1_p;
+  legacy::RadialMatrices r2_n, r1_n, k2_n, k1_n;
 
   void Initialize (const std::string& radial_basename_p, const std::string& radial_basename_n);
 };
@@ -142,9 +142,9 @@ void R2K2RadialMatrices::Initialize (const std::string& radial_basename_p, const
 
 struct OutputMatrices 
 {
-  TwoBodyBasisNljTzJP basis; 
-  TwoBodyMatrixNljTzJP r2, r1r2, k2, k1k2;
-  OutMFDnH2Stream os_r2, os_r1r2, os_k2, os_k1k2;
+  legacy::TwoBodyBasisNljTzJP basis; 
+  legacy::TwoBodyMatrixNljTzJP r2, r1r2, k2, k1k2;
+  shell::OutMFDnH2Stream os_r2, os_r1r2, os_k2, os_k1k2;
 
   void Initialize (int N1b, int N2b, const std::string& output_basename);
 };
@@ -165,7 +165,7 @@ void OutputMatrices::Initialize (int N1b, int N2b, const std::string& output_bas
   // output file header 
   //   common to all output files
 
-  MFDnH2Header output_header;
+  shell::MFDnH2Header output_header;
   output_header.Initialize(basis);
   os_r2.Open(output_basename + "-r2.bin",output_header);
   os_r2.PrintDiagnostic();
@@ -189,7 +189,7 @@ void OutputMatrices::Initialize (int N1b, int N2b, const std::string& output_bas
 
 // ShellScalarOBME gives <b|t|a>
 
-double ShellScalarOBME (const RadialMatrices& radial_matrix, const SPOrbitalNlj& b, const SPOrbitalNlj& a)
+double ShellScalarOBME (const legacy::RadialMatrices& radial_matrix, const legacy::SPOrbitalNlj& b, const legacy::SPOrbitalNlj& a)
 {
 
   int na = a.Getn();
@@ -211,19 +211,19 @@ double ShellScalarOBME (const RadialMatrices& radial_matrix, const SPOrbitalNlj&
 //    for pp/nn states, or (cd|V_T|ab)_pn for pn states
 //    applies radial basis dilations
 
-double ShellScalarOBMEUpgrade (const RadialMatrices& radial_matrix_p, const RadialMatrices& radial_matrix_n,
+double ShellScalarOBMEUpgrade (const legacy::RadialMatrices& radial_matrix_p, const legacy::RadialMatrices& radial_matrix_n,
 			       double scale_p, double scale_n, bool momentum_space, 
-			       TwoSpeciesStateType state_type, int J, const TwoBodyStateNlj& s2, const TwoBodyStateNlj& s1)
+			       legacy::TwoSpeciesStateType state_type, int J, const legacy::TwoBodyStateNlj& s2, const legacy::TwoBodyStateNlj& s1)
 {
 
-  SPOrbitalNlj a = s1.a1;
-  SPOrbitalNlj b = s1.a2;
-  SPOrbitalNlj c = s2.a1;
-  SPOrbitalNlj d = s2.a2;
+  legacy::SPOrbitalNlj a = s1.a1;
+  legacy::SPOrbitalNlj b = s1.a2;
+  legacy::SPOrbitalNlj c = s2.a1;
+  legacy::SPOrbitalNlj d = s2.a2;
 
   double matrix_element = 0.;
 
-  if (state_type == kPP)
+  if (state_type == legacy::kPP)
     {
       if (d == b)
 	matrix_element += scale_p * ShellScalarOBME(radial_matrix_p, c, a);
@@ -235,7 +235,7 @@ double ShellScalarOBMEUpgrade (const RadialMatrices& radial_matrix_p, const Radi
       if (c == b)
 	matrix_element += phase * scale_p * ShellScalarOBME(radial_matrix_p, d, a);
     }
-  else if (state_type == kNN)
+  else if (state_type == legacy::kNN)
     {
       if (d == b)
 	matrix_element += scale_n * ShellScalarOBME(radial_matrix_n, c, a);
@@ -247,7 +247,7 @@ double ShellScalarOBMEUpgrade (const RadialMatrices& radial_matrix_p, const Radi
       if (c == b)
 	matrix_element += phase * scale_n * ShellScalarOBME(radial_matrix_n, d, a);
     }
-  else if (state_type == kPN)
+  else if (state_type == legacy::kPN)
     {
       if (d == b)
 	matrix_element += scale_p * ShellScalarOBME(radial_matrix_p, c, a);
@@ -262,7 +262,7 @@ double ShellScalarOBMEUpgrade (const RadialMatrices& radial_matrix_p, const Radi
 
 // ShellVectorOBRME gives <b||T||a>
 
-double ShellVectorOBRME (const RadialMatrices& radial_matrix, const SPOrbitalNlj& b, const SPOrbitalNlj& a)
+double ShellVectorOBRME (const legacy::RadialMatrices& radial_matrix, const legacy::SPOrbitalNlj& b, const legacy::SPOrbitalNlj& a)
 {
 
   int na = a.Getn();
@@ -274,12 +274,12 @@ double ShellVectorOBRME (const RadialMatrices& radial_matrix, const SPOrbitalNlj
 
   double matrix_element = 0.;
 
-  if ( AllowedTriangle(ja,1,jb) && ((la+lb+1)%2==0) )
+  if ( am::AllowedTriangle(ja,1,jb) && ((la+lb+1)%2==0) )
     {
       // std::cout << "in OBRME " << ParitySign(jb-ja+1) << " "
-      //      << Hat(ja) << " " << ClebschGordan(ja,HalfInt(1,2),1,0,jb,HalfInt(1,2))
+      //      << Hat(ja) << " " << am::ClebschGordan(ja,HalfInt(1,2),1,0,jb,HalfInt(1,2))
       //      << " " << radial_matrix.GetMatrixElement(lb, la, nb, na) << std::endl;
-      matrix_element += ParitySign(jb-ja+1) * Hat(ja) * ClebschGordan(ja,HalfInt(1,2),1,0,jb,HalfInt(1,2))
+      matrix_element += ParitySign(jb-ja+1) * Hat(ja) * am::ClebschGordan(ja,HalfInt(1,2),1,0,jb,HalfInt(1,2))
 	* radial_matrix.GetMatrixElement(lb, la, nb, na);
     }
 
@@ -290,16 +290,16 @@ double ShellVectorOBRME (const RadialMatrices& radial_matrix, const SPOrbitalNlj
 //    Note: The species to be used for "particle 1" and "particle 2" are 
 //    determined by the calling function, which chooses the radial matrices.
 
-double ShellVectorDotTBMEProduct (const RadialMatrices& radial_matrix_1, const RadialMatrices& radial_matrix_2, 
+double ShellVectorDotTBMEProduct (const legacy::RadialMatrices& radial_matrix_1, const legacy::RadialMatrices& radial_matrix_2, 
 				  int J, 
-				  const SPOrbitalNlj& c, const SPOrbitalNlj& d, const SPOrbitalNlj& a, const SPOrbitalNlj& b)
+				  const legacy::SPOrbitalNlj& c, const legacy::SPOrbitalNlj& d, const legacy::SPOrbitalNlj& a, const legacy::SPOrbitalNlj& b)
 {
 
   double matrix_element = 0.;
 
-  if ( AllowedTriangle(a.Getj(),c.Getj(),1) && AllowedTriangle(b.Getj(),d.Getj(),1))
+  if ( am::AllowedTriangle(a.Getj(),c.Getj(),1) && am::AllowedTriangle(b.Getj(),d.Getj(),1))
     {
-      matrix_element += ParitySign(d.Getj() + a.Getj() + J) * Wigner6J(c.Getj(),d.Getj(),J,b.Getj(),a.Getj(),1)
+      matrix_element += ParitySign(d.Getj() + a.Getj() + J) * am::Wigner6J(c.Getj(),d.Getj(),J,b.Getj(),a.Getj(),1)
 	* ShellVectorOBRME(radial_matrix_1,c,a) * ShellVectorOBRME(radial_matrix_2,d,b);
     }
 	
@@ -310,16 +310,16 @@ double ShellVectorDotTBMEProduct (const RadialMatrices& radial_matrix_1, const R
 //   for pp/nn states, or passes through (cd|T.T|ab)_pn for pn states
 //   applies radial basis dilations
 
-double ShellVectorDotTBMEUpgrade (const RadialMatrices& radial_matrix_p, const RadialMatrices& radial_matrix_n, 
+double ShellVectorDotTBMEUpgrade (const legacy::RadialMatrices& radial_matrix_p, const legacy::RadialMatrices& radial_matrix_n, 
 				  double scale_p, double scale_n, bool momentum_space, 
-				  TwoSpeciesStateType state_type, int J, 
-				  const TwoBodyStateNlj& s2, const TwoBodyStateNlj& s1)
+				  legacy::TwoSpeciesStateType state_type, int J, 
+				  const legacy::TwoBodyStateNlj& s2, const legacy::TwoBodyStateNlj& s1)
 {
 
-  SPOrbitalNlj a = s1.a1;
-  SPOrbitalNlj b = s1.a2;
-  SPOrbitalNlj c = s2.a1;
-  SPOrbitalNlj d = s2.a2;
+  legacy::SPOrbitalNlj a = s1.a1;
+  legacy::SPOrbitalNlj b = s1.a2;
+  legacy::SPOrbitalNlj c = s2.a1;
+  legacy::SPOrbitalNlj d = s2.a2;
 
   // bool debug = (extra_sign == +1);
 
@@ -330,7 +330,7 @@ double ShellVectorDotTBMEUpgrade (const RadialMatrices& radial_matrix_p, const R
   // 	std::cout << c << d << a << b << J << " " << state_type << std::endl;
   // }
 
-  if (state_type == kPP)
+  if (state_type == legacy::kPP)
     {
       matrix_element = scale_p * scale_p * ShellVectorDotTBMEProduct (radial_matrix_p, radial_matrix_p, J, c, d, a, b);
       // DEBUG: std::cout << "direct " << matrix_element << std::endl;
@@ -338,13 +338,13 @@ double ShellVectorDotTBMEUpgrade (const RadialMatrices& radial_matrix_p, const R
       matrix_element += phase * scale_p * scale_p * ShellVectorDotTBMEProduct (radial_matrix_p, radial_matrix_p, J, c, d, b, a);
       // DEBUG: std::cout << "total " << matrix_element << std::endl;
     }
-  else if (state_type == kNN)
+  else if (state_type == legacy::kNN)
     {
       matrix_element = scale_n * scale_n * ShellVectorDotTBMEProduct (radial_matrix_n, radial_matrix_n, J, c, d, a, b);
       int phase = - ParitySign(J - a.Getj() - b.Getj());
       matrix_element += phase * scale_n *scale_n * ShellVectorDotTBMEProduct (radial_matrix_n, radial_matrix_n, J, c, d, b, a);
     }
-  else if (state_type == kPN)
+  else if (state_type == legacy::kPN)
     {
       matrix_element = scale_p * scale_n * ShellVectorDotTBMEProduct (radial_matrix_p, radial_matrix_n, J, c, d, a, b);
     }
@@ -360,7 +360,7 @@ double ShellVectorDotTBMEUpgrade (const RadialMatrices& radial_matrix_p, const R
 void GeneratorSector(const R2K2RadialMatrices& r2k2_radial_matrices,
 		     double beta_p, double beta_n,
 		     OutputMatrices& output_matrices, 
-		     const SectorNljTzJP& sector
+		     const legacy::SectorNljTzJP& sector
 		     )
 {
   // std::cout << "sector " << sector.GetStateType() << " " << sector.GetJ() << " " << sector.GetGrade() << ": " << output_matrices.r2.GetDimension(sector) << std::endl;
@@ -374,7 +374,7 @@ void GeneratorSector(const R2K2RadialMatrices& r2k2_radial_matrices,
 
 
   // recover sector properties
-  const TwoSpeciesStateType state_type = sector.GetStateType();
+  const legacy::TwoSpeciesStateType state_type = sector.GetStateType();
   const int J = sector.GetJ();
   const int g = sector.GetGrade();
   const int dimension = output_matrices.basis.GetDimension(state_type,J,g);
@@ -384,8 +384,8 @@ void GeneratorSector(const R2K2RadialMatrices& r2k2_radial_matrices,
     for (int k2 = k1; k2 < dimension; ++k2)
       {
 	// identify states
-	TwoBodyStateNlj s1 = output_matrices.basis.GetState(state_type,J,g,k1);
-	TwoBodyStateNlj s2 = output_matrices.basis.GetState(state_type,J,g,k2);
+	legacy::TwoBodyStateNlj s1 = output_matrices.basis.GetState(state_type,J,g,k1);
+	legacy::TwoBodyStateNlj s2 = output_matrices.basis.GetState(state_type,J,g,k2);
 			
 	// calculate matrix elements
 	const bool kCoordinate = false;
@@ -460,7 +460,7 @@ int main(int argc, char **argv)
   // evaluation
   ////////////////////////////////////////////////////////////////
 
-  for (SectorNljTzJP sector(output_matrices.basis); sector.InRange(); ++sector)
+  for (legacy::SectorNljTzJP sector(output_matrices.basis); sector.InRange(); ++sector)
     {
       GeneratorSector(r2k2_radial_matrices, run_parameters.beta_p, run_parameters.beta_n, output_matrices, sector);
       std::cout << "." << std::flush;

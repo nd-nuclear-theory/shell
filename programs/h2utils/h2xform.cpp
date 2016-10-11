@@ -30,7 +30,9 @@
       if given sector is defined in input truncation
         free sector (input)
 
-  Created by M. A. Caprio, University of Notre Dame.
+  Mark A. Caprio
+  University of Notre Dame
+
   4/18/11 (mac): Originated.
   4/25/11 (mac): Required headers updated.
   8/15/11 (mac): Output of multiple transformation files.
@@ -44,6 +46,7 @@
   12/18/14 (mac): Add OpenMP parallelization of main xform loop.
   4/25/15 (mac): Reformat source file.
   9/23/15 (mac): Fix missing if on free sector.
+  10/11/16 (mac): Integrate into shell project.
 
 ******************************************************************************/
 
@@ -55,13 +58,12 @@
 #include <sstream>
 #include <string>
 
-#include <mcpp/profiling.h>
+#include "mcpp/profiling.h"
+#include "mcpp/parsing.h"
 
-#include <shell/shell_radial_nl.h>
-#include <shell/mfdn_h2.h>
-
-
-using namespace shell;
+#include "legacy/shell_radial_nl.h"
+#include "legacy/shell_indexing_nlj.h"
+#include "tbme/h2_io.h"
 
 
 ////////////////////////////////////////////////////////////////
@@ -72,7 +74,7 @@ using namespace shell;
 
 struct XformRadialMatrices 
 {
-  RadialMatrices xform_p, xform_n;
+  legacy::RadialMatrices xform_p, xform_n;
 
   void Initialize (const std::string& radial_basename_p, const std::string& radial_basename_n);
 };
@@ -90,14 +92,14 @@ void XformRadialMatrices::Initialize (const std::string& radial_basename_p, cons
 // sector transformation
 ////////////////////////////////////////////////////////////////
 
-void TwoBodyMatrixSectorTransform (const TwoBodyMatrixNljTzJP& source_matrix, TwoBodyMatrixNljTzJP& destination_matrix, 
+void TwoBodyMatrixSectorTransform (const legacy::TwoBodyMatrixNljTzJP& source_matrix, legacy::TwoBodyMatrixNljTzJP& destination_matrix, 
 				   const XformRadialMatrices& xform_radial_matrices, 
 				   int N1b_cut, int N2b_cut,
-				   const SectorNljTzJP& sector
+				   const legacy::SectorNljTzJP& sector
 				   )
 {
   // recover sector properties
-  const TwoSpeciesStateType state_type = sector.GetStateType();
+  const legacy::TwoSpeciesStateType state_type = sector.GetStateType();
   const int J = sector.GetJ();
   const int g = sector.GetGrade();
 
@@ -122,8 +124,8 @@ void TwoBodyMatrixSectorTransform (const TwoBodyMatrixNljTzJP& source_matrix, Tw
     for (int k2p = k1p; k2p < dimension; ++k2p)
       {
 	// identify target matrix element
-	TwoBodyStateNlj s1p = destination_matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1p);
-	TwoBodyStateNlj s2p = destination_matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2p);
+	legacy::TwoBodyStateNlj s1p = destination_matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1p);
+	legacy::TwoBodyStateNlj s2p = destination_matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2p);
 
 	// DBG: std::cout << "  Evaluating:" 
 	// DBG:      << " type " << state_type << " J " << J
@@ -172,14 +174,14 @@ void TwoBodyMatrixSectorTransform (const TwoBodyMatrixNljTzJP& source_matrix, Tw
 		  int N12	= 2*n12 + l12p;
 		  int N21	= 2*n21 + l21p;
 		  int N22	= 2*n22 + l22p;
-		  SPOrbitalNlj a11(N11,s1p.a1.Getj());
-		  SPOrbitalNlj a12(N12,s1p.a2.Getj());
-		  SPOrbitalNlj a21(N21,s2p.a1.Getj());
-		  SPOrbitalNlj a22(N22,s2p.a2.Getj());
+		  legacy::SPOrbitalNlj a11(N11,s1p.a1.Getj());
+		  legacy::SPOrbitalNlj a12(N12,s1p.a2.Getj());
+		  legacy::SPOrbitalNlj a21(N21,s2p.a1.Getj());
+		  legacy::SPOrbitalNlj a22(N22,s2p.a2.Getj());
 							
 		  // build states for bracket
-		  TwoBodyStateNlj s1(a11,a12,J);
-		  TwoBodyStateNlj s2(a21,a22,J);
+		  legacy::TwoBodyStateNlj s1(a11,a12,J);
+		  legacy::TwoBodyStateNlj s2(a21,a22,J);
 		  // DBG: std::cout << "    Adding: " << s1.a1 << s1.a2 << s2.a1 << s2.a2 << std::endl;
 
 		  // impose 2-body cutoff on unprimed states
@@ -213,7 +215,7 @@ void TwoBodyMatrixSectorTransform (const TwoBodyMatrixNljTzJP& source_matrix, Tw
 		  // 		* transformation2.GetMatrixElement(l22p,l22p,n22,n22p);
 
 		  double coefficient;
-		  if (state_type == kPP)
+		  if (state_type == legacy::kPP)
 		    {
 		      coefficient
 			= xform_radial_matrices.xform_p.GetMatrixElement(l11p,l11p,n11,n11p)
@@ -221,7 +223,7 @@ void TwoBodyMatrixSectorTransform (const TwoBodyMatrixNljTzJP& source_matrix, Tw
 			* xform_radial_matrices.xform_p.GetMatrixElement(l21p,l21p,n21,n21p)
 			* xform_radial_matrices.xform_p.GetMatrixElement(l22p,l22p,n22,n22p);
 		    }
-		  else if (state_type == kNN)
+		  else if (state_type == legacy::kNN)
 		    {
 		      coefficient
 			= xform_radial_matrices.xform_n.GetMatrixElement(l11p,l11p,n11,n11p)
@@ -229,7 +231,7 @@ void TwoBodyMatrixSectorTransform (const TwoBodyMatrixNljTzJP& source_matrix, Tw
 			* xform_radial_matrices.xform_n.GetMatrixElement(l21p,l21p,n21,n21p)
 			* xform_radial_matrices.xform_n.GetMatrixElement(l22p,l22p,n22,n22p);
 		    }
-		  else if (state_type == kPN)
+		  else if (state_type == legacy::kPN)
 		    {
 		      coefficient
 			= xform_radial_matrices.xform_p.GetMatrixElement(l11p,l11p,n11,n11p)
@@ -280,7 +282,7 @@ public:
 			    int N1b_cut, int N2b_cut, 
 			    int N1b, int N2b);
   void Initialize (int N1b_in, int N2b_in);
-  void TransformSector (const TwoBodyMatrixNljTzJP& input_matrix, const SectorNljTzJP& sector);
+  void TransformSector (const legacy::TwoBodyMatrixNljTzJP& input_matrix, const legacy::SectorNljTzJP& sector);
 
   // truncation definition retrieval
   int GetN1b () const
@@ -292,11 +294,11 @@ public:
 
 private:
   // source stream information
-  MFDnH2Header is_header_;
+  shell::MFDnH2Header is_header_;
 
   // parameters
   std::string os_basename_;
-  OutMFDnH2Stream os_;
+  shell::OutMFDnH2Stream os_;
 	
   std::string radial_basename_p_, radial_basename_n_;
   int N1b_cut_, N2b_cut_;
@@ -304,8 +306,8 @@ private:
 
   // data
   XformRadialMatrices transformations_;
-  TwoBodyBasisNljTzJP output_basis_;
-  TwoBodyMatrixNljTzJP output_matrix_;
+  legacy::TwoBodyBasisNljTzJP output_basis_;
+  legacy::TwoBodyMatrixNljTzJP output_matrix_;
 
 };
 
@@ -345,13 +347,13 @@ void TransformationDescriptor::Initialize(int N1b_in, int N2b_in)
   output_matrix_.SetBasis(output_basis_);
 
   // initialize output stream
-  MFDnH2Header output_header;
+  shell::MFDnH2Header output_header;
   output_header.Initialize(output_basis_);
   os_.Open(os_basename_+".bin", output_header);
   os_.PrintDiagnostic();
 }
 
-void TransformationDescriptor::TransformSector(const TwoBodyMatrixNljTzJP& input_matrix, const SectorNljTzJP& sector)
+void TransformationDescriptor::TransformSector(const legacy::TwoBodyMatrixNljTzJP& input_matrix, const legacy::SectorNljTzJP& sector)
 {
 
   // short circuit for nonexistent output sector
@@ -462,15 +464,15 @@ int main(int argc, char **argv)
   ////////////////////////////////////////////////////////////////
 
   // input stream initialization
-  InMFDnH2Stream is;
-  MFDnH2Header is_header;
+  shell::InMFDnH2Stream is;
+  shell::MFDnH2Header is_header;
   is.Open (is_basename + ".bin", is_header);
   is.PrintDiagnostic ();
 
   // input basis/matrix initialization
-  TwoBodyBasisNljTzJP input_basis;
+  legacy::TwoBodyBasisNljTzJP input_basis;
   input_basis.InitializeN1bN2b(is_header.N1b, is_header.N2b);
-  TwoBodyMatrixNljTzJP input_matrix(input_basis);
+  legacy::TwoBodyMatrixNljTzJP input_matrix(input_basis);
 
   // process input stream truncation information
   int N1b_in = is_header.N1b;
@@ -490,7 +492,7 @@ int main(int argc, char **argv)
   ////////////////////////////////////////////////////////////////
 
 
-  for (SectorNljTzJP sector(N1b_master,N2b_master); sector.InRange(); ++sector)
+  for (legacy::SectorNljTzJP sector(N1b_master,N2b_master); sector.InRange(); ++sector)
     {
       if (input_matrix.HasSector(sector))
 	{
