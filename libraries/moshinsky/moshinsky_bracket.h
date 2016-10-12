@@ -18,6 +18,7 @@
     - Update to current usage of am module (namespace conventions, use 
       of HalfInt::pair, use of int conversion).
     - Update #include guard and include files.
+  10/9/16 (pjf): Rename mcpp -> mcutils.
 
 FUTURE: Reimplement using C++11 STL tuples in place of home-grown
 VectorTuple.  Perhaps eradicate wrappers for shell_indexing_nl state

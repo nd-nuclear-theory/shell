@@ -11,3 +11,6 @@
 	path = libraries/spline
         branch = submodule
 	url = ../spline
+[submodule "libraries/mcutils"]
+	path = libraries/mcutils
+	url = ../mcutils.git

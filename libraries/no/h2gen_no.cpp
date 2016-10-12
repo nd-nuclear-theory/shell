@@ -13,7 +13,7 @@
   4/4/12 (mac): Phase patch.  
   1/30/13 (mac): Updated to mfdn_h2 class-based I/O.  
   2/14/13 (mac): Updated to pn bases.  
-  Last modified 2/18/13 (mac).
+  10/9/16 (pjf): Rename mcpp -> mcutils.
 
 ******************************************************************************/
 
@@ -30,7 +30,7 @@
 #include <sstream>
 #include <string>
 
-#include <mcpp/profiling.h>
+#include <mcutils/profiling.h>
 
 using namespace shell;
 

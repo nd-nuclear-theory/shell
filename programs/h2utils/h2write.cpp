@@ -27,7 +27,7 @@
 #include <fstream>
 #include <iomanip>
 
-#include "mcpp/profiling.h"
+#include "mcutils/profiling.h"
 
 #include "tbme/h2_io.h"
 

@@ -17,9 +17,9 @@
 
 #include "am/am.h"
 #include "am/wigner_gsl.h"
-#include "mcpp/arithmetic.h"  // for ONLYIF
-#include "mcpp/memoizer.h"
-#include "mcpp/vector_tuple.h"
+#include "mcutils/arithmetic.h"  // for ONLYIF
+#include "mcutils/memoizer.h"
+#include "mcutils/vector_tuple.h"
 
 namespace moshinsky {
 

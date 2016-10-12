@@ -58,8 +58,8 @@
 #include <sstream>
 #include <string>
 
-#include "mcpp/profiling.h"
-#include "mcpp/parsing.h"
+#include "mcutils/profiling.h"
+#include "mcutils/parsing.h"
 
 #include "legacy/shell_radial_nl.h"
 #include "legacy/shell_indexing_nlj.h"

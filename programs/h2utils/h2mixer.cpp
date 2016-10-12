@@ -63,11 +63,11 @@
 #include <sstream>
 #include <string>
 
-#include "mcpp/profiling.h"
-#include "mcpp/parsing.h"
+#include "legacy/shell_separable.h"
+#include "mcutils/profiling.h"
+#include "mcutils/parsing.h"
 #include "tbme/h2_io.h"
 #include "tbme/oscillator_parameters.h"
-#include "legacy/shell_separable.h"
 
 
 ////////////////////////////////////////////////////////////////

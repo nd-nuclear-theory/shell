@@ -22,13 +22,10 @@ modules += libraries/moshinsky libraries/relative libraries/tbme libraries/no
 
 modules += libraries/legacy  # DEPRECATED
 
-# additional libraries -- static copy (perhaps to be converted to submodule)
-modules += libraries/mcpp
-
 # additional libraries -- cloned as submodule
 #
 # Dependency: basis <- am
-modules += libraries/basis libraries/am libraries/cppformat libraries/spline
+modules += libraries/basis libraries/am libraries/mcutils libraries/spline libraries/cppformat
 
 
 #programs

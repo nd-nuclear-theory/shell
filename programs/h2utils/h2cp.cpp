@@ -42,7 +42,7 @@
 
 #include "tbme/h2_io.h"
 #include "legacy/shell_2body.h"
-#include "mcpp/profiling.h"
+#include "mcutils/profiling.h"
 
 int main(int argc, char **argv)
 {

@@ -38,7 +38,7 @@
   2/15/13 (mac): Updated to pn bases.
   7/15/12 (vco): Add lj radial files compatibility for NO runs
   9/15/23 (mac): Debug Nmax = 14 runs
-  Last modified 2/19/13 (mac).
+  10/9/16 (pjf): Rename mcpp -> mcutils
 
 
 ******************************************************************************/
@@ -55,7 +55,7 @@
 #include <sstream>
 #include <string>
 
-#include <mcpp/profiling.h>
+#include <mcutils/profiling.h>
 
 using namespace shell;
 
@@ -917,4 +917,3 @@ int main(int argc, char **argv)
 
 	// termination
 	return 0;
-}
