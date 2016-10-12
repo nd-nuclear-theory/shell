@@ -13,7 +13,7 @@
   1/28/13 (mac): Complete implementation.
   7/25/14 (mac): Add matrix (".mat") format for H2 files.
   4/25/15 (mac): Reformat source file.
-  10/11/16 (mac):
+  10/11/16 (mac,pjf):
     -- Rename to h2_io.
     -- Integrate into shell project build.
      
@@ -51,7 +51,7 @@ namespace shell {
   // H2 streams
   ////////////////////////////////////////////////////////////////
 
-  // sector iterator is kept along with stream -- this helps to properly
+  // sector index is kept along with stream -- this helps to properly
   // keep track of whether or not sector exists and (especially) whether
   // or not it is at a file record boundary at the truncation defined
   // for *this* stream, which is not necessarily the truncation defined
@@ -60,67 +60,134 @@ namespace shell {
 
   // text/binary mode switching
 
-  enum H2TextBinaryMode { kText, kMatrix, kBinary };
+  enum class H2TextBinaryMode { kText, kMatrix, kBinary };
+
   H2TextBinaryMode H2IOMode (const std::string& filename);
+  // Deduce h2 file mode from extension.
 
-  // output stream for H2 file
 
-  class OutMFDnH2Stream
+  class OutH2Stream
+  // Output stream for H2 file
   {
   public:
-    OutMFDnH2Stream () : stream_(0) {
-    };
-    ~OutMFDnH2Stream ()  {delete stream_;};
-    void Open (const std::string& filename, const MFDnH2Header& header);
-    void PrintDiagnostic (std::ostream& log_stream = std::cout);
-    void WriteSector (const legacy::TwoBodyMatrixNljTzJP& matrix);
-    void Close ();
+
+    // constructor
+    OutH2Stream(
+        const std::string& filename,
+        const basis::OrbitalSpacePN& orbital_space,
+        const basis::TwoBodySpaceJJJPN& space,
+        const basis::TwoBodySectorsJJJPN& sectors
+      );
+    : filename_(filename),
+        orbital_space_(orbital_space), space_(space), sectors_(sectors),
+        stream_(0), sector_index_(0), size_by_type_({0,0,0})
+        {};  // TODO compute size_by_type_ properly
+
+    // destructor
+    ~OutH2Stream()
+      {
+        Close();
+        delete stream_;
+      };
+
+    // diagnostics
+    std::string DiagnosticStr() const;
+
+    // I/O
+    void WriteSector(const Eigen::MatrixXd& matrix);
+    void Close();
 
   private:
     // specialized methods
     void WriteHeaderText() const;
     void WriteHeaderBin() const;
-    void WriteSectorText (const legacy::TwoBodyMatrixNljTzJP& matrix);
-    void WriteSectorMatrix (const legacy::TwoBodyMatrixNljTzJP& matrix);
-    void WriteSectorBin (const legacy::TwoBodyMatrixNljTzJP& matrix);
+    void WriteSectorText(const Eigen::MatrixXd& matrix);
+    void WriteSectorMatrix(const Eigen::MatrixXd& matrix);
+    void WriteSectorBin(const Eigen::MatrixXd& matrix);
 
-    // data
+    // file stream data
+    H2TextBinaryMode text_binary_mode_;
     std::ofstream* stream_;
     std::string filename_;
-    H2TextBinaryMode text_binary_mode_;  
-    MFDnH2Header header_;
-    legacy::SectorNljTzJP sector_;
+
+    // mode information
+    int format;
+
+    // indexing information
+    const basis::OrbitalSpacePN& orbital_space_;
+    const basis::TwoBodySpaceJJJPN& space_;
+    const basis::TwoBodySectorsJJJPN& sectors_;
+    int std::array<3,int> size_by_type_;
+
+    // current pointer
+    int sector_index_;
   };
 
 
-  // input stream for H2 file
 
-  class InMFDnH2Stream
+  class InH2Stream
+  // Input stream for H2 file
   {
   public:
-    InMFDnH2Stream () : stream_(0) {
-    };
-    ~InMFDnH2Stream ()  {delete stream_;};
-    void Open (const std::string& filename, MFDnH2Header& header);
-    void PrintDiagnostic (std::ostream& log_stream = std::cout);
-    void ReadSector (legacy::TwoBodyMatrixNljTzJP& matrix, bool store = true);
-    void SkipSector (legacy::TwoBodyMatrixNljTzJP& matrix); // wrapper for ReadSector with no storage
+
+    // constructor
+    InH2Stream(const std::string& filename);
+    : filename_(filename)
+    {};  // TODO compute everything properly
+
+    // destructor
+    ~InMFDnH2Stream ()
+      {
+        Close();
+        delete stream_;
+      };
+
+    // diagnostics
+    std::string DiagnosticStr() const;
+
+    // I/O
+    void ReadSector (Eigen::MatrixXd& matrix);
+    void SkipSector (Eigen::MatrixXd& matrix);
     void Close ();
+
+    // accessors
+    const basis::OrbitalSpacePN& orbital_space() const
+    {
+      return orbital_space_;
+    }
+    const basis::TwoBodySpaceJJJPN& space() const
+    {
+      return space_;
+    }
+    const basis::TwoBodySectorsJJJPN& sectors() const
+    {
+      return sectors_;
+    }
 
   private:
     // specialized methods
     void ReadHeaderText();
     void ReadHeaderBin();
-    void ReadSectorText (legacy::TwoBodyMatrixNljTzJP& matrix, bool store);
-    void ReadSectorMatrix (legacy::TwoBodyMatrixNljTzJP& matrix, bool store);
-    void ReadSectorBin (legacy::TwoBodyMatrixNljTzJP& matrix, bool store);
+    void ReadSectorText(Eigen::MatrixXd& matrix, bool store);
+    void ReadSectorMatrix (Eigen::MatrixXd& matrix, bool store);
+    void ReadSectorBin(Eigen::MatrixXd& matrix, bool store);
 
-    // data
+    // file stream data
+    H2TextBinaryMode text_binary_mode_;
     std::ifstream* stream_;
     std::string filename_;
-    H2TextBinaryMode text_binary_mode_;  
-    MFDnH2Header header_;
-    legacy::SectorNljTzJP sector_;
+
+    // mode information
+    int format;
+
+    // indexing information
+    basis::OrbitalSpacePN orbital_space_;
+    basis::TwoBodySpaceJJJPN space_;
+    basis::TwoBodySectorsJJJPN sectors_;
+    int std::array<3,int> size_by_type_;
+
+    // current pointer
+    int sector_index_;
   };
 
 
