@@ -11,7 +11,7 @@ project_name := shellutils
 
 # programs
 
-modules += programs/h2utils
+modules += programs/h2utils programs/h2utils_legacy
 
 # libraries
 
