@@ -14,14 +14,67 @@
 #include <sstream>
 #include <string>
 
+#include "cppformat/format.h"
+
 #include "mcutils/parsing.h"
 
 namespace shell {
 
   ////////////////////////////////////////////////////////////////
-  // file format code
+  // indexing
   ////////////////////////////////////////////////////////////////
-  const int kH2FileFormat = 0;
+
+  std::array<int,3> UpperTriangularEntriesByType(
+      const basis::TwoBodySectorsJJJPN& sectors
+    )
+  // Count entries in the upper triangular portion of a set of
+  // pp/nn/pn sectors.
+  //
+  // Based on basis::UpperTriangularEntries.
+  //
+  // Lower triangular sectors are ignored.  In diagonal sectors,
+  // only upper-triangular entries are counted.
+  //
+  // Arguments:
+  //   sectors (...) : container for sectors
+  //
+  // Returns:
+  //   (std::array<int,3>) : number of upper triangular matrix entries of each type
+  {
+    std::array<int,3> total_entries({0,0,0});
+
+    for (int sector_index=0; sector_index<sectors.size(); ++sector_index)
+      {
+        // make reference to sector for convenience
+        const typename basis::TwoBodySectorsJJJPN::SectorType& sector
+          = sectors.GetSector(sector_index);
+
+        // characterize pp/nn/pn type for sector
+        assert(sector.bra_subspace().two_body_species()==sector.ket_subspace().two_body_species());  // operator Tz=0
+        basis::TwoBodySpeciesPN two_body_species = sector.bra_subspace().two_body_species();
+
+        // count sector entries
+        int sector_entries = 0;
+        if (sector.IsDiagonal())
+          // diagonal sector
+          {
+            int dimension = sector.ket_subspace().size();
+            sector_entries = dimension*(dimension+1)/2;
+          }
+        else if (sector.IsUpperTriangle())
+          // upper triangle sector (but not diagonal)
+          {
+            int bra_dimension = sector.bra_subspace().size();
+            int ket_dimension = sector.ket_subspace().size();
+            sector_entries = bra_dimension*ket_dimension;
+          }
+          
+        total_entries[int(two_body_species)] += sector_entries;
+      }
+
+    return total_entries;
+  }
+
 
   ////////////////////////////////////////////////////////////////
   // file binary I/O
@@ -30,6 +83,7 @@ namespace shell {
 
   const int kIntegerSize = 4;
   void WriteI4 (std::ofstream& os, int i)
+  
   {
     os.write(reinterpret_cast<const char*> (&i),sizeof(int));
   }
@@ -47,9 +101,7 @@ namespace shell {
 	std::cerr << "H2 file I/O: Encountered input value " << i << " when expecting " << i0 << std::endl;
 	exit(EXIT_FAILURE);
       }
-
   }
-
 
   const int kFloatSize = 4;
   void WriteFloat (std::ofstream& os, float x)
@@ -62,70 +114,69 @@ namespace shell {
     is.read(reinterpret_cast<char*> (&x),sizeof(float));
   }
 
+  // ////////////////////////////////////////////////////////////////
+  // // species ordering and labeling conventions
+  // ////////////////////////////////////////////////////////////////
+  // // order of state types in file
+  //       
+  // legacy::TwoSpeciesStateType StateTypeOrderingMFDnH2 (int i)
+  // {
+  //   static const legacy::TwoSpeciesStateType state_type[] = {legacy::kPP, legacy::kNN, legacy::kPN};
+  //   return state_type[i];
+  // }
+  // 
+  // // state type labels for text file
+  // //   NEATER: reimplement translation using static map
+  // 
+  // // Note: named after Lars Onsager, whose great accomplishment was
+  // // (supposedly) reported in the press as having proven "H-twelve
+  // // equals H-twenty-one"
+  // 
+  // typedef int TwoSpeciesStateTypeOnsager;
+  // const TwoSpeciesStateTypeOnsager kPPOnsager = 11;
+  // const TwoSpeciesStateTypeOnsager kPNOnsager = 12;
+  // const TwoSpeciesStateTypeOnsager kNNOnsager = 22;
+  // 
+  // legacy::TwoSpeciesStateType TwoSpeciesStateTypeFromOnsager (TwoSpeciesStateTypeOnsager state_type_onsager)
+  // {
+  //   legacy::TwoSpeciesStateType state_type;
+  //   switch (state_type_onsager)
+  //     {
+  //     case kPPOnsager : 
+  //       state_type = legacy::kPP;
+  //       break;
+  //     case kPNOnsager : 
+  //       state_type = legacy::kPN;
+  //       break;
+  //     case kNNOnsager : 
+  //       state_type = legacy::kNN;
+  //       break;
+  //     }
+  //   return state_type;
+  // }
+  //
+  //TwoSpeciesStateTypeOnsager TwoSpeciesStateTypeToOnsager (legacy::TwoSpeciesStateType state_type)
+  //{
+  //  TwoSpeciesStateTypeOnsager state_type_onsager;
+  //  switch (state_type)
+  //    {
+  //    case legacy::kPP : 
+  //      state_type_onsager = kPPOnsager;
+  //      break;
+  //    case legacy::kPN : 
+  //      state_type_onsager = kPNOnsager;
+  //      break;
+  //    case legacy::kNN : 
+  //      state_type_onsager = kNNOnsager;
+  //      break;
+  //    }
+  //  return state_type_onsager;
+  //}
 
-  ////////////////////////////////////////////////////////////////
-  // species ordering and labeling conventions
-  ////////////////////////////////////////////////////////////////
-  // order of state types in file
-	
-  legacy::TwoSpeciesStateType StateTypeOrderingMFDnH2 (int i)
-  {
-    static const legacy::TwoSpeciesStateType state_type[] = {legacy::kPP, legacy::kNN, legacy::kPN};
-    return state_type[i];
-  }
+  const std::array<const char*,3> kH2ModeDescription({"text","binary","matrix"});
+  const std::array<const char*,3> kH2ModeExtension({".dat",".bin",".mat"});
 
-  // state type labels for text file
-  //   NEATER: reimplement translation using static map
-
-  // Note: named after Lars Onsager, whose great accomplishment was
-  // (supposedly) reported in the press as having proven "H-twelve
-  // equals H-twenty-one"
-
-  typedef int TwoSpeciesStateTypeOnsager;
-  const TwoSpeciesStateTypeOnsager kPPOnsager = 11;
-  const TwoSpeciesStateTypeOnsager kPNOnsager = 12;
-  const TwoSpeciesStateTypeOnsager kNNOnsager = 22;
-
-  legacy::TwoSpeciesStateType TwoSpeciesStateTypeFromOnsager (TwoSpeciesStateTypeOnsager state_type_onsager)
-  {
-    legacy::TwoSpeciesStateType state_type;
-    switch (state_type_onsager)
-      {
-      case kPPOnsager : 
-	state_type = legacy::kPP;
-	break;
-      case kPNOnsager : 
-	state_type = legacy::kPN;
-	break;
-      case kNNOnsager : 
-	state_type = legacy::kNN;
-	break;
-      }
-    return state_type;
-  }
-
-  TwoSpeciesStateTypeOnsager TwoSpeciesStateTypeToOnsager (legacy::TwoSpeciesStateType state_type)
-  {
-    TwoSpeciesStateTypeOnsager state_type_onsager;
-    switch (state_type)
-      {
-      case legacy::kPP : 
-	state_type_onsager = kPPOnsager;
-	break;
-      case legacy::kPN : 
-	state_type_onsager = kPNOnsager;
-	break;
-      case legacy::kNN : 
-	state_type_onsager = kNNOnsager;
-	break;
-      }
-    return state_type_onsager;
-  }
-
-  // H2IOMode: Determines text/binary mode by filename
-  //    .dat -- text format
-  //    .bin -- binary format
-  H2TextBinaryMode H2IOMode (const std::string& filename)
+  H2Mode DeducedIOMode(const std::string& filename)
   {
     if (filename.length() < 4 )
       {
@@ -134,11 +185,11 @@ namespace shell {
 	exit(EXIT_FAILURE);
       }
     else if ( ! filename.compare(filename.length()-4,4,".dat") )
-      return kText;
+      return H2Mode::kText;
     else if ( ! filename.compare(filename.length()-4,4,".mat") )
-      return kMatrix;
+      return H2Mode::kMatrix;
     else if ( ! filename.compare(filename.length()-4,4,".bin") )
-      return kBinary;
+      return H2Mode::kBinary;
     else
       {
 	std::cerr << "H2 file I/O: Extension unrecognized in filename " << filename << std::endl;
@@ -147,121 +198,208 @@ namespace shell {
   }
 
   ////////////////////////////////////////////////////////////////
-  // OutMFDnH2Stream
+  // H2StreamBase
   ////////////////////////////////////////////////////////////////
 
-  // currently hard-coded for two-species (pn) work, but this could easily be adjusted
-
-  void MFDnH2Header::Initialize(const legacy::TwoBodyBasisNljTzJP& basis)
+  std::string H2StreamBase::DiagnosticStr() const
   {
-    format = kH2FileFormat;
-    num_types = 2;
-    N1b = basis.GetN1b(); 
-    N2b = basis.GetN2b();
-    matrix_size_PPNN = legacy::TwoBodyMatrixNljTzJPDimension(basis,legacy::kPP); 
-    matrix_size_PN = legacy::TwoBodyMatrixNljTzJPDimension(basis,legacy::kPN);
+
+    // diagnostic output
+    std::string str = fmt::format(
+        "  File: {}\n"
+        "  Format: {} ({})\n"
+        "  Orbitals: p {} n {} oscillator-like {}\n"
+        "  One-body truncation: p {:4f} n {:4f}\n"
+        "  Two-body truncation: pp {:4f} nn {:4f} pn {:4f}\n"
+        "  Matrix elements: pp {} nn {} pn {} => total {}\n",
+        filename_,
+        int(h2_format()),kH2ModeDescription[int(h2_mode())],
+        orbital_space().GetSubspace(0).size(),
+        orbital_space().GetSubspace(1).size(),
+        999,//orbital_space().IsOscillatorLike(),
+        space().weight_max().one_body[0],space().weight_max().one_body[1],
+        space().weight_max().two_body[0],space().weight_max().two_body[1],space().weight_max().two_body[2],
+        size_by_type()[0],size_by_type()[1],size_by_type()[2],size()
+      );
+    return str;
   }
 
   ////////////////////////////////////////////////////////////////
-  // OutMFDnH2Stream
+  // format/mode-specific write functions
   ////////////////////////////////////////////////////////////////
 
-  void OutMFDnH2Stream::Open (const std::string& filename, const MFDnH2Header& header)
-  {
-		
-    // save arguments
-    filename_ = filename;
-    header_ = header;
+  // use template specialization to "plug in" functions for specific modes
 
-    // set text/binary mode 
-    text_binary_mode_ = H2IOMode (filename_);
+  template<H2Format tFormat, H2Mode tMode>
+  void WriteHeader(std::ofstream stream, OutH2Stream& h2_stream);
+
+  template <>
+  void WriteHeader<H2Format::kVersion0,H2Mode::kText>(std::ofstream stream,OutH2Stream& h2_stream)
+  {
+    // extract parameters
+    //
+    // assumes oscillator-like weight cutoffs
+    // TODO: add tests for oscillator-like orbitals and weight cutoffs
+    const int num_types = 2;
+    int N1max = int(h2_stream.space().weight_max().one_body[0]);
+    int N2max = int(h2_stream.space().weight_max().two_body[0]);
+    int size_pp_nn = h2_stream.size_by_type()[0];
+    int size_pn = h2_stream.size_by_type()[2];
+
+    stream
+      // line "0": format code
+      << fmt::format("{:10d}",int(h2_format())) << std::endl
+      // header line 1: number of particle species
+      << fmt::format("{:10d}",num_types) << std::endl
+      // header line 2: 1-body basis limit
+      << fmt::format("{:10d}",N1max) << std::endl
+      // header line 3: 2-body basis limit
+      << fmt::format("{:10d}",N2max) << std::endl
+      // header line 4: matrix size
+      << fmt::format("{:10d} {:10d}",size_pp_nn,size_pn) << std::endl;
+    
+  };
+
+  template <>
+  void WriteHeader<H2Format::kVersion0,H2Mode::kBinary>(std::ofstream stream,OutH2Stream& h2_stream)
+  {
+    // extract parameters
+    //
+    // assumes oscillator-like weight cutoffs
+    // TODO: add tests for oscillator-like orbitals and weight cutoffs
+    const int num_types = 2;
+    int N1max = int(h2_stream.space().weight_max().one_body[0]);
+    int N2max = int(h2_stream.space().weight_max().two_body[0]);
+    int size_pp_nn = h2_stream.size_by_type()[0];
+    int size_pn = h2_stream.size_by_type()[2];
+
+    // record size
+    int num_header_fields = 5;
+    int header_bytes = num_header_fields * kIntegerSize;
+
+    // write
+    WriteI4(stream,header_bytes);
+    WriteI4(stream,num_types);
+    WriteI4(stream,N1max);
+    WriteI4(stream,N2max);
+    WriteI4(stream,size_pp_nn);
+    WriteI4(stream,size_pn);
+    WriteI4(stream,header_bytes);
+    
+  };
+
+  ////////////////////////////////////////////////////////////////
+  // OutH2Stream
+  ////////////////////////////////////////////////////////////////
+
+  OutH2Stream::OutH2Stream(
+      const std::string& filename,
+      const basis::OrbitalSpacePN& orbital_space,
+      const basis::TwoBodySpaceJJJPN& space,
+      const basis::TwoBodySectorsJJJPN& sectors,
+      H2Format h2_format, H2Mode h2_mode
+    )
+    : H2StreamBase(filename)
+  {
+
+    // copy in indexing
+    orbital_space_ = orbital_space;
+    space_ = space;
+    sectors_ = sectors;
+      
+    // store numbers of matrix elements
+    size_by_type_ = UpperTriangularEntriesByType(sectors_);
+    size_ = size_by_type_[0] + size_by_type_[1] + size_by_type_[2];
+
+    // set format and mode
+    h2_format_ = h2_format;
+    h2_mode_ = DeducedIOMode(filename_);
 
     // open stream
     stream_ = new std::ofstream;
     std::ios_base::openmode mode_argument;
-    if (text_binary_mode_ == kText)
+    if (h2_mode_ == H2Mode::kText)
       mode_argument = std::ios_base::out;
-    else if (text_binary_mode_ == kMatrix)
+    else if (h2_mode_ == H2Mode::kMatrix)
       mode_argument = std::ios_base::out;
-    else if (text_binary_mode_ == kBinary)
+    else if (h2_mode_ == H2Mode::kBinary)
       mode_argument = std::ios_base::out | std::ios_base::binary;
     stream_->open(filename_.c_str(),mode_argument);
     if ( !*stream_) 
       {
-	std::cerr << "Open failed on H2 file " << filename_ << std::endl;
-	exit(EXIT_FAILURE);
+        std::cerr << "Open failed on H2 file " << filename_ << std::endl;
+        exit(EXIT_FAILURE);
       }
 
-    // write format and header
-    if (text_binary_mode_ == kText)
-      WriteHeaderText();
-    else if (text_binary_mode_ == kMatrix)
-      WriteHeaderText();
-    else if (text_binary_mode_ == kBinary)
-      WriteHeaderBin();
+    // write header
+    if ((h2_format_==H2Format::kVersion0)&&(h2_mode_==H2Mode::kText))
+      WriteHeader<H2Format::kVersion0,H2Mode::kText>(*stream_,this);
+
+
     if ( !*stream_ ) 
       {
-	std::cerr << "Header write failed opening H2 file " << filename_ << std::endl;
-	exit(EXIT_FAILURE);
+        std::cerr << "Header write failed while opening H2 file " << filename_ << std::endl;
+        exit(EXIT_FAILURE);
       }
 
-    // initialize sector iterator based on header
-    sector_.SetTruncation(header_.N1b,header_.N2b);
-
   }
-
-  void OutMFDnH2Stream::Close () {
+  
+  void OutH2Stream::Close()
+  {
     delete stream_;
     stream_ = 0;  // so deletion by destructor does not cause error 
   };
+  
 
-  void OutMFDnH2Stream::PrintDiagnostic (std::ostream& log_stream)
+//  void OutH2Stream::WriteHeaderText() const
+//  {
+//
+//    // line "0": format code
+//    *stream_
+//      << fmt::format("{:10d}",int(h2_format()))
+//      << std::endl;
+//
+//    if(h2_format()==H2Format::kVersion0)
+//      // kVersion0
+//      {
+//
+//        // TODO: add tests for oscillator-like orbitals and weight cutoffs
+//        // when using "old" formats
+//
+//        // header line 1: number of particle species
+//        const int num_types = 2;
+//        *stream_
+//          << fmt::format("{:10d}",num_types)
+//          << std::endl;
+//
+//        // header line 2: 1-body basis limit
+//        int N1max = int(space().weight_max().one_body[0]);  // assumes oscillator-like weight cutoffs
+//        *stream_
+//          << fmt::format("{:10d}",N1max)
+//          << std::endl;
+//
+//        // header line 3: 2-body basis limit
+//        int N2max = int(space().weight_max().two_body[0]);  // assumes oscillator-like weight cutoffs
+//        *stream_
+//          << fmt::format("{:10d}",N2max)
+//          << std::endl;
+//
+//        // header line 4: matrix size
+//        int size_pp_nn = size_by_type()[0];  // assumes oscillator-like weight cutoffs
+//        int size_pn = size_by_type()[2];
+//        *stream_
+//          << fmt::format("{:10d} {:10d}",size_pp_nn,size_pn)
+//          << std::endl;
+//      }
+//    else
+//      // fallthrough to unsupported format
+//      assert(false);
+//
+//  }
+
+  void OutH2Stream::WriteHeaderBin() const
   {
-    std::string text_binary_mode_string;
-    if (text_binary_mode_ == kText)
-      text_binary_mode_string = "text";
-    else if (text_binary_mode_ == kMatrix)
-      text_binary_mode_string = "matrix";
-    else if (text_binary_mode_ == kBinary)
-      text_binary_mode_string = "binary";
-	
-    // diagnostic output
-    log_stream << "  Output file: " << filename_ << " (" << text_binary_mode_string << ")" << std::endl;
-    log_stream << "  Mode: format " << header_.format << ", species " << header_.num_types << std::endl;
-    log_stream << "  Truncation:" << " N1b " << header_.N1b << ", N2b " << header_.N2b << std::endl;
-    log_stream << "  Matrix size:" << " PP/NN "  << header_.matrix_size_PPNN << ", PN " << header_.matrix_size_PN << std::endl;
-	
-  }
 
-  void OutMFDnH2Stream::WriteHeaderText () const
-  {
-    const int field_width = 10;
-
-    // format line
-    *stream_ << " " << std::setw(field_width) << header_.format
-	     << std::endl;
-
-    // header line 1: particle species
-    *stream_ << " " << std::setw(field_width) << header_.num_types 
-	     << std::endl;
-
-    // header line 2: 1-body basis limit
-    *stream_ << " " << std::setw(field_width) << header_.N1b 
-	     << std::endl;
-	
-    // header line 3: 2-body basis limit
-    *stream_ << " " << std::setw(field_width) << header_.N2b
-	     << std::endl;
-	
-    // header line 4: matrix size
-    *stream_ << " " << std::setw(field_width) << header_.matrix_size_PPNN
-	     << " " << std::setw(field_width) << header_.matrix_size_PN
-	     << std::endl;
-	
-  }
-
-  void OutMFDnH2Stream::WriteHeaderBin () const
-  {
     // write header entries as 4-byte fields
     //    NEATEN: There must be a better way to do this???  Was so easy in C...
 		
@@ -269,31 +407,56 @@ namespace shell {
     int num_format_fields = 1;
     int format_bytes = num_format_fields * kIntegerSize;
     WriteI4(*stream_,format_bytes);
-    WriteI4(*stream_,header_.format);
+    WriteI4(*stream_,int(h2_format()));
     WriteI4(*stream_,format_bytes);
 
-    // write header body
-    int num_header_fields = 5;
-    int header_bytes = num_header_fields * kIntegerSize;
-    WriteI4(*stream_,header_bytes);
-    WriteI4(*stream_,header_.num_types);
-    WriteI4(*stream_,header_.N1b);
-    WriteI4(*stream_,header_.N2b);
-    WriteI4(*stream_,header_.matrix_size_PPNN);
-    WriteI4(*stream_,header_.matrix_size_PN);
-    WriteI4(*stream_,header_bytes);
+    if(h2_format()==H2Format::kVersion0)
+      // kVersion0
+      {
 
+        // TODO: add tests for oscillator-like orbitals and weight cutoffs
+        // when using "old" formats
+
+        // write header body
+
+        //record begin
+        int num_header_fields = 5;
+        int header_bytes = num_header_fields * kIntegerSize;
+        WriteI4(*stream_,header_bytes);
+
+        // header line 1: number of particle species
+        const int num_types = 2;
+        WriteI4(*stream_,num_types);
+
+        // header line 2: 1-body basis limit
+        int N1max = int(space().weight_max().one_body[0]);  // assumes oscillator-like weight cutoffs
+        WriteI4(*stream_,N1max);
+
+        // header line 3: 2-body basis limit
+        int N2max = int(space().weight_max().two_body[0]);  // assumes oscillator-like weight cutoffs
+        WriteI4(*stream_,N2max);
+
+        // header line 4: matrix size
+        int size_pp_nn = size_by_type()[0];  // assumes oscillator-like weight cutoffs
+        int size_pn = size_by_type()[2];
+        WriteI4(*stream_,size_pp_nn);
+        WriteI4(*stream_,size_pn);
+        
+        // record end
+        WriteI4(*stream_,header_bytes);
+      }
   }
 
-  void OutMFDnH2Stream::WriteSector (const legacy::TwoBodyMatrixNljTzJP& matrix)
+
+  void OutH2Stream::WriteSector(const legacy::TwoBodyMatrixNljTzJP& matrix)
   {
     // invoke basic write code
-    if (text_binary_mode_ == kText)
-      WriteSectorText (matrix);
-    else if (text_binary_mode_ == kMatrix)
-      WriteSectorMatrix (matrix);
-    else if (text_binary_mode_ == kBinary)
-      WriteSectorBin (matrix);
+    if (h2_mode_ == kText)
+      WriteSectorText(matrix);
+    else if (h2_mode_ == kMatrix)
+      WriteSectorMatrix(matrix);
+    else if (h2_mode_ == kBinary)
+      WriteSectorBin(matrix);
 
     // validate status
     if ( !*stream_ ) 
@@ -307,7 +470,8 @@ namespace shell {
 
   }
 
-  void OutMFDnH2Stream::WriteSectorText (const legacy::TwoBodyMatrixNljTzJP& matrix)
+
+  void OutH2Stream::WriteSectorText (const legacy::TwoBodyMatrixNljTzJP& matrix)
   {
     // recover sector properties
     const legacy::TwoSpeciesStateType state_type = sector_.GetStateType();
@@ -340,7 +504,7 @@ namespace shell {
 	}
   }
 
-  void OutMFDnH2Stream::WriteSectorMatrix (const legacy::TwoBodyMatrixNljTzJP& matrix)
+  void OutH2Stream::WriteSectorMatrix (const legacy::TwoBodyMatrixNljTzJP& matrix)
   {
     // recover sector properties
     const legacy::TwoSpeciesStateType state_type = sector_.GetStateType();
@@ -373,7 +537,7 @@ namespace shell {
 	}
   }
 
-  void OutMFDnH2Stream::WriteSectorBin (const legacy::TwoBodyMatrixNljTzJP& matrix)
+  void OutH2Stream::WriteSectorBin (const legacy::TwoBodyMatrixNljTzJP& matrix)
   {
     // recover sector properties
     const legacy::TwoSpeciesStateType state_type = sector_.GetStateType();
@@ -421,16 +585,16 @@ namespace shell {
     filename_ = filename;
 
     // set text/binary mode 
-    text_binary_mode_ = H2IOMode (filename_);
+    h2_mode_ = H2IOMode (filename_);
 
     // open stream
     stream_ = new std::ifstream;
     std::ios_base::openmode mode_argument;
-    if (text_binary_mode_ == kText)
+    if (h2_mode_ == kText)
       mode_argument = std::ios_base::in;
-    else if (text_binary_mode_ == kMatrix)
+    else if (h2_mode_ == kMatrix)
       mode_argument = std::ios_base::in;
-    else if (text_binary_mode_ == kBinary)
+    else if (h2_mode_ == kBinary)
       mode_argument = std::ios_base::in | std::ios_base::binary;
     stream_->open(filename_.c_str(),mode_argument);
     if ( !*stream_) 
@@ -440,11 +604,11 @@ namespace shell {
       }
 
     // read header
-    if (text_binary_mode_ == kText)
+    if (h2_mode_ == kText)
       ReadHeaderText();
-    else if (text_binary_mode_ == kMatrix)
+    else if (h2_mode_ == kMatrix)
       ReadHeaderText();
-    else if (text_binary_mode_ == kBinary)
+    else if (h2_mode_ == kBinary)
       ReadHeaderBin();
     if ( !*stream_ ) 
       {
@@ -465,23 +629,6 @@ namespace shell {
     stream_ = 0;  // so deletion by destructor does not cause error 
   };
 
-  void InMFDnH2Stream::PrintDiagnostic (std::ostream& log_stream)
-  {
-    std::string text_binary_mode_string;
-    if (text_binary_mode_ == kText)
-      text_binary_mode_string = "text";
-    else if (text_binary_mode_ == kMatrix)
-      text_binary_mode_string = "matrix";
-    else if (text_binary_mode_ == kBinary)
-      text_binary_mode_string = "binary";
-	
-    // diagnostic output
-    log_stream << "  Input file: " << filename_ << " (" << text_binary_mode_string << ")" << std::endl;
-    log_stream << "  Mode: format " << header_.format << ", species " << header_.num_types << std::endl;
-    log_stream << "  Truncation:" << " N1b " << header_.N1b << ", N2b " << header_.N2b << std::endl;
-    log_stream << "  Matrix size:" << " PP/NN "  << header_.matrix_size_PPNN << ", PN " << header_.matrix_size_PN << std::endl;
-	
-  }
 
   void InMFDnH2Stream::ReadHeaderText () 
   {
@@ -556,11 +703,11 @@ namespace shell {
 
 
     // invoke basic read code
-    if (text_binary_mode_ == kText)
+    if (h2_mode_ == kText)
       ReadSectorText (matrix,store);
-    else if (text_binary_mode_ == kMatrix)
+    else if (h2_mode_ == kMatrix)
       ReadSectorMatrix (matrix,store);
-    else if (text_binary_mode_ == kBinary)
+    else if (h2_mode_ == kBinary)
       ReadSectorBin (matrix,store);
 
     // validate status
@@ -615,11 +762,11 @@ namespace shell {
 	  // validate input fields against expected values
 				
 	  if ( ! ( 
-		  (input_i1 == s1.a1.GetIndex1()) && (input_i2 == s1.a2.GetIndex1())
-		  && (input_i3 == s2.a1.GetIndex1()) && (input_i4 == s2.a2.GetIndex1())
-		  && (input_twice_J == 2*J)
-		  && (TwoSpeciesStateTypeFromOnsager(input_state_type_onsager) == state_type)
-		   ) )
+                   (input_i1 == s1.a1.GetIndex1()) && (input_i2 == s1.a2.GetIndex1())
+                   && (input_i3 == s2.a1.GetIndex1()) && (input_i4 == s2.a2.GetIndex1())
+                   && (input_twice_J == 2*J)
+                   && (TwoSpeciesStateTypeFromOnsager(input_state_type_onsager) == state_type)
+                 ) )
 	    {
 	      std::cerr << "ReadTwoBodyMatrixSectorMFDnH2: unexpected matrix element indices in input data" 
 			<< std::endl
@@ -654,11 +801,11 @@ namespace shell {
 			    >> input_state_type_onsager
 			    >> input_dimension;
     if ( ! ( 
-	    (input_twice_J == 2*J)
-	    && (input_g == g)
-	    && (TwoSpeciesStateTypeFromOnsager(input_state_type_onsager) == state_type)
-	    && (input_dimension == dimension)
-	     ) )
+             (input_twice_J == 2*J)
+             && (input_g == g)
+             && (TwoSpeciesStateTypeFromOnsager(input_state_type_onsager) == state_type)
+             && (input_dimension == dimension)
+           ) )
       {
 	std::cerr << "ReadSectorMatrix: unexpected sector header" 
 		  << std::endl;

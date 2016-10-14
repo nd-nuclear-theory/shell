@@ -27,25 +27,50 @@
 #include <fstream>
 #include <string>
 
-#include "legacy/shell_2body.h"
+#include "eigen3/Eigen/Core"
+
+#include "basis/jjjpnorb_scheme.h"
 
 namespace shell {
 
+
   ////////////////////////////////////////////////////////////////
-  // H2 header data
+  // H2 stream mode control
   ////////////////////////////////////////////////////////////////
 
-  // Note: may ultimately hide header as internal to stream object
+  enum class H2Format
+  // H2 format code
+  //
+  //   0: oscillator-like sp indexing, used with MFDn v14
+  //   15000: Pieter's preliminary general orbitals test format for MFDn v15 beta00
+  //   15099: general orbitals specification June 2016
+  {kVersion0=0,kVersion15000=15000,kVersion15099=15099};
 
-  struct MFDnH2Header
-  {
-    int format;
-    int num_types;
-    int N1b, N2b;
-    int matrix_size_PPNN, matrix_size_PN;
+  enum class H2Mode {kText,kBinary,kMatrix};
+  // text/binary mode
+  //
+  // Note: Not currently implementing matrix mode (for interchange
+  // with applied math group).
 
-    void Initialize(const legacy::TwoBodyBasisNljTzJP& basis);
-  };
+  // notational definitions for h2 file modes
+  //
+  // Use of these arrays requires conversion of the H2Mode to int.
+  extern const std::array<const char*,3> kH2ModeDescription; // ({"text","binary","matrix"});
+  extern const std::array<const char*,3> kH2ModeExtension; // ({".dat",".bin",".mat"});
+  
+  H2Mode DeducedIOMode(const std::string& filename);
+  // Deduce h2 file mode from filename extension.
+  //
+  //   .dat: ascii format
+  //   .bin: binary format
+  //   .mat: ad hoc matrix format
+  //     for interface with applied mathematicians
+  //
+  // Arguments:
+  //   filename (string) : filename from which to deduce mode
+  //
+  // Returns:
+  //   (H2Mode) : the mode
 
   ////////////////////////////////////////////////////////////////
   // H2 streams
@@ -58,99 +83,20 @@ namespace shell {
   // for the sector iterator of the control loop which will be
   // reading/writing this stream
 
-  // text/binary mode switching
-
-  enum class H2TextBinaryMode { kText, kMatrix, kBinary };
-
-  H2TextBinaryMode H2IOMode (const std::string& filename);
-  // Deduce h2 file mode from extension.
-
-
-  class OutH2Stream
-  // Output stream for H2 file
+  class H2StreamBase
+  // Base class with common attributes for input and output H2
+  // streams.
   {
   public:
 
     // constructor
-    OutH2Stream(
-        const std::string& filename,
-        const basis::OrbitalSpacePN& orbital_space,
-        const basis::TwoBodySpaceJJJPN& space,
-        const basis::TwoBodySectorsJJJPN& sectors
-      );
-    : filename_(filename),
-        orbital_space_(orbital_space), space_(space), sectors_(sectors),
-        stream_(0), sector_index_(0), size_by_type_({0,0,0})
-        {};  // TODO compute size_by_type_ properly
+    H2StreamBase(const std::string& filename)
+      // Default constructor to zero-initialize some of the POD
+      // fields.
+      : filename_(filename), sector_index_(0), size_by_type_({0,0,0}), size_(0)
+      {}
 
-    // destructor
-    ~OutH2Stream()
-      {
-        Close();
-        delete stream_;
-      };
-
-    // diagnostics
-    std::string DiagnosticStr() const;
-
-    // I/O
-    void WriteSector(const Eigen::MatrixXd& matrix);
-    void Close();
-
-  private:
-    // specialized methods
-    void WriteHeaderText() const;
-    void WriteHeaderBin() const;
-    void WriteSectorText(const Eigen::MatrixXd& matrix);
-    void WriteSectorMatrix(const Eigen::MatrixXd& matrix);
-    void WriteSectorBin(const Eigen::MatrixXd& matrix);
-
-    // file stream data
-    H2TextBinaryMode text_binary_mode_;
-    std::ofstream* stream_;
-    std::string filename_;
-
-    // mode information
-    int format;
-
-    // indexing information
-    const basis::OrbitalSpacePN& orbital_space_;
-    const basis::TwoBodySpaceJJJPN& space_;
-    const basis::TwoBodySectorsJJJPN& sectors_;
-    int std::array<3,int> size_by_type_;
-
-    // current pointer
-    int sector_index_;
-  };
-
-
-
-  class InH2Stream
-  // Input stream for H2 file
-  {
-  public:
-
-    // constructor
-    InH2Stream(const std::string& filename);
-    : filename_(filename)
-    {};  // TODO compute everything properly
-
-    // destructor
-    ~InMFDnH2Stream ()
-      {
-        Close();
-        delete stream_;
-      };
-
-    // diagnostics
-    std::string DiagnosticStr() const;
-
-    // I/O
-    void ReadSector (Eigen::MatrixXd& matrix);
-    void SkipSector (Eigen::MatrixXd& matrix);
-    void Close ();
-
-    // accessors
+    // indexing accessors
     const basis::OrbitalSpacePN& orbital_space() const
     {
       return orbital_space_;
@@ -164,6 +110,117 @@ namespace shell {
       return sectors_;
     }
 
+    // stream status accessors
+    H2Format h2_format() const
+    {
+      return h2_format_;
+    }
+    H2Mode h2_mode() const
+    {
+      return h2_mode_;
+    }
+
+    // size accessors
+    const std::array<int,3>& size_by_type() const
+    {
+      return size_by_type_;
+    }
+    int size() const
+    {
+      return size_;
+    }
+
+    // diagnostics
+    std::string DiagnosticStr() const;
+
+  protected:
+
+    // indexing information
+    basis::OrbitalSpacePN orbital_space_;
+    basis::TwoBodySpaceJJJPN space_;
+    basis::TwoBodySectorsJJJPN sectors_;
+
+    // size information
+    std::array<int,3> size_by_type_;
+    // number of pp, nn, and pn matrix elements
+    int size_;
+    // total size
+
+    // mode information
+    H2Format h2_format_;
+    H2Mode h2_mode_;
+
+    // filename
+    std::string filename_;
+
+    // current pointer
+    int sector_index_;
+  };
+
+
+  class OutH2Stream
+    : public H2StreamBase
+  // Output stream for H2 file
+  {
+  public:
+
+    // constructor
+    OutH2Stream(
+        const std::string& filename,
+        const basis::OrbitalSpacePN& orbital_space,
+        const basis::TwoBodySpaceJJJPN& space,
+        const basis::TwoBodySectorsJJJPN& sectors,
+        H2Format h2_format, H2Mode h2_mode
+      );
+
+    // destructor
+    ~OutH2Stream()
+      {
+        Close();
+        delete stream_;
+      };
+
+    // I/O
+    void WriteSector(const Eigen::MatrixXd& matrix);
+    void Close();
+
+  private:
+    
+    // specialized methods
+    void WriteHeaderText() const;
+    void WriteHeaderBin() const;
+    void WriteSectorText(const Eigen::MatrixXd& matrix);
+    void WriteSectorMatrix(const Eigen::MatrixXd& matrix);
+    void WriteSectorBin(const Eigen::MatrixXd& matrix);
+
+    // file stream
+    std::ofstream* stream_;
+
+  };
+
+
+
+  class InH2Stream
+    : public H2StreamBase
+  // Input stream for H2 file
+  {
+  public:
+
+    // constructor
+    InH2Stream(const std::string& filename);
+
+    // destructor
+    ~InH2Stream ()
+      {
+        Close();
+        delete stream_;
+      };
+
+    // I/O
+    void ReadSector (Eigen::MatrixXd& matrix);
+    void SkipSector (Eigen::MatrixXd& matrix);
+    void Close ();
+
   private:
     // specialized methods
     void ReadHeaderText();
@@ -172,22 +229,8 @@ namespace shell {
     void ReadSectorMatrix (Eigen::MatrixXd& matrix, bool store);
     void ReadSectorBin(Eigen::MatrixXd& matrix, bool store);
 
-    // file stream data
-    H2TextBinaryMode text_binary_mode_;
+    // file stream
     std::ifstream* stream_;
-    std::string filename_;
-
-    // mode information
-    int format;
-
-    // indexing information
-    basis::OrbitalSpacePN orbital_space_;
-    basis::TwoBodySpaceJJJPN space_;
-    basis::TwoBodySectorsJJJPN sectors_;
-    int std::array<3,int> size_by_type_;
-
-    // current pointer
-    int sector_index_;
   };
 
 
