@@ -225,30 +225,186 @@ namespace shell {
   }
 
   ////////////////////////////////////////////////////////////////
-  // format/mode-specific write functions
+  // format/mode-specific I/O: version number
   ////////////////////////////////////////////////////////////////
 
-  // use template specialization to "plug in" functions for specific modes
-
-  template<H2Format tFormat, H2Mode tMode>
-  void WriteHeader(std::ofstream stream, OutH2Stream& h2_stream);
-
-  template <>
-  void WriteHeader<H2Format::kVersion0,H2Mode::kText>(std::ofstream stream,OutH2Stream& h2_stream)
+  // read version: text mode
+  void InH2Stream::ReadVersion_Text()
   {
+    // set up stream alias for convenience
+    std::ifstream& stream = *stream_ptr_;
+
+    // set up line input
+    std::string line;
+    line_count_ = 0;  // TODO move initialization to constructor
+
+    // line: format code
+    {
+      ++line_count_;
+      std::getline(stream,line);
+      std::istringstream line_stream(line);
+      line_stream >> h2_format_; 
+      ParsingCheck(line_stream,line_count_,line);
+    }
+
+  };
+
+  // read version: binary mode
+  void InH2Stream::ReadVersion_Binary()
+  {
+
+    // set up stream alias for convenience
+    std::ifstream& stream = *stream_ptr_;
+
+    // read
+    int num_fields = 1;
+    int bytes = num_fields * kIntegerSize;
+    VerifyI4(stream,bytes);
+    ReadI4(stream,h2_format_);
+    VerifyI4(stream,bytes);
+
+  };
+
+
+  void OutH2Stream::WriteVersion_Text()
+  {
+    // set up stream alias for convenience
+    std::ofstream& stream = *stream_ptr_;
+
+    stream
+      << fmt::format("{:10d}",int(h2_format())) << std::endl;
+  };
+
+  void OutH2Stream::WriteVersion_Binary()
+  {
+    // set up stream alias for convenience
+    std::ofstream& stream = *stream_ptr_;
+
+    // write
+    int num_fields = 1;
+    int bytes = num_fields * kIntegerSize;
+    WriteI4(stream,bytes);
+    WriteI4(stream,h2_format());
+    WriteI4(stream,bytes);
+  };
+
+
+
+  ////////////////////////////////////////////////////////////////
+  // format/mode-specific I/O: header
+  ////////////////////////////////////////////////////////////////
+
+  void InH2Stream::ReadHeader_Version0_Text () 
+  {
+    // set up stream alias for convenience
+    std::ifstream& stream = *stream_ptr_;
+
+    // set up line input
+    std::string line;
+
+    // header parameters
+    int num_types, N1max, N2max, size_pp_nn, size_pn;
+
+    // header line 1: number of particle tyles
+    {
+      ++line_count_;
+      std::getline(stream,line);
+      std::istringstream line_stream(line);
+      line_stream >> num_types; 
+      ParsingCheck(line_stream,line_count_,line);
+    }
+
+    // header line 2: 1-body basis limit
+    {
+      ++line_count_;
+      std::getline(stream,line);
+      std::istringstream line_stream(line);
+      line_stream >> N1max; 
+      ParsingCheck(line_stream,line_count_,line);
+    }
+
+    // header line 3: 2-body basis limit
+    {
+      ++line_count_;
+      std::getline(stream,line);
+      std::istringstream line_stream(line);
+      line_stream >> N2max; 
+      ParsingCheck(line_stream,line_count_,line);
+    }
+		
+    // header line 4: matrix size
+    {
+      ++line_count_;
+      std::getline(stream,line);
+      std::istringstream line_stream(line);
+      line_stream >> size_pp_nn >> size_pn; 
+      ParsingCheck(line_stream,line_count_,line);
+    }
+
+    // process parameters
+    assert(num_types == 2);
+    ConstructIndexing_Version0(N1max,N2max,size_pp_nn,size_pn);
+  }
+
+  void InH2Stream::ReadHeader_Version0_Binary () 
+  {
+    // set up stream alias for convenience
+    std::ifstream& stream = *stream_ptr_;
+
+    // header parameters
+    int num_types, N1max, N2max, size_pp_nn, size_pn;
+
+    // read
+    int num_fields = 5;
+    int bytes = num_fields * kIntegerSize;
+    VerifyI4(stream,bytes);
+    ReadI4(stream,.num_types);
+    ReadI4(stream,N1b);
+    ReadI4(stream,N2b);
+    ReadI4(stream,size_pp_nn);
+    ReadI4(stream,size_pn);
+    VerifyI4(stream,bytes);
+
+    // process parameters
+    assert(num_types == 2);
+    ConstructIndexing_Version0(int N1max, int N2max, int size_pp_nn, int size_pn);
+  }
+
+  void InH2Stream::ConstructIndexing_Version0(int N1max, int N2max, int size_pp_nn, int size_pn)
+  {
+    // save sizes
+    size_by_type_ = std::array<int,3>({size_pp_nn,size_pp_nn,size_pn});
+
+    // construct sp orbitals 
+    orbital_space_ = OrbitalSpacePN(N1max);
+
+    // construct two-body space
+    space_ = TwoBodySpaceJJJPN(orbital_space_,WeightMax(N1max,N2max));
+
+    // construct sectors
+    int J0 = 0;
+    int g0 = 0;
+    sectors_ = TwoBodySectorsJJJPN(space_,J0,g0);
+  }
+
+
+  void OutH2Stream::WriteHeader_Version0_Text()
+  {
+
+    // set up stream alias for convenience
+    std::ofstream& stream = *stream_ptr_;
+
     // extract parameters
     //
     // assumes oscillator-like weight cutoffs
     // TODO: add tests for oscillator-like orbitals and weight cutoffs
     const int num_types = 2;
-    int N1max = int(h2_stream.space().weight_max().one_body[0]);
-    int N2max = int(h2_stream.space().weight_max().two_body[0]);
-    int size_pp_nn = h2_stream.size_by_type()[0];
-    int size_pn = h2_stream.size_by_type()[2];
+    int N1max = int(space().weight_max().one_body[0]);
+    int N2max = int(space().weight_max().two_body[0]);
+    int size_pp_nn = size_by_type()[0];
+    int size_pn = size_by_type()[2];
 
     stream
-      // line "0": format code
-      << fmt::format("{:10d}",int(h2_format())) << std::endl
       // header line 1: number of particle species
       << fmt::format("{:10d}",num_types) << std::endl
       // header line 2: 1-body basis limit
@@ -260,33 +416,315 @@ namespace shell {
     
   };
 
-  template <>
-  void WriteHeader<H2Format::kVersion0,H2Mode::kBinary>(std::ofstream stream,OutH2Stream& h2_stream)
+  void OutH2Stream::WriteHeader_Version0_Binary()
   {
+    // set up stream alias for convenience
+    std::ofstream& stream = *stream_ptr_;
+
     // extract parameters
     //
     // assumes oscillator-like weight cutoffs
     // TODO: add tests for oscillator-like orbitals and weight cutoffs
     const int num_types = 2;
-    int N1max = int(h2_stream.space().weight_max().one_body[0]);
-    int N2max = int(h2_stream.space().weight_max().two_body[0]);
-    int size_pp_nn = h2_stream.size_by_type()[0];
-    int size_pn = h2_stream.size_by_type()[2];
+    int N1max = int(space().weight_max().one_body[0]);
+    int N2max = int(space().weight_max().two_body[0]);
+    int size_pp_nn = size_by_type()[0];
+    int size_pn = size_by_type()[2];
 
     // record size
-    int num_header_fields = 5;
-    int header_bytes = num_header_fields * kIntegerSize;
+    int num_fields = 5;
+    int bytes = num_fields * kIntegerSize;
 
     // write
-    WriteI4(stream,header_bytes);
+    WriteI4(stream,bytes);
     WriteI4(stream,num_types);
     WriteI4(stream,N1max);
     WriteI4(stream,N2max);
     WriteI4(stream,size_pp_nn);
     WriteI4(stream,size_pn);
-    WriteI4(stream,header_bytes);
+    WriteI4(stream,bytes);
     
   };
+
+  ////////////////////////////////////////////////////////////////
+  // InH2Stream
+  ////////////////////////////////////////////////////////////////
+
+  void InH2Stream::Open (const std::string& filename, H2Header& header)
+  {
+		
+    // save arguments
+    filename_ = filename;
+
+    // set text/binary mode 
+    h2_mode_ = H2IOMode (filename_);
+
+    // open stream
+    stream_ = new std::ifstream;
+    std::ios_base::openmode mode_argument;
+    if (h2_mode_ == kText)
+      mode_argument = std::ios_base::in;
+    else if (h2_mode_ == kMatrix)
+      mode_argument = std::ios_base::in;
+    else if (h2_mode_ == kBinary)
+      mode_argument = std::ios_base::in | std::ios_base::binary;
+    stream_->open(filename_.c_str(),mode_argument);
+    if ( !*stream_) 
+      {
+	std::cerr << "Open failed on H2 file " << filename_ << std::endl;
+	exit(EXIT_FAILURE);
+      }
+
+    // read header
+    if (h2_mode_ == kText)
+      ReadHeaderText();
+    else if (h2_mode_ == kMatrix)
+      ReadHeaderText();
+    else if (h2_mode_ == kBinary)
+      ReadHeaderBin();
+    if ( !*stream_ ) 
+      {
+	std::cerr << "Header read failed opening H2 file " << filename_ << std::endl;
+	exit(EXIT_FAILURE);
+      }
+
+    // initialize sector iterator based on header
+    sector_.SetTruncation(header_.N1b,header_.N2b);
+
+    // export header
+    header = header_;
+
+  }
+
+  void InH2Stream::Close () {
+    delete stream_;
+    stream_ = 0;  // so deletion by destructor does not cause error 
+  };
+
+  void InH2Stream::ReadHeaderBin () 
+  {
+    // read format code
+    int num_format_fields = 1;
+    int format_bytes = num_format_fields * kIntegerSize;
+    VerifyI4(*stream_,format_bytes);
+    ReadI4(*stream_,header_.format);
+    VerifyI4(*stream_,format_bytes);
+
+    // check format
+    if ( header_.format != kH2FileFormat )
+      {
+	// flag mismatch
+	std::cerr << "H2 file I/O: Encountered input format " << header_.format << " when code presently supports only " << kH2FileFormat << std::endl;
+	exit(EXIT_FAILURE);
+      }
+
+
+    // read header body
+    int num_header_fields = 5;
+    int header_bytes = num_header_fields * kIntegerSize;
+    VerifyI4(*stream_,header_bytes);
+    ReadI4(*stream_,header_.num_types);
+    ReadI4(*stream_,header_.N1b);
+    ReadI4(*stream_,header_.N2b);
+    ReadI4(*stream_,header_.matrix_size_PPNN);
+    ReadI4(*stream_,header_.matrix_size_PN);
+    VerifyI4(*stream_,header_bytes);
+
+    // check format
+    if ( header_.num_types != 2 )
+      {
+	// flag mismatch
+	std::cerr << "H2 file I/O: Code supports only case of num_types = 2" << std::endl;
+	exit(EXIT_FAILURE);
+      }
+
+
+  }
+
+  void InH2Stream::ReadSector (legacy::TwoBodyMatrixNljTzJP& matrix, bool store)
+  // default for store is given in class prototype
+  {
+    // DEBUG: std::cout << "(" << sector_.GetStateType() << sector_.GetJ() << sector_.GetGrade() << ")" << std::flush;
+
+
+    // invoke basic read code
+    if (h2_mode_ == kText)
+      ReadSectorText (matrix,store);
+    else if (h2_mode_ == kMatrix)
+      ReadSectorMatrix (matrix,store);
+    else if (h2_mode_ == kBinary)
+      ReadSectorBin (matrix,store);
+
+    // validate status
+    if ( !*stream_ ) 
+      {
+	std::cerr << "Read failure on H2 file " << filename_ << std::endl;
+	exit(EXIT_FAILURE);
+      }
+
+    // increment to next sector
+    sector_++;
+
+  }
+
+  void InH2Stream::SkipSector (legacy::TwoBodyMatrixNljTzJP& matrix)
+  {
+    // Note that matrix object is still needed as dummy, to use ReadSector machinery, even though matrix is not used
+    ReadSector (matrix, false);
+  }
+
+  void InH2Stream::ReadSectorText (legacy::TwoBodyMatrixNljTzJP& matrix, bool store)
+  {
+    // recover sector properties
+    const legacy::TwoSpeciesStateType state_type = sector_.GetStateType();
+    const int J = sector_.GetJ();
+    const int g = sector_.GetGrade();
+    const int dimension = matrix.GetTwoBodyBasis().GetDimension(state_type,J,g);
+		
+    // for canonical pairs of states (in lexicographical order)
+    for (int k1 = 0; k1 < dimension; ++k1)
+      for (int k2 = k1; k2 < dimension; ++k2)
+	{
+
+	  // determine expected states
+
+	  legacy::TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
+	  legacy::TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
+				
+	  // read input data
+
+	  int input_i1, input_i2, input_i3, input_i4, input_twice_J;
+	  int input_state_type_onsager;
+	  float input_me;
+				
+	  std::string line;
+	  std::getline(*stream_, line);
+	  std::stringstream(line) >> input_i1 >> input_i2 >> input_i3 >> input_i4 
+				  >> input_twice_J 
+				  >> input_state_type_onsager 
+				  >> input_me;
+				
+	  // validate input fields against expected values
+				
+	  if ( ! ( 
+                   (input_i1 == s1.a1.GetIndex1()) && (input_i2 == s1.a2.GetIndex1())
+                   && (input_i3 == s2.a1.GetIndex1()) && (input_i4 == s2.a2.GetIndex1())
+                   && (input_twice_J == 2*J)
+                   && (TwoSpeciesStateTypeFromOnsager(input_state_type_onsager) == state_type)
+                 ) )
+	    {
+	      std::cerr << "ReadTwoBodyMatrixSectorMFDnH2: unexpected matrix element indices in input data" 
+			<< std::endl
+			<< input_i1 << " " << input_i2 << " " << input_i3 << " " << input_i4 << " " << input_twice_J << " " << input_state_type_onsager
+			<< std::endl;
+	      std::exit(EXIT_FAILURE);
+	    }
+				
+	  // save matrix element
+
+	  if (store)
+	    matrix.SetMatrixElementNAS(state_type, s1, s2, input_me);
+	}
+  }
+
+  void InH2Stream::ReadSectorMatrix (legacy::TwoBodyMatrixNljTzJP& matrix, bool store)
+  {
+    // recover sector properties
+    const legacy::TwoSpeciesStateType state_type = sector_.GetStateType();
+    const int J = sector_.GetJ();
+    const int g = sector_.GetGrade();
+    const int dimension = matrix.GetTwoBodyBasis().GetDimension(state_type,J,g);
+
+    // verify sector header
+    std::string line;
+    int twice_J = 2*J;
+    int input_twice_J, input_g, input_state_type_onsager, input_dimension;
+
+    std::getline(*stream_, line);
+    std::stringstream(line) >> input_twice_J 
+			    >> input_g
+			    >> input_state_type_onsager
+			    >> input_dimension;
+    if ( ! ( 
+             (input_twice_J == 2*J)
+             && (input_g == g)
+             && (TwoSpeciesStateTypeFromOnsager(input_state_type_onsager) == state_type)
+             && (input_dimension == dimension)
+           ) )
+      {
+	std::cerr << "ReadSectorMatrix: unexpected sector header" 
+		  << std::endl;
+	std::exit(EXIT_FAILURE);
+      }
+
+    // for canonical pairs of states (in lexicographical order)
+    for (int k1 = 0; k1 < dimension; ++k1)
+      for (int k2 = k1; k2 < dimension; ++k2)
+	{
+
+	  // determine expected states
+
+	  legacy::TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
+	  legacy::TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
+				
+	  float input_me;
+				
+	  // std::string line;
+	  std::getline(*stream_, line);
+	  std::stringstream(line) >> input_me;
+				
+	  // save matrix element
+
+	  if (store)
+	    matrix.SetMatrixElementNAS(state_type, s1, s2, input_me);
+	}
+  }
+
+  void InH2Stream::ReadSectorBin (legacy::TwoBodyMatrixNljTzJP& matrix, bool store)
+  {
+    // recover sector properties
+    const legacy::TwoSpeciesStateType state_type = sector_.GetStateType();
+    const int J = sector_.GetJ();
+    const int g = sector_.GetGrade();
+    const int dimension = matrix.GetTwoBodyBasis().GetDimension(state_type,J,g);
+
+    // read record beginning delimiter
+    if (sector_.IsFirstOfType())
+      {
+	int record_bytes = matrix.GetSize(sector_.GetStateType()) * kIntegerSize;
+	VerifyI4(*stream_,record_bytes);
+      }
+		
+    // for canonical pairs of states (in lexicographical order)
+    for (int k1 = 0; k1 < dimension; ++k1)
+      for (int k2 = k1; k2 < dimension; ++k2)
+	{
+	  // determine expected states
+
+	  legacy::TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
+	  legacy::TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
+				
+	  // read matrix element
+
+	  float input_me;
+	  ReadFloat(*stream_,input_me);
+
+	  // save matrix element
+
+	  if (store)
+	    matrix.SetMatrixElementNAS(state_type, s1, s2, input_me);
+
+
+	}
+
+    // write record ending delimiter
+    if (sector_.IsLastOfType())
+      {
+	int record_bytes = matrix.GetSize(sector_.GetStateType()) * kIntegerSize;
+	VerifyI4(*stream_,record_bytes);
+      }
+		
+  }
 
   ////////////////////////////////////////////////////////////////
   // OutH2Stream
@@ -334,8 +772,6 @@ namespace shell {
     // write header
     if ((h2_format_==H2Format::kVersion0)&&(h2_mode_==H2Mode::kText))
       WriteHeader<H2Format::kVersion0,H2Mode::kText>(*stream_,this);
-
-
     if ( !*stream_ ) 
       {
         std::cerr << "Header write failed while opening H2 file " << filename_ << std::endl;
@@ -574,312 +1010,6 @@ namespace shell {
   }
 
 
-  ////////////////////////////////////////////////////////////////
-  // InMFDnH2Stream
-  ////////////////////////////////////////////////////////////////
-
-  void InMFDnH2Stream::Open (const std::string& filename, MFDnH2Header& header)
-  {
-		
-    // save arguments
-    filename_ = filename;
-
-    // set text/binary mode 
-    h2_mode_ = H2IOMode (filename_);
-
-    // open stream
-    stream_ = new std::ifstream;
-    std::ios_base::openmode mode_argument;
-    if (h2_mode_ == kText)
-      mode_argument = std::ios_base::in;
-    else if (h2_mode_ == kMatrix)
-      mode_argument = std::ios_base::in;
-    else if (h2_mode_ == kBinary)
-      mode_argument = std::ios_base::in | std::ios_base::binary;
-    stream_->open(filename_.c_str(),mode_argument);
-    if ( !*stream_) 
-      {
-	std::cerr << "Open failed on H2 file " << filename_ << std::endl;
-	exit(EXIT_FAILURE);
-      }
-
-    // read header
-    if (h2_mode_ == kText)
-      ReadHeaderText();
-    else if (h2_mode_ == kMatrix)
-      ReadHeaderText();
-    else if (h2_mode_ == kBinary)
-      ReadHeaderBin();
-    if ( !*stream_ ) 
-      {
-	std::cerr << "Header read failed opening H2 file " << filename_ << std::endl;
-	exit(EXIT_FAILURE);
-      }
-
-    // initialize sector iterator based on header
-    sector_.SetTruncation(header_.N1b,header_.N2b);
-
-    // export header
-    header = header_;
-
-  }
-
-  void InMFDnH2Stream::Close () {
-    delete stream_;
-    stream_ = 0;  // so deletion by destructor does not cause error 
-  };
-
-
-  void InMFDnH2Stream::ReadHeaderText () 
-  {
-    std::string line;
-		
-    // format line
-    std::getline(*stream_, line);
-    std::stringstream(line) >> header_.format;
-
-    // header line 1: particle number
-    std::getline(*stream_, line);
-    std::stringstream(line) >> header_.num_types;
-		
-    // header line 2: 1-body basis limit
-    std::getline(*stream_, line);
-    std::stringstream(line) >> header_.N1b;
-
-    // header line 3: 2-body basis limit
-    std::getline(*stream_, line);
-    std::stringstream(line) >> header_.N2b;
-		
-    // header line 4: matrix size
-    std::getline(*stream_, line);
-    std::stringstream(line) >> header_.matrix_size_PPNN >> header_.matrix_size_PN;
-	
-  }
-
-  void InMFDnH2Stream::ReadHeaderBin () 
-  {
-    // read format code
-    int num_format_fields = 1;
-    int format_bytes = num_format_fields * kIntegerSize;
-    VerifyI4(*stream_,format_bytes);
-    ReadI4(*stream_,header_.format);
-    VerifyI4(*stream_,format_bytes);
-
-    // check format
-    if ( header_.format != kH2FileFormat )
-      {
-	// flag mismatch
-	std::cerr << "H2 file I/O: Encountered input format " << header_.format << " when code presently supports only " << kH2FileFormat << std::endl;
-	exit(EXIT_FAILURE);
-      }
-
-
-    // read header body
-    int num_header_fields = 5;
-    int header_bytes = num_header_fields * kIntegerSize;
-    VerifyI4(*stream_,header_bytes);
-    ReadI4(*stream_,header_.num_types);
-    ReadI4(*stream_,header_.N1b);
-    ReadI4(*stream_,header_.N2b);
-    ReadI4(*stream_,header_.matrix_size_PPNN);
-    ReadI4(*stream_,header_.matrix_size_PN);
-    VerifyI4(*stream_,header_bytes);
-
-    // check format
-    if ( header_.num_types != 2 )
-      {
-	// flag mismatch
-	std::cerr << "H2 file I/O: Code supports only case of num_types = 2" << std::endl;
-	exit(EXIT_FAILURE);
-      }
-
-
-  }
-
-  void InMFDnH2Stream::ReadSector (legacy::TwoBodyMatrixNljTzJP& matrix, bool store)
-  // default for store is given in class prototype
-  {
-    // DEBUG: std::cout << "(" << sector_.GetStateType() << sector_.GetJ() << sector_.GetGrade() << ")" << std::flush;
-
-
-    // invoke basic read code
-    if (h2_mode_ == kText)
-      ReadSectorText (matrix,store);
-    else if (h2_mode_ == kMatrix)
-      ReadSectorMatrix (matrix,store);
-    else if (h2_mode_ == kBinary)
-      ReadSectorBin (matrix,store);
-
-    // validate status
-    if ( !*stream_ ) 
-      {
-	std::cerr << "Read failure on H2 file " << filename_ << std::endl;
-	exit(EXIT_FAILURE);
-      }
-
-    // increment to next sector
-    sector_++;
-
-  }
-
-  void InMFDnH2Stream::SkipSector (legacy::TwoBodyMatrixNljTzJP& matrix)
-  {
-    // Note that matrix object is still needed as dummy, to use ReadSector machinery, even though matrix is not used
-    ReadSector (matrix, false);
-  }
-
-  void InMFDnH2Stream::ReadSectorText (legacy::TwoBodyMatrixNljTzJP& matrix, bool store)
-  {
-    // recover sector properties
-    const legacy::TwoSpeciesStateType state_type = sector_.GetStateType();
-    const int J = sector_.GetJ();
-    const int g = sector_.GetGrade();
-    const int dimension = matrix.GetTwoBodyBasis().GetDimension(state_type,J,g);
-		
-    // for canonical pairs of states (in lexicographical order)
-    for (int k1 = 0; k1 < dimension; ++k1)
-      for (int k2 = k1; k2 < dimension; ++k2)
-	{
-
-	  // determine expected states
-
-	  legacy::TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
-	  legacy::TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
-				
-	  // read input data
-
-	  int input_i1, input_i2, input_i3, input_i4, input_twice_J;
-	  int input_state_type_onsager;
-	  float input_me;
-				
-	  std::string line;
-	  std::getline(*stream_, line);
-	  std::stringstream(line) >> input_i1 >> input_i2 >> input_i3 >> input_i4 
-				  >> input_twice_J 
-				  >> input_state_type_onsager 
-				  >> input_me;
-				
-	  // validate input fields against expected values
-				
-	  if ( ! ( 
-                   (input_i1 == s1.a1.GetIndex1()) && (input_i2 == s1.a2.GetIndex1())
-                   && (input_i3 == s2.a1.GetIndex1()) && (input_i4 == s2.a2.GetIndex1())
-                   && (input_twice_J == 2*J)
-                   && (TwoSpeciesStateTypeFromOnsager(input_state_type_onsager) == state_type)
-                 ) )
-	    {
-	      std::cerr << "ReadTwoBodyMatrixSectorMFDnH2: unexpected matrix element indices in input data" 
-			<< std::endl
-			<< input_i1 << " " << input_i2 << " " << input_i3 << " " << input_i4 << " " << input_twice_J << " " << input_state_type_onsager
-			<< std::endl;
-	      std::exit(EXIT_FAILURE);
-	    }
-				
-	  // save matrix element
-
-	  if (store)
-	    matrix.SetMatrixElementNAS(state_type, s1, s2, input_me);
-	}
-  }
-
-  void InMFDnH2Stream::ReadSectorMatrix (legacy::TwoBodyMatrixNljTzJP& matrix, bool store)
-  {
-    // recover sector properties
-    const legacy::TwoSpeciesStateType state_type = sector_.GetStateType();
-    const int J = sector_.GetJ();
-    const int g = sector_.GetGrade();
-    const int dimension = matrix.GetTwoBodyBasis().GetDimension(state_type,J,g);
-
-    // verify sector header
-    std::string line;
-    int twice_J = 2*J;
-    int input_twice_J, input_g, input_state_type_onsager, input_dimension;
-
-    std::getline(*stream_, line);
-    std::stringstream(line) >> input_twice_J 
-			    >> input_g
-			    >> input_state_type_onsager
-			    >> input_dimension;
-    if ( ! ( 
-             (input_twice_J == 2*J)
-             && (input_g == g)
-             && (TwoSpeciesStateTypeFromOnsager(input_state_type_onsager) == state_type)
-             && (input_dimension == dimension)
-           ) )
-      {
-	std::cerr << "ReadSectorMatrix: unexpected sector header" 
-		  << std::endl;
-	std::exit(EXIT_FAILURE);
-      }
-
-    // for canonical pairs of states (in lexicographical order)
-    for (int k1 = 0; k1 < dimension; ++k1)
-      for (int k2 = k1; k2 < dimension; ++k2)
-	{
-
-	  // determine expected states
-
-	  legacy::TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
-	  legacy::TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
-				
-	  float input_me;
-				
-	  // std::string line;
-	  std::getline(*stream_, line);
-	  std::stringstream(line) >> input_me;
-				
-	  // save matrix element
-
-	  if (store)
-	    matrix.SetMatrixElementNAS(state_type, s1, s2, input_me);
-	}
-  }
-
-  void InMFDnH2Stream::ReadSectorBin (legacy::TwoBodyMatrixNljTzJP& matrix, bool store)
-  {
-    // recover sector properties
-    const legacy::TwoSpeciesStateType state_type = sector_.GetStateType();
-    const int J = sector_.GetJ();
-    const int g = sector_.GetGrade();
-    const int dimension = matrix.GetTwoBodyBasis().GetDimension(state_type,J,g);
-
-    // read record beginning delimiter
-    if (sector_.IsFirstOfType())
-      {
-	int record_bytes = matrix.GetSize(sector_.GetStateType()) * kIntegerSize;
-	VerifyI4(*stream_,record_bytes);
-      }
-		
-    // for canonical pairs of states (in lexicographical order)
-    for (int k1 = 0; k1 < dimension; ++k1)
-      for (int k2 = k1; k2 < dimension; ++k2)
-	{
-	  // determine expected states
-
-	  legacy::TwoBodyStateNlj s1 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k1);
-	  legacy::TwoBodyStateNlj s2 = matrix.GetTwoBodyBasis().GetState(state_type,J,g,k2);
-				
-	  // read matrix element
-
-	  float input_me;
-	  ReadFloat(*stream_,input_me);
-
-	  // save matrix element
-
-	  if (store)
-	    matrix.SetMatrixElementNAS(state_type, s1, s2, input_me);
-
-
-	}
-
-    // write record ending delimiter
-    if (sector_.IsLastOfType())
-      {
-	int record_bytes = matrix.GetSize(sector_.GetStateType()) * kIntegerSize;
-	VerifyI4(*stream_,record_bytes);
-      }
-		
-  }
 
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////

@@ -38,13 +38,18 @@ namespace shell {
   // H2 stream mode control
   ////////////////////////////////////////////////////////////////
 
-  enum class H2Format
   // H2 format code
   //
   //   0: oscillator-like sp indexing, used with MFDn v14
   //   15000: Pieter's preliminary general orbitals test format for MFDn v15 beta00
   //   15099: general orbitals specification June 2016
-  {kVersion0=0,kVersion15000=15000,kVersion15099=15099};
+
+  typedef int H2Format;
+  const int kVersion0=0;
+  const int kVersion15000=15000;
+  const int kVersion15099=15099;
+  // enum class H2Format
+  // {kVersion0=0,kVersion15000=15000,kVersion15099=15099};
 
   enum class H2Mode {kText,kBinary,kMatrix};
   // text/binary mode
@@ -93,7 +98,7 @@ namespace shell {
     H2StreamBase(const std::string& filename)
       // Default constructor to zero-initialize some of the POD
       // fields.
-      : filename_(filename), sector_index_(0), size_by_type_({0,0,0}), size_(0)
+      : filename_(filename), sector_index_(0), size_by_type_({0,0,0})
       {}
 
     // indexing accessors
@@ -127,13 +132,15 @@ namespace shell {
     }
     int size() const
     {
-      return size_;
+      int total = size_by_type_[0]+size_by_type_[1]+size_by_type_[2];
+      return total;
     }
 
     // diagnostics
     std::string DiagnosticStr() const;
 
   protected:
+
 
     // indexing information
     basis::OrbitalSpacePN orbital_space_;
@@ -143,8 +150,6 @@ namespace shell {
     // size information
     std::array<int,3> size_by_type_;
     // number of pp, nn, and pn matrix elements
-    int size_;
-    // total size
 
     // mode information
     H2Format h2_format_;
@@ -157,6 +162,43 @@ namespace shell {
     int sector_index_;
   };
 
+  class InH2Stream
+    : public H2StreamBase
+  // Input stream for H2 file
+  {
+  public:
+
+    // constructor
+    InH2Stream(const std::string& filename);
+
+    // destructor
+    ~InH2Stream ()
+      {
+        Close();
+        delete stream_ptr_;
+      };
+
+    // I/O
+    void ReadSector (Eigen::MatrixXd& matrix);
+    void SkipSector (Eigen::MatrixXd& matrix);
+    void Close ();
+
+  private:
+
+    // format-specific implementation methods
+    void ReadVersion_Text();
+    void ReadVersion_Binary();
+    void ReadHeader_Version0_Text();
+    void ReadHeader_Version0_Binary();
+    void ReadSector_Version0_Text(Eigen::MatrixXd& matrix, bool store);
+    void ReadSector_Version0_Binary(Eigen::MatrixXd& matrix, bool store);
+    void ConstructIndexing_Version0(int N1max, int N2max, int size_pp_nn, int size_pn);
+
+    // file stream
+    std::ifstream* stream_ptr_;
+    int line_count_;  // for text mode input
+
+  };
 
   class OutH2Stream
     : public H2StreamBase
@@ -177,7 +219,7 @@ namespace shell {
     ~OutH2Stream()
       {
         Close();
-        delete stream_;
+        delete stream_ptr_;
       };
 
     // I/O
@@ -187,52 +229,17 @@ namespace shell {
   private:
     
     // specialized methods
-    void WriteHeaderText() const;
-    void WriteHeaderBin() const;
-    void WriteSectorText(const Eigen::MatrixXd& matrix);
-    void WriteSectorMatrix(const Eigen::MatrixXd& matrix);
-    void WriteSectorBin(const Eigen::MatrixXd& matrix);
+    void WriteVersion_Text();
+    void WriteVersion_Binary();
+    void WriteHeader_Version0_Text();
+    void WriteHeader_Version0_Binary();
+    void WriteSector_Version0_Text(const Eigen::MatrixXd& matrix);
+    void WriteSector_Version0_Binary(const Eigen::MatrixXd& matrix);
 
     // file stream
-    std::ofstream* stream_;
+    std::ofstream* stream_ptr_;
 
   };
-
-
-
-  class InH2Stream
-    : public H2StreamBase
-  // Input stream for H2 file
-  {
-  public:
-
-    // constructor
-    InH2Stream(const std::string& filename);
-
-    // destructor
-    ~InH2Stream ()
-      {
-        Close();
-        delete stream_;
-      };
-
-    // I/O
-    void ReadSector (Eigen::MatrixXd& matrix);
-    void SkipSector (Eigen::MatrixXd& matrix);
-    void Close ();
-
-  private:
-    // specialized methods
-    void ReadHeaderText();
-    void ReadHeaderBin();
-    void ReadSectorText(Eigen::MatrixXd& matrix, bool store);
-    void ReadSectorMatrix (Eigen::MatrixXd& matrix, bool store);
-    void ReadSectorBin(Eigen::MatrixXd& matrix, bool store);
-
-    // file stream
-    std::ifstream* stream_;
-  };
-
 
 
 
