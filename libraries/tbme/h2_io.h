@@ -98,7 +98,7 @@ namespace shell {
     H2StreamBase(const std::string& filename)
       // Default constructor to zero-initialize some of the POD
       // fields.
-      : filename_(filename), sector_index_(0), size_by_type_({0,0,0})
+      : filename_(filename), sector_index_(0), num_sectors_by_type_({0,0,0}), size_by_type_({0,0,0})
       {}
 
     // indexing accessors
@@ -126,6 +126,15 @@ namespace shell {
     }
 
     // size accessors
+    const std::array<int,3>& num_sectors_by_type() const
+    {
+      return sectors_by_type_;
+    }
+    int num_sectors() const
+    {
+      int total = num_sectors_by_type_[0]+num_sectors_by_type_[1]+num_sectors_by_type_[2];
+      return total;
+    }
     const std::array<int,3>& size_by_type() const
     {
       return size_by_type_;
@@ -147,9 +156,9 @@ namespace shell {
     basis::TwoBodySpaceJJJPN space_;
     basis::TwoBodySectorsJJJPN sectors_;
 
-    // size information
-    std::array<int,3> size_by_type_;
-    // number of pp, nn, and pn matrix elements
+    // size information (for pp/nn/pn)
+    std::array<int,3> num_sectors_by_type_;  // number of sectors
+    std::array<int,3> size_by_type_;  // number of matrix elements
 
     // mode information
     H2Format h2_format_;
