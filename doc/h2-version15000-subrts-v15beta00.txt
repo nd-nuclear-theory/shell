@@ -1,0 +1,188 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+C
+      subroutine write_TBME_ascii(TBME_pp, TBME_nn, TBME_pn, hamfile) 
+      use SPbasis
+      use TBMEdata
+      implicit none
+      real(4), dimension(ntbme_pp), intent(in) :: TBME_pp
+      real(4), dimension(ntbme_nn), intent(in) :: TBME_nn
+      real(4), dimension(ntbme_pn), intent(in) :: TBME_pn
+      character(LEN=128), intent(in) :: hamfile
+C     
+      integer :: indx, i, ii, jt, pt, istop, k, cls
+      integer :: ia, ib, ic, id, versionnumber, tmplabels
+C
+      open(unit=13, file=TRIM(hamfile)//'.dat',
+     $     status='unknown', action='write')
+ 101  format('#  Output from MFDn in M-scheme basis Version 15')
+ 102  format('#  listing of coupled-J two-body matrix elements')
+ 207  format(i8, 2x, 5i7, 3x, f12.6)
+ 205  format(i8, 2x, 3i7, 3x, f12.6)
+ 6781 format(6i6, 4x, g18.8)
+      write(13, 101)
+      write(13, 102)
+C     header info
+      versionnumber = 15000
+      write(13, *) versionnumber
+C
+C     SP info
+      tmplabels = 7
+      write(13, *) norb_p, norb_n
+      write(13, *) tmplabels
+      cls = 1
+      do i = 1, norb_p
+         write(13, 207) i, n_orb(i), l_orb(i), 
+     $        j2_orb(i), pr_orb(i), cls, wt_orb(i)
+      enddo
+      cls = 2
+c     label i runs from norb_p+1 to norb_p+norb_n in MFDn,
+c     but from 1 to norb_n for IO of neutron SP info
+      do i = norb_p + 1, norb_p + norb_n
+         write(13, 207) i-norb_p, n_orb(i), l_orb(i),
+     $        j2_orb(i), pr_orb(i), cls, wt_orb(i)
+      enddo
+C
+C     TBME info
+      write(13, *) 2*J2max_pp, 2*J2max_nn, 2*J2max_pn
+      write(13, *) WT2mx_pp, WT2mx_nn, WT2mx_pn
+      write(13, *) ntbme_pp, ntbme_nn, ntbme_pn
+C
+C     actual matrix elements
+      indx = 0
+      ii = 0
+      istop = 0
+      cls = 11
+      do jt = 0, J2max_pp
+         do pt = 0, 1
+            istop = istop + ntpsJ_pp(jt,pt) 
+            do i = 1, ntpsJ_pp(jt,pt)
+               ii = ii + 1
+               ia = TPJstates_pp(1, ii) 
+               ib = TPJstates_pp(2, ii) 
+C     jt = TPSJstates(3, ii) 
+               do k = ii, istop
+                  ic = TPJstates_pp(1, k) 
+                  id = TPJstates_pp(2, k) 
+C     jt = TPJstates(3, k) 
+                  indx = indx + 1
+                  write(13, 6781)
+     $                 ia, ib, ic, id, 2*jt, cls, TBME_pp(indx)
+               enddo
+            enddo
+         enddo
+      enddo
+C
+      if (norb_n .eq. 0) then
+         close(unit=13, status='keep')      
+         return
+      endif
+C
+      indx = 0
+      ii = 0
+      istop = 0
+      cls = 22
+      do jt = 0, J2max_nn
+         do pt = 0, 1
+            istop = istop + ntpsJ_nn(jt,pt) 
+            do i = 1, ntpsJ_nn(jt,pt)
+               ii = ii + 1
+               ia = TPJstates_nn(1, ii) !+ norb_p
+               ib = TPJstates_nn(2, ii) !+ norb_p 
+C     jt = TPSJstates(3, ii) 
+               do k = ii, istop
+                  ic = TPJstates_nn(1, k) !+ norb_p 
+                  id = TPJstates_nn(2, k) !+ norb_p 
+C     jt = TPJstates(3, k) 
+                  indx = indx + 1
+                  write(13, 6781)
+     $                 ia, ib, ic, id, 2*jt, cls, TBME_nn(indx)
+               enddo
+            enddo
+         enddo
+      enddo
+C
+      indx = 0
+      ii = 0
+      istop = 0
+      cls = 12
+      do jt = 0, J2max_pn
+         do pt = 0, 1
+            istop = istop + ntpsJ_pn(jt,pt) 
+            do i = 1, ntpsJ_pn(jt,pt)
+               ii = ii + 1
+               ia = TPJstates_pn(1, ii)
+               ib = TPJstates_pn(2, ii) !+ norb_p 
+C     jt = TPSJstates(3, ii) 
+               do k = ii, istop
+                  ic = TPJstates_pn(1, k)
+                  id = TPJstates_pn(2, k) !+ norb_p 
+C     jt = TPJstates(3, k) 
+                  indx = indx + 1
+                  write(13, 6781)
+     $                 ia, ib, ic, id, 2*jt, cls, TBME_pn(indx)
+               enddo
+            enddo
+         enddo
+      enddo
+C
+      close(unit=13, status='keep')      
+C
+      return
+C
+      end subroutine write_TBME_ascii
+C
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+
+
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+C
+      subroutine write_TBME_bin(TBME_pp, TBME_nn, TBME_pn, hamfile) 
+      use SPbasis
+      use TBMEdata
+      implicit none
+      real(4), dimension(ntbme_pp), intent(in) :: TBME_pp
+      real(4), dimension(ntbme_nn), intent(in) :: TBME_nn
+      real(4), dimension(ntbme_pn), intent(in) :: TBME_pn
+      character(LEN=128), intent(in) :: hamfile
+C     
+      integer :: versionnumber, tmplabels
+C
+      open(unit=13, file=TRIM(hamfile)//'.bin',
+     $     status='unknown', action='write', form='unformatted')
+C     header info
+      versionnumber = 15000
+      write(13) versionnumber
+C
+      tmplabels = 5
+      write(13) norb_p, norb_n, tmplabels
+      write(13) n_orb(1:norb_p)
+      write(13) l_orb(1:norb_p)
+      write(13) j2_orb(1:norb_p)
+      write(13) pr_orb(1:norb_p)
+      write(13) wt_orb(1:norb_p)
+      if (norb_n .gt. 0) then
+         write(13) n_orb(norb_p+1:norbt)
+         write(13) l_orb(norb_p+1:norbt)
+         write(13) j2_orb(norb_p+1:norbt)
+         write(13) pr_orb(norb_p+1:norbt)
+         write(13) wt_orb(norb_p+1:norbt)
+      endif
+C
+      write(13) 2*J2max_pp, 2*J2max_nn, 2*J2max_pn
+      write(13) WT2mx_pp, WT2mx_nn, WT2mx_pn
+C
+      write(13) ntbme_pp, ntbme_nn, ntbme_pn
+C     actual matrix elements
+      write(13) TBME_pp(1:ntbme_pp)
+      if (norb_n .gt. 0) then
+         write(13) TBME_nn(1:ntbme_nn)
+         write(13) TBME_pn(1:ntbme_pn)
+      endif
+C
+      close(unit=13, status='keep')      
+C
+      return
+C
+      end subroutine write_TBME_bin
+C
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC

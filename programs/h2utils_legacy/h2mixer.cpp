@@ -52,6 +52,7 @@
   1/30/13 (mac): Update to mfdn_h2 class-based I/O.
   5/24/15 (mac): Add squared angular momentum operator support.
   10/11/16 (mac): Integrate into shell project.
+  10/19/16 (mac): Update use of ParsingError.
 
 ******************************************************************************/
 
@@ -234,7 +235,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 
 		  // validate as first input streams
 		  if (in_matrix_streams.size() > 0)
-		    ParsingError("r2k2 basename must be defined before any other input files", line_count, line);
+		    ParsingError(line_count,line,"r2k2 basename must be defined before any other input files");
 
 		  std::string basename;
 		  line_stream >> basename;
@@ -282,7 +283,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 		  ParsingCheck (line_stream, line_count, line);
 
 		  if (in_id > in_matrix_streams.size())
-		    ParsingError("Addition involves undefined input matrix id", line_count, line);					
+		    ParsingError(line_count,line,"Addition involves undefined input matrix id");					
 		  out_matrix_streams.back().mixing_amplitudes.push_back(MixingAmplitude(in_id,multiplier));
 		  std::cout << "Adding to (out#" << out_id << "): (in#" << in_id << ") * " << multiplier << std::endl;
 		}
@@ -302,7 +303,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 		  multiplier *=rescaling;
 
 		  if (in_id > in_matrix_streams.size())
-		    ParsingError("Addition involves undefined input matrix id", line_count, line);					
+		    ParsingError(line_count,line,"Addition involves undefined input matrix id");					
 		  out_matrix_streams.back().mixing_amplitudes.push_back(MixingAmplitude(in_id,multiplier));
 		  std::cout << "Adding to (out#" << out_id << "): (in#" << in_id << ") * " << multiplier 
 		       << " after hw rescaling " << rescaling << std::endl;
@@ -310,7 +311,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 	      else if (subkeyword == "Trel")
 		{
 		  if (!mixing_parameters.r2k2_defined)
-		    ParsingError("Calculation of Trel requires prior input r2k2 definition", line_count, line);
+		    ParsingError(line_count,line,"Calculation of Trel requires prior input r2k2 definition");
 
 		  int in_id;
 		  double multiplier;
@@ -333,7 +334,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 	      else if (subkeyword == "rrel2")
 		{
 		  if (!mixing_parameters.r2k2_defined)
-		    ParsingError("Calculation of rrel2 requires prior input r2k2 definition", line_count, line);
+		    ParsingError(line_count,line,"Calculation of rrel2 requires prior input r2k2 definition");
 
 		  int in_id;
 		  double multiplier;
@@ -356,7 +357,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 	      else if (subkeyword == "N")
 		{
 		  if (!mixing_parameters.r2k2_defined)
-		    ParsingError("Calculation of N requires prior input r2k2 definition", line_count, line);
+		    ParsingError(line_count,line,"Calculation of N requires prior input r2k2 definition");
 
 		  double hw_tilde, postmultiplier;
 		  line_stream >> hw_tilde >> postmultiplier;
@@ -391,7 +392,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 	      else if (subkeyword == "NCM")
 		{
 		  if (!mixing_parameters.r2k2_defined)
-		    ParsingError("Calculation of NCM requires prior input r2k2 definition", line_count, line);
+		    ParsingError(line_count,line,"Calculation of NCM requires prior input r2k2 definition");
 
 		  double hw_tilde, postmultiplier;
 		  line_stream >> hw_tilde >> postmultiplier;
@@ -441,7 +442,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 	      else if (subkeyword == "R20")
 		{
 		  if (!mixing_parameters.r2k2_defined)
-		    ParsingError("Calculation of rrel2 requires prior input r2k2 definition", line_count, line);
+		    ParsingError(line_count,line,"Calculation of rrel2 requires prior input r2k2 definition");
 
 		  int in_id;
 		  double multiplier;
@@ -463,7 +464,7 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 	      else if (subkeyword == "K20")
 		{
 		  if (!mixing_parameters.r2k2_defined)
-		    ParsingError("Calculation of rrel2 requires prior input r2k2 definition", line_count, line);
+		    ParsingError(line_count,line,"Calculation of rrel2 requires prior input r2k2 definition");
 
 		  int in_id;
 		  double multiplier;
@@ -501,14 +502,14 @@ void ReadInstructions(MixingParameters& mixing_parameters, InMatrixStreams& in_m
 	      else
 		{
 		  // unrecognized operator
-		  ParsingError("Unrecognized operator in add instruction", line_count, line);			
+		  ParsingError(line_count,line,"Unrecognized operator in add instruction");
 		}
 				
 	    }			
 	  else
 	    {
 	      // unrecognized keyword
-	      ParsingError("Unrecognized keyword", line_count, line);
+	      ParsingError(line_count,line,"Unrecognized keyword");
 	    }
 
 	}

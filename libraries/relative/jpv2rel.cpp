@@ -28,13 +28,9 @@
   7/25/16 (mac): Created, based upon writerel.cpp.
   8/10/16 (mac): Fix input indexing.
   10/9/16 (pjf): Rename mcpp -> mcutils.
+  10/19/16 (mac): Remove superflous debugging options.
 
 ****************************************************************/
-
-//  TODO: remove these options
-
-#define NO_REVERSE_L_VALUES
-#define NO_REVERSE_RADIAL_CONVENTION
 
 // JPV relative interaction readme file from NERSC m94 project space
 // (2014):
@@ -586,14 +582,6 @@ void ReadJPVOperator(
       std::cout << fmt::format("  Input sector (raw labels): J {} S {} L {} Lp {} ipcut {} dimension {} mn {} hw {} ident {}",J,S,L,Lp,Nmax,dimension,mn,hw,identifier)
                 << std::endl;
 
-      #ifdef REVERSE_L_VALUES
-      std::cout << "REVERSE_L_VALUES: Throwing in extra (L,Lp) swap for testing purposes..." << std::endl;
-      std::swap(Lp,L);
-      #endif
-      #ifdef REVERSE_RADIAL_CONVENTION
-      std::cout << "REVERSE_RADIAL_CONVENTION: Throwing in extra phase ~(np+n) for testing purposes..." << std::endl;
-      #endif
-
       // canonicalize "lower triangle" sector
       //
       // We must flag the need to transpose (np,n) labels for
@@ -686,7 +674,7 @@ void ReadJPVOperator(
           ++line_count;
           std::getline(is,line);
           std::istringstream line_stream(line);
-          StreamCheck(bool(is),source_filename);  // can fail if there are not enough matrix elements and we read past EOF
+          StreamCheck(bool(is),source_filename,"Failure reading matrix elements");  // can fail if there are not enough matrix elements and we read past EOF
           // std::cout << fmt::format("matrix_element_count {}",matrix_element_count) << std::endl;
           // std::cout << line_count << " : " << line << std::endl;
 
@@ -709,12 +697,6 @@ void ReadJPVOperator(
               int n = column_index;
               if (flip)
                 std::swap(np,n);
-              
-              // test code: radial convention
-              #ifdef REVERSE_RADIAL_CONVENTION
-              matrix_element *= ParitySign(np+n);
-              #endif
-
               
               // save matrix element
               if ((np<dimension_bra)&&(n<dimension_ket))
