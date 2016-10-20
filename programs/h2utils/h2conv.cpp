@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 
   std::cout << "Input stream" << std::endl;
   shell::InH2Stream input_stream(run_parameters.input_filename);
-  std::cout << input_stream.DiagnosticStr() << std::endl;
+  std::cout << input_stream.DiagnosticStr();
   std::cout << std::endl;
 
   const basis::OrbitalSpacePN& orbital_space = input_stream.orbital_space();
@@ -92,7 +92,7 @@ int main(int argc, char **argv)
       orbital_space,space,sectors,
       run_parameters.output_h2_format
     );
-  std::cout << output_stream.DiagnosticStr() << std::endl;
+  std::cout << output_stream.DiagnosticStr();
   std::cout << std::endl;
 
   ////////////////////////////////////////////////////////////////
