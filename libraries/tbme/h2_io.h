@@ -78,7 +78,7 @@ namespace shell {
   //   (H2Mode) : the mode
 
   ////////////////////////////////////////////////////////////////
-  // H2 streams
+  // H2StreamBase
   ////////////////////////////////////////////////////////////////
 
   // sector index is kept along with stream -- this helps to properly
@@ -128,11 +128,12 @@ namespace shell {
     // size accessors
     const std::array<int,3>& num_sectors_by_type() const
     {
-      return sectors_by_type_;
+      return num_sectors_by_type_;
     }
     int num_sectors() const
     {
-      int total = num_sectors_by_type_[0]+num_sectors_by_type_[1]+num_sectors_by_type_[2];
+      // int total = num_sectors_by_type_[0]+num_sectors_by_type_[1]+num_sectors_by_type_[2];  // okay, but...
+      int total = sectors().size();  // simpler...
       return total;
     }
     const std::array<int,3>& size_by_type() const
@@ -171,6 +172,10 @@ namespace shell {
     int sector_index_;
   };
 
+  ////////////////////////////////////////////////////////////////
+  // InH2Stream
+  ////////////////////////////////////////////////////////////////
+
   class InH2Stream
     : public H2StreamBase
   // Input stream for H2 file
@@ -188,26 +193,32 @@ namespace shell {
       };
 
     // I/O
-    void ReadSector (Eigen::MatrixXd& matrix);
-    void SkipSector (Eigen::MatrixXd& matrix);
-    void Close ();
+    void ReadSector(Eigen::MatrixXd& matrix);
+    void SkipSector();
+    void Close();
 
   private:
 
     // format-specific implementation methods
-    void ReadVersion_Text();
-    void ReadVersion_Binary();
-    void ReadHeader_Version0_Text();
-    void ReadHeader_Version0_Binary();
-    void ReadSector_Version0_Text(Eigen::MatrixXd& matrix, bool store);
-    void ReadSector_Version0_Binary(Eigen::MatrixXd& matrix, bool store);
-    void ConstructIndexing_Version0(int N1max, int N2max, int size_pp_nn, int size_pn);
+    void ReadVersion();
+    void ReadOrSkipSector(Eigen::MatrixXd& matrix,bool store);
+
+    // ... Version0
+    void ReadHeader_Version0();
+    void ReadSector_Version0(Eigen::MatrixXd& matrix, bool store);
+
+    // ... Version15099
 
     // file stream
+    std::ifstream& stream() const {return *stream_ptr_;}  // alias for convenience
     std::ifstream* stream_ptr_;
     int line_count_;  // for text mode input
 
   };
+
+  ////////////////////////////////////////////////////////////////
+  // OutH2Stream
+  ////////////////////////////////////////////////////////////////
 
   class OutH2Stream
     : public H2StreamBase
@@ -237,20 +248,20 @@ namespace shell {
 
   private:
     
-    // specialized methods
-    void WriteVersion_Text();
-    void WriteVersion_Binary();
-    void WriteHeader_Version0_Text();
-    void WriteHeader_Version0_Binary();
-    void WriteSector_Version0_Text(const Eigen::MatrixXd& matrix);
-    void WriteSector_Version0_Binary(const Eigen::MatrixXd& matrix);
+    // format-specific implementation methods
+    void WriteVersion();
+
+    // ... Version0
+    void WriteHeader_Version0();
+    void WriteSector_Version0(const Eigen::MatrixXd& matrix);
+
+    // ... Version15099
 
     // file stream
+    std::ofstream& stream() const {return *stream_ptr_;}  // alias for convenience
     std::ofstream* stream_ptr_;
 
   };
-
-
 
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
