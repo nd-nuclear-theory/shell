@@ -14,3 +14,8 @@
 # noise files
 *.dat
 *.pdf
+
+# Doxygen-generated docs
+doc/html/
+doc/latex/
+
