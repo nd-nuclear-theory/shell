@@ -24,6 +24,35 @@ namespace shell {
   // pp/nn/pn matrix size counting
   ////////////////////////////////////////////////////////////////
 
+  void EvaluateJmaxByType(
+      const basis::TwoBodySpaceJJJPN& space,
+      std::array<int,3>& Jmax_by_type
+    )
+  // Extract Jmax value by two-body species type for JJJPN space.
+  //
+  // Arguments:
+  //   space (..., input) : space
+  //   Jmax_by_type (std::array<int,3>, output) : maximum J values
+  {
+
+    // initialize
+    Jmax_by_type = std::array<int,3>({0,0,0});
+
+    // scan subspaces for Jmax
+    for (int subspace_index=0; subspace_index<space.size(); ++subspace_index)
+      {
+        // extract subspace
+        const basis::TwoBodySubspaceJJJPN& subspace = space.GetSubspace(subspace_index);
+        basis::TwoBodySpeciesPN two_body_species = subspace.two_body_species();
+
+        // incorporate sector Jmax
+        Jmax_by_type[int(two_body_species)] = std::max(
+            Jmax_by_type[int(two_body_species)],
+            subspace.J()
+          );
+      }
+  }
+
   void EvaluateCountsByType(
       const basis::TwoBodySectorsJJJPN& sectors,
       std::array<int,3>& num_sectors_by_type,
@@ -39,8 +68,8 @@ namespace shell {
   //
   // Arguments:
   //   sectors (..., input) : container for sectors
-  //   num_sectors_by_type (std::array<int,3>, input) : number of sectors
-  //   size_by_type (std::array<int,3>, input) : number of matrix elements
+  //   num_sectors_by_type (std::array<int,3>, output) : number of sectors
+  //   size_by_type (std::array<int,3>, output) : number of matrix elements
   {
 
     // initialize
@@ -208,24 +237,57 @@ namespace shell {
   // H2StreamBase
   ////////////////////////////////////////////////////////////////
 
+  bool H2StreamBase::SectorIsFirstOfType() const
+  {
+    const typename basis::TwoBodySectorsJJJPN::SectorType& sector = sectors().GetSector(sector_index_);
+    int current_type_index = int(sector.ket_subspace().two_body_species());
+
+    // count sectors of prior types (exclusive)
+    int prior_type_sectors = 0;
+    for (int type_index=0; type_index<current_type_index;++type_index)
+      prior_type_sectors+=num_sectors_by_type()[type_index];
+
+    bool is_first_of_type = (sector_index_==prior_type_sectors);
+    return is_first_of_type;
+  }
+
+  bool H2StreamBase::SectorIsLastOfType() const
+  {
+    const typename basis::TwoBodySectorsJJJPN::SectorType& sector = sectors().GetSector(sector_index_);
+    int current_type_index = int(sector.ket_subspace().two_body_species());
+
+    // count sectors of prior types (inclusive)
+    int prior_type_sectors = 0;
+    for (int type_index=0; type_index<=current_type_index;++type_index)
+      prior_type_sectors+=num_sectors_by_type()[type_index];
+
+    bool is_last_of_type = (sector_index_+1==prior_type_sectors);
+    return is_last_of_type;
+  }
 
   std::string H2StreamBase::DiagnosticStr() const
   {
 
     // diagnostic output
+    // TODO oscillator like
+    std::string oscillator_like_indicator;
+    // if (orbital_space().is_oscillator_like())
+    //   oscillator_like_indicator = "oscillator-like";
+    // else
+    //   oscillator_like_indicator = "generic";
+    oscillator_like_indicator = "TODO";
+
     std::string str = fmt::format(
         "  File: {}\n"
         "  Format: {} ({})\n"
-        "  Orbitals: p {} n {} oscillator-like {}\n"
-        "  One-body truncation: p {:4f} n {:4f}\n"
-        "  Two-body truncation: pp {:4f} nn {:4f} pn {:4f}\n"
-        "  Sectors: pp {} nn {} pn {} => total {}\n",
+        "  Orbitals: p {} n {} (indexing {})\n"
+        "  One-body truncation: p {:.4f} n {:.4f}\n"
+        "  Two-body truncation: pp {:.4f} nn {:.4f} pn {:.4f}\n"
+        "  Sectors: pp {} nn {} pn {} => total {}\n"
         "  Matrix elements: pp {} nn {} pn {} => total {}\n",
         filename_,
         int(h2_format()),kH2ModeDescription[int(h2_mode())],
-        orbital_space().GetSubspace(0).size(),
-        orbital_space().GetSubspace(1).size(),
-        999,//orbital_space().IsOscillatorLike(),
+        orbital_space().GetSubspace(0).size(),orbital_space().GetSubspace(1).size(),oscillator_like_indicator,
         space().weight_max().one_body[0],space().weight_max().one_body[1],
         space().weight_max().two_body[0],space().weight_max().two_body[1],space().weight_max().two_body[2],
         num_sectors_by_type()[0],num_sectors_by_type()[1],num_sectors_by_type()[2],num_sectors(),
@@ -304,7 +366,7 @@ namespace shell {
         // set up line input
         std::string line;
 
-        // header line 1: number of particle tyles
+        // header line 1: number of particle types
         {
           ++line_count_;
           std::getline(stream(),line);
@@ -353,15 +415,21 @@ namespace shell {
         VerifyI4(stream(),bytes);
       }
 
-    // validate parameters
-    assert(num_types == 2);
-
     // set up indexing
     orbital_space_ = basis::OrbitalSpacePN(N1max);
     space_ = basis::TwoBodySpaceJJJPN(orbital_space_,basis::WeightMax(N1max,N2max));
     int J0 = 0;
     int g0 = 0;
     sectors_ = basis::TwoBodySectorsJJJPN(space_,J0,g0);
+
+    // store information by type
+    EvaluateJmaxByType(space_,Jmax_by_type_);
+    EvaluateCountsByType(sectors_,num_sectors_by_type_,size_by_type_);
+
+    // validate unused input parameters
+    assert(num_types == 2);
+    assert(size_pp_nn==size_by_type()[0]);
+    assert(size_pn==size_by_type()[2]);
   }
 
   void OutH2Stream::WriteHeader_Version0()
@@ -403,6 +471,57 @@ namespace shell {
       }
   };
 
+  void OutH2Stream::WriteHeader_Version15099()
+  {
+
+    // extract parameters
+    if (h2_mode()==H2Mode::kText)
+      {
+        // dump orbitals
+        stream()
+          // header line: dimensions
+          << fmt::format(
+              "{} {}",
+              orbital_space().GetSubspace(0).size(),
+              orbital_space().GetSubspace(1).size()
+            )
+          << std::endl
+          // body
+          << basis::OrbitalDefinitionStr(orbital_space().OrbitalInfo(),false);
+
+        space().weight_max().one_body[0],space().weight_max().one_body[1],
+        space().weight_max().two_body[0],space().weight_max().two_body[1],space().weight_max().two_body[2],
+
+        stream()
+          // header line 1: operator properties
+          << fmt::format("{} {}",sectors().J0(),sectors().g0()) << std::endl  // TODO
+          // header line 2: 1-body basis limit
+          << fmt::format(
+              "{:e} {:e}",
+              space().weight_max().one_body[0],space().weight_max().one_body[1]
+            )
+          << std::endl
+          // header line 3: 2-body basis limit
+          << fmt::format(
+              "{:e} {:e} {:e}",
+              space().weight_max().two_body[0],space().weight_max().two_body[1],space().weight_max().two_body[2]
+            )
+          << std::endl
+          // header line 4: 2-body basis a.m. limit
+          << fmt::format("{:d} {:d} {:d}",2*Jmax_by_type()[0],2*Jmax_by_type()[1],2*Jmax_by_type()[2]) << std::endl  // TODO
+          // header line 5: matrix size
+          << fmt::format("{:d} {:d} {:d}",size_by_type()[0],size_by_type()[1],size_by_type()[2]) << std::endl;
+      }
+    else if (h2_mode()==H2Mode::kBinary)
+      {
+        //TODO
+        int num_fields = 5;
+        int bytes = num_fields * kIntegerSize;
+        WriteI4(stream(),bytes);
+        WriteI4(stream(),bytes);
+      }
+  };
+
   ////////////////////////////////////////////////////////////////
   // format/mode-specific I/O: sector
   ////////////////////////////////////////////////////////////////
@@ -425,6 +544,13 @@ namespace shell {
     const typename basis::TwoBodySectorsJJJPN::SubspaceType& bra_subspace = sector.bra_subspace();
     const typename basis::TwoBodySectorsJJJPN::SubspaceType& ket_subspace = sector.ket_subspace();
 
+    // std::cout << fmt::format(
+    //     "sector {} type {} first {} last {}",
+    //     sector_index_,basis::kTwoBodySpeciesPNCodeDecimal[int(ket_subspace.two_body_species())],
+    //     SectorIsFirstOfType(),SectorIsLastOfType()
+    //   )
+    //           << std::endl;
+
     // verify that sector is canonical
     //
     // This is a check that the caller's sector construction
@@ -438,17 +564,16 @@ namespace shell {
 
     // Version0 restrictions -- sector is actually diagonal (in two_body_species, J, g)
     assert(sector.IsDiagonal());
-    // const int two_body_species_code = kTwoBodySpeciesPNCodeDecimal[ket_subspace.two_body_species()];
+    // const int two_body_species_code = basis::kTwoBodySpeciesPNCodeDecimal[int(ket_subspace.two_body_species())];
     // const int J = sector.ket_subspace().J();
     // const int g = sector.ket_subspace().g();
 
-    // read record beginning delimiter -- TODO also record ending
-    assert(h2_mode()==H2Mode::kText);
-    // if (sector_.IsFirstOfType())
-    //   {
-    //     int record_bytes = matrix.GetSize(sector_.GetStateType()) * kIntegerSize;
-    //     VerifyI4(stream(),record_bytes);
-    //   }
+    // read FORTRAN record beginning delimiter
+    if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
+      {
+        int bytes = size_by_type()[int(ket_subspace.two_body_species())] * kIntegerSize;
+        VerifyI4(stream(),bytes);
+      }
 
     // iterate over matrix elements
     for (int bra_index=0; bra_index<bra_subspace.size(); ++bra_index)
@@ -513,6 +638,13 @@ namespace shell {
           if (store)
             matrix(bra_index,ket_index) = matrix_element;
         }
+
+    // read FORTRAN record ending delimiter
+    if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
+      {
+        int bytes = size_by_type()[int(ket_subspace.two_body_species())] * kIntegerSize;
+        VerifyI4(stream(),bytes);
+      }
   }
 
   void OutH2Stream::WriteSector_Version0(const Eigen::MatrixXd& matrix)
@@ -539,14 +671,12 @@ namespace shell {
     // Version0 restrictions -- sector is actually diagonal (in two_body_species, J, g)
     assert(sector.IsDiagonal());
 
-    // write record beginning delimiter -- TODO also record ending
-    assert(h2_mode()==H2Mode::kText);
-    // if (sector_.IsFirstOfType())
-    //   {
-    //     int record_bytes = matrix.GetSize(sector_.GetStateType()) * kIntegerSize;
-    //     WriteI4(stream(),record_bytes);
-    //   }
-
+    // write FORTRAN record beginning delimiter
+    if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
+      {
+        int bytes = size_by_type()[int(ket_subspace.two_body_species())] * kIntegerSize;
+        WriteI4(stream(),bytes);
+      }
 
     // iterate over matrix elements
     for (int bra_index=0; bra_index<bra_subspace.size(); ++bra_index)
@@ -575,19 +705,17 @@ namespace shell {
           float output_matrix_element = conversion_factor * matrix_element;
 
           // write line: output matrix element
-	  int output_i1, output_i2, output_i3, output_i4, output_twice_J;
-	  int output_two_body_species_code;
-          output_i1==bra.index1()+1;
-          output_i2==bra.index2()+1;
-          output_i3==ket.index1()+1;
-          output_i4==ket.index2()+1;
-          output_twice_J == 2*ket.J();
-          output_two_body_species_code==basis::kTwoBodySpeciesPNCodeDecimal[int(ket.two_body_species())];
+          int output_i1 = bra.index1()+1;
+          int output_i2 = bra.index2()+1;
+          int output_i3 = ket.index1()+1;
+          int output_i4 = ket.index2()+1;
+          int output_twice_J = 2*ket.J();
+          int output_two_body_species_code=basis::kTwoBodySpeciesPNCodeDecimal[int(ket.two_body_species())];
           if (h2_mode()==H2Mode::kText)
             {
               stream()
                 << fmt::format(
-                    "{:3d} {:3d} {:3d} {:3d} {:3d} {:2d} {:+.7f}",
+                    "{:3d} {:3d} {:3d} {:3d} {:3d} {:2d} {:+16.7e}",
                     output_i1,output_i2,output_i3,output_i4,
                     output_twice_J,
                     output_two_body_species_code,
@@ -601,6 +729,12 @@ namespace shell {
             }
         }
 			
+    // write FORTRAN record ending delimiter
+    if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
+      {
+        int bytes = size_by_type()[int(ket_subspace.two_body_species())] * kIntegerSize;
+        WriteI4(stream(),bytes);
+      }
   }
 
 
@@ -635,10 +769,6 @@ namespace shell {
         std::cerr << "Unsupported version/mode combination encountered when opening H2 file " << filename_ << std::endl;
         std::exit(EXIT_FAILURE);
       }
-
-    // store counts by type
-    EvaluateCountsByType(sectors_,num_sectors_by_type_,size_by_type_);
-
   }
 
   void InH2Stream::Close()
@@ -692,7 +822,7 @@ namespace shell {
       const basis::OrbitalSpacePN& orbital_space,
       const basis::TwoBodySpaceJJJPN& space,
       const basis::TwoBodySectorsJJJPN& sectors,
-      H2Format h2_format, H2Mode h2_mode
+      H2Format h2_format
     )
     : H2StreamBase(filename)
   {
@@ -703,6 +833,7 @@ namespace shell {
     sectors_ = sectors;
       
     // store counts by type
+    EvaluateJmaxByType(space_,Jmax_by_type_);
     EvaluateCountsByType(sectors_,num_sectors_by_type_,size_by_type_);
 
     // set format and mode
@@ -722,8 +853,8 @@ namespace shell {
     // write header
     if (h2_format_==kVersion0)
       WriteHeader_Version0();
-    // else if (h2_format_==kVersion15099)
-    //   WriteHeader_Version15099();
+    else if (h2_format_==kVersion15099)
+      WriteHeader_Version15099();
     else
       {
         std::cerr << "Unsupported version/mode combination encountered when opening H2 file " << filename_ << std::endl;

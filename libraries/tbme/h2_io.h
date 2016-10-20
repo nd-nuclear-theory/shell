@@ -16,6 +16,7 @@
   10/11/16 (mac,pjf):
     -- Rename to h2_io.
     -- Integrate into shell project build.
+  10/19/16 (mac): Complete implementation for H2 Version0.
      
 ****************************************************************/
 
@@ -98,7 +99,8 @@ namespace shell {
     H2StreamBase(const std::string& filename)
       // Default constructor to zero-initialize some of the POD
       // fields.
-      : filename_(filename), sector_index_(0), num_sectors_by_type_({0,0,0}), size_by_type_({0,0,0})
+      : filename_(filename), sector_index_(0),
+      num_sectors_by_type_({0,0,0}), size_by_type_({0,0,0}), Jmax_by_type_({0,0,0})
       {}
 
     // indexing accessors
@@ -145,6 +147,14 @@ namespace shell {
       int total = size_by_type_[0]+size_by_type_[1]+size_by_type_[2];
       return total;
     }
+    const std::array<int,3>& Jmax_by_type() const
+    {
+      return Jmax_by_type_;
+    }
+    bool SectorIsFirstOfType() const;
+    // Determine if current sector is first of its pp/nn/pn type.
+    bool SectorIsLastOfType() const;
+    // Determine if current sector is last of its pp/nn/pn type.
 
     // diagnostics
     std::string DiagnosticStr() const;
@@ -160,6 +170,7 @@ namespace shell {
     // size information (for pp/nn/pn)
     std::array<int,3> num_sectors_by_type_;  // number of sectors
     std::array<int,3> size_by_type_;  // number of matrix elements
+    std::array<int,3> Jmax_by_type_;  // twice Jmax
 
     // mode information
     H2Format h2_format_;
@@ -232,7 +243,7 @@ namespace shell {
         const basis::OrbitalSpacePN& orbital_space,
         const basis::TwoBodySpaceJJJPN& space,
         const basis::TwoBodySectorsJJJPN& sectors,
-        H2Format h2_format, H2Mode h2_mode
+        H2Format h2_format
       );
 
     // destructor
@@ -256,6 +267,7 @@ namespace shell {
     void WriteSector_Version0(const Eigen::MatrixXd& matrix);
 
     // ... Version15099
+    void WriteHeader_Version15099();
 
     // file stream
     std::ofstream& stream() const {return *stream_ptr_;}  // alias for convenience
