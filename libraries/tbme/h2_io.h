@@ -268,6 +268,7 @@ namespace shell {
 
     // ... Version15099
     void WriteHeader_Version15099();
+    void WriteSector_Version15099(const Eigen::MatrixXd& matrix);
 
     // file stream
     std::ofstream& stream() const {return *stream_ptr_;}  // alias for convenience

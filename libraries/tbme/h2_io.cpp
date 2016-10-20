@@ -494,7 +494,7 @@ namespace shell {
 
         stream()
           // header line 1: operator properties
-          << fmt::format("{} {}",sectors().J0(),sectors().g0()) << std::endl  // TODO
+          << fmt::format("{} {}",sectors().J0(),sectors().g0()) << std::endl
           // header line 2: 1-body basis limit
           << fmt::format(
               "{:e} {:e}",
@@ -508,13 +508,14 @@ namespace shell {
             )
           << std::endl
           // header line 4: 2-body basis a.m. limit
-          << fmt::format("{:d} {:d} {:d}",2*Jmax_by_type()[0],2*Jmax_by_type()[1],2*Jmax_by_type()[2]) << std::endl  // TODO
+          << fmt::format("{:d} {:d} {:d}",2*Jmax_by_type()[0],2*Jmax_by_type()[1],2*Jmax_by_type()[2]) << std::endl
           // header line 5: matrix size
           << fmt::format("{:d} {:d} {:d}",size_by_type()[0],size_by_type()[1],size_by_type()[2]) << std::endl;
       }
     else if (h2_mode()==H2Mode::kBinary)
       {
         //TODO
+        assert(false);
         int num_fields = 5;
         int bytes = num_fields * kIntegerSize;
         WriteI4(stream(),bytes);
@@ -737,6 +738,88 @@ namespace shell {
       }
   }
 
+  void OutH2Stream::WriteSector_Version15099(const Eigen::MatrixXd& matrix)
+  {
+    // extract sector
+    const typename basis::TwoBodySectorsJJJPN::SectorType& sector = sectors().GetSector(sector_index_);
+    const typename basis::TwoBodySectorsJJJPN::SubspaceType& bra_subspace = sector.bra_subspace();
+    const typename basis::TwoBodySectorsJJJPN::SubspaceType& ket_subspace = sector.ket_subspace();
+
+    // verify that sector is canonical
+    //
+    // This is a check that the caller's sector construction
+    // followed the specification that only "upper triangle"
+    // sectors are stored.
+    assert(sector.IsUpperTriangle());
+
+    // write FORTRAN record beginning delimiter
+    if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
+      {
+        int bytes = size_by_type()[int(ket_subspace.two_body_species())] * kIntegerSize;
+        WriteI4(stream(),bytes);
+      }
+
+    // iterate over matrix elements
+    for (int bra_index=0; bra_index<bra_subspace.size(); ++bra_index)
+      for (int ket_index=0; ket_index<ket_subspace.size(); ++ket_index)
+        {
+
+          // diagonal sector: restrict to upper triangle
+          if (sector.IsDiagonal())
+            if (!(bra_index<=ket_index))
+              continue;
+
+          // retrieve states
+          const basis::TwoBodyStateJJJPN bra(bra_subspace,bra_index);
+          const basis::TwoBodyStateJJJPN ket(ket_subspace,ket_index);
+
+          // retrieve matrix element for output
+          //
+          // H2 external storage is as NAS, but internal storage is as
+          // AS.  So normalization conversion on output is "ASToNAS".
+          double conversion_factor = 1.;
+          if (bra.index1()==bra.index2())
+            conversion_factor *= 1/(sqrt(2.));
+          if (ket.index1()==ket.index2())
+            conversion_factor *= 1/(sqrt(2.));
+          double matrix_element = matrix(bra_index,ket_index);
+          float output_matrix_element = conversion_factor * matrix_element;
+
+          // write line: output matrix element
+          int output_i1 = bra.index1()+1;
+          int output_i2 = bra.index2()+1;
+          int output_i3 = ket.index1()+1;
+          int output_i4 = ket.index2()+1;
+          int output_twice_J_bra = 2*bra.J();
+          int output_twice_J_ket = 2*ket.J();
+          int output_two_body_species_code=basis::kTwoBodySpeciesPNCodeDecimal[int(ket.two_body_species())];
+          if (h2_mode()==H2Mode::kText)
+            {
+              stream()
+                << fmt::format(
+                    "{:3d} {:3d} {:3d} {:3d} {:3d} {:3d} {:2d} {:+16.7e}",
+                    output_i1,output_i2,output_i3,output_i4,
+                    output_twice_J_bra,
+                    output_twice_J_ket,
+                    output_two_body_species_code,
+                    output_matrix_element
+                  )
+                << std::endl;
+            }
+          else if (h2_mode()==H2Mode::kBinary)
+            {
+              WriteFloat(stream(),output_matrix_element);
+            }
+        }
+			
+    // write FORTRAN record ending delimiter
+    if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
+      {
+        int bytes = size_by_type()[int(ket_subspace.two_body_species())] * kIntegerSize;
+        WriteI4(stream(),bytes);
+      }
+  }
+
 
   ////////////////////////////////////////////////////////////////
   // InH2Stream
@@ -766,7 +849,7 @@ namespace shell {
     //  ReadHeader_Version15099();
     else
       {
-        std::cerr << "Unsupported version/mode combination encountered when opening H2 file " << filename_ << std::endl;
+        std::cerr << "Unsupported version encountered when opening H2 file " << filename_ << std::endl;
         std::exit(EXIT_FAILURE);
       }
   }
@@ -857,7 +940,7 @@ namespace shell {
       WriteHeader_Version15099();
     else
       {
-        std::cerr << "Unsupported version/mode combination encountered when opening H2 file " << filename_ << std::endl;
+        std::cerr << "Unsupported version encountered when opening H2 file " << filename_ << std::endl;
         std::exit(EXIT_FAILURE);
       }
     StreamCheck(bool(stream()),filename_,"Failure while writing H2 file header");
@@ -868,8 +951,8 @@ namespace shell {
     // write sector
     if (h2_format()==kVersion0)
       WriteSector_Version0(matrix);
-    //else if (h2_format()==kVersion15099)
-    //  WriteSector_Version15099(matrix);
+    else if (h2_format()==kVersion15099)
+      WriteSector_Version15099(matrix);
     else
       assert(false);  // format version was already checked when writing header
 
