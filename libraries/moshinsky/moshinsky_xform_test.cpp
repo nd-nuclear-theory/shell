@@ -19,7 +19,7 @@
 #include "moshinsky/moshinsky_xform.h"
 
 
-void test_relative_cm()
+void TestRelativeCM()
 {
 
   std::cout << "Obtaining the relative-cm matrix" << std::endl;
@@ -87,7 +87,7 @@ void test_relative_cm()
 }
 
 
-void test_moshinsky_matrix()
+void TestMoshinskyMatrix()
 {
 
   std::cout << "Inspecting a Moshinsky matrix" << std::endl;
@@ -143,7 +143,7 @@ void test_moshinsky_matrix()
 }
 
 ////////////////////////////////////////////////////////////////
-void test_transform_simple(
+void TestTransformSimple(
     std::string two_body_lsjt_filename,
     std::string two_body_jjjt_filename,
     std::string two_body_jjjpn_filename,
@@ -151,7 +151,7 @@ void test_transform_simple(
   )
 {
 
-  std::cout << "test_transform_simple" << " " << operator_code << std::endl;
+  std::cout << "TestTransformSimple" << " " << operator_code << std::endl;
 
   ////////////////////////////////////////////////////////////////
   // define operator labels
@@ -436,11 +436,11 @@ void test_transform_simple(
 ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
-void test_transform_timing(
+void TestTransformTiming(
   )
 {
 
-  std::cout << "test_transform_timing" << std::endl;
+  std::cout << "TestTransformTiming" << std::endl;
 
   ////////////////////////////////////////////////////////////////
   // define operator labels
@@ -586,21 +586,21 @@ void test_transform_timing(
 int main(int argc, char **argv)
 {
 
-  // test_relative_cm();
-  // test_moshinsky_matrix();
-  test_transform_simple(
+  // TestRelativeCM();
+  // TestMoshinskyMatrix();
+  TestTransformSimple(
       "test/moshinsky_xform_test_two_body_lsjt_identity_AS.dat",
       "test/moshinsky_xform_test_two_body_jjjt_identity_AS.dat",
       "test/moshinsky_xform_test_two_body_jjjpn_identity_NAS.dat",
       'I'
     );
-  test_transform_simple(
+  TestTransformSimple(
       "test/moshinsky_xform_test_two_body_lsjt_kinetic_AS.dat",
       "test/moshinsky_xform_test_two_body_jjjt_kinetic_AS.dat",
       "test/moshinsky_xform_test_two_body_jjjpn_kinetic_NAS.dat",
       'K'
     );
-  // test_transform_timing();
+  // TestTransformTiming();
 
   // termination
   return 0;
