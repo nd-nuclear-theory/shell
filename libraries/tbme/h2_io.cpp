@@ -269,13 +269,7 @@ namespace shell {
   {
 
     // diagnostic output
-    // TODO oscillator like
-    std::string oscillator_like_indicator;
-    // if (orbital_space().is_oscillator_like())
-    //   oscillator_like_indicator = "oscillator-like";
-    // else
-    //   oscillator_like_indicator = "generic";
-    oscillator_like_indicator = "TODO";
+    std::string oscillator_like_indicator = (orbital_space().is_oscillator_like() ? "true" : "false");
 
     std::string str = fmt::format(
         "  File: {}\n"

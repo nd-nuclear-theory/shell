@@ -13,6 +13,7 @@
 
 # noise files
 *.dat
+*.bin
 *.pdf
 
 # Doxygen-generated docs

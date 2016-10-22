@@ -3,12 +3,13 @@
   h2conv.cpp -- copy and convert MFDn H2 TBME file
 
   Syntax:
-    h2stat input_filename output_filename format
+    h2conv format input_filename output_filename
 
   Mark A. Caprio
   University of Notre Dame
 
   10/19/16 (mac): Created, based on h2stat.
+  10/22/16 (mac): Update syntax.
 
 ******************************************************************************/
 
@@ -39,21 +40,29 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters)
   // usage message
   if (argc-1 < 3)
     {
-      std::cout << "Syntax: h2stat input_filename" << std::endl;
+      std::cout << "Syntax: h2conv format input_filename output_filename" << std::endl;
       std::exit(EXIT_SUCCESS);
     }
 
-  // input filename
-  run_parameters.input_filename = argv[1];
-  run_parameters.output_filename = argv[2];
-  std::istringstream parameter_stream(argv[3]);
+  // format
+  std::istringstream parameter_stream(argv[1]);
   parameter_stream >> run_parameters.output_h2_format;
   if (!parameter_stream)
     {
       std::cerr << "Expecting numeric value for H2 format argument" << std::endl;
       std::exit(EXIT_FAILURE);
     }
+
+  // input filename
+  run_parameters.input_filename = argv[2];
+
+  // output filename
+  run_parameters.output_filename = argv[3];
 }
+
+////////////////////////////////////////////////////////////////
+// main program
+/////////////////////////////////////////////////////////////////
 
 int main(int argc, char **argv)
 {
