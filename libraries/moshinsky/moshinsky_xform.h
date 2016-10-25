@@ -22,6 +22,8 @@
     - Update to group theory Wigner-Eckart convention.
     - Extract transformation routines from program file into header.
   7/22/16 (mac): Implement isospin branching.
+  10/25/16 (mac): Update to use TwoBodySectorsJJJPN constructor with
+    explicit Tz=0.
 
 ****************************************************************/
 
@@ -34,7 +36,7 @@
 #include "basis/lsjt_scheme.h"
 #include "basis/lsjt_operator.h"
 #include "basis/jjjt_scheme.h"
-#include "basis/jjjpnorb_scheme.h"
+#include "basis/jjjpn_scheme.h"
 
 namespace moshinsky {
 

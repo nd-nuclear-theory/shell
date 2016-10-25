@@ -36,7 +36,8 @@
 #include "am/wigner_gsl.h"
 #include "basis/lsjt_operator.h"
 #include "basis/jjjt_operator.h"
-#include "basis/jjjpnorb_operator.h"
+#include "basis/jjjpn_scheme.h"
+#include "basis/jjjpn_operator.h"
 #include "mcutils/parsing.h"
 #include "mcutils/profiling.h"
 

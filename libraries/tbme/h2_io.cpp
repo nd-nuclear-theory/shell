@@ -414,7 +414,8 @@ namespace shell {
     space_ = basis::TwoBodySpaceJJJPN(orbital_space_,basis::WeightMax(N1max,N2max));
     int J0 = 0;
     int g0 = 0;
-    sectors_ = basis::TwoBodySectorsJJJPN(space_,J0,g0);
+    int Tz0 = 0;
+    sectors_ = basis::TwoBodySectorsJJJPN(space_,J0,g0,Tz0);
 
     // store information by type
     EvaluateJmaxByType(space_,Jmax_by_type_);

@@ -17,7 +17,7 @@
 #include <vector>
 
 #include "basis/nlj_orbital.h"
-#include "basis/jjjpnorb_scheme.h"
+#include "basis/jjjpn_scheme.h"
 
 namespace shell {
 

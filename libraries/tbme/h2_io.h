@@ -30,7 +30,7 @@
 
 #include "eigen3/Eigen/Core"
 
-#include "basis/jjjpnorb_scheme.h"
+#include "basis/jjjpn_scheme.h"
 
 namespace shell {
 
@@ -95,7 +95,12 @@ namespace shell {
   {
   public:
 
-    // constructor
+    // constructors
+
+    H2StreamBase() = default;
+    // default constructor -- provided since needed by derived type
+    // default constructors
+
     H2StreamBase(const std::string& filename)
       // Default constructor to zero-initialize some of the POD
       // fields.
@@ -161,7 +166,6 @@ namespace shell {
 
   protected:
 
-
     // indexing information
     basis::OrbitalSpacePN orbital_space_;
     basis::TwoBodySpaceJJJPN space_;
@@ -193,7 +197,12 @@ namespace shell {
   {
   public:
 
-    // constructor
+    // constructors
+
+    InH2Stream() : stream_ptr_(NULL) {};
+    // default constructor -- provided since required for certain
+    // purposes by STL container classes (e.g., std::vector::resize)
+
     InH2Stream(const std::string& filename);
 
     // destructor
@@ -237,7 +246,12 @@ namespace shell {
   {
   public:
 
-    // constructor
+    // constructors
+
+    OutH2Stream() : stream_ptr_(NULL) {};
+    // default constructor -- provided since required for certain
+    // purposes by STL container classes (e.g., std::vector::resize)
+
     OutH2Stream(
         const std::string& filename,
         const basis::OrbitalSpacePN& orbital_space,

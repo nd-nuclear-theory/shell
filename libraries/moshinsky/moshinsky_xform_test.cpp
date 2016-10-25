@@ -12,7 +12,7 @@
 #include <iomanip>
 
 #include "basis/jjjt_operator.h"
-#include "basis/jjjpnorb_operator.h"
+#include "basis/jjjpn_operator.h"
 
 #include "mcutils/profiling.h"
 #include "relative/construct_relative.h"

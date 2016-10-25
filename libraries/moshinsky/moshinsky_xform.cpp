@@ -984,8 +984,9 @@ namespace moshinsky {
     )
   {
     // enumerate target sectors
+    int Tz0 = 0;
     two_body_jjjpn_sectors
-      = basis::TwoBodySectorsJJJPN(two_body_jjjpn_space,operator_labels.J0,operator_labels.g0);
+      = basis::TwoBodySectorsJJJPN(two_body_jjjpn_space,operator_labels.J0,operator_labels.g0,Tz0);
 
     // populate matrices
     two_body_jjjpn_matrices.resize(two_body_jjjpn_sectors.size());
