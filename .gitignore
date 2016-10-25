@@ -16,6 +16,9 @@
 *.bin
 *.pdf
 
+# symlinks
+config.mk
+
 # Doxygen-generated docs
 doc/html/
 doc/latex/
