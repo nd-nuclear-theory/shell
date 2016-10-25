@@ -62,8 +62,10 @@ void DoVerify(shell::InH2Stream& input_stream)
   // iterate over sectors
   for (int sector_index = 0; sector_index < input_stream.num_sectors(); ++sector_index)
     {
-      // progress indicator
+      // read sector
       input_stream.SkipSector();
+
+      // progress indicator
       std::cout << "." << std::flush;
     }
   std::cout << std::endl;

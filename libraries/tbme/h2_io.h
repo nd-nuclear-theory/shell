@@ -271,6 +271,10 @@ namespace shell {
     void WriteSector(const Eigen::MatrixXd& matrix);
     void Close();
 
+    // debugging
+    std::ofstream* stream_ptr() const {return stream_ptr_;}
+    std::ofstream& stream() const {return *stream_ptr_;}  // alias for convenience
+
   private:
     
     // format-specific implementation methods
@@ -285,7 +289,7 @@ namespace shell {
     void WriteSector_Version15099(const Eigen::MatrixXd& matrix);
 
     // file stream
-    std::ofstream& stream() const {return *stream_ptr_;}  // alias for convenience
+    // std::ofstream& stream() const {return *stream_ptr_;}  // alias for convenience
     std::ofstream* stream_ptr_;
 
   };
