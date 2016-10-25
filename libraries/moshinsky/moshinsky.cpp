@@ -27,6 +27,7 @@
   7/16/16 (mac): Created.
   8/16/16 (mac): Add diagnostic output of relative-cm matrix elements.
   10/9/16 (pjf): Rename mcpp -> mcutils.
+  10/25/16 (mac): Update use of ParsingError.
 
 ****************************************************************/
 
@@ -90,10 +91,7 @@ void ReadParameters(Parameters& parameters)
     else if (truncation_rank_code == "tb")
       parameters.truncation_rank = basis::Rank::kTwoBody;
     else
-    {
-      std::cerr << "ERROR: unrecognized truncation rank code" << std::endl;
-      std::exit(EXIT_FAILURE);
-    }
+      ParsingError(line_count,line,"unrecognized truncation rank code");
 
     // process coupling
     if (coupling_code == "rcmlsjt")
@@ -105,10 +103,7 @@ void ReadParameters(Parameters& parameters)
     else if (coupling_code == "jjjpn")
       parameters.coupling = Coupling::kJJJPN;
     else
-    {
-      std::cerr << "ERROR: unrecognized coupling scheme code" << std::endl;
-      std::exit(EXIT_FAILURE);
-    }
+      ParsingError(line_count,line,"unrecognized coupling scheme code");
 
   }
 
