@@ -888,6 +888,14 @@ namespace shell {
     ReadOrSkipSector(matrix,store);
   }
 
+  void InH2Stream::SeekToSector(int seek_index)
+  {
+    assert(seek_index!=basis::kNone);
+    assert(seek_index<sectors().size());
+    while (sector_index_<seek_index)
+      SkipSector();
+  }
+
 
   ////////////////////////////////////////////////////////////////
   // OutH2Stream
