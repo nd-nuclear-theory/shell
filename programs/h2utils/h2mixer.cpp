@@ -21,6 +21,7 @@
 #include "cppformat/format.h"
 #include "mcutils/profiling.h"
 #include "tbme/h2_io.h"
+#include "tbme/separable.h"
 #include "tbme/two_body_mapping.h"
 
 ////////////////////////////////////////////////////////////////
@@ -36,7 +37,7 @@ struct TwoBodyOperatorIndexing
 };
 
 struct InputChannel
-// Direct input stream and related parameters.
+// Direct input channel parameters and stream.
 {
   InputChannel(const std::string& id_, const std::string& filename_)
     : id(id_), filename(filename_), stream_ptr(NULL)
@@ -49,9 +50,48 @@ struct InputChannel
   // shell::TwoBodyMapping two_body_mask;
 };
 
+enum class OperatorCode
+// Code to specify a generated operator.
+//
+//
+{
+  kIdentity,
+    kAM
+    };
+extern const std::array<const char*,2> OperatorCodeDescription;
+//  const std::array<const char*,3> OperatorCodeDescription({"identity","am -- J^2"});
+
+struct OperatorChannel
+// Operator channel parameters and stream.
+{
+  OperatorChannel(const std::string& id_, OperatorCode operator_code_)
+    : id(id_), operator_code(operator_code_)
+  {}
+
+  std::string id;
+  OperatorCode operator_code;
+  // std::vector<double> parameters;
+  // shell::TwoBodyMapping two_body_mask;
+};
+
+struct XformChannel
+// Transformed input channel parameters and stream.
+{
+  XformChannel(const std::string& id_, const std::string& filename_)  // TODO
+    : id(id_), filename(filename_), stream_ptr(NULL)
+  {}
+
+  std::string id;
+  std::string filename;
+  shell::InH2Stream* stream_ptr;
+  basis::WeightMax weight_max;
+  shell::TwoBodyMapping two_body_mapping;
+  // shell::TwoBodyMapping two_body_mask;
+  // POSSIBLE: independent overlaps for each xform (e.g., Coulomb)
+};
 
 struct TargetChannel
-// Target stream and related parameters.
+// Target channel parameters and stream.
 {
   TargetChannel(const std::string& id_, const std::string& filename_)
     : id(id_), filename(filename_), stream_ptr(NULL)
@@ -76,10 +116,16 @@ struct RunParameters
 
 void ReadParameters(
     RunParameters& run_parameters,
+    std::vector<InputChannel>& input_channels,
+    std::vector<OperatorChannel>& operator_channels,
+    std::vector<XformChannel>& xform_channels,
     std::vector<TargetChannel>& target_channels
 )
 // Parse control file.
 {
+
+  return;  // TEMPORARY
+
   std::string line;
   int line_count = 0;
   while (std::getline(std::cin,line))
@@ -205,7 +251,7 @@ void GenerateInputSources(
       // Note: We cannot simply look up by target_sector's Key, since that uses target subspace indices.
       int input_sector_index
         = input_channel.stream_ptr->sectors().LookUpSectorIndex(input_bra_subspace_index,input_ket_subspace_index);
-      std::cout << fmt::format("Input channel {} index {}...",input_channel.id,input_sector_index) << std::endl;
+      // std::cout << fmt::format("Input channel {} index {}...",input_channel.id,input_sector_index) << std::endl;
       if (input_sector_index == basis::kNone)
         continue;
       const typename basis::TwoBodySectorsJJJPN::SectorType& input_sector
@@ -252,7 +298,7 @@ void GenerateInputSources(
           }
 
       // save result
-      std::cout << fmt::format("Saving {}...",input_channel.id) << std::endl;
+      // std::cout << fmt::format("Saving {}...",input_channel.id) << std::endl;
       source_matrices[input_channel.id] = remapped_matrix;
     }
 
@@ -278,11 +324,11 @@ void GenerateTargets(
           double coefficient = id_coefficient.second;
           
           auto pos = source_matrices.find(source_id);
-          std::cout << fmt::format(
-              "target {} source {} coefficient {} found {}",
-              target_channel.id,source_id,coefficient,pos != source_matrices.end()
-            )
-                    << std::endl;
+          // std::cout << fmt::format(
+          //     "target {} source {} coefficient {} found {}",
+          //     target_channel.id,source_id,coefficient,pos != source_matrices.end()
+          //   )
+          //           << std::endl;
 
           if (pos != source_matrices.end())
             {
@@ -348,8 +394,10 @@ int main(int argc, char **argv)
   // read parameters
   RunParameters run_parameters;
   std::vector<InputChannel> input_channels;
+  std::vector<OperatorChannel> operator_channels;
+  std::vector<XformChannel> xform_channels;
   std::vector<TargetChannel> target_channels;
-  // ReadParameters(run_parameters);
+  ReadParameters(run_parameters,input_channels,operator_channels,xform_channels,target_channels);
 
   // start timing
   Timer total_time;
