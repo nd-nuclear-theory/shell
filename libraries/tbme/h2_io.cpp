@@ -274,8 +274,9 @@ namespace shell {
         "  File: {}\n"
         "  Format: {} ({})\n"
         "  Orbitals: p {} n {} (oscillator-like {})\n"
-        "  One-body truncation: p {:.4f} n {:.4f}\n"
-        "  Two-body truncation: pp {:.4f} nn {:.4f} pn {:.4f}\n"
+        // "  One-body truncation: p {:.4f} n {:.4f}\n"
+        // "  Two-body truncation: pp {:.4f} nn {:.4f} pn {:.4f}\n"
+        "  Truncation: p {:.4f} n {:.4f} pp {:.4f} nn {:.4f} pn {:.4f}\n"
         "  Sectors: pp {} nn {} pn {} => total {}\n"
         "  Matrix elements: pp {} nn {} pn {} => total {}\n",
         filename_,

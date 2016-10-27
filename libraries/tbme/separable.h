@@ -33,6 +33,10 @@ namespace shell {
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
 
+  ////////////////////////////////////////////////////////////////
+  // two-body identity operator
+  ////////////////////////////////////////////////////////////////
+
   Eigen::MatrixXd 
   IdentityOperatorSectorMatrixJJJPN(
       const basis::TwoBodySectorsJJJPN::SectorType& sector
@@ -51,6 +55,37 @@ namespace shell {
   // Returns:
   //   (Eigen::MatrixXd) : The matrix for this sector.
 
+  ////////////////////////////////////////////////////////////////
+  // angular momentum operators
+  ////////////////////////////////////////////////////////////////
+
+  enum class AngularMomentumOperatorFamily {kOrbital,kSpin,kTotal};
+  enum class AngularMomentumOperatorSpecies {kP,kN,kTotal};
+
+  // TwoBodyMatrixSectorAddAngularMomentum adds a multiple of a
+  // squared angular momentum operator to a TBME matrix sector.
+  //
+  // Arguments:
+  //   operator_family (shell::AngularMomentumOperatorFamily):
+  //     identifies momentum operator type (kOrbital, kSpin, kTotal)
+  //   operator_species (shell::AngularMomentumOperatorSpecies):
+  //     whether operator is total or restricted (kP, kN, kTotal)
+  //   A (int): atomic mass
+  //   sector (basis::TwoBodySectorsJJJPN::SectorType) : The sector to
+  //     populate.
+  //
+  //
+  // Returns:
+  //   (Eigen::MatrixXd) : The matrix for this sector.
+
+
+  Eigen::MatrixXd 
+  AngularMomentumSectorMatrixJJJPN(
+      shell::AngularMomentumOperatorFamily operator_family, 
+      shell::AngularMomentumOperatorSpecies operator_species, 
+      int A,
+      const basis::TwoBodySectorsJJJPN::SectorType& sector
+    );
 
 
   ////////////////////////////////////////////////////////////////

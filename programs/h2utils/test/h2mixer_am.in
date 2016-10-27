@@ -1,0 +1,15 @@
+# h2mixer_am.in -- reproduce angular momentum operator TBMEs (A=2)
+# from tbme-am-sqr-150620
+
+set-target-oscillator ob 1
+set-target-multipolarity 0 0 0
+set-output-format 0
+set-mass 2
+
+define-operator-source am-sqr Lp
+define-target Lp test/tbme-Lp.dat
+  add-source Lp 1
+
+define-operator-source am-sqr Ln
+define-target Ln test/tbme-Ln.dat
+  add-source Ln 1

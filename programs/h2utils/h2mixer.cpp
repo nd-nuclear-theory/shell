@@ -50,26 +50,28 @@ struct InputChannel
   // shell::TwoBodyMapping two_body_mask;
 };
 
-enum class OperatorCode
-// Code to specify a generated operator.
-//
-//
-{
-  kIdentity,
-    kAM
-    };
-extern const std::array<const char*,2> OperatorCodeDescription;
-//  const std::array<const char*,3> OperatorCodeDescription({"identity","am -- J^2"});
+enum class OperatorClass
+// Classes of generated operators (distinguished within a class by
+// their id).
+{kIdentity,kKinematic,kAMSqr};
+const std::array<const char*,3> kOperatorClassName({"identity","kinematic","am-sqr"});
+std::map<std::string,OperatorClass> kOperatorClassLookup(
+    {
+      {"identity",OperatorClass::kIdentity},
+        {"kinematic",OperatorClass::kKinematic},
+          {"am-sqr",OperatorClass::kAMSqr}
+    }
+  );
 
 struct OperatorChannel
 // Operator channel parameters and stream.
 {
-  OperatorChannel(const std::string& id_, OperatorCode operator_code_)
-    : id(id_), operator_code(operator_code_)
+  OperatorChannel(OperatorClass operator_class_, const std::string& id_)
+    : id(id_), operator_class(operator_class_)
   {}
 
   std::string id;
-  OperatorCode operator_code;
+  OperatorClass operator_class;
   // std::vector<double> parameters;
   // shell::TwoBodyMapping two_body_mask;
 };
@@ -100,7 +102,7 @@ struct TargetChannel
   std::string id;
   std::string filename;
   shell::OutH2Stream* stream_ptr;
-  std::map<std::string,double> coefficients;
+  std::vector<std::pair<std::string,double>> coefficients;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -110,8 +112,27 @@ struct TargetChannel
 struct RunParameters
 // Structure to store input parameters for run.
 {
+  RunParameters()
+    : truncation_cutoff(-1), J0(0), g0(0), Tz0(0), output_h2_format(0)
+  {};
+
+  // target truncation parameters -- oscillator-like
+  basis::Rank truncation_rank;
+  int truncation_cutoff;  // nonnegative value flags oscillator-like truncation
+
+  // target truncation parameters -- general
+  std::string orbital_filename;
+  basis::WeightMax weight_max;
+
+  // target operator character
+  int J0, g0, Tz0;
+
+  // atomic mass number
+  int A;
+
   // mode
   shell::H2Format output_h2_format;
+
 };
 
 void ReadParameters(
@@ -123,8 +144,6 @@ void ReadParameters(
 )
 // Parse control file.
 {
-
-  return;  // TEMPORARY
 
   std::string line;
   int line_count = 0;
@@ -144,22 +163,92 @@ void ReadParameters(
       // select action based on keyword
       if (keyword=="set-target-orbitals")
         {
-          // TODO
-          //line_stream >> lambda1 >> mu1 >> lambda2 >> mu2; 
+          line_stream >> run_parameters.orbital_filename;
           ParsingCheck(line_stream,line_count,line);
         }
       else if (keyword=="set-target-truncation")
         {
+          double wp, wn, wpp, wnn, wpn;
+          line_stream >> wp >> wn >> wpp >> wnn >> wpn;
+          ParsingCheck(line_stream,line_count,line);
+          run_parameters.weight_max = basis::WeightMax(wp,wn,wpp,wnn,wpn);
+        }
+      else if (keyword=="set-target-oscillator")
+        {
+          std::string truncation_rank_code;
+          line_stream >> truncation_rank_code
+                      >> run_parameters.truncation_cutoff;
+          ParsingCheck(line_stream,line_count,line);
+
           // process truncation rank code
-          // if (truncation_rank_code == "ob")
-          //   parameters.truncation_rank = basis::Rank::kOneBody;
-          // else if (truncation_rank_code == "tb")
-          //   parameters.truncation_rank = basis::Rank::kTwoBody;
-          // else
-          //   ParsingError(line_count,line,"unrecognized truncation rank code");
+          if (truncation_rank_code == "ob")
+            run_parameters.truncation_rank = basis::Rank::kOneBody;
+          else if (truncation_rank_code == "tb")
+            run_parameters.truncation_rank = basis::Rank::kTwoBody;
+          else
+            ParsingError(line_count,line,"unrecognized truncation rank code");
+          
+          // store corresponding max weights
+          run_parameters.weight_max
+            = basis::WeightMax(run_parameters.truncation_rank,run_parameters.truncation_cutoff);
         }
       else if (keyword=="set-target-multipolarity")
         {
+          line_stream >> run_parameters.J0 >> run_parameters.g0 >> run_parameters.Tz0;
+          ParsingCheck(line_stream,line_count,line);
+        }
+      else if (keyword=="set-mass")
+        {
+          line_stream >> run_parameters.A;
+          ParsingCheck(line_stream,line_count,line);
+        }
+      else if (keyword=="set-output-format")
+        {
+          line_stream >> run_parameters.output_h2_format;
+          ParsingCheck(line_stream,line_count,line);
+        }
+      else if (keyword=="define-input-source")
+        {
+          std::string id, filename;
+          line_stream >> id >> filename;
+          ParsingCheck(line_stream,line_count,line);
+          input_channels.emplace_back(id,filename);
+        }
+      else if (keyword=="define-operator-source")
+        {
+          std::string operator_class_name, id;
+          line_stream >> operator_class_name >> id;
+          ParsingCheck(line_stream,line_count,line);
+
+          if (!kOperatorClassLookup.count(operator_class_name))
+            ParsingError(line_count,line,"Unrecognized operator class");
+          OperatorClass operator_class = kOperatorClassLookup[operator_class_name];
+          operator_channels.emplace_back(operator_class,id);
+        }
+      else if (keyword=="define-xform-source")
+        {
+          // std::string id, filename;
+          // line_stream >> id >> filename;
+          // ParsingCheck(line_stream,line_count,line);
+          // input_channels.emplace_back(id,filename);
+        }
+      else if (keyword=="define-target")
+        {
+          std::string id, filename;
+          line_stream >> id >> filename;
+          ParsingCheck(line_stream,line_count,line);
+          target_channels.emplace_back(id,filename);
+        }
+      else if (keyword=="add-source")
+        {
+          assert(target_channels.size()>0);
+
+          std::string id;
+          double coefficient;
+          line_stream >> id >> coefficient;
+          ParsingCheck(line_stream,line_count,line);
+
+          (--target_channels.end())->coefficients.emplace_back(id,coefficient);
         }
       else
         {
@@ -174,6 +263,35 @@ void ReadParameters(
 ////////////////////////////////////////////////////////////////
 // initialization code
 /////////////////////////////////////////////////////////////////
+
+void InitializeTargetIndexing(
+    const RunParameters& run_parameters,
+    TwoBodyOperatorIndexing& target_indexing
+  )
+{
+
+  // set up basis
+  if (run_parameters.truncation_cutoff >= 0)
+    // oscillator-like indexing
+    {
+      target_indexing.orbital_space = basis::OrbitalSpacePN(run_parameters.truncation_cutoff);
+      target_indexing.space = basis::TwoBodySpaceJJJPN(target_indexing.orbital_space,run_parameters.weight_max);
+    }
+  else
+    // generic indexing
+    {
+      std::ifstream orbital_file(run_parameters.orbital_filename);
+      std::vector<basis::OrbitalPNInfo> orbital_info = basis::ParseOrbitalPNStream(orbital_file,true);
+      target_indexing.orbital_space = basis::OrbitalSpacePN(orbital_info);
+      target_indexing.space = basis::TwoBodySpaceJJJPN(target_indexing.orbital_space,run_parameters.weight_max);
+    }
+
+  // set up sectors
+  target_indexing.sectors = basis::TwoBodySectorsJJJPN(
+      target_indexing.space,
+      run_parameters.J0,run_parameters.g0,run_parameters.Tz0
+    );
+}
 
 void InitializeInputChannels(
     const RunParameters& run_parameters,
@@ -403,28 +521,10 @@ int main(int argc, char **argv)
   Timer total_time;
   total_time.Start();
 
+
   // set up target indexing
-  // basis::OrbitalSpacePN orbital_space;
-  // basis::TwoBodySpaceJJJPN space;
-  // basis::TwoBodySectorsJJJPN sectors;
-
-  // ad hoc testing setup
-  run_parameters.output_h2_format = 15099;
   TwoBodyOperatorIndexing target_indexing;
-  target_indexing.orbital_space = basis::OrbitalSpacePN(0);
-  target_indexing.space = basis::TwoBodySpaceJJJPN(
-      target_indexing.orbital_space,basis::WeightMax(basis::Rank::kTwoBody,0)
-    );
-  target_indexing.sectors = basis::TwoBodySectorsJJJPN(target_indexing.space,0,0,0);
-
-  // set up inputs
-  input_channels.emplace_back("in1","test/test-tb-2.dat");
-
-  // set up outputs
-  target_channels.emplace_back("out1","test/out1.dat");
-  target_channels[0].coefficients.insert({"in1",999});
-  target_channels.emplace_back("out2","test/out2.dat");
-
+  InitializeTargetIndexing(run_parameters,target_indexing);
 
   ////////////////////////////////////////////////////////////////
   // set up channels
