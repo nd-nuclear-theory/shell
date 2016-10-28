@@ -18,12 +18,6 @@
 
 namespace shell {
 
-  std::string RadialOperator::DebugStr() const {
-    std::ostringstream os;
-    os << "name: " << name << ", l0max: " << l0max << ", Tz0: " << Tz0 << std::endl;
-    return os.str();
-  }
-
   InRadialStream::InRadialStream(const std::string& filename)
     : RadialStreamBase(filename), line_count_(0)
   {
@@ -32,9 +26,11 @@ namespace shell {
     stream_ptr_ = new std::ifstream(filename_, mode_argument);
 
     ReadHeader();
+  }
 
+  void InRadialStream::Read(basis::MatrixVector& matrices) {
     for (int sector_index=0; sector_index < sectors_.size(); ++sector_index) {
-      ReadNextSector();
+      matrices.push_back(ReadNextSector());
     }
   }
 
@@ -46,6 +42,8 @@ namespace shell {
 
   void InRadialStream::ReadHeader() {
     std::string line;
+    char operator_type;
+    int l0max, Tz0;
     int num_orbitals_bra, num_orbitals_ket;
 
     // line 1: version -- but first gobble any comment lines
@@ -65,9 +63,9 @@ namespace shell {
       ++line_count_;
       std::getline(stream(), line);
       std::istringstream line_stream(line);
-      line_stream >> radial_operator_.name
-                  >> radial_operator_.l0max
-                  >> radial_operator_.Tz0
+      line_stream >> operator_type
+                  >> l0max
+                  >> Tz0
                   >> num_orbitals_bra
                   >> num_orbitals_ket;
       ParsingCheck(line_stream, line_count_, line);
@@ -144,18 +142,18 @@ namespace shell {
     bra_orbital_space_ = basis::OrbitalSpaceLJPN(bra_states);
     ket_orbital_space_ = basis::OrbitalSpaceLJPN(ket_states);
     sectors_ = basis::OrbitalSectorsLJPN(bra_orbital_space_, ket_orbital_space_,
-        radial_operator_.l0max, radial_operator_.Tz0);
+        l0max, Tz0);
+    radial_operator_ = static_cast<RadialOperator>(operator_type);
   }
 
-  void InRadialStream::ReadNextSector() {
+  Eigen::MatrixXd InRadialStream::ReadNextSector() {
     // get next sector
-    const basis::BaseSector<basis::OrbitalSubspaceLJPN> sector =
-        sectors_.GetSector(sector_index_);
+    const basis::OrbitalSectorsLJPN::SectorType sector = sectors_.GetSector(sector_index_);
     ++sector_index_;
 
     // construct temporary matrix
-    Eigen::MatrixXd temp_matrix(sector.bra_subspace().size(),
-                                sector.ket_subspace().size());
+    Eigen::MatrixXd sector_matrix(sector.bra_subspace().size(),
+                                  sector.ket_subspace().size());
 
     // Read in one row per line
     std::string line;
@@ -166,7 +164,7 @@ namespace shell {
 
       // read columns from line
       for (int k=0; k < sector.ket_subspace().size(); ++k) {
-        line_stream >> temp_matrix(j, k);
+        line_stream >> sector_matrix(j, k);
       }
       ParsingCheck(line_stream, line_count_, line);
     }
@@ -179,27 +177,29 @@ namespace shell {
       assert(line.size() == 0);
     }
 
-    // add matrix to vector
-    matrices_.push_back(temp_matrix);
+    // return matrix
+    return sector_matrix;
   }
 
   OutRadialStream::OutRadialStream(const std::string& filename,
       const basis::OrbitalSpaceLJPN& bra_space,
       const basis::OrbitalSpaceLJPN& ket_space,
-      const RadialOperator& radial_operator)
+      const basis::OrbitalSectorsLJPN& sectors,
+      const RadialOperator radial_operator)
     : RadialStreamBase(filename)
   {
     // initialize
     bra_orbital_space_ = bra_space;
     ket_orbital_space_ = ket_space;
     radial_operator_ = radial_operator;
-    // construct sectors
-    sectors_ = basis::OrbitalSectorsLJPN(bra_orbital_space_, ket_orbital_space_,
-        radial_operator_.l0max, radial_operator_.Tz0);
+    sectors_ = sectors;
 
     // open stream
     std::ios_base::openmode mode_argument = std::ios_base::trunc;
     stream_ptr_ = new std::ofstream(filename_, mode_argument);
+
+    // write header to file
+    WriteHeader();
   }
 
   void OutRadialStream::Close() {
@@ -211,9 +211,6 @@ namespace shell {
   void OutRadialStream::Write(const basis::MatrixVector& matrices) {
     // check if this seems like a reasonable MatrixVector
     assert(matrices.size() == sectors_.size());
-
-    // write header to file
-    WriteHeader();
 
     // loop over sectors and write
     for (auto&& matrix : matrices) {
@@ -236,9 +233,9 @@ namespace shell {
     stream() << 0 << std::endl; ++line_count_;
 
     // line 2: header line
-    stream() << " " << radial_operator_.name
-             << " " << radial_operator_.l0max
-             << " " << radial_operator_.Tz0
+    stream() << " " << static_cast<char>(radial_operator_)
+             << " " << sectors_.l0max()
+             << " " << sectors_.Tz0()
              << " " << bra_orbitals.size()
              << " " << ket_orbitals.size()
              << std::endl; ++line_count_;
@@ -268,8 +265,7 @@ namespace shell {
     const int precision = 8;
 
     // get next sector
-    const basis::BaseSector<basis::OrbitalSubspaceLJPN> sector =
-        sectors_.GetSector(sector_index_);
+    const basis::OrbitalSectorsLJPN::SectorType sector = sectors_.GetSector(sector_index_);
     ++sector_index_;
 
     // check that this is a valid matrix for this sector

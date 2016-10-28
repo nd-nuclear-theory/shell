@@ -47,27 +47,21 @@ basis::MatrixVector TestRadialOut(const std::string& filename, bool verbose = fa
   basis::OrbitalSpaceLJPN ket_space(ket_Nmax);
   std::cout << ket_space.DebugStr();
 
-  // set up operator
-  std::cout << "Operator" << std::endl;
-  shell::RadialOperator rSquared('r', 2, 0);
-  std::cout << rSquared.DebugStr();
+  // print sectors
+  std::cout << "Sectors" << std::endl;
+  basis::OrbitalSectorsLJPN sectors(bra_space, ket_space, 2, 0);
+  std::cout << "l0max: " << sectors.l0max() << " Tz0: " << sectors.Tz0() << std::endl;
+  std::cout << sectors.DebugStr();
 
   // set up output stream
   std::cout << "Output stream" << std::endl;
-  shell::OutRadialStream os(filename, bra_space, ket_space, rSquared);
-
-  if (verbose) {
-    // print sectors
-    std::cout << "Sectors" << std::endl;
-    std::cout << os.sectors().DebugStr();
-  }
+  shell::OutRadialStream os(filename, bra_space, ket_space, sectors, shell::RadialOperator::kR);
 
   // generate matrices
   basis::MatrixVector matrices;
-  for (int sector_index=0; sector_index < os.sectors().size(); ++sector_index) {
+  for (int sector_index=0; sector_index < sectors.size(); ++sector_index) {
     // get sector
-    const basis::BaseSector<basis::OrbitalSubspaceLJPN> sector =
-        os.sectors().GetSector(sector_index);
+    const basis::OrbitalSectorsLJPN::SectorType sector = sectors.GetSector(sector_index);
     if (verbose) std::cout << "generating sector " << sector_index << std::endl;
     // std::cout << std::get<0>(sector.Key()) << " " << std::get<1>(sector.Key()) << std::endl;
 
@@ -104,7 +98,10 @@ basis::MatrixVector TestRadialIn(const std::string& filename) {
   std::cout << "Sectors" << std::endl;
   std::cout << is.sectors().DebugStr();
 
-  return is.Read();
+  basis::MatrixVector input_matrices;
+  is.Read(input_matrices);
+
+  return input_matrices;
 }
 
 int main(int argc, char **argv) {

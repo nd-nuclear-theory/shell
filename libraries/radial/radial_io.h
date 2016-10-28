@@ -10,6 +10,12 @@
   University of Notre Dame
 
   + 10/25/16 (pjf): Created, modeling after h2_io.h.
+  + 10/28/16 (pjf): Updated interface
+   - RadialOperator is a simple enum class.
+   - Don't store matrices internally to streams.
+   - Read() takes an empty MatrixVector&.
+   - Constructors read/write headers but not data.
+   - OutRadialStream takes an OrbitalSectorsLJPN at construction.
 
 ****************************************************************/
 
@@ -29,31 +35,11 @@
 namespace shell {
 
 /**
- * Container struct describing a radial operator.
+ * Radial IDs
  */
-struct RadialOperator {
-  char name;
-  int l0max;
-  int Tz0;
-
-  RadialOperator() = default;
-
-  RadialOperator(const char name, int l0max, int Tz0)
-    : name(name), l0max(l0max), Tz0(Tz0) {}
-
-  std::string DebugStr() const;
+enum class RadialOperator : char {
+  kR = 'r', kK = 'k'
 };
-
-/**
- * Common kinematic operators
- */
-// enum class KinematicOperator : RadialOperator {
-//   kR = RadialOperator('r', 1, 0),
-//   kRSquared = RadialOperator('r', 2, 0),
-//   kP = RadialOperator('p', 1, 0),
-//   kPSquared = RadialOperator('p', 2, 0)
-//   kOverlap = RadialOperator('i', 0, 1)
-// };
 
 /**
  * Base stream case with common attributes for input and output radial streams.
@@ -91,9 +77,6 @@ class RadialStreamBase {
   // current pointer
   int sector_index_;
 
-  // matrix storage
-  basis::MatrixVector matrices_;
-
   // filename
   std::string filename_;
 };
@@ -117,12 +100,12 @@ class InRadialStream : public RadialStreamBase {
   }
 
   // I/O
-  const basis::MatrixVector& Read() const {return matrices_;}
+  void Read(basis::MatrixVector& matrices);
   void Close();
 
  private:
   void ReadHeader();
-  void ReadNextSector();
+  Eigen::MatrixXd ReadNextSector();
 
   // file stream
   std::ifstream& stream() const {return *stream_ptr_;}  // alias for convenience
@@ -145,7 +128,8 @@ class OutRadialStream : public RadialStreamBase {
       const std::string& filename,
       const basis::OrbitalSpaceLJPN& bra_space,
       const basis::OrbitalSpaceLJPN& ket_space,
-      const RadialOperator& radial_operator);
+      const basis::OrbitalSectorsLJPN& sectors,
+      const RadialOperator radial_operator);
 
   // destructor
   ~OutRadialStream() {
