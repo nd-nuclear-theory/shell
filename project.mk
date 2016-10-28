@@ -19,6 +19,7 @@ modules += programs/h2utils programs/h2utils_legacy
 # precede callee.
 
 modules += libraries/moshinsky libraries/relative libraries/tbme libraries/no
+modules += libraries/radial
 
 modules += libraries/legacy  # DEPRECATED
 
