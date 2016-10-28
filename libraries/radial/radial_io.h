@@ -38,8 +38,10 @@ struct RadialOperator {
 
   RadialOperator() = default;
 
-  RadialOperator(char name, int l0max, int Tz0)
+  RadialOperator(const char name, int l0max, int Tz0)
     : name(name), l0max(l0max), Tz0(Tz0) {}
+
+  std::string DebugStr() const;
 };
 
 /**
@@ -74,6 +76,7 @@ class RadialStreamBase {
   const basis::OrbitalSpaceLJPN& ket_orbital_space() const {
     return ket_orbital_space_;
   }
+  const basis::OrbitalSectorsLJPN& sectors() const { return sectors_; }
   const RadialOperator& radial_operator() const {
     return radial_operator_;
   }
@@ -155,11 +158,11 @@ class OutRadialStream : public RadialStreamBase {
 
  private:
   void WriteHeader();
-  void WriteNextSector();
+  void WriteNextSector(const Eigen::MatrixXd& matrix);
 
   // file stream
-  std::ifstream& stream() const {return *stream_ptr_;}  // alias for convenience
-  std::ifstream* stream_ptr_;
+  std::ofstream& stream() const {return *stream_ptr_;}  // alias for convenience
+  std::ofstream* stream_ptr_;
   int line_count_;
 };
 

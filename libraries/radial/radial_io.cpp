@@ -17,6 +17,12 @@
 
 namespace shell {
 
+  std::string RadialOperator::DebugStr() const {
+    std::ostringstream os;
+    os << "name: " << name << ", l0max: " << l0max << ", Tz0: " << Tz0 << std::endl;
+    return os.str();
+  }
+
   InRadialStream::InRadialStream(const std::string& filename)
     : RadialStreamBase(filename), line_count_(0)
   {
@@ -111,7 +117,7 @@ namespace shell {
       getline(stream(), line);
       // count line
       ++line_count_;
-      ++bra_orbital_count;
+      ++ket_orbital_count;
 
       // set up for parsing
       std::istringstream line_stream(line);
@@ -148,7 +154,7 @@ namespace shell {
 
     // construct temporary matrix
     Eigen::MatrixXd temp_matrix(sector.bra_subspace().size(),
-                                sector.bra_subspace().size());
+                                sector.ket_subspace().size());
 
     // Read in one row per line
     std::string line;
