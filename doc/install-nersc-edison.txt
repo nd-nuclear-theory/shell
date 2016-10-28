@@ -1,0 +1,101 @@
+shell project installation -- summary for NERSC Edison
+
+Please see install.txt for the general discussion of installation.
+This file just provides the quick reference summary for NERSC Edison.
+
+10/28/16 (mac): Created.
+
+----------------------------------------------------------------
+
+1) Retrieving source
+
+Change to the directory where you want the repository to be installed,
+e.g.,
+
+  % cd ~/projects
+
+Clone the shell repository and all submodules.  You will be asked for
+your ND netid password several times.  In the following, replace "netid" with your ND NetID.
+
+  % git clone --recursive ssh://netid@crcfe01.crc.nd.edu/afs/crc.nd.edu/group/nuclthy/git/shell.git
+
+Then change to the shell project directory for all the following
+steps:
+
+  % cd shell
+
+Workaround: If the process hangs, kill with Ctrl-C, clean up with "rm
+-rf shell", and try again.  If it keeps hanging, split up the
+process...
+
+  % git clone ssh://netid@crcfe01.crc.nd.edu/afs/crc.nd.edu/group/nuclthy/git/shell.git
+  % cd shell
+  % submodule init
+  % submodule update
+
+and repeat submodule update until all submodules have been successfully cloned.
+
+1') Subsequently updating source
+
+  % git pull
+  % git submodule update
+
+2) Compiler
+
+   You can use the default intel compiler suite, or you can compile
+   under gnu.  See the build instructions below for the correct modules
+   to load.
+
+3) Libraries
+
+   All needed libraries (Eigen and GSL) are already installed on
+   Edison.  See the build instructions below for the correct modules
+   to load.
+
+4) Makefile configuration
+
+   You need to create a symbolic link "config.mk" to point to the
+   correct configuration file.  You can use the predefined
+   configuration files in shell/config.
+
+   For compiling under gcc4 or gcc5, you should be able to use:
+
+   % ln -s config/config_gcc4.mk config.mk
+
+   For compiling under intel**, you should be able to use:
+
+   *** TODO ***
+
+5) Build
+
+   At compile time, you will need to load modules to access the above
+   libraries:
+
+   % module load eigen3
+   % module load gsl
+
+   For reference, we note that the following are the current default
+   versions as of 10/28/16:
+
+   % module load eigen3/3.2.0
+   % module load gsl/1.16
+
+   As a shortcut:
+
+   % source config/module-load-nersc-edison.csh
+
+   If you prefer to to switch from the intel compiler to the gnu
+   compiler:
+
+   % module swap PrgEnv-intel PrgEnv-gnu
+
+   Then for the actual build (parallel make with -j option is
+   recommended):
+
+   % make all -j8
+
+----------------------------------------------------------------
+
+source config/module-load-nersc-edison.csh
+make all -j8
+
