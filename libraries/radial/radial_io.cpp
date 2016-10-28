@@ -9,6 +9,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <iomanip>
 
 #include "eigen3/Eigen/Core"
 
@@ -180,6 +181,113 @@ namespace shell {
 
     // add matrix to vector
     matrices_.push_back(temp_matrix);
+  }
+
+  OutRadialStream::OutRadialStream(const std::string& filename,
+      const basis::OrbitalSpaceLJPN& bra_space,
+      const basis::OrbitalSpaceLJPN& ket_space,
+      const RadialOperator& radial_operator)
+    : RadialStreamBase(filename)
+  {
+    // initialize
+    bra_orbital_space_ = bra_space;
+    ket_orbital_space_ = ket_space;
+    radial_operator_ = radial_operator;
+    // construct sectors
+    sectors_ = basis::OrbitalSectorsLJPN(bra_orbital_space_, ket_orbital_space_,
+        radial_operator_.l0max, radial_operator_.Tz0);
+
+    // open stream
+    std::ios_base::openmode mode_argument = std::ios_base::trunc;
+    stream_ptr_ = new std::ofstream(filename_, mode_argument);
+  }
+
+  void OutRadialStream::Close() {
+    (*stream_ptr_).close();
+    delete stream_ptr_;
+    stream_ptr_ = 0;
+  }
+
+  void OutRadialStream::Write(const basis::MatrixVector& matrices) {
+    // check if this seems like a reasonable MatrixVector
+    assert(matrices.size() == sectors_.size());
+
+    // write header to file
+    WriteHeader();
+
+    // loop over sectors and write
+    for (auto&& matrix : matrices) {
+      WriteNextSector(matrix);
+    }
+  }
+
+  void OutRadialStream::WriteHeader() {
+    // get orbital info
+    std::vector<basis::OrbitalPNInfo> bra_orbitals = bra_orbital_space_.OrbitalInfo();
+    std::vector<basis::OrbitalPNInfo> ket_orbitals = ket_orbital_space_.OrbitalInfo();
+
+    // include some header comments
+    stream() << "# shell radial matrix elements file" << std::endl;
+    stream() << "# version number 0" << std::endl;
+    stream() << "# header line:" << std::endl;
+    stream() << "# operator l0max Tz0 bra_basis_size ket_basis_size" << std::endl;
+
+    // line 1: version number
+    stream() << 0 << std::endl; ++line_count_;
+
+    // line 2: header line
+    stream() << " " << radial_operator_.name
+             << " " << radial_operator_.l0max
+             << " " << radial_operator_.Tz0
+             << " " << bra_orbitals.size()
+             << " " << ket_orbitals.size()
+             << std::endl; ++line_count_;
+
+    // line 3: blank
+    stream() << std::endl; ++line_count_;
+
+    // bra orbital definitions
+    for (auto&& state : bra_orbitals) {
+      stream() << state << std::endl; ++line_count_;
+    }
+
+    // blank line separating bras from kets
+    stream() << std::endl; ++line_count_;
+
+    // ket orbital definitions
+    for (auto&& state : ket_orbitals) {
+      stream() << state << std::endl; ++line_count_;
+    }
+
+    // blank line between kets and body of file
+    stream() << std::endl; ++line_count_;
+  }
+
+  void OutRadialStream::WriteNextSector(const Eigen::MatrixXd& matrix) {
+    const int width = 3;
+    const int precision = 8;
+
+    // get next sector
+    const basis::BaseSector<basis::OrbitalSubspaceLJPN> sector =
+        sectors_.GetSector(sector_index_);
+    ++sector_index_;
+
+    // check that this is a valid matrix for this sector
+    assert(sector.bra_subspace().size() == matrix.rows());
+    assert(sector.ket_subspace().size() == matrix.cols());
+
+    // Write in one row per line
+    std::string line;
+    for (int j=0; j < sector.bra_subspace().size(); ++j) {
+      // write columns to line
+      for (int k=0; k < sector.ket_subspace().size(); ++k) {
+        stream() << " " << std::fixed << std::setw(width+1+precision) << matrix(j, k);
+      }
+      stream() << std::endl; ++line_count_;
+    }
+
+    // blank line separating sectors
+    stream() << std::endl; ++line_count_;
   }
 
 }  // namespace shell
