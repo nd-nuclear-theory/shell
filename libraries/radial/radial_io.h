@@ -65,7 +65,7 @@ class RadialStreamBase {
   RadialStreamBase() = default;
 
   explicit RadialStreamBase(const std::string& filename)
-    : filename_(filename) {}
+    : filename_(filename), sector_index_(0) {}
 
   // indexing accessors
   const basis::OrbitalSpaceLJPN& bra_orbital_space() const {
