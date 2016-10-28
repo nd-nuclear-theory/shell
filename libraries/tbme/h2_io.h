@@ -17,6 +17,7 @@
     -- Rename to h2_io.
     -- Integrate into shell project build.
   10/19/16 (mac): Complete implementation for H2 Version0.
+  10/25/16 (mac): Add InH2Stream::SeekToSector.
      
 ****************************************************************/
 
@@ -213,8 +214,17 @@ namespace shell {
       };
 
     // I/O
+
     void ReadSector(Eigen::MatrixXd& matrix);
+    // Read current sector.
+
     void SkipSector();
+    // Skip (read but do not store) current sector.
+
+    void SeekToSector(int seek_index);
+    // Skip (read but do not store) through sectors until arriving at
+    // given sector.
+
     void Close();
 
   private:
@@ -271,7 +281,13 @@ namespace shell {
     void WriteSector(const Eigen::MatrixXd& matrix);
     void Close();
 
+    // debugging
+    // std::ofstream* stream_ptr() const {return stream_ptr_;}
+
   private:
+
+    // convenience accessor (for internal use)
+    std::ofstream& stream() const {return *stream_ptr_;}
     
     // format-specific implementation methods
     void WriteVersion();
@@ -285,7 +301,7 @@ namespace shell {
     void WriteSector_Version15099(const Eigen::MatrixXd& matrix);
 
     // file stream
-    std::ofstream& stream() const {return *stream_ptr_;}  // alias for convenience
+    // std::ofstream& stream() const {return *stream_ptr_;}  // alias for convenience
     std::ofstream* stream_ptr_;
 
   };

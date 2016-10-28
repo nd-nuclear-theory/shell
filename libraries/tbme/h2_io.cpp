@@ -268,20 +268,20 @@ namespace shell {
   std::string H2StreamBase::DiagnosticStr() const
   {
 
-    // diagnostic output
-    std::string oscillator_like_indicator = (orbital_space().is_oscillator_like() ? "true" : "false");
+    // TODO: make use of oscillator_like_ check for two-body space when available
 
     std::string str = fmt::format(
         "  File: {}\n"
         "  Format: {} ({})\n"
-        "  Orbitals: p {} n {} (indexing {})\n"
-        "  One-body truncation: p {:.4f} n {:.4f}\n"
-        "  Two-body truncation: pp {:.4f} nn {:.4f} pn {:.4f}\n"
+        "  Orbitals: p {} n {} (oscillator-like {})\n"
+        // "  One-body truncation: p {:.4f} n {:.4f}\n"
+        // "  Two-body truncation: pp {:.4f} nn {:.4f} pn {:.4f}\n"
+        "  Truncation: p {:.4f} n {:.4f} pp {:.4f} nn {:.4f} pn {:.4f}\n"
         "  Sectors: pp {} nn {} pn {} => total {}\n"
         "  Matrix elements: pp {} nn {} pn {} => total {}\n",
         filename_,
         int(h2_format()),kH2ModeDescription[int(h2_mode())],
-        orbital_space().GetSubspace(0).size(),orbital_space().GetSubspace(1).size(),oscillator_like_indicator,
+        orbital_space().GetSubspace(0).size(),orbital_space().GetSubspace(1).size(),orbital_space().is_oscillator_like(),
         space().weight_max().one_body[0],space().weight_max().one_body[1],
         space().weight_max().two_body[0],space().weight_max().two_body[1],space().weight_max().two_body[2],
         num_sectors_by_type()[0],num_sectors_by_type()[1],num_sectors_by_type()[2],num_sectors(),
@@ -851,8 +851,7 @@ namespace shell {
 
   void InH2Stream::Close()
   {
-    delete stream_ptr_;
-    stream_ptr_ = 0;  // so deletion by destructor does not cause error 
+    stream().close();
   };
 
 
@@ -888,6 +887,14 @@ namespace shell {
 
     bool store = false;
     ReadOrSkipSector(matrix,store);
+  }
+
+  void InH2Stream::SeekToSector(int seek_index)
+  {
+    assert(seek_index!=basis::kNone);
+    assert(seek_index<sectors().size());
+    while (sector_index_<seek_index)
+      SkipSector();
   }
 
 
@@ -943,6 +950,12 @@ namespace shell {
   
   void OutH2Stream::WriteSector(const Eigen::MatrixXd& matrix)
   {
+    // validate matrix dimensions
+    const typename basis::TwoBodySectorsJJJPN::SectorType& sector = sectors().GetSector(sector_index_);
+    const typename basis::TwoBodySectorsJJJPN::SubspaceType& bra_subspace = sector.bra_subspace();
+    const typename basis::TwoBodySectorsJJJPN::SubspaceType& ket_subspace = sector.ket_subspace();
+    assert((matrix.rows()==sector.bra_subspace().size())&&(matrix.cols()==sector.ket_subspace().size()));
+
     // write sector
     if (h2_format()==kVersion0)
       WriteSector_Version0(matrix);
@@ -961,8 +974,7 @@ namespace shell {
 
   void OutH2Stream::Close()
   {
-    delete stream_ptr_;
-    stream_ptr_ = 0;  // so deletion by destructor does not cause error 
+    stream().close();
   };
 
   ////////////////////////////////////////////////////////////////

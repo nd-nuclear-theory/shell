@@ -15,12 +15,12 @@ void TestMappingEqual()
 
   std::cout << "TestMappingEqual" << std::endl;
 
-  // source space -- square
+  // source space -- triangle
   const int source_Nmax = 2;
   const basis::OrbitalSpacePN source_orbital_space(source_Nmax);
   const basis::TwoBodySpaceJJJPN source_space(source_orbital_space,basis::WeightMax(basis::Rank::kTwoBody,source_Nmax));
 
-  // target space -- subtriangle
+  // target space -- triangle
   const int target_Nmax = 2;
   const basis::OrbitalSpacePN target_orbital_space(target_Nmax);
   const basis::TwoBodySpaceJJJPN target_space(source_orbital_space,basis::WeightMax(basis::Rank::kTwoBody,target_Nmax));

@@ -108,3 +108,26 @@
     WriteI4(stream,header_bytes);
     
   };
+
+
+
+
+
+  // set up target
+  // run_parameters.output_h2_format = 15099;
+  run_parameters.truncation_rank = basis::Rank::kTwoBody;
+  run_parameters.truncation_cutoff = 2;
+  run_parameters.weight_max = basis::WeightMax(run_parameters.truncation_rank,run_parameters.truncation_cutoff);
+  // target_indexing.orbital_space = basis::OrbitalSpacePN(0);
+  // target_indexing.space = basis::TwoBodySpaceJJJPN(
+  //     target_indexing.orbital_space,basis::WeightMax(basis::Rank::kTwoBody,0)
+  //   );
+  // target_indexing.sectors = basis::TwoBodySectorsJJJPN(target_indexing.space,0,0,0);
+
+  // set up inputs
+  input_channels.emplace_back("in1","test/test-tb-2.dat");
+
+  // set up outputs
+  target_channels.emplace_back("out1","test/out1.dat");
+  target_channels[0].coefficients.insert({"in1",999});
+  target_channels.emplace_back("out2","test/out2.dat");
