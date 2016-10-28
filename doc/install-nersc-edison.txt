@@ -60,7 +60,7 @@ and repeat submodule update until all submodules have been successfully cloned.
 
    For compiling under gcc4 or gcc5, you should be able to use:
 
-   % ln -s config/config_gcc4.mk config.mk
+   % ln -s config/config-gcc4.mk config.mk
 
    For compiling under intel**, you should be able to use:
 
@@ -71,14 +71,16 @@ and repeat submodule update until all submodules have been successfully cloned.
    At compile time, you will need to load modules to access the above
    libraries:
 
-   % module load eigen3
+   % module load boost
    % module load gsl
+   % module load eigen3
 
    For reference, we note that the following are the current default
    versions as of 10/28/16:
 
-   % module load eigen3/3.2.0
+   % module load boost/1.54
    % module load gsl/1.16
+   % module load eigen3/3.2.0
 
    As a shortcut:
 
