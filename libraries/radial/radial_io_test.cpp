@@ -37,13 +37,13 @@ basis::MatrixVector TestRadialOut(const std::string& filename, bool verbose = fa
 
   // set up bra space
   std::cout << "Bra space" << std::endl;
-  int bra_Nmax = 4;
+  int bra_Nmax = 20;
   basis::OrbitalSpaceLJPN bra_space(bra_Nmax);
   std::cout << bra_space.DebugStr();
 
   // set up ket space
   std::cout << "Ket space" << std::endl;
-  int ket_Nmax = 4;
+  int ket_Nmax = 20;
   basis::OrbitalSpaceLJPN ket_space(ket_Nmax);
   std::cout << ket_space.DebugStr();
 
@@ -109,7 +109,9 @@ basis::MatrixVector TestRadialIn(const std::string& filename) {
 
 int main(int argc, char **argv) {
   std::string filename("test/radial_out_test.dat");
-  bool status = (TestRadialOut(filename, false) == TestRadialIn(filename));
+  basis::MatrixVector matrices_out = TestRadialOut(filename, false);
+  basis::MatrixVector matrices_in = TestRadialIn(filename);
+  bool status = (matrices_out == matrices_in);
 
   // termination
   return !status;

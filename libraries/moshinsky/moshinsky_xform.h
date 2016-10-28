@@ -194,9 +194,9 @@ namespace moshinsky {
   // rather than normalized antisymmetrized (NAS) matrix elements.
   //
   // Arguments:
-  //   relative_cm_sector (basis::RelativeCMSectorLSJTN::SectorType) :
+  //   relative_cm_sector (basis::RelativeCMSectorsLSJTN::SectorType) :
   //     source sector information
-  //   two_body_sector (basis::TwoBodySectorLSJTN::SectorType) :
+  //   two_body_sector (basis::TwoBodySectorsLSJTN::SectorType) :
   //     target sector information
   //    relative_cm_matrix (Eigen::MatrixXd) : source sector matrix
 
