@@ -58,13 +58,19 @@ and repeat submodule update until all submodules have been successfully cloned.
    correct configuration file.  You can use the predefined
    configuration files in shell/config.
 
-   For compiling under gcc4 or gcc5, you should be able to use:
+   For compiling under gcc, you should be able to use:
 
    % ln -s config/config-gcc-craype.mk config.mk
 
    For compiling under intel, you should be able to use:
 
    % ln -s config/config-intel-craype.mk config.mk
+
+   It is important to use these "...-craype.mk" config files, since
+   they configure make to invoke the correct Cray Programming
+   Environment compiler wrapper "CC", which has the correct settings
+   to generate executables for the compute nodes, instead of invoking
+   the generic "g++" or "icpc".
 
 5) Build
 

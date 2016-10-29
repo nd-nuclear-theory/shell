@@ -47,6 +47,8 @@
   4/25/15 (mac): Reformat source file.
   9/23/15 (mac): Fix missing if on free sector.
   10/11/16 (mac): Integrate into shell project.
+  10/28/16 (mac): Comment out OpenMP parallelization (buggy and fails to compile
+    under CrayPE).
 
 ******************************************************************************/
 
@@ -121,7 +123,9 @@ void TwoBodyMatrixSectorTransform (const legacy::TwoBodyMatrixNljTzJP& source_ma
   // Optimal approach in tests based on a simple computational
   // load (i.e., no memory access) in inner loop.
 
-#pragma omp parallel for collapse(2) 
+  // #pragma omp parallel for collapse(2) 
+  // DEBUGGING: under craype CC compiler with gcc 6, gives error:
+  //   error: initializer expression refers to iteration variable 'k1p' 
   for (int k1p = 0; k1p < dimension; ++k1p)
     for (int k2p = k1p; k2p < dimension; ++k2p)
       {
@@ -257,7 +261,7 @@ void TwoBodyMatrixSectorTransform (const legacy::TwoBodyMatrixNljTzJP& source_ma
 
 	// OMP: The "critical" designation for saving the matrix element is out of caution since
 	// STL containers are supposedly not thread-safe.
-#pragma omp critical
+        // #pragma omp critical
 	destination_matrix.SetMatrixElementUNAS(state_type, s1p, s2p, matrix_element); 
 			
 	// DBG: std::cout << "    Resultant:" 
