@@ -123,12 +123,19 @@ and repeat submodule update until all submodules have been successfully cloned.
 
 Notes:
 
-10/28/16 (mac): successful build with
+10/28/16 (mac): successful build with gnu
 
    boost/1.54
    gsl/1.16
    eigen3/3.2.0
    PrgEnv-gnu => gcc/6.1.0
 
+10/28/16 (mac): FAILING build with intel
 
    PrgEnv-intel => intel/15.0.1.133
+
+In file included from ./libraries/moshinsky/moshinsky_xform.h(36),
+                 from libraries/moshinsky/moshinsky_xform.cpp(9):
+./libraries/basis/lsjt_scheme.h(200): error: argument list for class template "basis::BaseState" is missing
+        : BaseState (subspace, index) {}
+          ^
