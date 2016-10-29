@@ -59,7 +59,7 @@ CXX := icpc
 ## CXXFLAGS += -static
 
 # langage standard
-CXXFLAGS += -std=c++11 -openmp
+CXXFLAGS += -std=c++11 -qopenmp
 
 ################################################################
 # FORTRAN compiler-specific configuration
@@ -73,7 +73,7 @@ CXXFLAGS += -std=c++11 -openmp
 
 FC := ifort
 
-FFLAGS += -openmp
+FFLAGS += -qopenmp -frecursive
 
 ################################################################
 # C++/FORTRAN linking 
