@@ -60,11 +60,11 @@ and repeat submodule update until all submodules have been successfully cloned.
 
    For compiling under gcc4 or gcc5, you should be able to use:
 
-   % ln -s config/config-gcc4.mk config.mk
+   % ln -s config/config-gcc-craype.mk config.mk
 
-   For compiling under intel**, you should be able to use:
+   For compiling under intel, you should be able to use:
 
-   *** TODO ***
+   % ln -s config/config-intel-craype.mk config.mk
 
 5) Build
 
@@ -80,7 +80,7 @@ and repeat submodule update until all submodules have been successfully cloned.
 
    % module load boost/1.54
    % module load gsl/1.16
-   % module load eigen3/3.2.0
+   % module load eigen3/3.2.0   [note: this is a pretty old version]
 
    As a shortcut:
 
@@ -96,8 +96,39 @@ and repeat submodule update until all submodules have been successfully cloned.
 
    % make all -j8
 
+6) Sanity check:
+
+   % cd programs/h2utils
+   % ./h2stat verify test/test-tb-2.dat
+
+   You should see something like the following output:
+
+      h2stat  -- MFDn H2 file statistics
+
+      Input stream
+        File: test/test-tb-2.dat
+        Format: 0 (text)
+        Orbitals: p 6 n 6 (oscillator-like true)
+        Truncation: p 2.0000 n 2.0000 pp 2.0000 nn 2.0000 pn 2.0000
+        Sectors: pp 7 nn 7 pn 7 => total 21
+        Matrix elements: pp 32 nn 32 pn 110 => total 174
+
+      Statistics mode: verify
+
+      Verification scan
+      .....................
+      (Total time: 0)   
+
 ----------------------------------------------------------------
 
-source config/module-load-nersc-edison.csh
-make all -j8
+Notes:
 
+10/28/16 (mac): successful build with
+
+   boost/1.54
+   gsl/1.16
+   eigen3/3.2.0
+   PrgEnv-gnu => gcc/6.1.0
+
+
+   PrgEnv-intel => intel/15.0.1.133
