@@ -1,8 +1,13 @@
 # h2mixer_radial.in -- basic test of radial operator input
 
-set-target-oscillator ob 2
+set-target-oscillator tb 2
 set-target-multipolarity 0 0 0
 set-output-format 15099
 set-mass 999
 
-define-radial-operator r 2 test/radial-HO-r2.dat
+define-radial-operator r 1 test/radial-me-dummy-r1-Nmax10.dat
+define-radial-operator r 2 test/radial-me-dummy-r2-Nmax10.dat
+define-radial-operator k 1 test/radial-me-dummy-k1-Nmax10.dat
+define-radial-operator k 2 test/radial-me-dummy-k2-Nmax10.dat
+
+define-xform-source VNN test/test-tb-2.dat 2 2 2 2 2 test/radial-xform-dummy-Nmax10.dat

@@ -43,12 +43,20 @@ struct RadialOperatorData
 // For overlaps, the "bra" space is the source basis, and the "ket"
 // space is the target basis.
 {
+
+  RadialOperatorData() = default;
+
   RadialOperatorData(const RadialOperatorLabels& labels_, const std::string& filename_)
     : labels(labels_), filename(filename_)
   {}
 
+  // operator identification
   RadialOperatorLabels labels;
+
+  // input filename
   std::string filename;
+
+  // operator indexing and storage
   basis::OrbitalSpaceLJPN bra_orbital_space;
   basis::OrbitalSpaceLJPN ket_orbital_space;
   basis::OrbitalSectorsLJPN sectors;
@@ -75,59 +83,81 @@ struct TwoBodyOperatorIndexing
 ////////////////////////////////////////////////////////////////
 
 struct InputChannel
-// Direct input channel parameters and stream.
+// Parameters and data for a source channel providing directly-input
+// TBMEs.
 {
   InputChannel(const std::string& id_, const std::string& filename_)
     : id(id_), filename(filename_), stream_ptr(NULL)
   {}
 
   std::string id;
+
+  // input
   std::string filename;
   shell::InH2Stream* stream_ptr;
+
+  // target mapping
   shell::TwoBodyMapping two_body_mapping;
-  // shell::TwoBodyMapping two_body_mask;
 };
 
-enum class OperatorClass
+enum class OperatorType
 // Classes of generated operators (distinguished within a class by
 // their id).
 {kIdentity,kKinematic,kAMSqr};
-const std::array<const char*,3> kOperatorClassName({"identity","kinematic","am-sqr"});
-std::map<std::string,OperatorClass> kOperatorClassLookup(
+const std::array<const char*,3> kOperatorTypeName({"identity","kinematic","am-sqr"});
+std::map<std::string,OperatorType> kOperatorTypeLookup(
     {
-      {"identity",OperatorClass::kIdentity},
-        {"kinematic",OperatorClass::kKinematic},
-          {"am-sqr",OperatorClass::kAMSqr}
+      {"identity",OperatorType::kIdentity},
+        {"kinematic",OperatorType::kKinematic},
+          {"am-sqr",OperatorType::kAMSqr}
     }
   );
 
 struct OperatorChannel
-// Operator channel parameters and stream.
+// Parameters and data for a source channel providing a generated
+// operator.
 {
-  OperatorChannel(OperatorClass operator_class_, const std::string& id_)
-    : id(id_), operator_class(operator_class_)
+  OperatorChannel(OperatorType operator_type_, const std::string& id_)
+    : id(id_), operator_type(operator_type_)
   {}
 
   std::string id;
-  OperatorClass operator_class;
+  OperatorType operator_type;
   // std::vector<double> parameters;
-  // shell::TwoBodyMapping two_body_mask;
 };
 
 struct XformChannel
-// Transformed input channel parameters and stream.
+// Parameters and data for a source channel providing two-body
+// transformed TBMEs.
 {
-  XformChannel(const std::string& id_, const std::string& filename_)  // TODO
-    : id(id_), filename(filename_), stream_ptr(NULL)
+  XformChannel(
+      const std::string& id_, const std::string& filename_,
+      const basis::WeightMax& pre_xform_weight_max_,
+      const std::string& xform_filename_
+    )
+    : id(id_), filename(filename_),
+      pre_xform_weight_max(pre_xform_weight_max_),
+      xform_filename(xform_filename_),
+      stream_ptr(NULL)
   {}
 
   std::string id;
+
+  // input
   std::string filename;
   shell::InH2Stream* stream_ptr;
-  basis::WeightMax weight_max;
+
+  // pre-xform storage
+  basis::WeightMax pre_xform_weight_max;
+  TwoBodyOperatorIndexing pre_xform_two_body_indexing;
+  shell::TwoBodyMapping pre_xform_two_body_mapping;
+
+  // xform
+  std::string xform_filename;
+  RadialOperatorData radial_operator_data;
+
+  // target mapping
   shell::TwoBodyMapping two_body_mapping;
-  // shell::TwoBodyMapping two_body_mask;
-  // POSSIBLE: independent overlaps for each xform (e.g., Coulomb)
 };
 
 struct TargetChannel
@@ -138,9 +168,13 @@ struct TargetChannel
   {}
 
   std::string id;
+
+  // construction
+  std::vector<std::pair<std::string,double>> coefficients;
+
+  // output
   std::string filename;
   shell::OutH2Stream* stream_ptr;
-  std::vector<std::pair<std::string,double>> coefficients;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -271,21 +305,28 @@ void ReadParameters(
         }
       else if (keyword=="define-operator-source")
         {
-          std::string operator_class_name, id;
-          line_stream >> operator_class_name >> id;
+          std::string operator_type_name, id;
+          line_stream >> operator_type_name >> id;
           ParsingCheck(line_stream,line_count,line);
 
-          if (!kOperatorClassLookup.count(operator_class_name))
+          if (!kOperatorTypeLookup.count(operator_type_name))
             ParsingError(line_count,line,"Unrecognized operator class");
-          OperatorClass operator_class = kOperatorClassLookup[operator_class_name];
-          operator_channels.emplace_back(operator_class,id);
+          OperatorType operator_type = kOperatorTypeLookup[operator_type_name];
+          operator_channels.emplace_back(operator_type,id);
         }
       else if (keyword=="define-xform-source")
         {
-          // std::string id, filename;
-          // line_stream >> id >> filename;
-          // ParsingCheck(line_stream,line_count,line);
-          // input_channels.emplace_back(id,filename);
+          std::string id, filename, xform_filename;
+          double wp, wn, wpp, wnn, wpn;
+          line_stream
+            >> id >> filename
+            >> wp >> wn >> wpp >> wnn >> wpn
+            >> xform_filename;
+          ParsingCheck(line_stream,line_count,line);
+
+          xform_channels.emplace_back(
+              id,filename,basis::WeightMax(wp,wn,wpp,wnn,wpn),xform_filename
+            );
         }
       else if (keyword=="define-target")
         {
@@ -324,6 +365,7 @@ void InitializeRadialOperators(RadialOperatorMap& radial_operators)
 {
   for (auto& labels_data : radial_operators)
     {
+      // extract labeling
       RadialOperatorData& radial_operator_data = labels_data.second;
       shell::RadialOperator radial_operator_type = std::get<0>(radial_operator_data.labels);
       int radial_operator_power = std::get<1>(radial_operator_data.labels);
@@ -336,21 +378,21 @@ void InitializeRadialOperators(RadialOperatorMap& radial_operators)
         << std::endl;
 
       // open radial operator file
-      shell::InRadialStream operator_stream(radial_operator_data.filename);
-      assert(radial_operator_type==operator_stream.radial_operator());
-      assert(radial_operator_power==operator_stream.sectors().l0max());
-      assert(operator_stream.sectors().Tz0()==0);
+      shell::InRadialStream radial_operator_stream(radial_operator_data.filename);
+      assert(radial_operator_type==radial_operator_stream.radial_operator());
+      assert(radial_operator_power==radial_operator_stream.sectors().l0max());
+      assert(radial_operator_stream.sectors().Tz0()==0);
 
       // copy out indexing
-      radial_operator_data.bra_orbital_space = operator_stream.bra_orbital_space();
-      radial_operator_data.ket_orbital_space = operator_stream.ket_orbital_space();
-      radial_operator_data.sectors = operator_stream.sectors();
+      radial_operator_data.bra_orbital_space = radial_operator_stream.bra_orbital_space();
+      radial_operator_data.ket_orbital_space = radial_operator_stream.ket_orbital_space();
+      radial_operator_data.sectors = radial_operator_stream.sectors();
 
       // read matrices
-      operator_stream.Read(radial_operator_data.matrices);
+      radial_operator_stream.Read(radial_operator_data.matrices);
       
       // close file
-      operator_stream.Close();
+      radial_operator_stream.Close();
 
       // diagnostic
       std::cout
@@ -360,6 +402,8 @@ void InitializeRadialOperators(RadialOperatorMap& radial_operators)
           )
         << std::endl;
     }
+
+  std::cout << std::endl;
 }
 
 void InitializeTargetIndexing(
@@ -403,11 +447,11 @@ void InitializeInputChannels(
       input_channel.stream_ptr = new shell::InH2Stream(input_channel.filename);
 
       // write diagnostic
-      std::cout << fmt::format("Input stream -- {}",input_channel.id) << std::endl;
+      std::cout << fmt::format("Input stream (direct) -- {}",input_channel.id) << std::endl;
       std::cout << input_channel.stream_ptr->DiagnosticStr();
       std::cout << std::endl;
 
-      // set up mapping
+      // set up target mapping
       input_channel.two_body_mapping = shell::TwoBodyMapping(
           input_channel.stream_ptr->orbital_space(),
           input_channel.stream_ptr->space(),
@@ -418,7 +462,98 @@ void InitializeInputChannels(
       // std::cout << input_channel.two_body_mapping.DebugStr() << std::endl;
 
     }
+}
 
+void InitializeXformChannels(
+    const RunParameters& run_parameters,
+    const TwoBodyOperatorIndexing& target_indexing,
+    std::vector<XformChannel>& xform_channels
+  )
+{
+  for (auto& xform_channel : xform_channels)
+    {
+      // create stream
+      xform_channel.stream_ptr = new shell::InH2Stream(xform_channel.filename);
+
+      // write diagnostic
+      std::cout << fmt::format("Input stream (xform) -- {}",xform_channel.id) << std::endl;
+      std::cout << xform_channel.stream_ptr->DiagnosticStr();
+      std::cout << std::endl;
+
+      // set up pre-xform indexing and mapping
+      //
+      // preserves input orbitals but builds two-body space with
+      // user-specified truncation
+      xform_channel.pre_xform_two_body_indexing.orbital_space = xform_channel.stream_ptr->orbital_space();
+      xform_channel.pre_xform_two_body_indexing.space
+        = basis::TwoBodySpaceJJJPN(
+            xform_channel.pre_xform_two_body_indexing.orbital_space,
+            xform_channel.pre_xform_weight_max
+          );
+      xform_channel.pre_xform_two_body_indexing.sectors = basis::TwoBodySectorsJJJPN(
+          xform_channel.pre_xform_two_body_indexing.space,
+          run_parameters.J0,run_parameters.g0,run_parameters.Tz0
+        );
+      xform_channel.pre_xform_two_body_mapping = shell::TwoBodyMapping(
+          xform_channel.stream_ptr->orbital_space(),
+          xform_channel.stream_ptr->space(),
+          xform_channel.pre_xform_two_body_indexing.orbital_space,
+          xform_channel.pre_xform_two_body_indexing.space
+        );
+
+      // read xform coefficients
+      //
+      // analogous to InitializeRadialOperators
+
+      std::cout
+        << fmt::format("Reading radial xform overlaps from {}...",xform_channel.xform_filename)
+        << std::endl;
+
+      // set up alias (to keep code parallel to InitializeRadialOperators)
+      RadialOperatorData& radial_operator_data = xform_channel.radial_operator_data;
+
+      // set up radial operator data
+      shell::RadialOperator radial_operator_type = shell::RadialOperator::kR;
+      int radial_operator_power = 0;
+      radial_operator_data = 
+        RadialOperatorData(RadialOperatorLabels(radial_operator_type,radial_operator_power),xform_channel.xform_filename);
+
+      // open radial operator file
+      shell::InRadialStream radial_operator_stream(radial_operator_data.filename);
+      assert(radial_operator_type==radial_operator_stream.radial_operator());
+      assert(radial_operator_power==radial_operator_stream.sectors().l0max());
+      assert(radial_operator_stream.sectors().Tz0()==0);
+
+      // copy out indexing
+      radial_operator_data.bra_orbital_space = radial_operator_stream.bra_orbital_space();
+      radial_operator_data.ket_orbital_space = radial_operator_stream.ket_orbital_space();
+      radial_operator_data.sectors = radial_operator_stream.sectors();
+
+      // read matrices
+      radial_operator_stream.Read(radial_operator_data.matrices);
+      
+      // close file
+      radial_operator_stream.Close();
+
+      // diagnostic
+      std::cout
+        << fmt::format("  {} matrix elements",basis::AllocatedEntries(radial_operator_data.matrices))
+        << std::endl;
+
+
+      // set up target mapping
+      xform_channel.two_body_mapping = shell::TwoBodyMapping(
+          xform_channel.pre_xform_two_body_indexing.orbital_space,
+          xform_channel.pre_xform_two_body_indexing.space,
+          target_indexing.orbital_space,
+          target_indexing.space
+        );
+      // std::cout << input_channel.two_body_mapping.DebugStr() << std::endl;
+
+      std::cout << std::endl;
+        
+
+    }
 }
 
 void InitializeTargetChannels(
@@ -577,6 +712,20 @@ void CloseInputChannels(
     }
 }
 
+void CloseXformChannels(
+    std::vector<XformChannel>& xform_channels
+  )
+{
+  for (auto& xform_channel : xform_channels)
+    {
+      // close stream
+      xform_channel.stream_ptr->Close();
+
+      // deallocate
+      delete xform_channel.stream_ptr;
+    }
+}
+
 void CloseTargetChannels(
     std::vector<TargetChannel>& target_channels
   )
@@ -634,7 +783,7 @@ int main(int argc, char **argv)
   // set up channels
   InitializeInputChannels(run_parameters,target_indexing,input_channels);
   // InitializeOperatorChannels(run_parameters,target_indexing,operator_channels);
-  // InitializeXformChannels(run_parameters,target_indexing,xform_channels);
+  InitializeXformChannels(run_parameters,target_indexing,xform_channels);
   InitializeTargetChannels(run_parameters,target_indexing,target_channels);
 
   ////////////////////////////////////////////////////////////////
@@ -674,7 +823,7 @@ int main(int argc, char **argv)
   // explicitly force stream closure
   //   for neatness
   CloseInputChannels(input_channels);
-  // CloseXformChannels(xform_channels);
+  CloseXformChannels(xform_channels);
   CloseTargetChannels(target_channels);
 
   // end timing
