@@ -3,13 +3,14 @@
   h2stat.cpp -- generate statistics for MFDn H2 TBME file
 
   Syntax:
-    h2stat mode input_filename
+    h2stat mode [mode] input_filename
 
   Mark A. Caprio
   University of Notre Dame
 
   10/19/16 (mac): Created.
   10/22/16 (mac): Add mode argument.
+  10/30/16 (mac): Update command line syntax.
 
 ******************************************************************************/
 
@@ -38,17 +39,42 @@ struct RunParameters
 void ProcessArguments(int argc, char **argv, RunParameters& run_parameters)
 {
   // usage message
-  if (argc-1 < 2)
+  if (argc-1 < 1)
     {
-      std::cout << "Syntax: h2stat mode input_filename" << std::endl;
+      std::cout
+        << "Syntax: h2stat [mode] input_filename" << std::endl
+        << std::endl
+        << "  --verify: read file to verify integrity" << std::endl
+        << "  --orbitals: tabulate orbitals" << std::endl
+        << "  --indexing: provide full orbital and two-body indexing information" << std::endl
+        << std::endl;
+
       std::exit(EXIT_SUCCESS);
     }
 
-  // statistics mode
-  run_parameters.mode = argv[1];
+  if (argc-1 == 1)
+    // just filename
+    {
+      run_parameters.mode = "";
+      run_parameters.input_filename = argv[1];
+    }
+  else
+    // mode + filename
+    {
+      // statistics mode
+      if (std::string(argv[1]).substr(0,2)=="--")
+        {
+          run_parameters.mode = std::string(argv[1]).substr(2);
+        }
+      else
+        {
+          std::cerr << "Expected mode option beginning with '--'." << std::endl;
+          std::exit(EXIT_FAILURE);
+        }
 
-  // input filename
-  run_parameters.input_filename = argv[2];
+      // input filename
+      run_parameters.input_filename = argv[2];
+    }
 }
 
 ////////////////////////////////////////////////////////////////
@@ -149,15 +175,18 @@ int main(int argc, char **argv)
   // statistics
   ////////////////////////////////////////////////////////////////
 
-  std::cout << fmt::format("Statistics mode: {}",run_parameters.mode)
-            << std::endl
-            << std::endl;
+  if (run_parameters.mode!="")
+    {
+      std::cout << fmt::format("Mode: {}",run_parameters.mode)
+                << std::endl
+                << std::endl;
+    }
 
-  std::cout << "----------------------------------------------------------------"
-            << std::endl
-            << std::endl;
-
-  if (run_parameters.mode=="verify")
+  if (run_parameters.mode=="")
+    {
+      //pass
+    }
+  else if (run_parameters.mode=="verify")
     DoVerify(input_stream);
   else if (run_parameters.mode=="orbitals")
     DoOrbitals(input_stream);

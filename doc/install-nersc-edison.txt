@@ -105,12 +105,13 @@ and repeat submodule update until all submodules have been successfully cloned.
 6) Sanity check:
 
    % cd programs/h2utils
-   % ./h2stat verify test/test-tb-2.dat
+   % ./h2stat
+   % ./h2stat --verify test/test-tb-2.dat
 
    You should see something like the following output:
 
       h2stat  -- MFDn H2 file statistics
-
+      
       Input stream
         File: test/test-tb-2.dat
         Format: 0 (text)
@@ -118,12 +119,12 @@ and repeat submodule update until all submodules have been successfully cloned.
         Truncation: p 2.0000 n 2.0000 pp 2.0000 nn 2.0000 pn 2.0000
         Sectors: pp 7 nn 7 pn 7 => total 21
         Matrix elements: pp 32 nn 32 pn 110 => total 174
-
-      Statistics mode: verify
-
+      
+      Mode: verify
+      
       Verification scan
       .....................
-      (Total time: 0)   
+      (Total time: 0)
 
 ----------------------------------------------------------------
 
