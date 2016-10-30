@@ -6,7 +6,7 @@
 
 ****************************************************************/
 
-#include "tbme/separable.h"
+#include "tbme/tbme_separable.h"
 
 #include "cppformat/format.h"
 

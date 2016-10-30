@@ -24,7 +24,8 @@
 #include "mcutils/profiling.h"
 #include "radial/radial_io.h"
 #include "tbme/h2_io.h"
-#include "tbme/separable.h"
+#include "tbme/tbme_separable.h"
+#include "tbme/tbme_xform.h"
 #include "tbme/two_body_mapping.h"
 
 ////////////////////////////////////////////////////////////////

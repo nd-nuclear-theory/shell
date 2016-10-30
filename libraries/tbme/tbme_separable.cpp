@@ -1,5 +1,5 @@
 /****************************************************************
-  separable.cpp
+  tbme_separable.cpp
 
   Mark A. Caprio
   University of Notre Dame
@@ -8,7 +8,7 @@
 
 #include "am/wigner_gsl.h"
 // #include "cppformat/format.h"  // for debugging
-#include "tbme/separable.h"
+#include "tbme/tbme_separable.h"
 
 namespace shell {
   ////////////////////////////////////////////////////////////////

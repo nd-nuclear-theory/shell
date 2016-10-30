@@ -1,5 +1,5 @@
 /****************************************************************
-  separable.h
+  tbme_separable.h
 
   Evaluates TBMEs of certain separable operators.
 
@@ -19,11 +19,12 @@
     (created 4/25/11) for identity operator, h2gen.cpp (created
     3/13/12) for kinematic operators, and shell_separable.cpp (created
     5/24/15) for angular momentum operators.
+  10/30/16 (mac):
      
 ****************************************************************/
 
-#ifndef SEPARABLE_H_
-#define SEPARABLE_H_
+#ifndef TBME_SEPARABLE_H_
+#define TBME_SEPARABLE_H_
 
 #include "eigen3/Eigen/Core"
 
