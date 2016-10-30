@@ -24,10 +24,24 @@
 #include "eigen3/Eigen/Core"
 
 #include "basis/jjjpn_scheme.h"
+#include "basis/operator.h"
+#include "tbme/two_body_mapping.h"
+
 
 namespace shell {
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
+
+  Eigen::MatrixXd TwoBodyTransformedMatrix(
+      const typename basis::TwoBodySectorsJJJPN::SectorType& source_sector,
+      const Eigen::MatrixXd& source_matrix,
+      const typename basis::TwoBodySectorsJJJPN::SectorType& target_sector,
+      const basis::OrbitalSpaceLJPN& radial_source_orbital_space,
+      const basis::OrbitalSpaceLJPN& radial_target_orbital_space,
+      const basis::OrbitalSectorsLJPN& radial_sectors,
+      const basis::MatrixVector& radial_matrices,
+      const shell::TwoBodyMapping& two_body_mapping
+    );
 
 
   ////////////////////////////////////////////////////////////////
