@@ -36,11 +36,9 @@ namespace shell {
   }
 
   void InRadialStream::Close() {
-    (*stream_ptr_).close();
-    delete stream_ptr_;
-    stream_ptr_ = 0;
+    stream().close();
   }
-
+  
   void InRadialStream::ReadHeader() {
     std::string line;
     char operator_type;
@@ -205,9 +203,7 @@ namespace shell {
   }
 
   void OutRadialStream::Close() {
-    (*stream_ptr_).close();
-    delete stream_ptr_;
-    stream_ptr_ = 0;
+    stream().close();
   }
 
   void OutRadialStream::Write(const basis::MatrixVector& matrices) {
