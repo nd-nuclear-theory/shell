@@ -4,6 +4,7 @@ Please see install.txt for the general discussion of installation.
 This file just provides the quick reference summary for NERSC Edison.
 
 10/28/16 (mac): Created.
+10/29/16 (mac): Updated with pjf's Intel compilation fix.
 
 ----------------------------------------------------------------
 
@@ -48,9 +49,9 @@ and repeat submodule update until all submodules have been successfully cloned.
 
 3) Libraries
 
-   All needed libraries (Eigen and GSL) are already installed on
-   Edison.  See the build instructions below for the correct modules
-   to load.
+   All needed libraries (Boost, Eigen, and GSL) are already installed
+   on Edison.  See the build instructions below for the correct
+   modules to load.
 
 4) Makefile configuration
 
@@ -74,31 +75,24 @@ and repeat submodule update until all submodules have been successfully cloned.
 
 5) Build
 
-   Even if using the intel compiler suite, loading GCC 4.8+ is still
-   required. It is used internally by icpc.
+   Even if using the intel compiler suite, loading GCC 4.8+ (for C++11
+   compatibility) is still required. It is used internally by icpc.
 
    % module load gcc
 
-   At compile time, you will need to load modules to access the above
-   libraries:
+   At compile time, you will also need to load modules to access the
+   above libraries:
 
    % module load boost
    % module load gsl
    % module load eigen3
 
-   For reference, we note that the following are the current default
-   versions as of 10/29/16:
-
-   % module load gcc/6.1.0
-   % module load boost/1.54
-   % module load gsl/1.16
-   % module load eigen3/3.2.0   [note: this is a pretty old version]
-
-   As a shortcut:
+   As a shortcut, these module load instructions have all been saved
+   to a file in the config directory:
 
    % source config/module-load-nersc-edison.csh
 
-   If you prefer to to switch from the intel compiler to the gnu
+   If you prefer to switch from the intel compiler to the gnu
    compiler:
 
    % module swap PrgEnv-intel PrgEnv-gnu
@@ -135,19 +129,24 @@ and repeat submodule update until all submodules have been successfully cloned.
 
 Notes:
 
-10/28/16 (mac): successful build with gnu
+10/28/16 (mac): For reference, we note that the following are the
+   current default versions as of 10/29/16:
 
-   boost/1.54
-   gsl/1.16
-   eigen3/3.2.0
-   PrgEnv-gnu => gcc/6.1.0
+   % module load gcc/6.1.0
+   % module load boost/1.54
+   % module load gsl/1.16
+   % module load eigen3/3.2.0 
 
-10/28/16 (mac): FAILING build with intel
+Note: This is a pretty old version of eigen which gives lots of
+warnings under gcc.
 
-   PrgEnv-intel => intel/15.0.1.133
+Successful build with gnu (PrgEnv-gnu => gcc/6.1.0).  Failing build
+with intel (PrgEnv-intel => intel/15.0.1.133).
 
-In file included from ./libraries/moshinsky/moshinsky_xform.h(36),
-                 from libraries/moshinsky/moshinsky_xform.cpp(9):
-./libraries/basis/lsjt_scheme.h(200): error: argument list for class template "basis::BaseState" is missing
-        : BaseState (subspace, index) {}
-          ^
+10/29/16 (pjf e-mail): I just found a particularly nasty interaction
+between compilers on NERSC. It appears that, internally, icpc calls
+gcc. The simple answer is, you need to have at least GCC 4.8
+loaded. Call 'module load gcc/4.8.0' or higher (the default 6.1.0 is
+preferred). It's probably a good idea to call 'module load
+intel/16.0.0.109' or 'module load intel/17.0.0.098' to get a newer
+version of icpc too.
