@@ -24,6 +24,7 @@ namespace shell {
     // open stream
     std::ios_base::openmode mode_argument = std::ios_base::in;
     stream_ptr_ = new std::ifstream(filename_, mode_argument);
+    StreamCheck(bool(stream()),filename_,"Failure opening radial operator file for input");
 
     ReadHeader();
   }
@@ -197,6 +198,7 @@ namespace shell {
     // open stream
     std::ios_base::openmode mode_argument = std::ios_base::trunc;
     stream_ptr_ = new std::ofstream(filename_, mode_argument);
+    StreamCheck(bool(stream()),filename_,"Failure opening radial operator file for output");
 
     // write header to file
     WriteHeader();

@@ -204,7 +204,7 @@ namespace shell {
     // default constructor -- provided since required for certain
     // purposes by STL container classes (e.g., std::vector::resize)
 
-    InH2Stream(const std::string& filename);
+    explicit InH2Stream(const std::string& filename);
 
     // destructor
     ~InH2Stream ()

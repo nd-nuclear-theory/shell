@@ -16,6 +16,7 @@
    - Read() takes an empty MatrixVector&.
    - Constructors read/write headers but not data.
    - OutRadialStream takes an OrbitalSectorsLJPN at construction.
+  + 10/29/16 (mac): Add error checking on stream open.
 
 ****************************************************************/
 
