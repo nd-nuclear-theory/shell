@@ -10,6 +10,7 @@
 
   10/23/16 (mac): Created, succeeding prior incarnation originated 3/14/12.
   10/25/16 (mac): Implement direct input mixing.
+  10/29/16 (mac): Implement radial operator input.
 
 ******************************************************************************/
 
@@ -18,23 +19,59 @@
 #include <iomanip>
 #include <string>
 
+#include "basis/operator.h"
 #include "cppformat/format.h"
 #include "mcutils/profiling.h"
+#include "radial/radial_io.h"
 #include "tbme/h2_io.h"
 #include "tbme/separable.h"
 #include "tbme/two_body_mapping.h"
 
 ////////////////////////////////////////////////////////////////
-// containers
+// radial operator containers
+////////////////////////////////////////////////////////////////
+
+typedef std::tuple<shell::RadialOperator,int> RadialOperatorLabels;
+// Label for radial operator as (type,power) of r or k.
+//
+//
+
+struct RadialOperatorData
+// Indexing and matrix elements for a radial operator or radial overlaps.
+//
+// For overlaps, the "bra" space is the source basis, and the "ket"
+// space is the target basis.
+{
+  RadialOperatorData(const RadialOperatorLabels& labels_, const std::string& filename_)
+    : labels(labels_), filename(filename_)
+  {}
+
+  RadialOperatorLabels labels;
+  std::string filename;
+  basis::OrbitalSpaceLJPN bra_orbital_space;
+  basis::OrbitalSpaceLJPN ket_orbital_space;
+  basis::OrbitalSectorsLJPN sectors;
+  basis::MatrixVector matrices;
+};
+
+typedef std::map<RadialOperatorLabels,RadialOperatorData> RadialOperatorMap;
+// Map to hold all loaded radial operators.
+
+////////////////////////////////////////////////////////////////
+// two-body operator indexing container
 ////////////////////////////////////////////////////////////////
 
 struct TwoBodyOperatorIndexing
-// Indexing for a two-body operator
+// Indexing for a two-body operator.
 {
   basis::OrbitalSpacePN orbital_space;
   basis::TwoBodySpaceJJJPN space;
   basis::TwoBodySectorsJJJPN sectors;
 };
+
+////////////////////////////////////////////////////////////////
+// channel containers
+////////////////////////////////////////////////////////////////
 
 struct InputChannel
 // Direct input channel parameters and stream.
@@ -137,6 +174,7 @@ struct RunParameters
 
 void ReadParameters(
     RunParameters& run_parameters,
+    RadialOperatorMap& radial_operators,
     std::vector<InputChannel>& input_channels,
     std::vector<OperatorChannel>& operator_channels,
     std::vector<XformChannel>& xform_channels,
@@ -207,6 +245,22 @@ void ReadParameters(
           line_stream >> run_parameters.output_h2_format;
           ParsingCheck(line_stream,line_count,line);
         }
+      else if (keyword=="define-radial-operator")
+        {
+          std::string type_code, filename;
+          int power;
+          line_stream >> type_code >> power >> filename;
+          ParsingCheck(line_stream,line_count,line);
+          
+          // cast operator type code to enum
+          if (!((type_code=="r")||(type_code=="k")))
+            ParsingError(line_count,line,"Unrecognized radial operator type code");
+          shell::RadialOperator radial_operator_type = shell::RadialOperator(type_code[0]);
+
+          // store radial operator information to map
+          RadialOperatorLabels labels(radial_operator_type,power);
+          radial_operators.insert({labels,RadialOperatorData(labels,filename)});
+        }
       else if (keyword=="define-input-source")
         {
           std::string id, filename;
@@ -248,6 +302,8 @@ void ReadParameters(
           line_stream >> id >> coefficient;
           ParsingCheck(line_stream,line_count,line);
 
+          // tack coefficient onto coefficient list of last member of
+          // target_channels
           (--target_channels.end())->coefficients.emplace_back(id,coefficient);
         }
       else
@@ -255,7 +311,6 @@ void ReadParameters(
           ParsingError(line_count,line,"Unrecognized keyword");
         }
 
-      std::cout << std::endl;
     }
 
 }
@@ -263,6 +318,48 @@ void ReadParameters(
 ////////////////////////////////////////////////////////////////
 // initialization code
 /////////////////////////////////////////////////////////////////
+
+void InitializeRadialOperators(RadialOperatorMap& radial_operators)
+{
+  for (auto& labels_data : radial_operators)
+    {
+      RadialOperatorData& radial_operator_data = labels_data.second;
+      shell::RadialOperator radial_operator_type = std::get<0>(radial_operator_data.labels);
+      int radial_operator_power = std::get<1>(radial_operator_data.labels);
+      std::cout
+        << fmt::format(
+            "Reading radial operator {}^{} from {}...",
+            char(radial_operator_type),radial_operator_power,
+            radial_operator_data.filename
+          )
+        << std::endl;
+
+      // open radial operator file
+      shell::InRadialStream operator_stream(radial_operator_data.filename);
+      assert(radial_operator_type==operator_stream.radial_operator());
+      assert(radial_operator_power==operator_stream.sectors().l0max());
+      assert(operator_stream.sectors().Tz0()==0);
+
+      // copy out indexing
+      radial_operator_data.bra_orbital_space = operator_stream.bra_orbital_space();
+      radial_operator_data.ket_orbital_space = operator_stream.ket_orbital_space();
+      radial_operator_data.sectors = operator_stream.sectors();
+
+      // read matrices
+      operator_stream.Read(radial_operator_data.matrices);
+      
+      // close file
+      operator_stream.Close();
+
+      // diagnostic
+      std::cout
+        << fmt::format(
+            "  {} matrix elements",
+            basis::AllocatedEntries(radial_operator_data.matrices)
+          )
+        << std::endl;
+    }
+}
 
 void InitializeTargetIndexing(
     const RunParameters& run_parameters,
@@ -511,28 +608,33 @@ int main(int argc, char **argv)
 
   // read parameters
   RunParameters run_parameters;
+  RadialOperatorMap radial_operators;
   std::vector<InputChannel> input_channels;
   std::vector<OperatorChannel> operator_channels;
   std::vector<XformChannel> xform_channels;
   std::vector<TargetChannel> target_channels;
-  ReadParameters(run_parameters,input_channels,operator_channels,xform_channels,target_channels);
+  ReadParameters(run_parameters,radial_operators,input_channels,operator_channels,xform_channels,target_channels);
 
   // start timing
   Timer total_time;
   total_time.Start();
 
+  ////////////////////////////////////////////////////////////////
+  // operator setup
+  ////////////////////////////////////////////////////////////////
+
+  // read in radial operators
+  InitializeRadialOperators(radial_operators);
 
   // set up target indexing
   TwoBodyOperatorIndexing target_indexing;
   InitializeTargetIndexing(run_parameters,target_indexing);
 
-  ////////////////////////////////////////////////////////////////
   // set up channels
-  ////////////////////////////////////////////////////////////////
-
   InitializeInputChannels(run_parameters,target_indexing,input_channels);
+  // InitializeOperatorChannels(run_parameters,target_indexing,operator_channels);
+  // InitializeXformChannels(run_parameters,target_indexing,xform_channels);
   InitializeTargetChannels(run_parameters,target_indexing,target_channels);
-
 
   ////////////////////////////////////////////////////////////////
   // copy sectors
@@ -571,6 +673,7 @@ int main(int argc, char **argv)
   // explicitly force stream closure
   //   for neatness
   CloseInputChannels(input_channels);
+  // CloseXformChannels(xform_channels);
   CloseTargetChannels(target_channels);
 
   // end timing

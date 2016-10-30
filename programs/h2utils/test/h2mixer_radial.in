@@ -1,0 +1,8 @@
+# h2mixer_radial.in -- basic test of radial operator input
+
+set-target-oscillator ob 2
+set-target-multipolarity 0 0 0
+set-output-format 15099
+set-mass 999
+
+define-radial-operator r 2 test/radial-HO-r2.dat
