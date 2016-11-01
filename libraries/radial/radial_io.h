@@ -19,6 +19,10 @@
   + 10/29/16 (mac):
    - Add error checking on stream open.
    - Fix double close on stream destruction.
+  + 10/31/16 (mac):
+   - Rename RadialOperator to RadialOperatorType and similarly rename
+     stream accessor to radial_operator_type().
+   - Move OutRadialStream initializations into initializer list.
 
 ****************************************************************/
 
@@ -40,7 +44,7 @@ namespace shell {
 /**
  * Radial IDs
  */
-enum class RadialOperator : char {
+enum class RadialOperatorType : char {
   kR = 'r', kK = 'k'
 };
 
@@ -58,6 +62,19 @@ class RadialStreamBase {
   explicit RadialStreamBase(const std::string& filename)
     : filename_(filename), sector_index_(0) {}
 
+  RadialStreamBase(
+      const std::string& filename,
+      const basis::OrbitalSpaceLJPN& bra_space,
+      const basis::OrbitalSpaceLJPN& ket_space,
+      const basis::OrbitalSectorsLJPN& sectors,
+      const RadialOperatorType radial_operator_type
+    )
+    : filename_(filename), sector_index_(0),
+    bra_orbital_space_(bra_space),
+    ket_orbital_space_(ket_space),
+    radial_operator_type_(radial_operator_type),
+    sectors_(sectors) {}
+
   // indexing accessors
   const basis::OrbitalSpaceLJPN& bra_orbital_space() const {
     return bra_orbital_space_;
@@ -66,8 +83,8 @@ class RadialStreamBase {
     return ket_orbital_space_;
   }
   const basis::OrbitalSectorsLJPN& sectors() const { return sectors_; }
-  const RadialOperator& radial_operator() const {
-    return radial_operator_;
+  const RadialOperatorType& radial_operator_type() const {
+    return radial_operator_type_;
   }
 
  protected:
@@ -75,7 +92,7 @@ class RadialStreamBase {
   basis::OrbitalSpaceLJPN bra_orbital_space_;
   basis::OrbitalSpaceLJPN ket_orbital_space_;
   basis::OrbitalSectorsLJPN sectors_;
-  RadialOperator radial_operator_;
+  RadialOperatorType radial_operator_type_;
 
   // current pointer
   int sector_index_;
@@ -132,7 +149,7 @@ class OutRadialStream : public RadialStreamBase {
       const basis::OrbitalSpaceLJPN& bra_space,
       const basis::OrbitalSpaceLJPN& ket_space,
       const basis::OrbitalSectorsLJPN& sectors,
-      const RadialOperator radial_operator);
+      const RadialOperatorType radial_operator_type);
 
   // destructor
   ~OutRadialStream() {

@@ -55,7 +55,7 @@ basis::MatrixVector TestRadialOut(const std::string& filename, bool verbose = fa
 
   // set up output stream
   std::cout << "Output stream" << std::endl;
-  shell::OutRadialStream os(filename, bra_space, ket_space, sectors, shell::RadialOperator::kR);
+  shell::OutRadialStream os(filename, bra_space, ket_space, sectors, shell::RadialOperatorType::kR);
 
   // generate matrices
   basis::MatrixVector matrices;

@@ -26,7 +26,7 @@
 
 void MakeRadialOut(
     const std::string& filename,
-    shell::RadialOperator operator_type, int power,
+    shell::RadialOperatorType operator_type, int power,
     int Nmax
   ) 
 {
@@ -50,9 +50,9 @@ void MakeRadialOut(
 
 int main(int argc, char **argv) {
   int Nmax=10;
-  MakeRadialOut("test/radial-me-dummy-r1-Nmax10.dat",shell::RadialOperator::kR,1,Nmax);
-  MakeRadialOut("test/radial-me-dummy-r2-Nmax10.dat",shell::RadialOperator::kR,2,Nmax);
-  MakeRadialOut("test/radial-me-dummy-k1-Nmax10.dat",shell::RadialOperator::kK,1,Nmax);
-  MakeRadialOut("test/radial-me-dummy-k2-Nmax10.dat",shell::RadialOperator::kK,2,Nmax);
-  MakeRadialOut("test/radial-xform-dummy-Nmax10.dat",shell::RadialOperator::kR,0,Nmax);
+  MakeRadialOut("test/radial-me-dummy-r1-Nmax10.dat",shell::RadialOperatorType::kR,1,Nmax);
+  MakeRadialOut("test/radial-me-dummy-r2-Nmax10.dat",shell::RadialOperatorType::kR,2,Nmax);
+  MakeRadialOut("test/radial-me-dummy-k1-Nmax10.dat",shell::RadialOperatorType::kK,1,Nmax);
+  MakeRadialOut("test/radial-me-dummy-k2-Nmax10.dat",shell::RadialOperatorType::kK,2,Nmax);
+  MakeRadialOut("test/radial-xform-dummy-Nmax10.dat",shell::RadialOperatorType::kR,0,Nmax);
 }

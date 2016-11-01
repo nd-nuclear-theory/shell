@@ -142,7 +142,7 @@ namespace shell {
     ket_orbital_space_ = basis::OrbitalSpaceLJPN(ket_states);
     sectors_ = basis::OrbitalSectorsLJPN(bra_orbital_space_, ket_orbital_space_,
         l0max, Tz0);
-    radial_operator_ = static_cast<RadialOperator>(operator_type);
+    radial_operator_type_ = static_cast<RadialOperatorType>(operator_type);
   }
 
   Eigen::MatrixXd InRadialStream::ReadNextSector() {
@@ -184,14 +184,9 @@ namespace shell {
       const basis::OrbitalSpaceLJPN& bra_space,
       const basis::OrbitalSpaceLJPN& ket_space,
       const basis::OrbitalSectorsLJPN& sectors,
-      const RadialOperator radial_operator)
-    : RadialStreamBase(filename)
+      const RadialOperatorType radial_operator_type)
+    : RadialStreamBase(filename,bra_space,ket_space,sectors,radial_operator_type)
   {
-    // initialize
-    bra_orbital_space_ = bra_space;
-    ket_orbital_space_ = ket_space;
-    radial_operator_ = radial_operator;
-    sectors_ = sectors;
 
     // open stream
     std::ios_base::openmode mode_argument = std::ios_base::trunc;
@@ -231,7 +226,7 @@ namespace shell {
     stream() << 0 << std::endl; ++line_count_;
 
     // line 2: header line
-    stream() << " " << static_cast<char>(radial_operator_)
+    stream() << " " << static_cast<char>(radial_operator_type_)
              << " " << sectors_.l0max()
              << " " << sectors_.Tz0()
              << " " << bra_orbitals.size()

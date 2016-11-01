@@ -32,7 +32,7 @@
 // radial operator containers
 ////////////////////////////////////////////////////////////////
 
-typedef std::tuple<shell::RadialOperator,int> RadialOperatorLabels;
+typedef std::tuple<shell::RadialOperatorType,int> RadialOperatorLabels;
 // Label for radial operator as (type,power) of r or k.
 //
 //
@@ -290,7 +290,7 @@ void ReadParameters(
           // cast operator type code to enum
           if (!((type_code=="r")||(type_code=="k")))
             ParsingError(line_count,line,"Unrecognized radial operator type code");
-          shell::RadialOperator radial_operator_type = shell::RadialOperator(type_code[0]);
+          shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType(type_code[0]);
 
           // store radial operator information to map
           RadialOperatorLabels labels(radial_operator_type,power);
@@ -367,7 +367,7 @@ void InitializeRadialOperators(RadialOperatorMap& radial_operators)
     {
       // extract labeling
       RadialOperatorData& radial_operator_data = labels_data.second;
-      shell::RadialOperator radial_operator_type = std::get<0>(radial_operator_data.labels);
+      shell::RadialOperatorType radial_operator_type = std::get<0>(radial_operator_data.labels);
       int radial_operator_power = std::get<1>(radial_operator_data.labels);
       std::cout
         << fmt::format(
@@ -379,7 +379,7 @@ void InitializeRadialOperators(RadialOperatorMap& radial_operators)
 
       // open radial operator file
       shell::InRadialStream radial_operator_stream(radial_operator_data.filename);
-      assert(radial_operator_type==radial_operator_stream.radial_operator());
+      assert(radial_operator_type==radial_operator_stream.radial_operator_type());
       assert(radial_operator_power==radial_operator_stream.sectors().l0max());
       assert(radial_operator_stream.sectors().Tz0()==0);
 
@@ -513,14 +513,14 @@ void InitializeXformChannels(
       RadialOperatorData& radial_operator_data = xform_channel.radial_operator_data;
 
       // set up radial operator data
-      shell::RadialOperator radial_operator_type = shell::RadialOperator::kR;
+      shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kR;
       int radial_operator_power = 0;
       radial_operator_data = 
         RadialOperatorData(RadialOperatorLabels(radial_operator_type,radial_operator_power),xform_channel.xform_filename);
 
       // open radial operator file
       shell::InRadialStream radial_operator_stream(radial_operator_data.filename);
-      assert(radial_operator_type==radial_operator_stream.radial_operator());
+      assert(radial_operator_type==radial_operator_stream.radial_operator_type());
       assert(radial_operator_power==radial_operator_stream.sectors().l0max());
       assert(radial_operator_stream.sectors().Tz0()==0);
 
