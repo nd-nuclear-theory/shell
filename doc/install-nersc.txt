@@ -1,10 +1,11 @@
-shell project installation -- summary for NERSC Edison
+shell project installation -- summary for NERSC Edison/Cori
 
 Please see install.txt for the general discussion of installation.
 This file just provides the quick reference summary for NERSC Edison.
 
 10/28/16 (mac): Created.
 10/29/16 (mac): Updated with pjf's Intel compilation fix.
+10/31/16 (mac): Update for Cori.
 
 ----------------------------------------------------------------
 
@@ -44,14 +45,22 @@ and repeat submodule update until all submodules have been successfully cloned.
 2) Compiler
 
    You can use the default intel compiler suite, or you can compile
-   under gnu.  See the build instructions below for the correct modules
-   to load.
+   under gnu.  See the build instructions below for the correct
+   modules to load.
 
 3) Libraries
 
-   All needed libraries (Boost, Eigen, and GSL) are already installed
-   on Edison.  See the build instructions below for the correct
-   modules to load.
+   Boost and GSL already installed on Edison and Cori.  See the build
+   instructions below for the correct modules to load.
+
+   The Eigen library is a template library (no compiled binaries).
+   Although it is installed as a module on Edison, the installation
+   tends to lag, and it is missing from Cori (10/31/16).  So it is
+   better to use our own private copy, in the m2032 project space.
+   The environment variable EIGEN_DIR should be set to point to the
+   parent directory of a tree which looks like
+   "include/eigen3/Eigen/<headers>".  See the build instructions below
+   for the correct setenv invocation.
 
 4) Makefile configuration
 
@@ -75,27 +84,30 @@ and repeat submodule update until all submodules have been successfully cloned.
 
 5) Build
 
-   Even if using the intel compiler suite, loading GCC 4.8+ (for C++11
-   compatibility) is still required. It is used internally by icpc.
-
-   % module load gcc
-
-   At compile time, you will also need to load modules to access the
-   above libraries:
-
-   % module load boost
-   % module load gsl
-   % module load eigen3
-
-   As a shortcut, these module load instructions have all been saved
-   to a file in the config directory:
-
-   % source config/module-load-nersc-edison.csh
-
    If you prefer to switch from the intel compiler to the gnu
    compiler:
 
    % module swap PrgEnv-intel PrgEnv-gnu
+
+   Even if using the intel compiler suite, loading GCC 4.8+ (for C++11
+   compatibility) is still required, since gcc is used internally by
+   icpc:
+
+   % module load gcc
+
+   You will also need to load modules to access the above libraries:
+
+   % module load boost
+   % module load gsl
+
+   And point to the Eigen library in our group space:
+
+   % setenv EIGEN3_DIR /global/project/projectdirs/m2032/opt/eigen-3.2.10
+
+   As a shortcut, the module load instructions (and setenv) have all
+   been saved to a file in the config directory:
+
+   % source config/module-load-nersc-edison.csh
 
    Then for the actual build (parallel make with -j option is
    recommended):
@@ -131,7 +143,7 @@ and repeat submodule update until all submodules have been successfully cloned.
 Notes:
 
 10/28/16 (mac): For reference, we note that the following are the
-   current default versions as of 10/29/16:
+   current default versions on Edison as of 10/29/16:
 
    % module load gcc/6.1.0
    % module load boost/1.54
@@ -151,3 +163,17 @@ loaded. Call 'module load gcc/4.8.0' or higher (the default 6.1.0 is
 preferred). It's probably a good idea to call 'module load
 intel/16.0.0.109' or 'module load intel/17.0.0.098' to get a newer
 version of icpc too.
+
+10/31/16 (mac): Successful builds on Cori with gcc and intel:
+
+   PrgEnv-gnu/6.0.3 => gcc/5.3.0 
+   gcc/5.3.0
+   boost/1.61
+   gsl/2.1
+   m2032/opt/eigen-3.2.10
+
+   PrgEnv-intel/6.0.3 => intel/16.0.3.210
+   gcc/5.3.0
+   boost/1.61
+   gsl/2.1
+   m2032/opt/eigen-3.2.10

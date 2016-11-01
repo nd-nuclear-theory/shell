@@ -1,4 +1,4 @@
+setenv EIGEN3_DIR /global/project/projectdirs/m2032/opt/eigen-3.2.10
 module load boost
 module load gsl
-module load eigen3
 module load gcc
