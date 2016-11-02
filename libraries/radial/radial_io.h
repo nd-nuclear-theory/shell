@@ -45,7 +45,7 @@ namespace shell {
  * Radial IDs
  */
 enum class RadialOperatorType : char {
-  kR = 'r', kK = 'k'
+  kR = 'r', kK = 'k', kO = 'o'
 };
 
 /**

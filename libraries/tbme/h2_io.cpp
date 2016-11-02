@@ -150,65 +150,6 @@ namespace shell {
     is.read(reinterpret_cast<char*> (&x),sizeof(float));
   }
 
-  // ////////////////////////////////////////////////////////////////
-  // // species ordering and labeling conventions
-  // ////////////////////////////////////////////////////////////////
-  // // order of state types in file
-  //       
-  // legacy::TwoSpeciesStateType StateTypeOrderingMFDnH2 (int i)
-  // {
-  //   static const legacy::TwoSpeciesStateType state_type[] = {legacy::kPP, legacy::kNN, legacy::kPN};
-  //   return state_type[i];
-  // }
-  // 
-  // // state type labels for text file
-  // //   NEATER: reimplement translation using static map
-  // 
-  // // Note: named after Lars Onsager, whose great accomplishment was
-  // // (supposedly) reported in the press as having proven "H-twelve
-  // // equals H-twenty-one"
-  // 
-  // typedef int TwoSpeciesStateTypeOnsager;
-  // const TwoSpeciesStateTypeOnsager kPPOnsager = 11;
-  // const TwoSpeciesStateTypeOnsager kPNOnsager = 12;
-  // const TwoSpeciesStateTypeOnsager kNNOnsager = 22;
-  // 
-  // legacy::TwoSpeciesStateType TwoSpeciesStateTypeFromOnsager (TwoSpeciesStateTypeOnsager state_type_onsager)
-  // {
-  //   legacy::TwoSpeciesStateType state_type;
-  //   switch (state_type_onsager)
-  //     {
-  //     case kPPOnsager : 
-  //       state_type = legacy::kPP;
-  //       break;
-  //     case kPNOnsager : 
-  //       state_type = legacy::kPN;
-  //       break;
-  //     case kNNOnsager : 
-  //       state_type = legacy::kNN;
-  //       break;
-  //     }
-  //   return state_type;
-  // }
-  //
-  //TwoSpeciesStateTypeOnsager TwoSpeciesStateTypeToOnsager (legacy::TwoSpeciesStateType state_type)
-  //{
-  //  TwoSpeciesStateTypeOnsager state_type_onsager;
-  //  switch (state_type)
-  //    {
-  //    case legacy::kPP : 
-  //      state_type_onsager = kPPOnsager;
-  //      break;
-  //    case legacy::kPN : 
-  //      state_type_onsager = kPNOnsager;
-  //      break;
-  //    case legacy::kNN : 
-  //      state_type_onsager = kNNOnsager;
-  //      break;
-  //    }
-  //  return state_type_onsager;
-  //}
-
   const std::array<const char*,3> kH2ModeDescription({"text","binary","matrix"});
   const std::array<const char*,3> kH2ModeExtension({".dat",".bin",".mat"});
 
@@ -620,19 +561,8 @@ namespace shell {
               ReadFloat(stream(),input_matrix_element);
             }
 
-          // store matrix element
-          //
-          // H2 external storage is as NAS, but internal storage is as
-          // AS.  So normalization conversion on input is "NASToAS".
-          double conversion_factor = 1.;
-          if (bra.index1()==bra.index2())
-            conversion_factor *= (sqrt(2.));
-          if (ket.index1()==ket.index2())
-            conversion_factor *= (sqrt(2.));
-          double matrix_element = conversion_factor * input_matrix_element;
-
           if (store)
-            matrix(bra_index,ket_index) = matrix_element;
+            matrix(bra_index,ket_index) = input_matrix_element;
         }
 
     // read FORTRAN record ending delimiter
@@ -689,16 +619,7 @@ namespace shell {
           const basis::TwoBodyStateJJJPN ket(ket_subspace,ket_index);
 
           // retrieve matrix element for output
-          //
-          // H2 external storage is as NAS, but internal storage is as
-          // AS.  So normalization conversion on output is "ASToNAS".
-          double conversion_factor = 1.;
-          if (bra.index1()==bra.index2())
-            conversion_factor *= 1/(sqrt(2.));
-          if (ket.index1()==ket.index2())
-            conversion_factor *= 1/(sqrt(2.));
-          double matrix_element = matrix(bra_index,ket_index);
-          float output_matrix_element = conversion_factor * matrix_element;
+          float output_matrix_element = matrix(bra_index,ket_index);;
 
           // write line: output matrix element
           int output_i1 = bra.index1()+1;
@@ -769,16 +690,7 @@ namespace shell {
           const basis::TwoBodyStateJJJPN ket(ket_subspace,ket_index);
 
           // retrieve matrix element for output
-          //
-          // H2 external storage is as NAS, but internal storage is as
-          // AS.  So normalization conversion on output is "ASToNAS".
-          double conversion_factor = 1.;
-          if (bra.index1()==bra.index2())
-            conversion_factor *= 1/(sqrt(2.));
-          if (ket.index1()==ket.index2())
-            conversion_factor *= 1/(sqrt(2.));
-          double matrix_element = matrix(bra_index,ket_index);
-          float output_matrix_element = conversion_factor * matrix_element;
+          float output_matrix_element = matrix(bra_index,ket_index);
 
           // write line: output matrix element
           int output_i1 = bra.index1()+1;

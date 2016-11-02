@@ -3,11 +3,11 @@
 
   Evaluates TBMEs of certain separable operators.
 
-  Normalization convention: All matrix elements are stored as AS
-  (rather than NAS) RMEs.  And RMEs are stored under the group theory
-  Wigner-Eckart normalization convention (i.e., "no dimension factor
-  out front, just the Clebsch").  For scalar operators, note that this
-  RME is more simply the branched (M'=M) ME.
+  Normalization convention: All matrix elements are stored as NAS
+  RMEs.  These RMEs are stored under the group theory Wigner-Eckart
+  normalization convention (i.e., "no dimension factor out front, just
+  the Clebsch"), but, for scalar operators, note that this RME is
+  equivalently, and more simply, the branched ME (with M'=M).
 
   Symmetrization convention: The full square matrix is populated on
   diagonal sectors. 
@@ -15,20 +15,23 @@
   Mark A. Caprio
   University of Notre Dame
 
-  10/26/16 (mac): Created.  Supplants code from shell_2body.cpp
+  + 10/26/16 (mac): Created.  Supplants code from shell_2body.cpp
     (created 4/25/11) for identity operator, h2gen.cpp (created
     3/13/12) for kinematic operators, and shell_separable.cpp (created
     5/24/15) for angular momentum operators.
-  10/30/16 (mac):
-     
+  + 11/1/16 (mac):
+    - Make identity operator the A-dependent many-body identity.
+    - Convert from AS to NAS storage.
+
 ****************************************************************/
 
 #ifndef TBME_SEPARABLE_H_
 #define TBME_SEPARABLE_H_
 
-#include "eigen3/Eigen/Core"
+#include "eigen3/Eigen/Dense"
 
 #include "basis/jjjpn_scheme.h"
+#include "basis/nlj_operator.h"
 
 namespace shell {
   ////////////////////////////////////////////////////////////////
@@ -39,22 +42,30 @@ namespace shell {
   ////////////////////////////////////////////////////////////////
 
   Eigen::MatrixXd 
-  IdentityOperatorSectorMatrixJJJPN(
-      const basis::TwoBodySectorsJJJPN::SectorType& sector
+  IdentityOperatorMatrixJJJPN(
+      const basis::TwoBodySectorsJJJPN::SectorType& sector,
+      int A
     );
-  // Populate sector of two-body identity matrix.
+  // Populate matrix (for a given JJJPN sector) with two-body matrix
+  // elements for the A-body identity matrix.
   //
-  // This function should only be invoked on diagonal sectors, since
-  // the identity operator is a scalar operator.  The returned matrix
-  // is *twice* the identity matrix, on these diagonal sectors, due to
-  // the AS normalization convention.
+  // See csbasis [PRC 86, 034312 (2012)] equation (D4).
+  //
+  // Precondition: It is assumed that the sector is valid for a scalar
+  // (and isoscalar and positive parity), i.e., is a diagonal sector.
   //
   // Arguments:
   //   sector (basis::TwoBodySectorsJJJPN::SectorType) : The sector to
   //     populate.
+  //   A (int): atomic mass number
   //
   // Returns:
   //   (Eigen::MatrixXd) : The matrix for this sector.
+
+  ////////////////////////////////////////////////////////////////
+  // kinematic operators
+  ////////////////////////////////////////////////////////////////
+
 
   ////////////////////////////////////////////////////////////////
   // angular momentum operators
@@ -63,30 +74,30 @@ namespace shell {
   enum class AngularMomentumOperatorFamily {kOrbital,kSpin,kTotal};
   enum class AngularMomentumOperatorSpecies {kP,kN,kTotal};
 
-  // TwoBodyMatrixSectorAddAngularMomentum adds a multiple of a
-  // squared angular momentum operator to a TBME matrix sector.
+  Eigen::MatrixXd 
+  AngularMomentumMatrixJJJPN(
+      shell::AngularMomentumOperatorFamily operator_family, 
+      shell::AngularMomentumOperatorSpecies operator_species, 
+      const basis::TwoBodySectorsJJJPN::SectorType& sector,
+      int A
+    );
+  // Populate matrix (for a given JJJPN sector) with two-body matrix
+  // elements for a squared angular momentum operator.
+  //
+  // Precondition: It is assumed that the sector is valid for a scalar
+  // (and isoscalar and positive parity), i.e., is a diagonal sector.
   //
   // Arguments:
   //   operator_family (shell::AngularMomentumOperatorFamily):
   //     identifies momentum operator type (kOrbital, kSpin, kTotal)
   //   operator_species (shell::AngularMomentumOperatorSpecies):
   //     whether operator is total or restricted (kP, kN, kTotal)
-  //   A (int): atomic mass
   //   sector (basis::TwoBodySectorsJJJPN::SectorType) : The sector to
   //     populate.
-  //
+  //   A (int): atomic mass number
   //
   // Returns:
   //   (Eigen::MatrixXd) : The matrix for this sector.
-
-
-  Eigen::MatrixXd 
-  AngularMomentumSectorMatrixJJJPN(
-      shell::AngularMomentumOperatorFamily operator_family, 
-      shell::AngularMomentumOperatorSpecies operator_species, 
-      int A,
-      const basis::TwoBodySectorsJJJPN::SectorType& sector
-    );
 
 
   ////////////////////////////////////////////////////////////////
