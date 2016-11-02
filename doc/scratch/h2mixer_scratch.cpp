@@ -179,3 +179,130 @@ void GenerateOutputs(
   std::map<std::string,std::string> direct_input_source_definitions;  // map from source id to input filename
   // target stream names 
   std::map<std::string,std::string> target_filenames;  // map from target id to target filename
+
+
+
+      // identity
+      if (operator_channel.operator_type==OperatorType::kIdentity)
+        operator_matrix = shell::IdentityOperatorMatrixJJJPN(target_sector,run_parameters.A);
+      // kinematic
+      else if (operator_channel.operator_type==OperatorType::kKinematicVRSqr)
+        {
+          RadialOperatorData radial_operator_data = radial_operators[{shell::RadialOperatorType::kR,2}];
+          bool momentum_space = false;
+          operator_matrix = shell::KinematicVTSqrMatrixJJJPN(
+              radial_operator_data.ket_orbital_space,
+              radial_operator_data.sectors,
+              radial_operator_data.matrices,
+              momentum_space,
+              target_sector,run_parameters.A
+          );
+        }
+      else if (operator_channel.operator_type==OperatorType::kKinematicVR1R2)
+        {
+          RadialOperatorData radial_operator_data = radial_operators[{shell::RadialOperatorType::kR,1}];
+          bool momentum_space = false;
+          operator_matrix = shell::KinematicVT1T2MatrixJJJPN(
+              radial_operator_data.ket_orbital_space,
+              radial_operator_data.sectors,
+              radial_operator_data.matrices,
+              momentum_space,
+              target_sector,run_parameters.A
+          );
+        }
+      else if (operator_channel.operator_type==OperatorType::kKinematicVKSqr)
+        {
+          RadialOperatorData radial_operator_data = radial_operators[{shell::RadialOperatorType::kK,2}];
+          bool momentum_space = true;
+          operator_matrix = shell::KinematicVTSqrMatrixJJJPN(
+              radial_operator_data.ket_orbital_space,
+              radial_operator_data.sectors,
+              radial_operator_data.matrices,
+              momentum_space,
+              target_sector,run_parameters.A
+          );
+        }
+      else if (operator_channel.operator_type==OperatorType::kKinematicVK1K2)
+        {
+          RadialOperatorData radial_operator_data = radial_operators[{shell::RadialOperatorType::kK,1}];
+          bool momentum_space = true;
+          operator_matrix = shell::KinematicVT1T2MatrixJJJPN(
+              radial_operator_data.ket_orbital_space,
+              radial_operator_data.sectors,
+              radial_operator_data.matrices,
+              momentum_space,
+              target_sector,run_parameters.A
+          );
+        }
+      // angular momentum square
+      //
+      // TODO neaten by mapping id to (family,species)
+      else if (operator_channel.operator_type==OperatorType::kAMSqrLp)
+        operator_matrix = shell::AngularMomentumMatrixJJJPN(
+            shell::AngularMomentumOperatorFamily::kOrbital,shell::AngularMomentumOperatorSpecies::kP,
+            target_sector,run_parameters.A
+          );
+      else if (operator_channel.operator_type==OperatorType::kAMSqrLn)
+        operator_matrix = shell::AngularMomentumMatrixJJJPN(
+            shell::AngularMomentumOperatorFamily::kOrbital,shell::AngularMomentumOperatorSpecies::kN,
+            target_sector,run_parameters.A
+          );
+      else if (operator_channel.operator_type==OperatorType::kAMSqrL)
+        operator_matrix = shell::AngularMomentumMatrixJJJPN(
+            shell::AngularMomentumOperatorFamily::kOrbital,shell::AngularMomentumOperatorSpecies::kTotal,
+            target_sector,run_parameters.A
+          );
+      else if (operator_channel.operator_type==OperatorType::kAMSqrSp)
+        operator_matrix = shell::AngularMomentumMatrixJJJPN(
+            shell::AngularMomentumOperatorFamily::kSpin,shell::AngularMomentumOperatorSpecies::kP,
+            target_sector,run_parameters.A
+          );
+      else if (operator_channel.operator_type==OperatorType::kAMSqrSn)
+        operator_matrix = shell::AngularMomentumMatrixJJJPN(
+            shell::AngularMomentumOperatorFamily::kSpin,shell::AngularMomentumOperatorSpecies::kN,
+            target_sector,run_parameters.A
+          );
+      else if (operator_channel.operator_type==OperatorType::kAMSqrS)
+        operator_matrix = shell::AngularMomentumMatrixJJJPN(
+            shell::AngularMomentumOperatorFamily::kSpin,shell::AngularMomentumOperatorSpecies::kTotal,
+            target_sector,run_parameters.A
+          );
+      else if (operator_channel.operator_type==OperatorType::kAMSqrJp)
+        operator_matrix = shell::AngularMomentumMatrixJJJPN(
+            shell::AngularMomentumOperatorFamily::kTotal,shell::AngularMomentumOperatorSpecies::kP,
+            target_sector,run_parameters.A
+          );
+      else if (operator_channel.operator_type==OperatorType::kAMSqrJn)
+        operator_matrix = shell::AngularMomentumMatrixJJJPN(
+            shell::AngularMomentumOperatorFamily::kTotal,shell::AngularMomentumOperatorSpecies::kN,
+            target_sector,run_parameters.A
+          );
+      else if (operator_channel.operator_type==OperatorType::kAMSqrJ)
+        operator_matrix = shell::AngularMomentumMatrixJJJPN(
+            shell::AngularMomentumOperatorFamily::kTotal,shell::AngularMomentumOperatorSpecies::kTotal,
+            target_sector,run_parameters.A
+          );
+
+
+
+// enum class OperatorType
+// // Possible types of generated operators.
+// {
+//   // identity
+//   kIdentity,
+//   // kinematic
+//     
+//   // angular momentum square
+//     kAMSqrLp,kAMSqrLn,kAMSqrL,
+//     kAMSqrSp,kAMSqrSn,kAMSqrS,
+//     kAMSqrJp,kAMSqrJn,kAMSqrJ
+//     };
+// const std::array<const char*,3> kOperatorTypeName({"identity","kinematic","am-sqr"});
+// std::map<std::string,OperatorType> kOperatorTypeLookup(
+//     {
+//       {"identity",OperatorType::kIdentity},
+//         {"Lp",OperatorType::kAMSqrLp},{"Ln",OperatorType::kAMSqrLn},{"L",OperatorType::kAMSqrL},
+//                                                                       {"Sp",OperatorType::kAMSqrSp},{"Sn",OperatorType::kAMSqrSn},{"S",OperatorType::kAMSqrS},
+//         {"Jp",OperatorType::kAMSqrJp},{"Jn",OperatorType::kAMSqrJn},{"J",OperatorType::kAMSqrJ}
+//                                                                                                                                     }
+//   );
