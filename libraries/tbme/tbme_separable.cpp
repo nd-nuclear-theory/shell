@@ -269,6 +269,11 @@ namespace shell {
       int A
     )
   {
+    // debugging
+    std::cout << radial_orbital_space.DebugStr() << std::endl;
+    for (int subspace_index=0; subspace_index<radial_orbital_space.size(); ++subspace_index)
+      std::cout << radial_orbital_space.GetSubspace(subspace_index).DebugStr();
+    std::cout << radial_sectors.DebugStr() << std::endl;
 
     // set up aliases
     assert(sector.IsDiagonal());

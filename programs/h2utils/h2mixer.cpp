@@ -63,6 +63,10 @@ struct RadialOperatorData
 //
 // For overlaps, the "bra" space is the source basis, and the "ket"
 // space is the target basis.
+//
+// Caveat: Just "copying" indexing in here is not good enough, since
+// then sectors can be left pointing to deleted temporaries for the
+// orbital subspaces.
 {
 
   RadialOperatorData() = default;
@@ -390,14 +394,14 @@ void InitializeRadialOperators(RadialOperatorMap& radial_operators)
 
       // open radial operator file
       shell::InRadialStream radial_operator_stream(radial_operator_data.filename);
+      radial_operator_stream.SetToIndexing(
+          radial_operator_data.bra_orbital_space,
+          radial_operator_data.ket_orbital_space,
+          radial_operator_data.sectors
+        );
       assert(radial_operator_type==radial_operator_stream.radial_operator_type());
-      assert(radial_operator_power==radial_operator_stream.sectors().l0max());
-      assert(radial_operator_stream.sectors().Tz0()==0);
-
-      // copy out indexing
-      radial_operator_data.bra_orbital_space = radial_operator_stream.bra_orbital_space();
-      radial_operator_data.ket_orbital_space = radial_operator_stream.ket_orbital_space();
-      radial_operator_data.sectors = radial_operator_stream.sectors();
+      assert(radial_operator_power==radial_operator_data.sectors.l0max());
+      assert(radial_operator_data.sectors.Tz0()==0);
 
       // read matrices
       radial_operator_stream.Read(radial_operator_data.matrices);
@@ -531,14 +535,14 @@ void InitializeXformChannels(
 
       // open radial operator file
       shell::InRadialStream radial_operator_stream(radial_operator_data.filename);
+      radial_operator_stream.SetToIndexing(
+          radial_operator_data.bra_orbital_space,
+          radial_operator_data.ket_orbital_space,
+          radial_operator_data.sectors
+        );
       assert(radial_operator_type==radial_operator_stream.radial_operator_type());
-      assert(radial_operator_power==radial_operator_stream.sectors().l0max());
-      assert(radial_operator_stream.sectors().Tz0()==0);
-
-      // copy out indexing
-      radial_operator_data.bra_orbital_space = radial_operator_stream.bra_orbital_space();
-      radial_operator_data.ket_orbital_space = radial_operator_stream.ket_orbital_space();
-      radial_operator_data.sectors = radial_operator_stream.sectors();
+      assert(radial_operator_power==radial_operator_data.sectors.l0max());
+      assert(radial_operator_data.sectors.Tz0()==0);
 
       // read matrices
       radial_operator_stream.Read(radial_operator_data.matrices);
