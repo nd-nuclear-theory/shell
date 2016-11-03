@@ -38,7 +38,7 @@ namespace shell {
   void InRadialStream::Close() {
     stream().close();
   }
-  
+
   void InRadialStream::ReadHeader() {
     std::string line;
     char operator_type;
@@ -254,7 +254,7 @@ namespace shell {
   }
 
   void OutRadialStream::WriteNextSector(const Eigen::MatrixXd& matrix) {
-    const int width = 3;
+    const int width = 7;
     const int precision = 8;
 
     // get next sector
@@ -267,10 +267,11 @@ namespace shell {
 
     // Write in one row per line
     std::string line;
+    stream().precision(precision);
     for (int j=0; j < sector.bra_subspace().size(); ++j) {
       // write columns to line
       for (int k=0; k < sector.ket_subspace().size(); ++k) {
-        stream() << " " << std::fixed << std::setw(width+1+precision) << matrix(j, k);
+        stream() << " " << std::scientific << std::setw(width+1+precision) << matrix(j, k);
       }
       stream() << std::endl; ++line_count_;
     }
