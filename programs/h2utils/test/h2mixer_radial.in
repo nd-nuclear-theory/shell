@@ -1,6 +1,6 @@
 # h2mixer_radial.in -- basic test of radial operator input
 
-set-target-oscillator tb 2
+set-target-indexing-oscillator tb 2
 set-target-multipolarity 0 0 0
 set-output-format 15099
 set-mass 999

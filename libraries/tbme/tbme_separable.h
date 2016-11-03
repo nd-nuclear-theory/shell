@@ -22,6 +22,7 @@
   + 11/1/16 (mac):
     - Make identity operator the A-dependent many-body identity.
     - Convert from AS to NAS storage.
+  + 11/2/16 (mac): Implement kinematic operators.
 
 ****************************************************************/
 
@@ -32,6 +33,7 @@
 
 #include "basis/jjjpn_scheme.h"
 #include "basis/nlj_operator.h"
+#include "radial/radial_io.h"
 
 namespace shell {
   ////////////////////////////////////////////////////////////////
@@ -66,60 +68,52 @@ namespace shell {
   // kinematic operators
   ////////////////////////////////////////////////////////////////
 
-  Eigen::MatrixXd 
-  KinematicUTSqrMatrixJJJPN(
-      const basis::OrbitalSpaceLJPN& radial_orbital_space,
-      const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
-      const basis::TwoBodySectorsJJJPN::SectorType& sector,
-      int A
-    );
-  // Populate matrix with two-body matrix elements for the *one-body*
-  // operator U_(T^2) obtained from a scalar one-body operator T^2,
-  // i.e., r^2 or k^2, on a given JJJPN sector.
-  //
-  // This one-body operator is related to the two-body operator
-  // V_(T^2), also defined in csbasis, by U_(T^2) = 1/(A-1)*V_(T^2).
-  // See csbasis (51).
-  //
-  // Obtained by csbasis (52)-(54).
-  //
-  // Precondition: It is assumed that the sector is valid for a scalar
-  // (and isoscalar and positive parity), i.e., is a diagonal sector.
-  //
-  // Arguments:
-  //   radial_orbital_space, radial_sectors, radial_matrices (...):
-  //      definition of T^2 radial matrix elements
-  //   sector (basis::TwoBodySectorsJJJPN::SectorType) : The sector to
-  //     populate.
-  //   A (int): atomic mass number
-  //
-  // Returns:
-  //   (Eigen::MatrixXd) : The matrix for this sector.
+  enum class KinematicOperatorType {kUTSqr,kVT1T2};
 
   Eigen::MatrixXd 
-  KinematicVT1T2MatrixJJJPN(
+  KinematicMatrixJJJPN(
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
       const basis::MatrixVector& radial_matrices,
-      bool momentum_space,
+      KinematicOperatorType kinematic_operator_type,
+      shell::RadialOperatorType radial_operator_type,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       int A
     );
-  // Populate matrix with two-body matrix elements for the *two-body*
-  // operator V_(T1.T2) obtained from a a dot product of one-body
-  // vector operators (i.e., T = r or k), on a given JJJPN sector.
+  // Populate matrix with two-body matrix elements of kinematic
+  // operator.
   //
-  // Obtained by csbasis (55)-(60).
+  // Case kUTSqr:
+  //
+  //   Populate matrix with two-body matrix elements for the
+  //   *one-body* operator U_(T^2) obtained from a scalar one-body
+  //   operator T^2, i.e., r^2 or k^2, on a given JJJPN sector.
+  //
+  //   This one-body operator is related to the two-body operator
+  //   V_(T^2), also defined in csbasis, by U_(T^2) = 1/(A-1)*V_(T^2).
+  //   See csbasis (51).
+  //
+  //   Obtained by csbasis (52)-(54).
+  //
+  // Case kUTSwr:
+  //
+  //   Populate matrix with two-body matrix elements for the
+  //   *two-body* operator V_(T1.T2) obtained from a a dot product of
+  //   one-body vector operators (i.e., T = r or k), on a given JJJPN
+  //   sector.
+  //
+  //   Obtained by csbasis (55)-(60).
   //
   // Precondition: It is assumed that the sector is valid for a scalar
   // (and isoscalar and positive parity), i.e., is a diagonal sector.
   //
   // Arguments:
   //   radial_orbital_space, radial_sectors, radial_matrices (...):
-  //      definition of T radial matrix elements
-  //   momentum_space (bool): if need to include extra momentum space
-  //     phase factor from csbasis (59)
+  //      definition of radial matrix elements (T^2 for UTSqr or T for VT1T2)
+  //   kinematic_operator_type (KinematicOperatorType): whether UTSqr or VT1T2 matrix
+  //   radial_operator_type (shell::RadialOperatorType): whether
+  //     coordinate (kR) or momentum (kK) space (only affects phase factor
+  //     calculation)
   //   sector (basis::TwoBodySectorsJJJPN::SectorType) : The sector to
   //     populate.
   //   A (int): atomic mass number

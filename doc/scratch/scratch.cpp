@@ -131,3 +131,15 @@
   target_channels.emplace_back("out1","test/out1.dat");
   target_channels[0].coefficients.insert({"in1",999});
   target_channels.emplace_back("out2","test/out2.dat");
+
+
++    // std::cout << sectors.DebugStr() << std::endl;
++    // std::cout << fmt::format(
++    //     "bra {} ket {}"
++    //     " bra_n {} bra_l {} bra_j {} ket_n {} ket_l {} ket_j {} "
++    //     " sector_index {} bra {} size {} ket {} size{}",
++    //     bra.LabelStr(),ket.LabelStr(),
++    //     bra_n,bra_l,bra_j,ket_n,ket_l,ket_j,
++    //     sector_index,sector.bra_subspace().LabelStr(),sector.bra_subspace().size(),sector.ket_subspace().LabelStr(),sector.ket_subspace().size()
++    //   )
++    //           <<std::endl;

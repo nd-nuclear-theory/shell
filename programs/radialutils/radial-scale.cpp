@@ -106,28 +106,31 @@ int main(int argc, char **argv) {
   // Read input
   shell::InRadialStream is(run_parameters.input_filename);
 
+  // get indexing
+  basis::OrbitalSpaceLJPN bra_orbital_space, ket_orbital_space;
+  basis::OrbitalSectorsLJPN sectors;
+  shell::RadialOperatorType operator_type = is.radial_operator_type();
+  is.SetToIndexing(bra_orbital_space, ket_orbital_space, sectors);
+
   // check that this is an operator we can scale
-  if (is.radial_operator_type() == shell::RadialOperatorType::kO) {
+  if (operator_type == shell::RadialOperatorType::kO) {
     std::cerr << "ERROR: Overlaps cannot be scaled. Exiting." << std::endl;
     std::exit(EXIT_FAILURE);
   }
-  if (is.sectors().Tz0() != 0) {
+  if (sectors.Tz0() != 0) {
     std::cerr << "ERROR: Cannot scale pn sectors. Exiting." << std::endl;
     std::exit(EXIT_FAILURE);
   }
 
   float proton_scale_factor = 1.;
   float neutron_scale_factor = 1.;
-  if (is.radial_operator_type() == shell::RadialOperatorType::kR) {
-    proton_scale_factor = std::pow(run_parameters.proton_scale, is.sectors().l0max());
-    neutron_scale_factor = std::pow(run_parameters.neutron_scale, is.sectors().l0max());
-  } else if (is.radial_operator_type() == shell::RadialOperatorType::kK) {
-    proton_scale_factor = std::pow(run_parameters.proton_scale, -1*is.sectors().l0max());
-    neutron_scale_factor = std::pow(run_parameters.neutron_scale, -1*is.sectors().l0max());
+  if (operator_type == shell::RadialOperatorType::kR) {
+    proton_scale_factor = std::pow(run_parameters.proton_scale, sectors.l0max());
+    neutron_scale_factor = std::pow(run_parameters.neutron_scale, sectors.l0max());
+  } else if (operator_type == shell::RadialOperatorType::kK) {
+    proton_scale_factor = std::pow(run_parameters.proton_scale, -1*sectors.l0max());
+    neutron_scale_factor = std::pow(run_parameters.neutron_scale, -1*sectors.l0max());
   }
-
-  // get indexing
-  const basis::OrbitalSectorsLJPN& sectors = is.sectors();
 
   // Eigen initialization
   basis::MatrixVector matrices;
@@ -145,8 +148,8 @@ int main(int argc, char **argv) {
 
   // write out to file
   shell::OutRadialStream os(run_parameters.output_filename,
-                            is.bra_orbital_space(), is.ket_orbital_space(), sectors,
-                            is.radial_operator_type());
+                            bra_orbital_space, ket_orbital_space, sectors,
+                            operator_type);
   os.Write(matrices);
 
   is.Close();

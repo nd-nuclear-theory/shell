@@ -1,6 +1,6 @@
 # h2mixer_basic.in -- basic trivial test of mixing
 
-set-target-oscillator ob 2
+set-target-indexing-oscillator 0b 2
 set-target-multipolarity 0 0 0
 set-output-format 15099
 set-mass 999
@@ -10,6 +10,3 @@ define-input-source in1 test/test-tb-2.dat
 define-target out1 test/out1.dat
   add-source in1 999
 define-target out2 test/out2.dat
-
-# define-target Lp tbme-Lp.dat
-# add am-sqr Lp

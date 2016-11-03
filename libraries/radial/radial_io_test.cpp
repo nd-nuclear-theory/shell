@@ -86,17 +86,32 @@ basis::MatrixVector TestRadialIn(const std::string& filename) {
   std::cout << "Input stream" << std::endl;
   shell::InRadialStream is(filename);
 
-  // show bra space
-  std::cout << "Bra space" << std::endl;
-  std::cout << is.bra_orbital_space().DebugStr();
+  // // show bra space
+  // std::cout << "Bra space" << std::endl;
+  // std::cout << is.bra_orbital_space().DebugStr();
+  // 
+  // // show ket space
+  // std::cout << "Ket space" << std::endl;
+  // std::cout << is.ket_orbital_space().DebugStr();
+  // 
+  // // show sectors
+  // std::cout << "Sectors" << std::endl;
+  // std::cout << is.sectors().DebugStr();
 
+  // show spaces and sectors
+  basis::OrbitalSpaceLJPN bra_orbital_space, ket_orbital_space;
+  basis::OrbitalSectorsLJPN sectors;
+  is.SetToIndexing(bra_orbital_space,ket_orbital_space,sectors);
+  std::cout << "Bra space" << std::endl;
+  std::cout << bra_orbital_space.DebugStr();
+  
   // show ket space
   std::cout << "Ket space" << std::endl;
-  std::cout << is.ket_orbital_space().DebugStr();
-
+  std::cout << ket_orbital_space.DebugStr();
+  
   // show sectors
   std::cout << "Sectors" << std::endl;
-  std::cout << is.sectors().DebugStr();
+  std::cout << sectors.DebugStr();
 
   basis::MatrixVector input_matrices;
   is.Read(input_matrices);
