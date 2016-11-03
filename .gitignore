@@ -16,6 +16,9 @@
 *.bin
 *.pdf
 
+# local files
+*.local
+
 # symlinks
 config.mk
 
