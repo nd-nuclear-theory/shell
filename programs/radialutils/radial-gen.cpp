@@ -4,7 +4,11 @@
   radial-gen.cpp -- compute radial matrix elements
 
   Syntax:
-    radial-gen operator order analytic_basis_type orbital_file output_filename
+    radial-gen operator_type order analytic_basis_type orbital_file output_filename
+       operator_type={r,k}
+
+    radial-gen operator_type scale_ratio analytic_basis_type orbital_file output_filename
+       operator_type={o}
 
   @note Currently only computes radial matrix elements between harmonic oscillator
   or Laguerre basis functions with identical bra and ket spaces.
@@ -13,6 +17,7 @@
   University of Notre Dame
 
   11/2/16 (pjf): Created, based on h2conv.
+  11/3/16 (pjf): TODO
 
 ******************************************************************************/
 
