@@ -2,6 +2,16 @@
   h2_io.h                       
 
   Defines I/O class for MFDn H2 interaction file formats.
+
+  Normalization convention: All matrix elements are stored as NAS
+  RMEs.  These RMEs are stored under the group theory Wigner-Eckart
+  normalization convention (i.e., "no dimension factor out front, just
+  the Clebsch"), but, for scalar operators, note that this RME is
+  equivalently, and more simply, the branched ME (with M'=M).
+
+  Symmetrization convention: The full square matrix is *not* populated
+  on diagonal sectors.  For these sectors, the lower triangle is
+  zero-initialized on input and ignored on output.
                                   
   Mark A. Caprio
   University of Notre Dame
@@ -18,6 +28,8 @@
     -- Integrate into shell project build.
   10/19/16 (mac): Complete implementation for H2 Version0.
   10/25/16 (mac): Add InH2Stream::SeekToSector.
+  11/1/16 (mac):
+    - Convert from AS to NAS storage.
      
 ****************************************************************/
 

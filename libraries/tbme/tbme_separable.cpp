@@ -19,8 +19,9 @@ namespace shell {
   ////////////////////////////////////////////////////////////////
 
   Eigen::MatrixXd 
-  IdentityOperatorSectorMatrixJJJPN(
-      const basis::TwoBodySectorsJJJPN::SectorType& sector
+  IdentityOperatorMatrixJJJPN(
+      const basis::TwoBodySectorsJJJPN::SectorType& sector,
+      int A
     )
   {
 
@@ -30,25 +31,268 @@ namespace shell {
 
     // generate matrix for sector
     Eigen::MatrixXd matrix;
-    const double normalization_factor = 2.;
+    const double normalization_factor = 2./(A*(A-1));
     matrix = normalization_factor*Eigen::MatrixXd::Identity(subspace.size(),subspace.size());
 
     return matrix;
   }
 
   ////////////////////////////////////////////////////////////////
-  // angular momentum operators
+  // kinematic operators
   ////////////////////////////////////////////////////////////////
 
-  // ShellAngularMomentumScalarOBME gives <b|T^2|a> for a squared
-  // angular momentum operator, i.e. T^2 = l^2, s^2, or j^2.
+  double ShellKinematicScalarOBME(
+      const basis::OrbitalSpaceLJPN& radial_orbital_space,
+      const basis::OrbitalSectorsLJPN& radial_sectors,
+      const basis::MatrixVector& radial_matrices,
+      const basis::OrbitalStatePN& b, const basis::OrbitalStatePN& a
+    )
+  // Evaluate <b|T^2|a> for a scalar one-body operator T^2, i.e., r^2
+  // or k^2.
   //
-  // See mac "spin operator" notes page 3.
+  // <b|T^2|a> = <R_b|T^2|R_a>[(la,ja)==(lb,jb)]
+  //
+  // See, e.g., below csbasis (39).
+  {
+
+    // int na = a.n();
+    // int nb = b.n();
+    int la = a.l();
+    int lb = b.l();
+    HalfInt ja = a.j();
+    HalfInt jb = b.j();
+
+    double matrix_element = 0.;
+    if ( (lb == la) && (jb == ja) )
+      {
+        matrix_element += basis::MatrixElementLJPN(
+            radial_orbital_space,radial_orbital_space,radial_sectors,radial_matrices,
+            b,a
+          );
+      }
+
+    return matrix_element;
+  }
+
+  double ShellKinematicVectorOBRME(
+      const basis::OrbitalSpaceLJPN& radial_orbital_space,
+      const basis::OrbitalSectorsLJPN& radial_sectors,
+      const basis::MatrixVector& radial_matrices,
+      const basis::OrbitalStatePN& b, const basis::OrbitalStatePN& a
+    )
+  // Evaluate <b||T||a> for a vector one-body operator T, i.e., r or
+  // k.
+  //
+  // See csbasis (58)-(60).  Omits the "extra" phase factor on the
+  // momentum operator in csbasis (59), to avoid carrying around
+  // imaginary factors, as well as for uniformity between the r and k
+  // cases.  This phase factor must instead be taken into account
+  // later by the calling function ShellKinematicVectorDotTBMEProduct
+  // when calculating the TBME.
+  //
+  // QUERY (mac): Why the extra factor Hat(ja)???  Without that
+  // factor, this RME would be in Edmonds convention.  But I think
+  // this factor is the wrong was to go to group theory convention.
+  {
+    
+    // int na = a.n();
+    // int nb = b.n();
+    int la = a.l();
+    int lb = b.l();
+    HalfInt ja = a.j();
+    HalfInt jb = b.j();
+    
+    double matrix_element = 0.;
+    
+    if ( am::AllowedTriangle(ja,1,jb) && ((la+lb+1)%2==0) )
+      {
+        double radial_matrix_element = basis::MatrixElementLJPN(
+              radial_orbital_space,radial_orbital_space,radial_sectors,radial_matrices,
+              b,a
+            );
+        matrix_element += ParitySign(jb-ja+1) * Hat(ja)
+          * am::ClebschGordan(ja,HalfInt(1,2),1,0,jb,HalfInt(1,2))
+          * radial_matrix_element;
+      }
+      
+    return matrix_element;
+  }
+
+  double ShellKinematicScalarTBME (
+      const basis::OrbitalSpaceLJPN& radial_orbital_space,
+      const basis::OrbitalSectorsLJPN& radial_sectors,
+      const basis::MatrixVector& radial_matrices,
+      const basis::TwoBodyStateJJJPN& bra, const basis::TwoBodyStateJJJPN& ket
+    )
+  // Evaluate <cd|V_(T^2)|ab> for the "upgraded" two-body operator
+  // obtained from a scalar one-body operator T^2, i.e., r^2 or k^2.
+  //
+  // Computes <cd|V|ab>_AS for pp/nn states, or (cd|V|ab)_pn for pn
+  //    states.
+  //
+  // See csbasis (52) and (54).
+  {
+    // extract orbitals
+    const basis::OrbitalStatePN& a = ket.GetOrbital1();
+    const basis::OrbitalStatePN& b = ket.GetOrbital2();
+    const basis::OrbitalStatePN& c = bra.GetOrbital1();
+    const basis::OrbitalStatePN& d = bra.GetOrbital2();
+
+    // extract sector parameters
+    assert(bra.two_body_species()==ket.two_body_species());
+    basis::TwoBodySpeciesPN two_body_species = ket.two_body_species();
+    assert(bra.J()==ket.J());
+    int J = ket.J();
+
+    // evaluate matrix element
+    double matrix_element = 0.;
+    if (d == b)
+      matrix_element += basis::MatrixElementLJPN(
+              radial_orbital_space,radial_orbital_space,radial_sectors,radial_matrices,
+              c,a
+            );
+    if (c == a)
+      matrix_element += basis::MatrixElementLJPN(
+              radial_orbital_space,radial_orbital_space,radial_sectors,radial_matrices,
+              d,b
+            );
+    if (two_body_species != basis::TwoBodySpeciesPN::kPN)
+      {
+        int phase = - ParitySign(J-a.j()-b.j());
+        if (d == a)
+          matrix_element += phase * basis::MatrixElementLJPN(
+              radial_orbital_space,radial_orbital_space,radial_sectors,radial_matrices,
+              c,b
+            );
+        if (c == b)
+          matrix_element += phase * basis::MatrixElementLJPN(
+              radial_orbital_space,radial_orbital_space,radial_sectors,radial_matrices,
+              d,a
+            );
+      }
+
+    return matrix_element;
+  }
+
+  double ShellKinematicVectorDotTBMEProduct(
+      const basis::OrbitalSpaceLJPN& radial_orbital_space,
+      const basis::OrbitalSectorsLJPN& radial_sectors,
+      const basis::MatrixVector& radial_matrices,
+      bool momentum_space,
+      const basis::OrbitalStatePN& c, const basis::OrbitalStatePN& d,
+      const basis::OrbitalStatePN& a, const basis::OrbitalStatePN& b,
+      int J
+    )
+  // Evaluate the unsymmetrized matrix element (cd|T1.T2|ab) of a dot
+  // product of one-body vector operators (i.e., T = r or k), using
+  // <b||T||a>.
+  //
+  // See csbasis (57).  Incorporates momentum space phase factor from
+  // csbasis (59), which was omitted from ShellKinematicVectorOBRME to
+  // avoid carrying around imaginary factors.
+  {
+
+    // short circuit check on triangularity of each one-body factor
+    bool triangle_allowed = ( am::AllowedTriangle(a.j(),c.j(),1) && am::AllowedTriangle(b.j(),d.j(),1));
+    if (!triangle_allowed )
+      return 0.;
+
+    // evaluate matrix element
+    int phase = ParitySign(d.j()+a.j()+J);
+    double matrix_element = phase * am::Wigner6J(c.j(),d.j(),J,b.j(),a.j(),1)
+      * ShellKinematicVectorOBRME(radial_orbital_space,radial_sectors,radial_matrices,c,a)
+      * ShellKinematicVectorOBRME(radial_orbital_space,radial_sectors,radial_matrices,d,b);
+
+    // momentum space phase factor
+    if (momentum_space)
+      matrix_element *= ParitySign((c.l()+d.l()-a.l()-b.l())/2);
+
+    return matrix_element;
+  }
+
+  double ShellAngularMomentumVectorDotTBME(
+      const basis::OrbitalSpaceLJPN& radial_orbital_space,
+      const basis::OrbitalSectorsLJPN& radial_sectors,
+      const basis::MatrixVector& radial_matrices,
+      bool momentum_space,
+      const basis::TwoBodyStateJJJPN& bra, const basis::TwoBodyStateJJJPN& ket
+    )
+  // Evaluate the matrix element <cd|T1.T2|ab> of a dot product of
+  // one-body vector operators (i.e., T = r or k), using the
+  // unsymmetrized matrix element (cd|T1.T2|ab).
+  //
+  // Computes <cd|T1.T2|ab>_AS for pp/nn states, or (cd|T1.T2|ab)_pn for pn
+  // states.
+  //
+  // See csbasis (55) and (56).
+  {
+    // extract orbitals
+    const basis::OrbitalStatePN& a = ket.GetOrbital1();
+    const basis::OrbitalStatePN& b = ket.GetOrbital2();
+    const basis::OrbitalStatePN& c = bra.GetOrbital1();
+    const basis::OrbitalStatePN& d = bra.GetOrbital2();
+
+    // extract sector parameters
+    assert(bra.two_body_species()==ket.two_body_species());
+    basis::TwoBodySpeciesPN two_body_species = ket.two_body_species();
+    assert(bra.J()==ket.J());
+    int J = ket.J();
+    
+    // evaluate matrix element
+    double matrix_element = 0.;
+    matrix_element += ShellKinematicVectorDotTBMEProduct(
+        radial_orbital_space,radial_sectors,radial_matrices,
+        momentum_space,
+        c,d,a,b,J
+      );
+    if (two_body_species!=basis::TwoBodySpeciesPN::kPN)
+      {
+	int phase = -ParitySign(J-a.j()-b.j());
+	matrix_element += phase * ShellKinematicVectorDotTBMEProduct(
+            radial_orbital_space,radial_sectors,radial_matrices,
+            momentum_space,
+            c,d,b,a,J
+          );
+      }
+
+    return matrix_element;
+  }
+
+  Eigen::MatrixXd 
+  KinematicUTSqrMatrixJJJPN(
+      const basis::OrbitalSpaceLJPN& radial_orbital_space,
+      const basis::OrbitalSectorsLJPN& radial_sectors,
+      const basis::MatrixVector& radial_matrices,
+      const basis::TwoBodySectorsJJJPN::SectorType& sector,
+      int A
+    )
+  {
+  };
+
+  Eigen::MatrixXd 
+  KinematicVT1T2MatrixJJJPN(
+      const basis::OrbitalSpaceLJPN& radial_orbital_space,
+      const basis::OrbitalSectorsLJPN& radial_sectors,
+      const basis::MatrixVector& radial_matrices,
+      bool momentum_space,
+      const basis::TwoBodySectorsJJJPN::SectorType& sector,
+      int A
+    )
+  {
+  };
+
+  ////////////////////////////////////////////////////////////////
+  // angular momentum operators
+  ////////////////////////////////////////////////////////////////
 
   double ShellAngularMomentumScalarOBME(
       shell::AngularMomentumOperatorFamily operator_family,
       const basis::OrbitalStatePN& b, const basis::OrbitalStatePN& a
     )
+  // Give <b|T^2|a> for a squared angular momentum operator, i.e. T^2
+  // = l^2, s^2, or j^2.
+  //
+  // See mac "spin operator" notes page 3.
   {
 
     int na = a.n();
@@ -80,16 +324,15 @@ namespace shell {
   }
 
 
-  // ShellAngularMomentumVectorOBRME gives <b||T||a> for an angular
-  // momentum operator, i.e., T = l, s, or j.
-  //
-  // Based on Suhonen "From nucleons to nucleus" (2.56) and (2.58).  See
-  // mac "spin operator" notes page 3.
-  
   double ShellAngularMomentumVectorOBRME(
       shell::AngularMomentumOperatorFamily operator_family,
       const basis::OrbitalStatePN& b, const basis::OrbitalStatePN& a
     )
+  // Evaluate <b||T||a> for an angular momentum operator, i.e., T = l,
+  // s, or j.
+  //
+  // Based on Suhonen "From nucleons to nucleus" (2.56) and (2.58).  See
+  // mac "spin operator" notes page 3.
   {
     
     int na = a.n();
@@ -124,15 +367,6 @@ namespace shell {
     return matrix_element;
   }
 
-  // ShellAngularMomentumScalarTBME uses <b|T^2|a> to compute the TBMEs
-  // <cd|V_(T^2)|ab> of the "upgraded one-body part" of a squared angular
-  // momentum operator.
-  //
-  // Computes <cd|V|ab>_AS for pp/nn states, or (cd|V|ab)_pn for pn
-  //    states.
-  //
-  // After csbasis (52) and (54).  See mac "spin operator" notes page 3.
-
   double ShellAngularMomentumScalarTBME (
       shell::AngularMomentumOperatorFamily operator_family,
       shell::AngularMomentumOperatorSpecies operator_species,
@@ -140,6 +374,14 @@ namespace shell {
       int J, 
       const basis::TwoBodyStateJJJPN& s2, const basis::TwoBodyStateJJJPN& s1
     )
+  // Evaluate <cd|V_(T^2)|ab> for the "upgraded" two-body operator
+  // obtained from a scalar one-body squared angular momentum
+  // operator, using <b|T^2|a>.
+  //
+  // Computes <cd|V|ab>_AS for pp/nn states, or (cd|V|ab)_pn for pn
+  //    states.
+  //
+  // After csbasis (52) and (54).  See mac "spin operator" notes page 3.
   {
     // extract orbitals
     const basis::OrbitalStatePN& a = s1.GetOrbital1();
@@ -180,15 +422,7 @@ namespace shell {
       }
 
     return matrix_element;
-  	
   }
-
-  // ShellAngularMomentumVectorDotTBMEProduct uses <b||T||a> to
-  // compute the unsymmetrized matrix element (cd|T.T|ab), i.e., for a
-  // distinguishable-particle direct product state, for an angular
-  // momentum operator, i.e., T = l, s, or j.
-  //
-  // After csbasis (57).  See mac "spin operator" notes page 2.
 
   double ShellAngularMomentumVectorDotTBMEProduct(
       shell::AngularMomentumOperatorFamily operator_family, 
@@ -196,6 +430,11 @@ namespace shell {
       const basis::OrbitalStatePN& c, const basis::OrbitalStatePN& d,
       const basis::OrbitalStatePN& a, const basis::OrbitalStatePN& b
     )
+  // Evaluate the unsymmetrized matrix element (cd|T1.T2|ab) of a dot
+  // product of one-body vector angular momentum operators (i.e., T =
+  // l, s, or j), using <b||T||a>.
+  //
+  // After csbasis (57).  See mac "spin operator" notes page 2.
   {
 
     // short circuit check on triangularity of each one-body factor
@@ -211,18 +450,6 @@ namespace shell {
     return matrix_element;
   }
 
-  // ShellAngularMomentumVectorDotTBME uses <b||T||a> [via
-  // (cd|T.T|ab)] to compute the TBMEs <cd|T1.T2|ab> of the "two-body
-  // part" of a squared angular momentum operator.
-  //
-  // Computes <cd|V|ab>_AS for pp/nn states, or (cd|V|ab)_pn for pn
-  //    states.
-  //
-  // For V_(T.T) two-body term, proton operator only has pp sector
-  // and neutron operator only has nn sector.
-  //
-  // After csbasis (55) and (56).  See mac "spin operator" notes page 2.
-
   double ShellAngularMomentumVectorDotTBME(
       shell::AngularMomentumOperatorFamily operator_family,
       shell::AngularMomentumOperatorSpecies operator_species, 
@@ -230,6 +457,18 @@ namespace shell {
       int J, 
       const basis::TwoBodyStateJJJPN& s2, const basis::TwoBodyStateJJJPN& s1
     )
+  // Evaluate the matrix element <cd|T1.T2|ab> of a dot product of
+  // one-body vector angular momentum operators (i.e., T = l, s, or
+  // j), using the unsymmetrized matrix element (cd|T1.T2|ab).
+  //
+  // Computes <cd|T1.T2|ab>_AS for pp/nn states, or (cd|T1.T2|ab)_pn
+  // for pn states.
+  //
+  // Note: For the V_(T1.T2) two-body term, a proton operator only has
+  // nonvanishing pp sectors, and a neutron operator only has
+  // nonvanishing nn sectors.
+  //
+  // After csbasis (55) and (56).  See mac "spin operator" notes page 2.
   {
     // extract orbitals
     const basis::OrbitalStatePN& a = s1.GetOrbital1();
@@ -263,11 +502,11 @@ namespace shell {
   }
 
   Eigen::MatrixXd 
-  AngularMomentumSectorMatrixJJJPN(
+  AngularMomentumMatrixJJJPN(
       shell::AngularMomentumOperatorFamily operator_family, 
       shell::AngularMomentumOperatorSpecies operator_species, 
-      int A,
-      const basis::TwoBodySectorsJJJPN::SectorType& sector
+      const basis::TwoBodySectorsJJJPN::SectorType& sector,
+      int A
     )
   {
 
@@ -284,23 +523,39 @@ namespace shell {
     const int g = subspace.g();
 
     // for upper-triangular pairs of states in sector
-    for (int k1 = 0; k1 < subspace.size(); ++k1)
-      for (int k2 = k1; k2 < subspace.size(); ++k2)
+    for (int bra_index = 0; bra_index < subspace.size(); ++bra_index)
+      for (int ket_index = 0; ket_index < subspace.size(); ++ket_index)
 	{
+
+          // diagonal sector: restrict to upper triangle
+          // if (sector.IsDiagonal())
+          if (!(bra_index<=ket_index))
+            continue;
+
 	  // construct states
-	  basis::TwoBodyStateJJJPN s1(subspace,k1);
-	  basis::TwoBodyStateJJJPN s2(subspace,k2);
+	  basis::TwoBodyStateJJJPN bra(subspace,bra_index);
+	  basis::TwoBodyStateJJJPN ket(subspace,ket_index);
 
 	  // calculate matrix element (pn or AS)
 	  double matrix_element_t2 
-	    = ShellAngularMomentumScalarTBME(operator_family,operator_species,two_body_species,J,s2,s1);
+	    = ShellAngularMomentumScalarTBME(operator_family,operator_species,two_body_species,J,bra,ket);
 	  double matrix_element_t1t2 
-	    = ShellAngularMomentumVectorDotTBME(operator_family,operator_species,two_body_species,J,s2,s1);
+	    = ShellAngularMomentumVectorDotTBME(operator_family,operator_species,two_body_species,J,bra,ket);
 	  double matrix_element = 1./(A-1)*matrix_element_t2 + 2*matrix_element_t1t2;
 
-	  // store matrix element (symmetrically)
-	  matrix(k1,k2) = matrix_element;
-	  matrix(k2,k1) = matrix_element;
+          // convert to NAS if needed
+          if (subspace.two_body_species()!=basis::TwoBodySpeciesPN::kPN)
+            {
+              double conversion_factor = 1.;
+              if (bra.index1()==bra.index2())
+                matrix_element *= 1/(sqrt(2.));
+              if (ket.index1()==ket.index2())
+                matrix_element *= 1/(sqrt(2.));
+            }
+
+	  // store matrix element
+	  matrix(bra_index,ket_index) = matrix_element;
+	  // matrix(ket_index,bra_index) = matrix_element;  // lower triangle
 	}
 
     return matrix;

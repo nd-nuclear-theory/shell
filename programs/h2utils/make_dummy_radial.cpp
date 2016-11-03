@@ -7,6 +7,7 @@
   University of Notre Dame
 
   10/30/16 (mac): Created, based on radial_io_test.
+  11/1/16 (mac): Update to use RadialOperatorType::kO.
 
 ****************************************************************/
 
@@ -54,5 +55,5 @@ int main(int argc, char **argv) {
   MakeRadialOut("test/radial-me-dummy-r2-Nmax10.dat",shell::RadialOperatorType::kR,2,Nmax);
   MakeRadialOut("test/radial-me-dummy-k1-Nmax10.dat",shell::RadialOperatorType::kK,1,Nmax);
   MakeRadialOut("test/radial-me-dummy-k2-Nmax10.dat",shell::RadialOperatorType::kK,2,Nmax);
-  MakeRadialOut("test/radial-xform-dummy-Nmax10.dat",shell::RadialOperatorType::kR,0,Nmax);
+  MakeRadialOut("test/radial-xform-dummy-Nmax10.dat",shell::RadialOperatorType::kO,0,Nmax);
 }

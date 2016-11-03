@@ -3,9 +3,14 @@
 
   Carries out radial basis transformation on two-body matrix elements.
 
-  Normalization convention: All matrix elements are stored as AS
-  (rather than NAS) RMEs.  (The Wigner-Eckart normalization convention
-  for these RMEs is actually irrelevant as far as similarity
+  Normalization convention: All matrix elements are stored as NAS
+  RMEs.  These RMEs are stored under the group theory Wigner-Eckart
+  normalization convention (i.e., "no dimension factor out front, just
+  the Clebsch"), but, for scalar operators, note that this RME is
+  equivalently, and more simply, the branched ME (with M'=M).
+
+  (However, actually, the Wigner-Eckart normalization convention for
+  these RMEs is actually irrelevant as far as similarity
   transformation is concerned.)
 
   Symmetrization convention: The full square matrix is populated on
@@ -21,7 +26,7 @@
 #ifndef TBME_XFORM_H_
 #define TBME_XFORM_H_
 
-#include "eigen3/Eigen/Core"
+#include "eigen3/Eigen/Dense"
 
 #include "basis/jjjpn_scheme.h"
 #include "basis/operator.h"
@@ -42,7 +47,11 @@ namespace shell {
       const basis::MatrixVector& radial_matrices,
       const shell::TwoBodyMapping& two_body_mapping
     );
-
+  // Carry out radial basis transformation on two-body matrix.
+  //
+  // Precondition: The given source matrix must obey the
+  // symmetrization condition, i.e., full square matrices must have
+  // been populated for diagonal sectors.
 
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////

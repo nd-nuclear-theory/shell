@@ -28,7 +28,8 @@ void TestIdentity()
       const typename basis::TwoBodySectorsJJJPN::SectorType& sector = sectors.GetSector(sector_index);
 
       // populate sector
-      Eigen::MatrixXd matrix = shell::IdentityOperatorSectorMatrixJJJPN(sector);
+      int A = 2;
+      Eigen::MatrixXd matrix = shell::IdentityOperatorMatrixJJJPN(sector,A);
 
       std::cout
         << fmt::format("Sector {}: {}",sector_index,sector.ket_subspace().LabelStr()) << std::endl
@@ -62,12 +63,15 @@ void TestAngularMomentum()
 
       // extract sector
       const typename basis::TwoBodySectorsJJJPN::SectorType& sector = sectors.GetSector(sector_index);
-
+      assert(sector.IsDiagonal());
+      const basis::TwoBodySubspaceJJJPN& subspace = sector.ket_subspace();
+    
       // populate sector
-      Eigen::MatrixXd matrix = shell::AngularMomentumSectorMatrixJJJPN(operator_family,operator_species,A,sector);
+      Eigen::MatrixXd matrix = shell::AngularMomentumMatrixJJJPN(operator_family,operator_species,sector,A);
 
+      int J = subspace.J();
       std::cout
-        << fmt::format("Sector {}: {}",sector_index,sector.ket_subspace().LabelStr()) << std::endl
+        << fmt::format("Sector {}: {}",sector_index,subspace.LabelStr()) << " expect " << J*(J+1) << std::endl
         << sector.ket_subspace().DebugStr()
         << std::endl
         << matrix << std::endl
