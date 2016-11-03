@@ -23,6 +23,7 @@
    - Rename RadialOperator to RadialOperatorType and similarly rename
      stream accessor to radial_operator_type().
    - Move OutRadialStream initializations into initializer list.
+  + 11/2/16 (pjf): Added RadialOperatorType::kO.
 
 ****************************************************************/
 
@@ -45,7 +46,7 @@ namespace shell {
  * Radial IDs
  */
 enum class RadialOperatorType : char {
-  kR = 'r', kK = 'k'
+  kR = 'r', kK = 'k', kO = 'o'
 };
 
 /**
