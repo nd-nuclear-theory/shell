@@ -210,7 +210,7 @@ namespace shell {
     return matrix_element;
   }
 
-  double ShellAngularMomentumVectorDotTBME(
+  double ShellKinematicVectorDotTBME(
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
       const basis::MatrixVector& radial_matrices,
@@ -259,26 +259,75 @@ namespace shell {
   }
 
   Eigen::MatrixXd 
-  KinematicUTSqrMatrixJJJPN(
+  KinematicMatrixJJJPN(
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
       const basis::MatrixVector& radial_matrices,
+      KinematicOperatorType kinematic_operator_type,
+      shell::RadialOperatorType radial_operator_type,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       int A
     )
   {
-  };
 
-  Eigen::MatrixXd 
-  KinematicVT1T2MatrixJJJPN(
-      const basis::OrbitalSpaceLJPN& radial_orbital_space,
-      const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
-      bool momentum_space,
-      const basis::TwoBodySectorsJJJPN::SectorType& sector,
-      int A
-    )
-  {
+    // set up aliases
+    assert(sector.IsDiagonal());
+    const basis::TwoBodySubspaceJJJPN& subspace = sector.ket_subspace();
+
+    // generate matrix for sector
+    Eigen::MatrixXd matrix = Eigen::MatrixXd::Zero(subspace.size(),subspace.size());
+
+    // recover sector properties
+    const basis::TwoBodySpeciesPN two_body_species = subspace.two_body_species();
+    const int J = subspace.J();
+    const int g = subspace.g();
+    bool momentum_space = (radial_operator_type == shell::RadialOperatorType::kK);
+
+    // for upper-triangular pairs of states in sector
+    for (int bra_index = 0; bra_index < subspace.size(); ++bra_index)
+      for (int ket_index = 0; ket_index < subspace.size(); ++ket_index)
+	{
+
+          // diagonal sector: restrict to upper triangle
+          // if (sector.IsDiagonal())
+          if (!(bra_index<=ket_index))
+            continue;
+
+	  // construct states
+	  basis::TwoBodyStateJJJPN bra(subspace,bra_index);
+	  basis::TwoBodyStateJJJPN ket(subspace,ket_index);
+
+	  // calculate matrix element (pn or AS)
+	  double matrix_element;
+          if (kinematic_operator_type==KinematicOperatorType::kUTSqr)
+	    matrix_element = 1./(A-1)*ShellKinematicScalarTBME(
+                radial_orbital_space,radial_sectors,radial_matrices,
+                bra,ket
+              );
+          else // if (kinematic_operator_type==KinematicOperatorType::kVT1T2)
+            matrix_element = ShellKinematicVectorDotTBME(
+                radial_orbital_space,radial_sectors,radial_matrices,
+                momentum_space,
+                bra,ket
+              );
+
+          // convert to NAS if needed
+          if (subspace.two_body_species()!=basis::TwoBodySpeciesPN::kPN)
+            {
+              double conversion_factor = 1.;
+              if (bra.index1()==bra.index2())
+                matrix_element *= 1/(sqrt(2.));
+              if (ket.index1()==ket.index2())
+                matrix_element *= 1/(sqrt(2.));
+            }
+
+	  // store matrix element
+	  matrix(bra_index,ket_index) = matrix_element;
+	  // matrix(ket_index,bra_index) = matrix_element;  // lower triangle
+	}
+
+    return matrix;
+
   };
 
   ////////////////////////////////////////////////////////////////

@@ -42,7 +42,7 @@ void ChopMatrix(Eigen::MatrixXd& matrix, double tolerance=1e-10)
 }
 
 void SymmetrizeMatrix(Eigen::MatrixXd& matrix)
-// Populate lower triangle of matrix presuming matrix is symmetric.
+// Populate lower triangle of matrix as mirror of upper triangle.
 {
   for (int i=0; i<matrix.rows(); ++i)
     for (int j=0; j<matrix.cols(); ++j)
@@ -246,19 +246,16 @@ void ReadParameters(
         continue;
 
       // select action based on keyword
-      if (keyword=="set-target-orbitals")
-        {
-          line_stream >> run_parameters.orbital_filename;
-          ParsingCheck(line_stream,line_count,line);
-        }
-      else if (keyword=="set-target-truncation")
+      if (keyword=="set-target-indexing")
         {
           double wp, wn, wpp, wnn, wpn;
-          line_stream >> wp >> wn >> wpp >> wnn >> wpn;
+          line_stream
+            >> run_parameters.orbital_filename
+            >> wp >> wn >> wpp >> wnn >> wpn;
           ParsingCheck(line_stream,line_count,line);
           run_parameters.weight_max = basis::WeightMax(wp,wn,wpp,wnn,wpn);
         }
-      else if (keyword=="set-target-oscillator")
+      else if (keyword=="set-target-indexing-oscillator")
         {
           std::string truncation_rank_code;
           line_stream >> truncation_rank_code
@@ -689,55 +686,61 @@ void GenerateOperatorSources(
       if (operator_channel.id=="identity")
         operator_matrix = shell::IdentityOperatorMatrixJJJPN(target_sector,run_parameters.A);
       // kinematic
+      //
+      // TODO neaten by mapping id to
+      // (radial_operator_labels,kinematic_operator_type,radial_operator_type)
+      // and refactoring
       else if (operator_channel.id=="Ursqr")
         {
-          RadialOperatorData radial_operator_data = radial_operators[RadialOperatorLabels(shell::RadialOperatorType::kR,2)];
-          bool momentum_space = false;
-          operator_matrix = shell::KinematicUTSqrMatrixJJJPN(
-              radial_operator_data.ket_orbital_space,
-              radial_operator_data.sectors,
-              radial_operator_data.matrices,
+          RadialOperatorLabels radial_operator_labels = RadialOperatorLabels(shell::RadialOperatorType::kR,2);
+          shell::KinematicOperatorType kinematic_operator_type = shell::KinematicOperatorType::kUTSqr;
+          shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kR;
+          const RadialOperatorData& radial_operator_data = radial_operators[radial_operator_labels];
+          operator_matrix = shell::KinematicMatrixJJJPN(
+              radial_operator_data.ket_orbital_space,radial_operator_data.sectors,radial_operator_data.matrices,
+              kinematic_operator_type,radial_operator_type,
               target_sector,run_parameters.A
-          );
+            );
         }
       else if (operator_channel.id=="Vr1r2")
         {
-          RadialOperatorData radial_operator_data = radial_operators[RadialOperatorLabels(shell::RadialOperatorType::kR,1)];
-          bool momentum_space = false;
-          operator_matrix = shell::KinematicVT1T2MatrixJJJPN(
-              radial_operator_data.ket_orbital_space,
-              radial_operator_data.sectors,
-              radial_operator_data.matrices,
-              momentum_space,
+          RadialOperatorLabels radial_operator_labels = RadialOperatorLabels(shell::RadialOperatorType::kR,1);
+          shell::KinematicOperatorType kinematic_operator_type = shell::KinematicOperatorType::kVT1T2;
+          shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kR;
+          const RadialOperatorData& radial_operator_data = radial_operators[radial_operator_labels];
+          operator_matrix = shell::KinematicMatrixJJJPN(
+              radial_operator_data.ket_orbital_space,radial_operator_data.sectors,radial_operator_data.matrices,
+              kinematic_operator_type,radial_operator_type,
               target_sector,run_parameters.A
-          );
+            );
         }
       else if (operator_channel.id=="Uksqr")
         {
-          RadialOperatorData radial_operator_data = radial_operators[RadialOperatorLabels(shell::RadialOperatorType::kK,2)];
-          bool momentum_space = true;
-          operator_matrix = shell::KinematicUTSqrMatrixJJJPN(
-              radial_operator_data.ket_orbital_space,
-              radial_operator_data.sectors,
-              radial_operator_data.matrices,
+          RadialOperatorLabels radial_operator_labels = RadialOperatorLabels(shell::RadialOperatorType::kK,2);
+          shell::KinematicOperatorType kinematic_operator_type = shell::KinematicOperatorType::kUTSqr;
+          shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kK;
+          const RadialOperatorData& radial_operator_data = radial_operators[radial_operator_labels];
+          operator_matrix = shell::KinematicMatrixJJJPN(
+              radial_operator_data.ket_orbital_space,radial_operator_data.sectors,radial_operator_data.matrices,
+              kinematic_operator_type,radial_operator_type,
               target_sector,run_parameters.A
-          );
+            );
         }
       else if (operator_channel.id=="Vk1k2")
         {
-          RadialOperatorData radial_operator_data = radial_operators[RadialOperatorLabels(shell::RadialOperatorType::kK,1)];
-          bool momentum_space = true;
-          operator_matrix = shell::KinematicVT1T2MatrixJJJPN(
-              radial_operator_data.ket_orbital_space,
-              radial_operator_data.sectors,
-              radial_operator_data.matrices,
-              momentum_space,
+          RadialOperatorLabels radial_operator_labels = RadialOperatorLabels(shell::RadialOperatorType::kK,1);
+          shell::KinematicOperatorType kinematic_operator_type = shell::KinematicOperatorType::kVT1T2;
+          shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kK;
+          const RadialOperatorData& radial_operator_data = radial_operators[radial_operator_labels];
+          operator_matrix = shell::KinematicMatrixJJJPN(
+              radial_operator_data.ket_orbital_space,radial_operator_data.sectors,radial_operator_data.matrices,
+              kinematic_operator_type,radial_operator_type,
               target_sector,run_parameters.A
-          );
+            );
         }
       // angular momentum square
       //
-      // TODO neaten by mapping id to (family,species)
+      // TODO neaten by mapping id to (family,species) and refactoring
       else if (operator_channel.id=="Lp")
         operator_matrix = shell::AngularMomentumMatrixJJJPN(
             shell::AngularMomentumOperatorFamily::kOrbital,shell::AngularMomentumOperatorSpecies::kP,
