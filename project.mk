@@ -5,13 +5,13 @@
 project_name := shellutils
 
 ################################################################
-# modules -- list of directories in which to search 
+# modules -- list of directories in which to search
 # for module.mk include files
 ################################################################
 
 # programs
 
-modules += programs/h2utils programs/h2utils_legacy
+modules += programs/h2utils programs/h2utils_legacy programs/radialutils
 
 # libraries
 
@@ -44,8 +44,8 @@ extras :=
 ################################################################
 
 # Gnu Scientific Library
-LDLIBS += -lgsl 
-LDLIBS += -lgslcblas 
+LDLIBS += -lgsl
+LDLIBS += -lgslcblas
 CPPFLAGS += -DHAVE_INLINE
 
 # spline submodule
