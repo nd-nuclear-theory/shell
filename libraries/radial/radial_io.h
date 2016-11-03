@@ -23,6 +23,8 @@
    - Rename RadialOperator to RadialOperatorType and similarly rename
      stream accessor to radial_operator_type().
    - Move OutRadialStream initializations into initializer list.
+  + 11/3/16 (mac): Provide InRadialStream::SetToIndexing and hide direct
+     indexing accessors (copies are easily invalidated).
 
 ****************************************************************/
 
@@ -75,6 +77,13 @@ class RadialStreamBase {
     radial_operator_type_(radial_operator_type),
     sectors_(sectors) {}
 
+  // operator type accessor
+  const RadialOperatorType& radial_operator_type() const {
+    return radial_operator_type_;
+  }
+
+ protected:
+
   // indexing accessors
   const basis::OrbitalSpaceLJPN& bra_orbital_space() const {
     return bra_orbital_space_;
@@ -83,11 +92,12 @@ class RadialStreamBase {
     return ket_orbital_space_;
   }
   const basis::OrbitalSectorsLJPN& sectors() const { return sectors_; }
-  const RadialOperatorType& radial_operator_type() const {
-    return radial_operator_type_;
-  }
+  // Warning: If you copy sectors(), caveat emptor.  This object
+  // contains references to subspaces in bra_orbital_space_ and
+  // ket_orbital_space_.  If the present RadialStream goes out of
+  // scope and is destroyed, these references will be invalidated and
+  // will point to "garbage" subspaces.
 
- protected:
   // indexing information
   basis::OrbitalSpaceLJPN bra_orbital_space_;
   basis::OrbitalSpaceLJPN ket_orbital_space_;
@@ -120,6 +130,17 @@ class InRadialStream : public RadialStreamBase {
   }
 
   // I/O
+  void SetToIndexing(
+      basis::OrbitalSpaceLJPN& bra_orbital_space__,
+      basis::OrbitalSpaceLJPN& ket_orbital_space__,
+      basis::OrbitalSectorsLJPN& sectors__
+    );
+  // Set space and sectors indexing variables to point to fresh copies
+  // which will not be invalidated when stream is destroyed.
+  //
+  // If the internal bra and ket orbital spaces are equal, it is
+  // safe to use the same target variable to hold both.
+
   void Read(basis::MatrixVector& matrices);
   void Close();
 

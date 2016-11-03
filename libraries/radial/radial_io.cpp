@@ -29,6 +29,24 @@ namespace shell {
     ReadHeader();
   }
 
+  void InRadialStream::SetToIndexing(
+      basis::OrbitalSpaceLJPN& bra_orbital_space__,
+      basis::OrbitalSpaceLJPN& ket_orbital_space__,
+      basis::OrbitalSectorsLJPN& sectors__
+    )
+  {
+    // subspaces -- simple copy
+    bra_orbital_space__ = bra_orbital_space();
+    ket_orbital_space__ = ket_orbital_space();
+    
+    // sectors -- must reconstruct sectors pointing to these new copies of the subspaces
+    sectors__ = basis::OrbitalSectorsLJPN(
+        bra_orbital_space__,ket_orbital_space__,
+        sectors().l0max(),sectors().Tz0()
+      );
+  }
+
+
   void InRadialStream::Read(basis::MatrixVector& matrices) {
     for (int sector_index=0; sector_index < sectors_.size(); ++sector_index) {
       matrices.push_back(ReadNextSector());
