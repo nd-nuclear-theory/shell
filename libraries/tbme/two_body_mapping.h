@@ -8,6 +8,7 @@
   University of Notre Dame
 
   10/21/16 (mac): Created.
+  11/4/16 (mac): Add storage of subspace_mapping.
      
 ****************************************************************/
 
@@ -65,13 +66,26 @@ namespace shell {
     // Precondition: It is assumed that both p and n subspaces will be
     // present.
 
+    std::vector<int> subspace_mapping;
+    // Vectors providing mapping of two-body subspace indices from
+    // source_subspace_index to target_subspace_index.
+    //
+    // Note: In practice this information may not be useful, since
+    // commonly we will be working in a context in which we have
+    // already been given a target sector (bra and ket subspaces) to
+    // construct, and will have looked up the source sector (bra and
+    // ket subspaces) which needs to be mapped to it, so we do not
+    // need to look up the indices of the subspaces.  Nonetheless, the
+    // subspace mapping can be informative diagnostic information.
+
     std::vector<std::vector<int>> state_mapping;
     // Nested vectors providing mapping of two-body state indices from
     // (source_subspace_index, state_index) to target_state_index.
     
     // informational flags for mapping properties
 
-    bool domain_covered, range_covered;
+    bool domain_subspaces_covered, domain_states_covered,
+      range_subspaces_covered, range_states_covered;
     // Whether or not all source and target two-body states are used.
     
     // debugging

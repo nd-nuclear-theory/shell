@@ -23,8 +23,10 @@ namespace shell {
     )
   {
     // initialize informational flags for mapping properties
-    domain_covered = true;
-    range_covered = true;
+    domain_subspaces_covered = true;
+    domain_states_covered = true;
+    range_subspaces_covered = true;
+    range_states_covered = true;
 
     // set up orbital mapping
     assert(source_orbital_space.size()==2);
@@ -70,7 +72,9 @@ namespace shell {
       }
 
     // set up two_body mapping
+    subspace_mapping.resize(source_space.size());
     state_mapping.resize(source_space.size());
+    int num_target_subspaces_found = 0;  // used to track range coverage
 
     // iterate over two-body subspaces
     for (int source_subspace_index=0; source_subspace_index<source_space.size(); ++source_subspace_index)
@@ -94,9 +98,23 @@ namespace shell {
         // The target index value will be basis::kNone if no
         // target matches the source labels.
         int target_subspace_index = target_space.LookUpSubspaceIndex(source_subspace.labels());
+        subspace_mapping[source_subspace_index] = target_subspace_index;
         // std::cout << fmt::format("Subspace {} -> {}",source_subspace_index,target_subspace_index) << std::endl;
+
+        // do diagnostic record keeping
+        if (target_subspace_index==basis::kNone)
+          {
+            domain_subspaces_covered = false;
+            domain_states_covered = false;
+          }
+        else
+          ++num_target_subspaces_found;
+
+        // short circuit if target subspace missing
         if (target_subspace_index==basis::kNone)
             continue;
+
+        // set up alias for target subspace
         const basis::TwoBodySubspaceJJJPN& target_subspace = target_space.GetSubspace(target_subspace_index);
 
         // set up vector to hold index mappings for this subspace
@@ -127,7 +145,7 @@ namespace shell {
 
             // do diagnostic record keeping
             if (target_state_index==basis::kNone)
-              domain_covered = false;
+              domain_states_covered = false;
             else
               ++num_target_states_found;
 
@@ -140,8 +158,13 @@ namespace shell {
           }
 
         // check if all target states covered for this subspace
-        range_covered &= (num_target_states_found==target_subspace.size());
+        range_states_covered &= (num_target_states_found==target_subspace.size());
       }
+
+    // check target subspace coverage
+    range_subspaces_covered &= (num_target_subspaces_found==target_space.size());
+    range_states_covered &= range_subspaces_covered;
+
   }
 
   std::string TwoBodyMapping::DebugStr() const
@@ -169,8 +192,16 @@ namespace shell {
     os << "Two-body states" << std::endl;
     for (int source_subspace_index=0; source_subspace_index<state_mapping.size(); ++source_subspace_index)
       {
+        // indicate subspace mapping
+        int target_subspace_index = subspace_mapping[source_subspace_index];
+        os << fmt::format(
+            "  subspace {:3} => {:3}",
+            source_subspace_index,target_subspace_index
+          )
+           << std::endl;
+
         // skip unmapped source subspace
-        if (state_mapping[source_subspace_index].size()==0)
+        if (target_subspace_index==basis::kNone)
           continue;
 
         // dump mappings within subspace
@@ -191,8 +222,10 @@ namespace shell {
 
     // dump status flags
     os << fmt::format(
-        "Flags: domain_covered {} range_covered {}",
-        domain_covered,range_covered
+        "Diagnostics:\n"
+        "  domain_subspaces_covered {} domain_states_covered {}\n"
+        "  range_subspaces_covered {} range_states_covered {}",
+        domain_subspaces_covered, domain_states_covered, range_subspaces_covered, range_states_covered
       )
               <<std::endl;
 

@@ -8,9 +8,11 @@
   Mark A. Caprio
   University of Notre Dame
 
-  10/23/16 (mac): Created, succeeding prior incarnation originated 3/14/12.
-  10/25/16 (mac): Implement direct input mixing.
-  10/29/16 (mac): Implement radial operator input.
+  + 10/23/16 (mac): Created, succeeding prior incarnation originated 3/14/12.
+  + 10/25/16 (mac): Implement direct input mixing.
+  + 10/29/16 (mac): Implement radial operator input.
+  + 11/4/16 (mac):
+    - Add warnings of incomplete two-body range coverage.
 
 ******************************************************************************/
 
@@ -473,8 +475,17 @@ void InitializeInputChannels(
           target_indexing.orbital_space,
           target_indexing.space
         );
-
       // std::cout << input_channel.two_body_mapping.DebugStr() << std::endl;
+      if (!input_channel.two_body_mapping.range_states_covered)
+        {
+          std::cout
+            << fmt::format(
+                "INFO: input stream {}: source does not provide full coverage of target indexing",
+                input_channel.id
+              )
+            << std::endl
+            << std::endl;
+        }
 
     }
 }
@@ -515,6 +526,16 @@ void InitializeXformChannels(
           xform_channel.pre_xform_two_body_indexing.orbital_space,
           xform_channel.pre_xform_two_body_indexing.space
         );
+      if (!xform_channel.pre_xform_two_body_mapping.range_states_covered)
+        {
+          std::cout
+            << fmt::format(
+                "INFO: xform stream {}: source does not provide full coverage of specified pre-xform truncation",
+                xform_channel.id
+              )
+            << std::endl
+            << std::endl;
+        }
 
       // read xform coefficients
       //
@@ -564,6 +585,16 @@ void InitializeXformChannels(
           target_indexing.space
         );
       // std::cout << input_channel.two_body_mapping.DebugStr() << std::endl;
+      if (!xform_channel.pre_xform_two_body_mapping.range_states_covered)
+        {
+          std::cout
+            << fmt::format(
+                "INFO: xform stream {}: specified pre-xform truncation does not provide full coverage of target indexing",
+                xform_channel.id
+              )
+            << std::endl
+            << std::endl;
+        }
 
       std::cout << std::endl;
         
