@@ -1,0 +1,19 @@
+# h2mixer_kinematic-big.in -- test of kinematic operator generation
+#
+# reproduce kinematic files generated with legacy h2utils:
+# interactions/mfdn-h2/tbme-kinematic/tbme-kinematic-150709.tgz
+
+set-target-indexing-oscillator tb 16
+set-target-multipolarity 0 0 0
+set-output-format 0
+set-mass 2
+
+define-radial-operator r 1 test/radial-me-ho-r1-Nmax24.dat
+define-radial-operator r 2 test/radial-me-ho-r2-Nmax24.dat
+define-radial-operator k 1 test/radial-me-ho-k1-Nmax24.dat
+define-radial-operator k 2 test/radial-me-ho-k2-Nmax24.dat
+
+define-operator-source Ursqr
+
+# define-target Ursqr tbme-rsqr-tb-16-v0.bin
+#  add-source Ursqr 1

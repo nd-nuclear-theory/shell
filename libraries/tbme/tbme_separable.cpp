@@ -7,7 +7,7 @@
 ****************************************************************/
 
 #include "am/wigner_gsl.h"
-// #include "cppformat/format.h"  // for debugging
+#include "cppformat/format.h"  // for debugging
 #include "tbme/tbme_separable.h"
 
 namespace shell {
@@ -34,6 +34,56 @@ namespace shell {
     const double normalization_factor = 2./(A*(A-1));
     matrix = normalization_factor*Eigen::MatrixXd::Identity(subspace.size(),subspace.size());
 
+    return matrix;
+  }
+
+  ////////////////////////////////////////////////////////////////
+  // loop timing test
+  ////////////////////////////////////////////////////////////////
+
+  Eigen::MatrixXd 
+  TimingTestMatrixJJJPN(
+      const basis::TwoBodySectorsJJJPN::SectorType& sector,
+      bool loop,
+      bool store
+    )
+  {
+
+    // set up aliases
+    assert(sector.IsDiagonal());
+    const basis::TwoBodySubspaceJJJPN& subspace = sector.ket_subspace();
+
+    // generate matrix for sector
+    Eigen::MatrixXd matrix = Eigen::MatrixXd::Zero(subspace.size(),subspace.size());
+
+    // recover sector properties
+    const basis::TwoBodySpeciesPN two_body_species = subspace.two_body_species();
+    const int J = subspace.J();
+    const int g = subspace.g();
+
+    if (loop)
+      {
+        // for upper-triangular pairs of states in sector
+#pragma omp parallel for collapse(2)
+        for (int bra_index = 0; bra_index < subspace.size(); ++bra_index)
+          for (int ket_index = 0; ket_index < subspace.size(); ++ket_index)
+            {
+
+              // diagonal sector: restrict to upper triangle
+              // if (sector.IsDiagonal())
+              if (!(bra_index<=ket_index))
+                continue;
+
+              // construct states
+              basis::TwoBodyStateJJJPN bra(subspace,bra_index);
+              basis::TwoBodyStateJJJPN ket(subspace,ket_index);
+
+              // store matrix element
+              if (store)
+                matrix(bra_index,ket_index) = -1.;
+            }
+
+      }
     return matrix;
   }
 
@@ -92,7 +142,7 @@ namespace shell {
   //
   // QUERY (mac): Why the extra factor Hat(ja)???  Without that
   // factor, this RME would be in Edmonds convention.  But I think
-  // this factor is the wrong was to go to group theory convention.
+  // this factor is the wrong way to go to group theory convention.
   {
     
     // int na = a.n();
@@ -114,7 +164,7 @@ namespace shell {
           * am::ClebschGordan(ja,HalfInt(1,2),1,0,jb,HalfInt(1,2))
           * radial_matrix_element;
       }
-      
+    
     return matrix_element;
   }
 
@@ -147,26 +197,26 @@ namespace shell {
     // evaluate matrix element
     double matrix_element = 0.;
     if (d == b)
-      matrix_element += basis::MatrixElementLJPN(
-              radial_orbital_space,radial_orbital_space,radial_sectors,radial_matrices,
-              c,a
-            );
+      matrix_element += ShellKinematicScalarOBME(
+          radial_orbital_space,radial_sectors,radial_matrices,
+          c,a
+        );
     if (c == a)
-      matrix_element += basis::MatrixElementLJPN(
-              radial_orbital_space,radial_orbital_space,radial_sectors,radial_matrices,
-              d,b
-            );
+      matrix_element += ShellKinematicScalarOBME(
+          radial_orbital_space,radial_sectors,radial_matrices,
+          d,b
+        );
     if (two_body_species != basis::TwoBodySpeciesPN::kPN)
       {
         int phase = - ParitySign(J-a.j()-b.j());
         if (d == a)
-          matrix_element += phase * basis::MatrixElementLJPN(
-              radial_orbital_space,radial_orbital_space,radial_sectors,radial_matrices,
+          matrix_element += phase * ShellKinematicScalarOBME(
+              radial_orbital_space,radial_sectors,radial_matrices,
               c,b
             );
         if (c == b)
-          matrix_element += phase * basis::MatrixElementLJPN(
-              radial_orbital_space,radial_orbital_space,radial_sectors,radial_matrices,
+          matrix_element += phase * ShellKinematicScalarOBME(
+              radial_orbital_space,radial_sectors,radial_matrices,
               d,a
             );
       }
@@ -207,6 +257,15 @@ namespace shell {
     if (momentum_space)
       matrix_element *= ParitySign((c.l()+d.l()-a.l()-b.l())/2);
 
+    // std::cout
+    //   << std::endl
+    //   << fmt::format(
+    //       "ShellKinematicVectorDotTBMEProduct {} {} {} {} J {} => {}",
+    //       c.LabelStr(),d.LabelStr(),a.LabelStr(),b.LabelStr(),J,
+    //       matrix_element
+    //     )
+    //   << std::endl;
+
     return matrix_element;
   }
 
@@ -237,6 +296,15 @@ namespace shell {
     basis::TwoBodySpeciesPN two_body_species = ket.two_body_species();
     assert(bra.J()==ket.J());
     int J = ket.J();
+
+    // std::cout
+    //   << std::endl
+    //   << fmt::format(
+    //       "ShellKinematicVectorDotTBME {} {} {} {} J {} : ({},{})",
+    //       c.LabelStr(),d.LabelStr(),a.LabelStr(),b.LabelStr(),J,
+    //       bra.index(),ket.index()
+    //     )
+    //   << std::endl;
     
     // evaluate matrix element
     double matrix_element = 0.;
@@ -255,6 +323,14 @@ namespace shell {
           );
       }
 
+    //std::cout
+    //  << std::endl
+    //  << fmt::format(
+    //      "   => {}",
+    //      matrix_element
+    //    )
+    //  << std::endl;
+
     return matrix_element;
   }
 
@@ -269,12 +345,6 @@ namespace shell {
       int A
     )
   {
-    // debugging
-    std::cout << radial_orbital_space.DebugStr() << std::endl;
-    for (int subspace_index=0; subspace_index<radial_orbital_space.size(); ++subspace_index)
-      std::cout << radial_orbital_space.GetSubspace(subspace_index).DebugStr();
-    std::cout << radial_sectors.DebugStr() << std::endl;
-
     // set up aliases
     assert(sector.IsDiagonal());
     const basis::TwoBodySubspaceJJJPN& subspace = sector.ket_subspace();
@@ -289,6 +359,7 @@ namespace shell {
     bool momentum_space = (radial_operator_type == shell::RadialOperatorType::kK);
 
     // for upper-triangular pairs of states in sector
+    // #pragma omp parallel for collapse(2)
     for (int bra_index = 0; bra_index < subspace.size(); ++bra_index)
       for (int ket_index = 0; ket_index < subspace.size(); ++ket_index)
 	{
@@ -328,7 +399,6 @@ namespace shell {
 
 	  // store matrix element
 	  matrix(bra_index,ket_index) = matrix_element;
-	  // matrix(ket_index,bra_index) = matrix_element;  // lower triangle
 	}
 
     return matrix;
@@ -577,6 +647,7 @@ namespace shell {
     const int g = subspace.g();
 
     // for upper-triangular pairs of states in sector
+    // #pragma omp parallel for collapse(2)
     for (int bra_index = 0; bra_index < subspace.size(); ++bra_index)
       for (int ket_index = 0; ket_index < subspace.size(); ++ket_index)
 	{

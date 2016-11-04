@@ -6,6 +6,7 @@ This file just provides the quick reference summary for NERSC Edison.
 10/28/16 (mac): Created.
 10/29/16 (mac): Updated with pjf's Intel compilation fix.
 10/31/16 (mac): Update for Cori.
+11/4/16 (mac): Update h2stat example.
 
 ----------------------------------------------------------------
 
@@ -117,26 +118,30 @@ and repeat submodule update until all submodules have been successfully cloned.
 6) Sanity check:
 
    % cd programs/h2utils
-   % ./h2stat
-   % ./h2stat --verify test/test-tb-2.dat
+   % ./h2mixer < test/h2mixer_identity.in
+   % ./h2stat --verify test/tbme-identity-tb-2-v0.dat
 
    You should see something like the following output:
 
       h2stat  -- MFDn H2 file statistics
-      
+
       Input stream
-        File: test/test-tb-2.dat
+        File: test/tbme-identity-tb-2-v0.dat
         Format: 0 (text)
         Orbitals: p 6 n 6 (oscillator-like true)
         Truncation: p 2.0000 n 2.0000 pp 2.0000 nn 2.0000 pn 2.0000
         Sectors: pp 7 nn 7 pn 7 => total 21
         Matrix elements: pp 32 nn 32 pn 110 => total 174
-      
+
       Mode: verify
-      
+
       Verification scan
       .....................
       (Total time: 0)
+
+   You can also try out the conversion code h2conv:
+
+   % ./h2conv 15099 test/tbme-identity-tb-2-v0.dat test/tbme-identity-tb-2-v15099.dat
 
 ----------------------------------------------------------------
 

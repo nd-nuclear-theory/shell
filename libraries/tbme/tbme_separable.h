@@ -22,7 +22,9 @@
   + 11/1/16 (mac):
     - Make identity operator the A-dependent many-body identity.
     - Convert from AS to NAS storage.
-  + 11/2/16 (mac): Implement kinematic operators.
+  + 11/4/16 (mac):
+    - Complete implementation of kinematic operators.
+    - Attempt OpenMP parallelization of kinematic operators.
 
 ****************************************************************/
 
@@ -57,12 +59,32 @@ namespace shell {
   // (and isoscalar and positive parity), i.e., is a diagonal sector.
   //
   // Arguments:
-  //   sector (basis::TwoBodySectorsJJJPN::SectorType) : The sector to
-  //     populate.
+  //   sector (basis::TwoBodySectorsJJJPN::SectorType) : the sector to
+  //     populate
   //   A (int): atomic mass number
   //
   // Returns:
   //   (Eigen::MatrixXd) : The matrix for this sector.
+
+  ////////////////////////////////////////////////////////////////
+  // loop timing test
+  ////////////////////////////////////////////////////////////////
+
+  Eigen::MatrixXd 
+  TimingTestMatrixJJJPN(
+      const basis::TwoBodySectorsJJJPN::SectorType& sector,
+      bool loop,
+      bool store
+    );
+  // Provides function call with same control structure as the matrix
+  // generating functions below but without any compute load, for
+  // profiling purposes.
+  //
+  // Arguments:
+  //   sector (basis::TwoBodySectorsJJJPN::SectorType) : the sector to
+  //     populate
+  //   loop (bool): do main loop over entries
+  //   store (bool): do memory access to write entry
 
   ////////////////////////////////////////////////////////////////
   // kinematic operators
@@ -114,8 +136,8 @@ namespace shell {
   //   radial_operator_type (shell::RadialOperatorType): whether
   //     coordinate (kR) or momentum (kK) space (only affects phase factor
   //     calculation)
-  //   sector (basis::TwoBodySectorsJJJPN::SectorType) : The sector to
-  //     populate.
+  //   sector (basis::TwoBodySectorsJJJPN::SectorType) : the sector to
+  //     populate
   //   A (int): atomic mass number
   //
   // Returns:
@@ -152,8 +174,8 @@ namespace shell {
   //     identifies momentum operator type (kOrbital, kSpin, kTotal)
   //   operator_species (shell::AngularMomentumOperatorSpecies):
   //     whether operator is total or restricted (kP, kN, kTotal)
-  //   sector (basis::TwoBodySectorsJJJPN::SectorType) : The sector to
-  //     populate.
+  //   sector (basis::TwoBodySectorsJJJPN::SectorType) : the sector to
+  //     populate
   //   A (int): atomic mass number
   //
   // Returns:

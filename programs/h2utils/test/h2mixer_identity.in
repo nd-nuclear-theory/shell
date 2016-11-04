@@ -1,0 +1,12 @@
+# h2mixer_identity.in -- test of identity operator generation
+
+set-target-indexing-oscillator tb 2
+set-target-multipolarity 0 0 0
+set-output-format 0
+set-mass 2
+
+define-operator-source identity
+# define-operator-source loop-test
+
+define-target identity test/tbme-identity-tb-2-v0.dat
+  add-source identity 1

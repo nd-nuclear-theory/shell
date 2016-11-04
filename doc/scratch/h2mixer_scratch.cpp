@@ -306,3 +306,46 @@ void GenerateOutputs(
 //         {"Jp",OperatorType::kAMSqrJp},{"Jn",OperatorType::kAMSqrJn},{"J",OperatorType::kAMSqrJ}
 //                                                                                                                                     }
 //   );
+
+          if (operator_channel.id=="Ursqr")
+            {
+              kinematic_operator_type = shell::KinematicOperatorType::kUTSqr;
+              radial_operator_type = shell::RadialOperatorType::kR;
+              radial_operator_power = 2;
+            }
+          else if (operator_channel.id=="Vr1r2")
+            {
+              kinematic_operator_type = shell::KinematicOperatorType::kVT1T2;
+              radial_operator_type = shell::RadialOperatorType::kR;
+              radial_operator_power = 1;
+            }
+          else if (operator_channel.id=="Uksqr")
+            {
+              kinematic_operator_type = shell::KinematicOperatorType::kUTSqr;
+              radial_operator_type = shell::RadialOperatorType::kK;
+              radial_operator_power = 2;
+            }
+          else if (operator_channel.id=="Vk1k2")
+            {
+              kinematic_operator_type = shell::KinematicOperatorType::kVT1T2;
+              radial_operator_type = shell::RadialOperatorType::kK;
+              radial_operator_power = 1;
+            }
+
+
+  std::cout
+    << fmt::format(
+        "{} {} {}",
+        char(std::get<0>(radial_operators.begin()->second.labels)),
+        std::get<1>(radial_operators.begin()->second.labels),
+        radial_operators.begin()->second.sectors.size()
+      )
+    << std::endl;
+
+
+std::set<std::string> kKinematicOperatorIdSet(
+    {"Ursqr","Vr1r2","Uksqr","Vk1k2"}
+  );  // redundant to kKinematicOperatorDefinitions
+std::set<std::string> kAMSqrOperatorIdSet(
+    {"Lp","Ln","L","Sp","Sn","S","Jp","Jn","J"}
+  );

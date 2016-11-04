@@ -1,0 +1,11 @@
+# h2mixer_xform.in -- basic test of tbme xform
+
+set-target-indexing-oscillator tb 2
+set-target-multipolarity 0 0 0
+set-output-format 0
+set-mass 999
+
+define-xform-source VNN test/tbme-identity-tb-2-v0.dat 2 2 2 2 2 test/radial-xform-dummy-Nmax10.dat
+
+define-target xform test/tbme-xform.dat
+  add-source VNN 1

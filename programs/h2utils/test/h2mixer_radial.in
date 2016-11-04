@@ -10,4 +10,9 @@ define-radial-operator r 2 test/radial-me-dummy-r2-Nmax10.dat
 define-radial-operator k 1 test/radial-me-dummy-k1-Nmax10.dat
 define-radial-operator k 2 test/radial-me-dummy-k2-Nmax10.dat
 
+# define-radial-operator r 1 test/radial-me-ho-r1-Nmax24.dat
+# define-radial-operator r 2 test/radial-me-ho-r2-Nmax24.dat
+# define-radial-operator k 1 test/radial-me-ho-k1-Nmax24.dat
+# define-radial-operator k 2 test/radial-me-ho-k2-Nmax24.dat
+
 define-xform-source VNN test/test-tb-2.dat 2 2 2 2 2 test/radial-xform-dummy-Nmax10.dat

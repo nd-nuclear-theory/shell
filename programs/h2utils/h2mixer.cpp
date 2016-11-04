@@ -13,12 +13,15 @@
   + 10/29/16 (mac): Implement radial operator input.
   + 11/4/16 (mac):
     - Add warnings of incomplete two-body range coverage.
+    - Templatize and fix ChopMatrix.
+    - Revise control structure for generating operator source matrices.
 
 ******************************************************************************/
 
 #include <cstdlib>
 #include <iostream>
 #include <iomanip>
+#include <set>
 #include <string>
 
 #include "basis/operator.h"
@@ -31,20 +34,38 @@
 #include "tbme/two_body_mapping.h"
 
 ////////////////////////////////////////////////////////////////
-// matrix diagnostic utility
+// matrix utilities
 ////////////////////////////////////////////////////////////////
 
-void ChopMatrix(Eigen::MatrixXd& matrix, double tolerance=1e-10)
-// Round entries in matrix to zero.
+template<typename tMatrixType>
+void ChopMatrix(tMatrixType& matrix, double tolerance=1e-10)
+// Round near-zero entries in matrix to zero.
+//
+// Default tolerance value is same as Mathematica Chop function's.
+//
+// Template arguments:
+//   tMatrixType: Eigen matrix type
+//
+// Arguments:
+//   matrix (tMatrixType): matrix to chop
+//   tolerance (double, optional): truncation tolerance
 {
   for (int i=0; i<matrix.rows(); ++i)
     for (int j=0; j<matrix.cols(); ++j)
-      if (abs(matrix(i,j))<tolerance)
+      // Caution: Important to use std::abs() rather than integer abs().
+      if (std::abs(matrix(i,j))<tolerance)
         matrix(i,j) = 0.;
 }
 
-void SymmetrizeMatrix(Eigen::MatrixXd& matrix)
+template<typename tMatrixType>
+void CompleteLowerTriangle(tMatrixType& matrix)
 // Populate lower triangle of matrix as mirror of upper triangle.
+//
+// Template arguments:
+//   tMatrixType: Eigen matrix type
+//
+// Arguments:
+//   matrix (tMatrixType): matrix to complete
 {
   for (int i=0; i<matrix.rows(); ++i)
     for (int j=0; j<matrix.cols(); ++j)
@@ -126,6 +147,41 @@ struct InputChannel
   // target mapping
   shell::TwoBodyMapping two_body_mapping;
 };
+
+// collections of operator definitions
+std::set<std::string> kIdentityOperatorIdSet(
+    {"identity","loop-test"}
+  );
+
+typedef std::tuple<shell::KinematicOperatorType,shell::RadialOperatorType,int> KinematicOperatorDefinition;
+std::map<std::string,KinematicOperatorDefinition> kKinematicOperatorDefinitions(
+      {
+        {"Ursqr",KinematicOperatorDefinition(shell::KinematicOperatorType::kUTSqr,shell::RadialOperatorType::kR,2)},
+        {"Vr1r2",KinematicOperatorDefinition(shell::KinematicOperatorType::kVT1T2,shell::RadialOperatorType::kR,1)},
+        {"Uksqr",KinematicOperatorDefinition(shell::KinematicOperatorType::kUTSqr,shell::RadialOperatorType::kK,2)},
+        {"Vk1k2",KinematicOperatorDefinition(shell::KinematicOperatorType::kVT1T2,shell::RadialOperatorType::kK,1)}
+      }
+    );
+
+typedef std::tuple<shell::AngularMomentumOperatorFamily,shell::AngularMomentumOperatorSpecies> AngularMomentumOperatorDefinition;
+std::map<std::string,AngularMomentumOperatorDefinition> kAngularMomentumOperatorDefinitions(
+      {
+        // Note: Lp and Ln are disallowed, since Lp^2 and Ln^2 are
+        // subject to physical misinterpretation (meaning not clear, as
+        // the proton or neutron orbital angular momentum "relative"
+        // to what?).  Jp and Jn are similarly disallowed.
+
+        // {"Lp",AngularMomentumOperatorDefinition(shell::AngularMomentumOperatorFamily::kOrbital,shell::AngularMomentumOperatorSpecies::kP)},
+        // {"Ln",AngularMomentumOperatorDefinition(shell::AngularMomentumOperatorFamily::kOrbital,shell::AngularMomentumOperatorSpecies::kN)},
+        {"L",AngularMomentumOperatorDefinition(shell::AngularMomentumOperatorFamily::kOrbital,shell::AngularMomentumOperatorSpecies::kTotal)},
+        {"Sp",AngularMomentumOperatorDefinition(shell::AngularMomentumOperatorFamily::kSpin,shell::AngularMomentumOperatorSpecies::kP)},
+        {"Sn",AngularMomentumOperatorDefinition(shell::AngularMomentumOperatorFamily::kSpin,shell::AngularMomentumOperatorSpecies::kN)},
+        {"S",AngularMomentumOperatorDefinition(shell::AngularMomentumOperatorFamily::kSpin,shell::AngularMomentumOperatorSpecies::kTotal)},
+        // {"Jp",AngularMomentumOperatorDefinition(shell::AngularMomentumOperatorFamily::kTotal,shell::AngularMomentumOperatorSpecies::kP)},
+        // {"Jn",AngularMomentumOperatorDefinition(shell::AngularMomentumOperatorFamily::kTotal,shell::AngularMomentumOperatorSpecies::kN)},
+        {"J",AngularMomentumOperatorDefinition(shell::AngularMomentumOperatorFamily::kTotal,shell::AngularMomentumOperatorSpecies::kTotal)}
+      }
+  );
 
 struct OperatorChannel
 // Parameters and data for a source channel providing a generated
@@ -324,11 +380,13 @@ void ReadParameters(
           line_stream >> id;
           ParsingCheck(line_stream,line_count,line);
 
-          // if (kOperatorTypeLookup.count(id)!=1)
-          //   ParsingError(line_count,line,"Unrecognized operator ID");
-          // OperatorType operator_type = kOperatorTypeLookup[id];
-          // operator_channels.emplace_back(id,operator_type);
-
+          if (!(
+                  kIdentityOperatorIdSet.count(id)
+                || kKinematicOperatorDefinitions.count(id)
+                  || kAngularMomentumOperatorDefinitions.count(id)
+                ))
+          ParsingError(line_count,line,"Unrecognized operator ID");
+          
           operator_channels.emplace_back(id);
         }
       else if (keyword=="define-xform-source")
@@ -388,7 +446,7 @@ void InitializeRadialOperators(RadialOperatorMap& radial_operators)
       int radial_operator_power = std::get<1>(radial_operator_data.labels);
       std::cout
         << fmt::format(
-            "Reading radial operator {}^{} from {}...",
+            "Reading radial matrix elements for operator {}^{} from {}...",
             char(radial_operator_type),radial_operator_power,
             radial_operator_data.filename
           )
@@ -414,7 +472,8 @@ void InitializeRadialOperators(RadialOperatorMap& radial_operators)
       // diagnostic
       std::cout
         << fmt::format(
-            "  {} matrix elements",
+            "  {} sectors; {} matrix elements",
+            radial_operator_data.sectors.size(),
             basis::AllocatedEntries(radial_operator_data.matrices)
           )
         << std::endl;
@@ -542,14 +601,14 @@ void InitializeXformChannels(
       // analogous to InitializeRadialOperators
 
       std::cout
-        << fmt::format("Reading radial xform overlaps from {}...",xform_channel.xform_filename)
+        << fmt::format("Reading radial overlaps from {}...",xform_channel.xform_filename)
         << std::endl;
 
       // set up alias (to keep code parallel to InitializeRadialOperators)
       RadialOperatorData& radial_operator_data = xform_channel.radial_operator_data;
 
       // set up radial operator data
-      shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kR;
+      shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kO;
       int radial_operator_power = 0;
       radial_operator_data = 
         RadialOperatorData(RadialOperatorLabels(radial_operator_type,radial_operator_power),xform_channel.xform_filename);
@@ -589,7 +648,7 @@ void InitializeXformChannels(
         {
           std::cout
             << fmt::format(
-                "INFO: xform stream {}: specified pre-xform truncation does not provide full coverage of target indexing",
+                "INFO: xform stream {}: specified pre-xform truncation does not provide full coverage  of target indexing",
                 xform_channel.id
               )
             << std::endl
@@ -717,56 +776,33 @@ void GenerateOperatorSources(
       // read matrix for sector
       Eigen::MatrixXd operator_matrix;
       
-      // identity
       if (operator_channel.id=="identity")
-        operator_matrix = shell::IdentityOperatorMatrixJJJPN(target_sector,run_parameters.A);
-      // kinematic
-      //
-      // TODO neaten by mapping id to
-      // (radial_operator_labels,kinematic_operator_type,radial_operator_type)
-      // and refactoring
-      else if (operator_channel.id=="Ursqr")
+        // identity
         {
-          RadialOperatorLabels radial_operator_labels = RadialOperatorLabels(shell::RadialOperatorType::kR,2);
-          shell::KinematicOperatorType kinematic_operator_type = shell::KinematicOperatorType::kUTSqr;
-          shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kR;
-          const RadialOperatorData& radial_operator_data = radial_operators[radial_operator_labels];
-          operator_matrix = shell::KinematicMatrixJJJPN(
-              radial_operator_data.ket_orbital_space,radial_operator_data.sectors,radial_operator_data.matrices,
-              kinematic_operator_type,radial_operator_type,
-              target_sector,run_parameters.A
-            );
+          operator_matrix = shell::IdentityOperatorMatrixJJJPN(target_sector,run_parameters.A);
         }
-      else if (operator_channel.id=="Vr1r2")
+      else if (operator_channel.id=="loop-test")
+        // loop timing test
         {
-          RadialOperatorLabels radial_operator_labels = RadialOperatorLabels(shell::RadialOperatorType::kR,1);
-          shell::KinematicOperatorType kinematic_operator_type = shell::KinematicOperatorType::kVT1T2;
-          shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kR;
-          const RadialOperatorData& radial_operator_data = radial_operators[radial_operator_labels];
-          operator_matrix = shell::KinematicMatrixJJJPN(
-              radial_operator_data.ket_orbital_space,radial_operator_data.sectors,radial_operator_data.matrices,
-              kinematic_operator_type,radial_operator_type,
-              target_sector,run_parameters.A
-            );
+          operator_matrix = shell::TimingTestMatrixJJJPN(target_sector,true,true);
         }
-      else if (operator_channel.id=="Uksqr")
+      else if (kKinematicOperatorDefinitions.count(operator_channel.id))
+        // kinematic
         {
-          RadialOperatorLabels radial_operator_labels = RadialOperatorLabels(shell::RadialOperatorType::kK,2);
-          shell::KinematicOperatorType kinematic_operator_type = shell::KinematicOperatorType::kUTSqr;
-          shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kK;
+          shell::KinematicOperatorType kinematic_operator_type;
+          shell::RadialOperatorType radial_operator_type;
+          int radial_operator_power;
+          std::tie(kinematic_operator_type,radial_operator_type,radial_operator_power)
+            = kKinematicOperatorDefinitions.at(operator_channel.id);
+          RadialOperatorLabels radial_operator_labels = RadialOperatorLabels(radial_operator_type,radial_operator_power);
           const RadialOperatorData& radial_operator_data = radial_operators[radial_operator_labels];
-          operator_matrix = shell::KinematicMatrixJJJPN(
-              radial_operator_data.ket_orbital_space,radial_operator_data.sectors,radial_operator_data.matrices,
-              kinematic_operator_type,radial_operator_type,
-              target_sector,run_parameters.A
-            );
-        }
-      else if (operator_channel.id=="Vk1k2")
-        {
-          RadialOperatorLabels radial_operator_labels = RadialOperatorLabels(shell::RadialOperatorType::kK,1);
-          shell::KinematicOperatorType kinematic_operator_type = shell::KinematicOperatorType::kVT1T2;
-          shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kK;
-          const RadialOperatorData& radial_operator_data = radial_operators[radial_operator_labels];
+
+          // std::cout
+          //   << fmt::format(
+          //       "Sector: {} {} ",
+          //       target_sector.bra_subspace().LabelStr(),target_sector.ket_subspace().LabelStr()
+          //     )
+          //   << std::endl;
           operator_matrix = shell::KinematicMatrixJJJPN(
               radial_operator_data.ket_orbital_space,radial_operator_data.sectors,radial_operator_data.matrices,
               kinematic_operator_type,radial_operator_type,
@@ -774,53 +810,17 @@ void GenerateOperatorSources(
             );
         }
       // angular momentum square
-      //
-      // TODO neaten by mapping id to (family,species) and refactoring
-      else if (operator_channel.id=="Lp")
-        operator_matrix = shell::AngularMomentumMatrixJJJPN(
-            shell::AngularMomentumOperatorFamily::kOrbital,shell::AngularMomentumOperatorSpecies::kP,
-            target_sector,run_parameters.A
-          );
-      else if (operator_channel.id=="Ln")
-        operator_matrix = shell::AngularMomentumMatrixJJJPN(
-            shell::AngularMomentumOperatorFamily::kOrbital,shell::AngularMomentumOperatorSpecies::kN,
-            target_sector,run_parameters.A
-          );
-      else if (operator_channel.id=="L")
-        operator_matrix = shell::AngularMomentumMatrixJJJPN(
-            shell::AngularMomentumOperatorFamily::kOrbital,shell::AngularMomentumOperatorSpecies::kTotal,
-            target_sector,run_parameters.A
-          );
-      else if (operator_channel.id=="Sp")
-        operator_matrix = shell::AngularMomentumMatrixJJJPN(
-            shell::AngularMomentumOperatorFamily::kSpin,shell::AngularMomentumOperatorSpecies::kP,
-            target_sector,run_parameters.A
-          );
-      else if (operator_channel.id=="Sn")
-        operator_matrix = shell::AngularMomentumMatrixJJJPN(
-            shell::AngularMomentumOperatorFamily::kSpin,shell::AngularMomentumOperatorSpecies::kN,
-            target_sector,run_parameters.A
-          );
-      else if (operator_channel.id=="S")
-        operator_matrix = shell::AngularMomentumMatrixJJJPN(
-            shell::AngularMomentumOperatorFamily::kSpin,shell::AngularMomentumOperatorSpecies::kTotal,
-            target_sector,run_parameters.A
-          );
-      else if (operator_channel.id=="Jp")
-        operator_matrix = shell::AngularMomentumMatrixJJJPN(
-            shell::AngularMomentumOperatorFamily::kTotal,shell::AngularMomentumOperatorSpecies::kP,
-            target_sector,run_parameters.A
-          );
-      else if (operator_channel.id=="Jn")
-        operator_matrix = shell::AngularMomentumMatrixJJJPN(
-            shell::AngularMomentumOperatorFamily::kTotal,shell::AngularMomentumOperatorSpecies::kN,
-            target_sector,run_parameters.A
-          );
-      else if (operator_channel.id=="J")
-        operator_matrix = shell::AngularMomentumMatrixJJJPN(
-            shell::AngularMomentumOperatorFamily::kTotal,shell::AngularMomentumOperatorSpecies::kTotal,
-            target_sector,run_parameters.A
-          );
+      else if (kAngularMomentumOperatorDefinitions.count(operator_channel.id))
+        {
+          shell::AngularMomentumOperatorFamily operator_family;
+          shell::AngularMomentumOperatorSpecies operator_species;
+          std::tie(operator_family,operator_species)
+            = kAngularMomentumOperatorDefinitions.at(operator_channel.id);
+          operator_matrix = shell::AngularMomentumMatrixJJJPN(
+              operator_family,operator_species,
+              target_sector,run_parameters.A
+            );
+        }
 
       // save result
       // std::cout << fmt::format("Saving {}...",operator_channel.id) << std::endl;
@@ -840,7 +840,7 @@ void GenerateXformSources(
 {
   if (target_sector.IsDiagonal())
     {
-      //  SymmetrizeMatrix
+      //  CompleteLowerTriangle
     }
 }
 
