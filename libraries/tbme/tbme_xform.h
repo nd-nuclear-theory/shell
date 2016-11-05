@@ -30,7 +30,7 @@
 
 #include "basis/jjjpn_scheme.h"
 #include "basis/operator.h"
-#include "tbme/two_body_mapping.h"
+#include "tbme/tbme_mapping.h"
 
 
 namespace shell {
@@ -38,14 +38,17 @@ namespace shell {
   ////////////////////////////////////////////////////////////////
 
   Eigen::MatrixXd TwoBodyTransformedMatrix(
-      const typename basis::TwoBodySectorsJJJPN::SectorType& source_sector,
-      const Eigen::MatrixXd& source_matrix,
-      const typename basis::TwoBodySectorsJJJPN::SectorType& target_sector,
+      // radial overlap data
       const basis::OrbitalSpaceLJPN& radial_source_orbital_space,
       const basis::OrbitalSpaceLJPN& radial_target_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
       const basis::MatrixVector& radial_matrices,
-      const shell::TwoBodyMapping& two_body_mapping
+      // two-body indexing
+      const typename basis::TwoBodySectorsJJJPN::SectorType& source_sector,
+      const typename basis::TwoBodySectorsJJJPN::SectorType& target_sector,
+      const shell::TwoBodyMapping& two_body_mapping,
+      // matrix data
+      const Eigen::MatrixXd& source_matrix
     );
   // Carry out radial basis transformation on two-body matrix.
   //

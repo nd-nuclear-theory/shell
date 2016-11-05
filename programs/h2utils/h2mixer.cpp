@@ -1,6 +1,6 @@
 /******************************************************************************
 
-  h2mixer.cpp -- 
+  h2mixer.cpp -- two-body matrix element input, generation, transformation, and output
 
   Syntax:
     h2mixer
@@ -31,7 +31,7 @@
 #include "tbme/h2_io.h"
 #include "tbme/tbme_separable.h"
 #include "tbme/tbme_xform.h"
-#include "tbme/two_body_mapping.h"
+#include "tbme/tbme_mapping.h"
 
 ////////////////////////////////////////////////////////////////
 // matrix utilities
@@ -72,7 +72,6 @@ void CompleteLowerTriangle(tMatrixType& matrix)
       if (i>j)
         matrix(i,j) = matrix(j,i);
 }
-
 
 ////////////////////////////////////////////////////////////////
 // radial operator containers
@@ -632,9 +631,12 @@ void InitializeXformChannels(
 
       // diagnostic
       std::cout
-        << fmt::format("  {} matrix elements",basis::AllocatedEntries(radial_operator_data.matrices))
+        << fmt::format(
+            "  {} sectors; {} matrix elements",
+            radial_operator_data.sectors.size(),
+            basis::AllocatedEntries(radial_operator_data.matrices)
+          )
         << std::endl;
-
 
       // set up target mapping
       xform_channel.two_body_mapping = shell::TwoBodyMapping(
@@ -708,8 +710,12 @@ void GenerateInputSources(
       int input_sector_index
         = input_channel.stream_ptr->sectors().LookUpSectorIndex(input_bra_subspace_index,input_ket_subspace_index);
       // std::cout << fmt::format("Input channel {} index {}...",input_channel.id,input_sector_index) << std::endl;
+
+      // short circuit if no corresponding input sector
       if (input_sector_index == basis::kNone)
         continue;
+
+      // set up alias for input sector
       const typename basis::TwoBodySectorsJJJPN::SectorType& input_sector
         = input_channel.stream_ptr->sectors().GetSector(input_sector_index);
       // std::cout << "input" <<std::endl
@@ -724,38 +730,31 @@ void GenerateInputSources(
       input_channel.stream_ptr->SeekToSector(input_sector_index);
       input_channel.stream_ptr->ReadSector(input_matrix);
 
-      // remap input matrix to target indexing
-      Eigen::MatrixXd remapped_matrix
-        = Eigen::MatrixXd::Zero(target_sector.bra_subspace().size(),target_sector.ket_subspace().size());
-      for (int input_bra_index=0; input_bra_index<input_sector.bra_subspace().size(); ++input_bra_index)
-        for (int input_ket_index=0; input_ket_index<input_sector.ket_subspace().size(); ++input_ket_index)
-          {
+      // fill in lower triangle of matrix
+      //
+      // The full square matrix must be populated before remapping.
+      //
+      // Caution: We naively assume a symmetric matrix.  This is
+      // appropriate for scalar operators, but this may need to change
+      // to a more general phase relation for two-body nonscalar
+      // operators.
+      assert(input_channel.stream_ptr->sectors().J0()==0);
+      assert(input_channel.stream_ptr->sectors().g0()==0);
+      assert(input_channel.stream_ptr->sectors().Tz0()==0);
+      if (input_sector.IsDiagonal())
+        CompleteLowerTriangle(input_matrix);
 
-            // look up target matrix entry
-            int remapped_bra_index
-              = input_channel.two_body_mapping.state_mapping[input_sector.bra_subspace_index()][input_bra_index];
-            if (remapped_bra_index == basis::kNone)
-              continue;
-            int remapped_ket_index
-              = input_channel.two_body_mapping.state_mapping[input_sector.ket_subspace_index()][input_ket_index];
-            if (remapped_ket_index == basis::kNone)
-              continue;
-            // std::cout
-            //   << fmt::format("{} {} : {} {} / {} {} -> {} {} / {} {}",
-            //                  input_sector.bra_subspace_index(),input_sector.ket_subspace_index(),
-            //                  input_bra_index,input_ket_index,
-            //                  input_sector.bra_subspace().size(),input_sector.ket_subspace().size(),
-            //                  remapped_bra_index,remapped_ket_index,
-            //                  target_sector.bra_subspace().size(),target_sector.ket_subspace().size()
-            //     )
-            //   << std::endl;
-            remapped_matrix(remapped_bra_index,remapped_ket_index)
-              = input_matrix(input_bra_index,input_ket_index);
-          }
+      // remap input matrix to target indexing
+      Eigen::MatrixXd matrix
+        = RemappedMatrixJJJPN(
+            input_sector,
+            target_sector,
+            input_channel.two_body_mapping,
+            input_matrix
+          );
 
       // save result
-      // std::cout << fmt::format("Saving {}...",input_channel.id) << std::endl;
-      source_matrices[input_channel.id] = remapped_matrix;
+      source_matrices[input_channel.id] = matrix;
     }
 
 }
@@ -809,8 +808,8 @@ void GenerateOperatorSources(
               target_sector,run_parameters.A
             );
         }
-      // angular momentum square
       else if (kAngularMomentumOperatorDefinitions.count(operator_channel.id))
+        // angular momentum square
         {
           shell::AngularMomentumOperatorFamily operator_family;
           shell::AngularMomentumOperatorSpecies operator_species;
@@ -829,18 +828,89 @@ void GenerateOperatorSources(
 
 }
 
-
-
-
 void GenerateXformSources(
     std::vector<XformChannel>& xform_channels,
     std::map<std::string,Eigen::MatrixXd>& source_matrices,
     const typename basis::TwoBodySectorsJJJPN::SectorType& target_sector
   )
 {
-  if (target_sector.IsDiagonal())
+
+  // iterate over channels
+  for (auto& xform_channel : xform_channels)
     {
-      //  CompleteLowerTriangle
+            
+      // locate corresponding input sector
+      int input_bra_subspace_index
+        = xform_channel.stream_ptr->space().LookUpSubspaceIndex(target_sector.bra_subspace().labels());
+      int input_ket_subspace_index
+        = xform_channel.stream_ptr->space().LookUpSubspaceIndex(target_sector.ket_subspace().labels());
+      int input_sector_index
+        = xform_channel.stream_ptr->sectors().LookUpSectorIndex(input_bra_subspace_index,input_ket_subspace_index);
+
+      // locate corresponding intermediate pre-xform (truncated) sector
+      int pre_xform_bra_subspace_index
+        = xform_channel.pre_xform_two_body_indexing.space.LookUpSubspaceIndex(target_sector.bra_subspace().labels());
+      int pre_xform_ket_subspace_index
+        = xform_channel.pre_xform_two_body_indexing.space.LookUpSubspaceIndex(target_sector.ket_subspace().labels());
+      int pre_xform_sector_index
+        = xform_channel.pre_xform_two_body_indexing.sectors.LookUpSectorIndex(pre_xform_bra_subspace_index,pre_xform_ket_subspace_index);
+
+      // short circuit if no corresponding input or intermediate sectors
+      if (input_sector_index == basis::kNone)
+        continue;
+      if (pre_xform_sector_index == basis::kNone)
+        continue;
+
+      // set up aliases for input and intermediate pre-xform sectors
+      const typename basis::TwoBodySectorsJJJPN::SectorType& input_sector
+        = xform_channel.stream_ptr->sectors().GetSector(input_sector_index);
+      const typename basis::TwoBodySectorsJJJPN::SectorType& pre_xform_sector
+        = xform_channel.pre_xform_two_body_indexing.sectors.GetSector(pre_xform_sector_index);
+
+      // read matrix for sector
+      Eigen::MatrixXd input_matrix;
+      xform_channel.stream_ptr->SeekToSector(input_sector_index);
+      xform_channel.stream_ptr->ReadSector(input_matrix);
+
+      // fill in lower triangle of matrix
+      //
+      // The full square matrix must be populated before remapping.
+      //
+      // Caution: We naively assume a symmetric matrix.  This is
+      // appropriate for scalar operators, but this may need to change
+      // to a more general phase relation for two-body nonscalar
+      // operators.
+      assert(xform_channel.stream_ptr->sectors().J0()==0);
+      assert(xform_channel.stream_ptr->sectors().g0()==0);
+      assert(xform_channel.stream_ptr->sectors().Tz0()==0);
+      if (input_sector.IsDiagonal())
+        CompleteLowerTriangle(input_matrix);
+
+      // remap input matrix to pre-xform indexing
+      //
+      // This is the "truncation cut" on the two-body transformation.
+      Eigen::MatrixXd pre_xform_matrix
+        = RemappedMatrixJJJPN(
+            input_sector,
+            pre_xform_sector,
+            xform_channel.pre_xform_two_body_mapping,
+            input_matrix
+          );
+
+      // do the transformation
+      Eigen::MatrixXd matrix
+        = TwoBodyTransformedMatrix(
+            xform_channel.radial_operator_data.bra_orbital_space,
+            xform_channel.radial_operator_data.ket_orbital_space,
+            xform_channel.radial_operator_data.sectors,
+            xform_channel.radial_operator_data.matrices,
+            pre_xform_sector,target_sector,xform_channel.two_body_mapping,
+            pre_xform_matrix
+          );
+
+      // save result
+      source_matrices[xform_channel.id] = matrix;
+
     }
 }
 
@@ -971,7 +1041,6 @@ int main(int argc, char **argv)
 
   // set up channels
   InitializeInputChannels(run_parameters,target_indexing,input_channels);
-  // InitializeOperatorChannels(run_parameters,target_indexing,operator_channels);
   InitializeXformChannels(run_parameters,target_indexing,xform_channels);
   InitializeTargetChannels(run_parameters,target_indexing,target_channels);
 
@@ -990,7 +1059,7 @@ int main(int argc, char **argv)
       std::map<std::string,Eigen::MatrixXd> source_matrices;  // map id->matrix
       GenerateInputSources(input_channels,source_matrices,target_sector);
       GenerateOperatorSources(run_parameters,radial_operators,operator_channels,source_matrices,target_sector);
-      // GenerateXformSources
+      GenerateXformSources(xform_channels,source_matrices,target_sector);
 
       // generate targets
       GenerateTargets(target_channels,source_matrices,target_sector);

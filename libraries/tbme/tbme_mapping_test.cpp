@@ -1,12 +1,12 @@
 /****************************************************************
-  two_body_mapping_test.cpp
+  tbme_mapping_test.cpp
 
   Mark A. Caprio
   University of Notre Dame
 
 ****************************************************************/
 
-#include "tbme/two_body_mapping.h"
+#include "tbme/tbme_mapping.h"
 
 #include "cppformat/format.h"
 

@@ -1,21 +1,26 @@
 /****************************************************************
-  two_body_mapping.h                       
+  tbme_mapping.h
 
-  Defines mapping and masking of JJJPN-scheme two-body matrix element
-  indexings.
+  Defines mapping of JJJPN-scheme two-body matrix state indexings and
+  remapping copy function for two-body matrices.
                                   
   Mark A. Caprio
   University of Notre Dame
 
-  10/21/16 (mac): Created.
-  11/4/16 (mac): Add storage of subspace_mapping.
-     
+  - 10/21/16 (mac): Created, as two_body_mapping.
+  - 11/4/16 (mac):
+    + Add storage of subspace_mapping.
+    + Add RemappedMatrixJJJPN.
+    + Rename to tbme_mapping.
+
 ****************************************************************/
 
-#ifndef TWO_BODY_MAPPING_H_
-#define TWO_BODY_MAPPING_H_
+#ifndef TBME_MAPPING_H_
+#define TBME_MAPPING_H_
 
 #include <vector>
+
+#include "eigen3/Eigen/Dense"
 
 #include "basis/nlj_orbital.h"
 #include "basis/jjjpn_scheme.h"
@@ -93,6 +98,14 @@ namespace shell {
     std::string DebugStr() const;
 
   };
+
+Eigen::MatrixXd
+RemappedMatrixJJJPN(
+      const basis::TwoBodySectorsJJJPN::SectorType& source_sector,
+      const basis::TwoBodySectorsJJJPN::SectorType& target_sector,
+      const shell::TwoBodyMapping& two_body_mapping,
+      const Eigen::MatrixXd& source_matrix
+  );
 
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////

@@ -1,12 +1,12 @@
 /****************************************************************
-  two_body_mapping.cpp
+  tbme_mapping.cpp
 
   Mark A. Caprio
   University of Notre Dame
 
 ****************************************************************/
 
-#include "tbme/two_body_mapping.h"
+#include "tbme/tbme_mapping.h"
 
 #include <sstream>
 
@@ -232,6 +232,44 @@ namespace shell {
     return os.str();
 
   }
+
+Eigen::MatrixXd
+RemappedMatrixJJJPN(
+      const basis::TwoBodySectorsJJJPN::SectorType& source_sector,
+      const basis::TwoBodySectorsJJJPN::SectorType& target_sector,
+      const shell::TwoBodyMapping& two_body_mapping,
+      const Eigen::MatrixXd& source_matrix
+    )
+{
+  // Note: Could restructure loop to remove redundant lookups if needed.
+
+  // zero initialize target
+  //
+  // Target matrix might not be covered by source matrix elements, so zero padding is important.
+  Eigen::MatrixXd target_matrix
+    =Eigen::MatrixXd::Zero(target_sector.bra_subspace().size(),target_sector.ket_subspace().size());
+
+  // copy matrix elements
+  for (int source_bra_index=0; source_bra_index<source_sector.bra_subspace().size(); ++source_bra_index)
+    for (int source_ket_index=0; source_ket_index<source_sector.ket_subspace().size(); ++source_ket_index)
+          {
+            // look up target matrix entry indices
+            int remapped_bra_index
+              = two_body_mapping.state_mapping[source_sector.bra_subspace_index()][source_bra_index];
+            if (remapped_bra_index == basis::kNone)
+              continue;
+            int remapped_ket_index
+              = two_body_mapping.state_mapping[source_sector.ket_subspace_index()][source_ket_index];
+            if (remapped_ket_index == basis::kNone)
+              continue;
+
+            // copy entry
+            target_matrix(remapped_bra_index,remapped_ket_index)
+              = source_matrix(source_bra_index,source_ket_index);
+          }
+
+  return target_matrix;
+}
 
 
   ////////////////////////////////////////////////////////////////

@@ -1,7 +1,7 @@
 /****************************************************************
   tbme_separable.h
 
-  Evaluates TBMEs of certain separable operators.
+  Evaluates TBMEs of identity and certain separable operators.
 
   Normalization convention: All matrix elements are stored as NAS
   RMEs.  These RMEs are stored under the group theory Wigner-Eckart
@@ -64,7 +64,7 @@ namespace shell {
   //   A (int): atomic mass number
   //
   // Returns:
-  //   (Eigen::MatrixXd) : The matrix for this sector.
+  //   (Eigen::MatrixXd) : the matrix for this sector
 
   ////////////////////////////////////////////////////////////////
   // loop timing test
@@ -129,6 +129,9 @@ namespace shell {
   // Precondition: It is assumed that the sector is valid for a scalar
   // (and isoscalar and positive parity), i.e., is a diagonal sector.
   //
+  // Only the upper triangle of the returned matrix is populated (this
+  // operator only has diagonal sectors).
+  //
   // Arguments:
   //   radial_orbital_space, radial_sectors, radial_matrices (...):
   //      definition of radial matrix elements (T^2 for UTSqr or T for VT1T2)
@@ -141,7 +144,7 @@ namespace shell {
   //   A (int): atomic mass number
   //
   // Returns:
-  //   (Eigen::MatrixXd) : The matrix for this sector.
+  //   (Eigen::MatrixXd) : the matrix for this sector
 
   ////////////////////////////////////////////////////////////////
   // angular momentum operators
@@ -169,6 +172,9 @@ namespace shell {
   // Precondition: It is assumed that the sector is valid for a scalar
   // (and isoscalar and positive parity), i.e., is a diagonal sector.
   //
+  // Only the upper triangle of the returned matrix is populated (this
+  // operator only has diagonal sectors).
+  //
   // Arguments:
   //   operator_family (shell::AngularMomentumOperatorFamily):
   //     identifies momentum operator type (kOrbital, kSpin, kTotal)
@@ -179,7 +185,7 @@ namespace shell {
   //   A (int): atomic mass number
   //
   // Returns:
-  //   (Eigen::MatrixXd) : The matrix for this sector.
+  //   (Eigen::MatrixXd) : the matrix for this sector
 
 
   ////////////////////////////////////////////////////////////////
