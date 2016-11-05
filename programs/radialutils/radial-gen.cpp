@@ -198,9 +198,14 @@ void CalculateMatrixElements(spline::Basis basis_type, RunParameters run_paramet
     const basis::OrbitalSectorsLJPN::SectorType sector = sectors.GetSector(sector_index);
     Eigen::MatrixXd sector_matrix(sector.bra_subspace().size(), sector.ket_subspace().size());
 
+    // get sizes
+    const int bra_subspace_size = sector.bra_subspace().size();
+    const int ket_subspace_size = sector.ket_subspace().size();
+
+    // main loop
     #pragma omp parallel for collapse(2)
-    for (int j=0; j < sector.bra_subspace().size(); ++j) {
-      for (int k=0; k < sector.ket_subspace().size(); ++k) {
+    for (int j=0; j < bra_subspace_size; ++j) {
+      for (int k=0; k < ket_subspace_size; ++k) {
         // get bra state
         basis::OrbitalStateLJPN bra_state(sector.bra_subspace(), j);
         spline::WaveFunction bra_wavefunction(bra_state.n(), bra_state.l(), 1.0, basis_type);
