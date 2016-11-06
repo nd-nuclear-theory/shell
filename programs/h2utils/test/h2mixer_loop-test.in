@@ -5,4 +5,5 @@ set-target-multipolarity 0 0 0
 set-output-format 0
 set-mass 2
 
-define-operator-source loop-test
+# define-operator-source loop-test
+define-operator-source L

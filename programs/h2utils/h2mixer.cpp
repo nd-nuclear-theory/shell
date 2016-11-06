@@ -15,6 +15,8 @@
     - Add warnings of incomplete two-body range coverage.
     - Templatize and fix ChopMatrix.
     - Revise control structure for generating operator source matrices.
+  + 11/6/16 (mac):
+    - Add OpenMP/Eigen parallel initialization.
 
 ******************************************************************************/
 
@@ -1023,6 +1025,17 @@ int main(int argc, char **argv)
   std::vector<XformChannel> xform_channels;
   std::vector<TargetChannel> target_channels;
   ReadParameters(run_parameters,radial_operators,input_channels,operator_channels,xform_channels,target_channels);
+
+  // set up parallelization
+  
+  // for now, disable Eigen internal parallelization (but we will want it later for the matmul
+  std::cout
+    << fmt::format("Parallelization: max_threads {}, num_procs {}",
+                   omp_get_max_threads(), omp_get_num_procs()
+      )
+    << std::endl;
+  Eigen::initParallel();
+  Eigen::setNbThreads(1);
 
   // start timing
   Timer total_time;

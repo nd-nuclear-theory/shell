@@ -1,0 +1,88 @@
+commit f355a754fb4d2370cc0f46c87c76fdc3f0a555de
+Author: Mark A. Caprio <mcaprio-nd-edu>
+Date:   Sun Nov 6 11:22:48 2016 -0500
+
+    tbme_separable: Remove use of size() method call in omp for loop limit
+
+commit 58f5f513874e2c5ec66ad7f4f3fdd5d0933b0e06
+Author: Patrick Fasano <patrick@patrickfasano.com>
+Date:   Sat Nov 5 19:10:52 2016 -0400
+
+    tbme_separable: Fix omp directive under icpc
+
+
+----------------------------------------------------------------
+
+Test of empty loop
+
+define-operator-source loop-test
+
+  mac03:~/projects/shell/programs/h2utils% setenv OMP_NUM_THREADS 1                                                                                                                                                                            
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_loop-test.in
+
+  h2mixer -- MFDn H2 file generation
+
+
+  .........................................................................................................
+  (Total time: 2.745)
+
+  2.730u 0.046s 0:02.76 100.3%    0+0k 0+0io 131450pf+0w
+
+How can this be >100%?
+
+
+  mac03:~/projects/shell/programs/h2utils% setenv OMP_NUM_THREADS 2                                                                                                                                                                            
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_loop-test.in
+
+  h2mixer -- MFDn H2 file generation
+
+
+  .........................................................................................................
+  (Total time: 2.854)
+
+  2.683u 0.233s 0:02.57 113.2%    0+0k 0+0io 131259pf+0w
+
+Still increased wall time, but that's reasonable for a trivial inner loop.
+
+----------------------------------------------------------------
+
+Test of angular momentum loop
+
+define-operator-source L
+
+With one thread...
+
+  mac03:~/projects/shell/programs/h2utils% setenv OMP_NUM_THREADS 1                                                                                                                                                                            
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_loop-test.in                                                                                                                                                            
+
+  h2mixer -- MFDn H2 file generation
+
+
+  .........................................................................................................
+  (Total time: 18.315)
+
+  18.189u 0.312s 0:18.53 99.7%    0+0k 0+0io 131590pf+0w
+
+With two...
+
+  mac03:~/projects/shell/programs/h2utils% setenv OMP_NUM_THREADS 2                                                                                                                                                                            
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_loop-test.in                                                                                                                                                            
+
+  h2mixer -- MFDn H2 file generation
+
+
+  .........................................................................................................
+  (Total time: 19.359)
+
+  19.281u 0.093s 0:14.61 132.5%   0+0k 0+0io 131320pf+0w
+
+And, just to be safe, initializing Eigen and forcing Eigen down to single-threaded operation...
+
+  h2mixer -- MFDn H2 file generation
+
+  Parallelization: max threads 2, available processors 4
+
+  .........................................................................................................
+  (Total time: 19.297)
+
+  19.250u 0.265s 0:15.02 129.8%   0+0k 0+0io 131413pf+0w
