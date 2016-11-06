@@ -17,6 +17,7 @@
     - Revise control structure for generating operator source matrices.
   + 11/6/16 (mac):
     - Add OpenMP/Eigen parallel initialization.
+    - Update xform stream calculation to match implementation in tbme_xform.
 
 ******************************************************************************/
 

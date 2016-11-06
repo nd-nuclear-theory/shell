@@ -20,8 +20,12 @@
    + Kinematic mode calculates kinematic matrix elements between states of a
      single space.
    + Overlaps mode calculates radial overlaps between states with different
-     length parameter. @todo implement transformation between basis function
-     types.
+     length parameter.
+  11/6/16 (mac):
+   + Fix radial_operator_type in overlap mode.
+   + Overhaul control logic for matrix.
+   + Implement transformation to between different basis function types.
+   + Flag possible fencepost error in spline integration point/steps.
 
 ******************************************************************************/
 
@@ -134,7 +138,7 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters) {
     run_parameters.scale_ratio = 1.0;
   } else if (run_parameters.mode == OperationMode::kOverlaps) {
     // order for overlaps is 0 (i.e. r^0)
-    run_parameters.radial_operator = shell::RadialOperatorType::kR;
+    run_parameters.radial_operator = shell::RadialOperatorType::kO;
     run_parameters.order = 0;
 
     // scale ratio
@@ -190,9 +194,13 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters) {
   }
 }
 
-void CalculateMatrixElements(spline::Basis basis_type, RunParameters run_parameters,
-                             const basis::OrbitalSectorsLJPN& sectors,
-                             basis::MatrixVector& matrices) {
+void CalculateMatrixElements(
+    spline::Basis bra_basis_type, spline::Basis ket_basis_type,
+    double bra_scale_ratio, double ket_scale_ratio,
+    int order,
+    const basis::OrbitalSectorsLJPN& sectors,
+    basis::MatrixVector& matrices
+  ) {
   for (int sector_index=0; sector_index < sectors.size(); ++sector_index) {
     // get sector
     const basis::OrbitalSectorsLJPN::SectorType sector = sectors.GetSector(sector_index);
@@ -208,12 +216,13 @@ void CalculateMatrixElements(spline::Basis basis_type, RunParameters run_paramet
       for (int k=0; k < ket_subspace_size; ++k) {
         // get bra state
         basis::OrbitalStateLJPN bra_state(sector.bra_subspace(), j);
-        spline::WaveFunction bra_wavefunction(bra_state.n(), bra_state.l(), 1.0, basis_type);
+        spline::WaveFunction bra_wavefunction(bra_state.n(), bra_state.l(), bra_scale_ratio, bra_basis_type);
         // get ket state
         basis::OrbitalStateLJPN ket_state(sector.ket_subspace(), k);
-        spline::WaveFunction ket_wavefunction(ket_state.n(), ket_state.l(), run_parameters.scale_ratio, basis_type);
+        spline::WaveFunction ket_wavefunction(ket_state.n(), ket_state.l(), ket_scale_ratio, ket_basis_type);
 
-        sector_matrix(j, k) = bra_wavefunction.MatrixElement(3000, ket_wavefunction, run_parameters.order);
+        const int num_integration_steps_or_maybe_points_or_whatever = 3000;
+        sector_matrix(j, k) = bra_wavefunction.MatrixElement(num_integration_steps_or_maybe_points_or_whatever, ket_wavefunction, order);
       }
     }
     matrices.push_back(sector_matrix);
@@ -238,23 +247,47 @@ int main(int argc, char **argv) {
   Eigen::initParallel();
   basis::MatrixVector matrices;
 
-  // main control logic router
-  if (run_parameters.radial_operator == shell::RadialOperatorType::kR) {
-    if (run_parameters.basis_type == AnalyticBasisType::kOscillator) {
-      CalculateMatrixElements(spline::Basis::HC, run_parameters, sectors, matrices);
-    } else if (run_parameters.basis_type == AnalyticBasisType::kLaguerre) {
-      CalculateMatrixElements(spline::Basis::LC, run_parameters, sectors, matrices);
+  // main control logic
+  spline::Basis bra_basis_type, ket_basis_type;
+  double bra_scale_ratio, ket_scale_ratio;
+  int order;
+  if (run_parameters.mode == OperationMode::kKinematic)
+    {
+      bra_scale_ratio = ket_scale_ratio = 1.;
+      order = run_parameters.order;
+      if (run_parameters.radial_operator == shell::RadialOperatorType::kR)
+        {
+          if (run_parameters.basis_type == AnalyticBasisType::kOscillator)
+            bra_basis_type = ket_basis_type = spline::Basis::HC;
+          else if (run_parameters.basis_type == AnalyticBasisType::kLaguerre)
+            bra_basis_type = ket_basis_type = spline::Basis::LC;
+        }
+      else if (run_parameters.radial_operator == shell::RadialOperatorType::kK)
+        {
+          if (run_parameters.basis_type == AnalyticBasisType::kOscillator)
+            bra_basis_type = ket_basis_type = spline::Basis::HM;
+          else if (run_parameters.basis_type == AnalyticBasisType::kLaguerre)
+            bra_basis_type = ket_basis_type = spline::Basis::LM;
+        }
     }
-  } else if (run_parameters.radial_operator == shell::RadialOperatorType::kK) {
-    if (run_parameters.basis_type == AnalyticBasisType::kOscillator) {
-      CalculateMatrixElements(spline::Basis::HM, run_parameters, sectors, matrices);
-    } else if (run_parameters.basis_type == AnalyticBasisType::kLaguerre) {
-      CalculateMatrixElements(spline::Basis::LM, run_parameters, sectors, matrices);
+  else if (run_parameters.mode == OperationMode::kOverlaps)
+    {
+      bra_scale_ratio = 1.;
+      ket_scale_ratio = run_parameters.scale_ratio;
+      bra_basis_type = spline::Basis::HC;
+      order = 0;
+      if (run_parameters.basis_type == AnalyticBasisType::kOscillator)
+        ket_basis_type = spline::Basis::HC;
+      else if (run_parameters.basis_type == AnalyticBasisType::kLaguerre)
+        ket_basis_type = spline::Basis::LC;
     }
-  } else {
-    std::cerr << "ERROR: No matrix elements calculated. Exiting." << std::endl;
-    std::exit(EXIT_FAILURE);
-  }
+
+  CalculateMatrixElements(
+      bra_basis_type, ket_basis_type,
+      bra_scale_ratio, ket_scale_ratio,
+      order,
+      sectors, matrices
+    );
 
   // write out to file
   shell::OutRadialStream os(run_parameters.output_filename,
