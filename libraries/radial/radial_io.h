@@ -1,6 +1,5 @@
-/// @file
-/****************************************************************
-  radial_io.h
+/************************************************************//**
+  @file radial_io.h
 
   Defines I/O classes for radial matrix element storage.
 

@@ -1,17 +1,17 @@
-/// @file
-/******************************************************************************
+/**************************************************************************//**
+  @file orbital-gen.cpp
 
-  orbital-gen.cpp -- generate MFDn v15 orbital files
+  generate MFDn v15 orbital files
 
   Syntax:
-    orbital-gen --oscillator Nmax output_file
-    orbital-gen --triangular weight_max a b output_file
-      weight = a*n + b*l
+    + orbital-gen --oscillator Nmax output_file
+    + orbital-gen --triangular weight_max a b output_file
+      - weight = a*n + b*l
 
   Patrick J. Fasano
   University of Notre Dame
 
-  11/6/16 (pjf): Created, based on radial-gen.
+  + 11/6/16 (pjf): Created, based on radial-gen.
 
 ******************************************************************************/
 

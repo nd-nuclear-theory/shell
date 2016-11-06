@@ -1,13 +1,12 @@
-/// @file
-/******************************************************************************
+/**************************************************************************//**
+  @file radial-gen.cpp
 
-  radial-gen.cpp -- compute radial matrix elements
+  compute radial matrix elements
 
   Syntax:
-    radial-gen --kinematic operator_type order analytic_basis_type orbital_file output_filename
-       operator_type={r,k}
-
-    radial-gen --overlaps scale_ratio analytic_basis_type orbital_file output_filename
+    + radial-gen --kinematic operator_type order analytic_basis_type orbital_file output_filename
+      - operator_type={r,k}
+    + radial-gen --overlaps scale_ratio analytic_basis_type orbital_file output_filename
 
   @note Currently only computes radial matrix elements between harmonic oscillator
   or Laguerre basis functions with identical bra and ket spaces.
@@ -15,17 +14,17 @@
   Patrick J. Fasano
   University of Notre Dame
 
-  11/2/16 (pjf): Created, based on h2conv.
-  11/4/16 (pjf): Implement different modes of operation:
-   + Kinematic mode calculates kinematic matrix elements between states of a
+  + 11/2/16 (pjf): Created, based on h2conv.
+  + 11/4/16 (pjf): Implement different modes of operation:
+    - Kinematic mode calculates kinematic matrix elements between states of a
      single space.
-   + Overlaps mode calculates radial overlaps between states with different
+    - Overlaps mode calculates radial overlaps between states with different
      length parameter.
-  11/6/16 (mac):
-   + Fix radial_operator_type in overlap mode.
-   + Overhaul control logic for matrix.
-   + Implement transformation to between different basis function types.
-   + Flag possible fencepost error in spline integration point/steps.
+  + 11/6/16 (mac):
+    - Fix radial_operator_type in overlap mode.
+    - Overhaul control logic for matrix.
+    - Implement transformation to between different basis function types.
+    - Flag possible fencepost error in spline integration point/steps.
 
 ******************************************************************************/
 

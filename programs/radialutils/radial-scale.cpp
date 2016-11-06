@@ -1,15 +1,15 @@
-/// @file
-/******************************************************************************
+/**************************************************************************//**
+  @file radial-scale.cpp
 
-  radial-scale.cpp -- rescale radial matrix elements with new oscillator length
+  rescale radial matrix elements with new oscillator length
 
   Syntax:
-    radial-scale proton_length_ratio neutron_length_ratio input_file output_file
+    + radial-scale proton_length_ratio neutron_length_ratio input_file output_file
 
   Patrick J. Fasano
   University of Notre Dame
 
-  11/4/16 (pjf): Created, based on radial-gen.cpp.
+  + 11/4/16 (pjf): Created, based on radial-gen.cpp.
 
 ******************************************************************************/
 
