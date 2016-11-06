@@ -18,7 +18,7 @@ namespace shell {
   // two-body identity operator
   ////////////////////////////////////////////////////////////////
 
-  Eigen::MatrixXd 
+  Eigen::MatrixXd
   IdentityOperatorMatrixJJJPN(
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       int A
@@ -41,7 +41,7 @@ namespace shell {
   // loop timing test
   ////////////////////////////////////////////////////////////////
 
-  Eigen::MatrixXd 
+  Eigen::MatrixXd
   TimingTestMatrixJJJPN(
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       bool loop,
@@ -63,10 +63,11 @@ namespace shell {
 
     if (loop)
       {
+        const int subspace_size = subspace.size();
         // for upper-triangular pairs of states in sector
 #pragma omp parallel for collapse(2)
-        for (int bra_index = 0; bra_index < subspace.size(); ++bra_index)
-          for (int ket_index = 0; ket_index < subspace.size(); ++ket_index)
+        for (int bra_index = 0; bra_index < subspace_size; ++bra_index)
+          for (int ket_index = 0; ket_index < subspace_size; ++ket_index)
             {
 
               // diagonal sector: restrict to upper triangle
@@ -144,16 +145,16 @@ namespace shell {
   // factor, this RME would be in Edmonds convention.  But I think
   // this factor is the wrong way to go to group theory convention.
   {
-    
+
     // int na = a.n();
     // int nb = b.n();
     int la = a.l();
     int lb = b.l();
     HalfInt ja = a.j();
     HalfInt jb = b.j();
-    
+
     double matrix_element = 0.;
-    
+
     if ( am::AllowedTriangle(ja,1,jb) && ((la+lb+1)%2==0) )
       {
         double radial_matrix_element = basis::MatrixElementLJPN(
@@ -164,7 +165,7 @@ namespace shell {
           * am::ClebschGordan(ja,HalfInt(1,2),1,0,jb,HalfInt(1,2))
           * radial_matrix_element;
       }
-    
+
     return matrix_element;
   }
 
@@ -305,7 +306,7 @@ namespace shell {
     //       bra.index(),ket.index()
     //     )
     //   << std::endl;
-    
+
     // evaluate matrix element
     double matrix_element = 0.;
     matrix_element += ShellKinematicVectorDotTBMEProduct(
@@ -334,7 +335,7 @@ namespace shell {
     return matrix_element;
   }
 
-  Eigen::MatrixXd 
+  Eigen::MatrixXd
   KinematicMatrixJJJPN(
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
@@ -458,16 +459,16 @@ namespace shell {
   // Based on Suhonen "From nucleons to nucleus" (2.56) and (2.58).  See
   // mac "spin operator" notes page 3.
   {
-    
+
     int na = a.n();
     int nb = b.n();
     int la = a.l();
     int lb = b.l();
     HalfInt ja = a.j();
     HalfInt jb = b.j();
-    
+
     double matrix_element = 0.;
-    
+
     if ( (nb == na) && (lb == la) )
       {
   	if (
@@ -487,7 +488,7 @@ namespace shell {
   	    matrix_element += sqrt(3./2.)*Hat(jb)*Hat(ja)*phase*am::Wigner6J(HalfInt(1,2),HalfInt(1,2),1,ja,jb,la);
   	  }
       }
-      
+
     return matrix_element;
   }
 
@@ -495,7 +496,7 @@ namespace shell {
       shell::AngularMomentumOperatorFamily operator_family,
       shell::AngularMomentumOperatorSpecies operator_species,
       basis::TwoBodySpeciesPN two_body_species,
-      int J, 
+      int J,
       const basis::TwoBodyStateJJJPN& s2, const basis::TwoBodyStateJJJPN& s1
     )
   // Evaluate <cd|V_(T^2)|ab> for the "upgraded" two-body operator
@@ -549,8 +550,8 @@ namespace shell {
   }
 
   double ShellAngularMomentumVectorDotTBMEProduct(
-      shell::AngularMomentumOperatorFamily operator_family, 
-      int J, 
+      shell::AngularMomentumOperatorFamily operator_family,
+      int J,
       const basis::OrbitalStatePN& c, const basis::OrbitalStatePN& d,
       const basis::OrbitalStatePN& a, const basis::OrbitalStatePN& b
     )
@@ -570,15 +571,15 @@ namespace shell {
     int phase = ParitySign(d.j() + a.j() + J);
     double matrix_element = phase * am::Wigner6J(c.j(),d.j(),J,b.j(),a.j(),1)
       * ShellAngularMomentumVectorOBRME(operator_family,c,a) * ShellAngularMomentumVectorOBRME(operator_family,d,b);
-  	
+
     return matrix_element;
   }
 
   double ShellAngularMomentumVectorDotTBME(
       shell::AngularMomentumOperatorFamily operator_family,
-      shell::AngularMomentumOperatorSpecies operator_species, 
+      shell::AngularMomentumOperatorSpecies operator_species,
       basis::TwoBodySpeciesPN two_body_species,
-      int J, 
+      int J,
       const basis::TwoBodyStateJJJPN& s2, const basis::TwoBodyStateJJJPN& s1
     )
   // Evaluate the matrix element <cd|T1.T2|ab> of a dot product of
@@ -599,7 +600,7 @@ namespace shell {
     const basis::OrbitalStatePN& b = s1.GetOrbital2();
     const basis::OrbitalStatePN& c = s2.GetOrbital1();
     const basis::OrbitalStatePN& d = s2.GetOrbital2();
-    
+
     double matrix_element = 0.;
 
     if (
@@ -621,14 +622,14 @@ namespace shell {
 	// proton-neutron case
 	matrix_element += ShellAngularMomentumVectorDotTBMEProduct(operator_family,J,c,d,a,b);
       }
-    
+
     return matrix_element;
   }
 
-  Eigen::MatrixXd 
+  Eigen::MatrixXd
   AngularMomentumMatrixJJJPN(
-      shell::AngularMomentumOperatorFamily operator_family, 
-      shell::AngularMomentumOperatorSpecies operator_species, 
+      shell::AngularMomentumOperatorFamily operator_family,
+      shell::AngularMomentumOperatorSpecies operator_species,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       int A
     )
@@ -662,9 +663,9 @@ namespace shell {
 	  basis::TwoBodyStateJJJPN ket(subspace,ket_index);
 
 	  // calculate matrix element (pn or AS)
-	  double matrix_element_t2 
+	  double matrix_element_t2
 	    = ShellAngularMomentumScalarTBME(operator_family,operator_species,two_body_species,J,bra,ket);
-	  double matrix_element_t1t2 
+	  double matrix_element_t1t2
 	    = ShellAngularMomentumVectorDotTBME(operator_family,operator_species,two_body_species,J,bra,ket);
 	  double matrix_element = 1./(A-1)*matrix_element_t2 + 2*matrix_element_t1t2;
 
@@ -685,7 +686,7 @@ namespace shell {
 
     return matrix;
   }
-    
+
 
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
