@@ -5,7 +5,11 @@ set-target-multipolarity 0 0 0
 set-output-format 0
 set-mass 999
 
-define-xform-source VNN test/tbme-identity-tb-2-v0.dat 2 2 2 2 2 test/radial-xform-dummy-Nmax10.dat
+define-xform-source identity-1.000 test/tbme-identity-tb-2-v0.dat 2 2 2 2 2 test/radial-olap-ho-b1.000-Nmax20.dat
+define-xform-source identity-1.414 test/tbme-identity-tb-2-v0.dat 2 2 2 2 2 test/radial-olap-ho-b1.414-Nmax20.dat
 
-define-target xform test/tbme-xform.dat
-  add-source VNN 1
+define-target identity-1.000 test/tbme-xform.dat
+  add-source identity-1.000 1
+
+define-target identity-1.414 test/tbme-xform.dat
+  add-source identity-1.414 1

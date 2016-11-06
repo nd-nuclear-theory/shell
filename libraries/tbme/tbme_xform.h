@@ -46,7 +46,6 @@ namespace shell {
       // two-body indexing
       const typename basis::TwoBodySectorsJJJPN::SectorType& source_sector,
       const typename basis::TwoBodySectorsJJJPN::SectorType& target_sector,
-      const shell::TwoBodyMapping& two_body_mapping,
       // matrix data
       const Eigen::MatrixXd& source_matrix
     );

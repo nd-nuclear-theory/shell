@@ -232,7 +232,7 @@ struct XformChannel
   RadialOperatorData radial_operator_data;
 
   // target mapping
-  shell::TwoBodyMapping two_body_mapping;
+  // shell::TwoBodyMapping two_body_mapping;
 };
 
 struct TargetChannel
@@ -480,7 +480,8 @@ void InitializeRadialOperators(RadialOperatorMap& radial_operators)
         << std::endl;
     }
 
-  std::cout << std::endl;
+  if (radial_operators.size()>0)
+    std::cout << std::endl;
 }
 
 void InitializeTargetIndexing(
@@ -640,19 +641,25 @@ void InitializeXformChannels(
           )
         << std::endl;
 
-      // set up target mapping
-      xform_channel.two_body_mapping = shell::TwoBodyMapping(
+      // diagnostic: set up target mapping
+      //
+      // No actual mapping is carried out, since this is instead taken
+      // care of by the radial overlaps in the similarity
+      // transformation.  But it is informative to check the coverage
+      // of the mapping in case the user is assuming a true identity
+      // mapping.
+      shell::TwoBodyMapping two_body_mapping = shell::TwoBodyMapping(
           xform_channel.pre_xform_two_body_indexing.orbital_space,
           xform_channel.pre_xform_two_body_indexing.space,
           target_indexing.orbital_space,
           target_indexing.space
         );
       // std::cout << input_channel.two_body_mapping.DebugStr() << std::endl;
-      if (!xform_channel.pre_xform_two_body_mapping.range_states_covered)
+      if (!two_body_mapping.range_states_covered)
         {
           std::cout
             << fmt::format(
-                "INFO: xform stream {}: specified pre-xform truncation does not provide full coverage  of target indexing",
+                "INFO: xform stream {}: specified pre-xform truncation does not provide full coverage of target indexing (may be okay)",
                 xform_channel.id
               )
             << std::endl
@@ -901,12 +908,12 @@ void GenerateXformSources(
 
       // do the transformation
       Eigen::MatrixXd matrix
-        = TwoBodyTransformedMatrix(
+        = shell::TwoBodyTransformedMatrix(
             xform_channel.radial_operator_data.bra_orbital_space,
             xform_channel.radial_operator_data.ket_orbital_space,
             xform_channel.radial_operator_data.sectors,
             xform_channel.radial_operator_data.matrices,
-            pre_xform_sector,target_sector,xform_channel.two_body_mapping,
+            pre_xform_sector,target_sector,
             pre_xform_matrix
           );
 
@@ -1033,6 +1040,7 @@ int main(int argc, char **argv)
     << fmt::format("Parallelization: max_threads {}, num_procs {}",
                    omp_get_max_threads(), omp_get_num_procs()
       )
+    << std::endl
     << std::endl;
   Eigen::initParallel();
   Eigen::setNbThreads(1);
