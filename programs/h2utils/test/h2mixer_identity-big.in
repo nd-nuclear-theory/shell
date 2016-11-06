@@ -6,4 +6,3 @@ set-output-format 0
 set-mass 2
 
 define-operator-source identity
-# define-operator-source loop-test

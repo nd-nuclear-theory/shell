@@ -25,6 +25,8 @@
   + 11/4/16 (mac):
     - Complete implementation of kinematic operators.
     - Attempt OpenMP parallelization of kinematic operators.
+  + 11/6/16 (mac): Remove use of size() method call in omp for
+    loop limit.
 
 ****************************************************************/
 

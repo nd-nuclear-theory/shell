@@ -63,8 +63,8 @@ namespace shell {
 
     if (loop)
       {
-        const int subspace_size = subspace.size();
         // for upper-triangular pairs of states in sector
+        const int subspace_size = subspace.size();
 #pragma omp parallel for collapse(2)
         for (int bra_index = 0; bra_index < subspace_size; ++bra_index)
           for (int ket_index = 0; ket_index < subspace_size; ++ket_index)
@@ -360,9 +360,10 @@ namespace shell {
     bool momentum_space = (radial_operator_type == shell::RadialOperatorType::kK);
 
     // for upper-triangular pairs of states in sector
-    // #pragma omp parallel for collapse(2)
-    for (int bra_index = 0; bra_index < subspace.size(); ++bra_index)
-      for (int ket_index = 0; ket_index < subspace.size(); ++ket_index)
+    const int subspace_size = subspace.size();
+#pragma omp parallel for collapse(2)
+    for (int bra_index = 0; bra_index < subspace_size; ++bra_index)
+      for (int ket_index = 0; ket_index < subspace_size; ++ket_index)
 	{
 
           // diagonal sector: restrict to upper triangle
@@ -389,9 +390,8 @@ namespace shell {
               );
 
           // convert to NAS if needed
-          if (subspace.two_body_species()!=basis::TwoBodySpeciesPN::kPN)
+          if (two_body_species!=basis::TwoBodySpeciesPN::kPN)
             {
-              double conversion_factor = 1.;
               if (bra.index1()==bra.index2())
                 matrix_element *= 1/(sqrt(2.));
               if (ket.index1()==ket.index2())
@@ -648,9 +648,10 @@ namespace shell {
     const int g = subspace.g();
 
     // for upper-triangular pairs of states in sector
-    // #pragma omp parallel for collapse(2)
-    for (int bra_index = 0; bra_index < subspace.size(); ++bra_index)
-      for (int ket_index = 0; ket_index < subspace.size(); ++ket_index)
+    const int subspace_size = subspace.size();
+#pragma omp parallel for collapse(2)
+    for (int bra_index = 0; bra_index < subspace_size; ++bra_index)
+      for (int ket_index = 0; ket_index < subspace_size; ++ket_index)
 	{
 
           // diagonal sector: restrict to upper triangle
@@ -670,9 +671,8 @@ namespace shell {
 	  double matrix_element = 1./(A-1)*matrix_element_t2 + 2*matrix_element_t1t2;
 
           // convert to NAS if needed
-          if (subspace.two_body_species()!=basis::TwoBodySpeciesPN::kPN)
+          if (two_body_species!=basis::TwoBodySpeciesPN::kPN)
             {
-              double conversion_factor = 1.;
               if (bra.index1()==bra.index2())
                 matrix_element *= 1/(sqrt(2.));
               if (ket.index1()==ket.index2())
