@@ -1,0 +1,8 @@
+# h2mixer_zero-big-v15099.in -- output only test
+
+set-target-indexing-oscillator tb 20
+set-target-multipolarity 0 0 0
+set-output-format 15099
+set-mass 2
+
+define-target zero test/tbme-zero-tb-20-v15099.dat
