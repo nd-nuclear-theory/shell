@@ -25,8 +25,9 @@
   + 11/4/16 (mac):
     - Complete implementation of kinematic operators.
     - Attempt OpenMP parallelization of kinematic operators.
-  + 11/6/16 (mac): Remove use of size() method call in omp for
-    loop limit.
+  + 11/6/16 (mac):
+    - Remove use of size() in omp for loop limit.
+    - Refactor implementation of KinematicScalarTBME.
 
 ****************************************************************/
 
@@ -36,7 +37,6 @@
 #include "eigen3/Eigen/Dense"
 
 #include "basis/jjjpn_scheme.h"
-#include "basis/nlj_operator.h"
 #include "radial/radial_io.h"
 
 namespace shell {
