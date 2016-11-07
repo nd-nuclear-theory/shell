@@ -1,0 +1,17 @@
+# h2mixer_xform.in -- basic test of tbme xform
+
+# test case: unitary xform on square-truncated input to square-truncated output
+
+set-target-indexing-oscillator tb 6
+set-target-multipolarity 0 0 0
+set-output-format 0
+set-mass 999
+
+# standard oscillator
+
+define-xform-source identity-1.000 test/tbme-identity-ob-6-v0.dat 6 6 12 12 12 test/radial-olap-ho-b1.000-Nmax20.dat
+define-target identity-1.000 test/tbme-identity-ob-6-xform-b1.000.dat
+  add-source identity-1.000 1
+
+
+

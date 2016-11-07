@@ -1044,7 +1044,7 @@ int main(int argc, char **argv)
     << std::endl
     << std::endl;
   Eigen::initParallel();
-  Eigen::setNbThreads(1);
+  Eigen::setNbThreads(0);
 
   // start timing
   Timer total_time;

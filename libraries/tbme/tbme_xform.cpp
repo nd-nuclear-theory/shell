@@ -7,7 +7,7 @@
 ****************************************************************/
 
 #include "basis/nlj_operator.h"
-// #include "cppformat/format.h"  // for debugging
+#include "cppformat/format.h"  // for debugging
 #include "tbme/tbme_xform.h"
 
 namespace shell {
@@ -179,8 +179,10 @@ namespace shell {
 	  basis::TwoBodyStateJJJPN ket(ket_subspace,ket_index);
 
 	  // calculate matrix element (pn or AS)
-	  double matrix_element;
-          // TODO
+	  double matrix_element = TwoBodyOverlap(
+              radial_source_orbital_space,radial_target_orbital_space,radial_sectors,radial_matrices,
+              bra,ket
+            );
 
           // convert to NAS if needed
           if (two_body_species!=basis::TwoBodySpeciesPN::kPN)
@@ -239,6 +241,17 @@ namespace shell {
 
     // carry out xform
     Eigen::MatrixXd target_matrix = bra_xform_matrix.transpose() * source_matrix * ket_xform_matrix;
+
+    // diagonstics for inspecting unitary transformations
+    //
+    // std::cout
+    //   << fmt::format("Sector: {} {}",target_sector.bra_subspace().LabelStr(),target_sector.ket_subspace().LabelStr()) << std::endl
+    //   << "Source" << std::endl
+    //   << source_matrix  << std::endl
+    //   << "Transformation" << std::endl
+    //   << ket_xform_matrix  << std::endl
+    //   << "Target" << std::endl
+    //   << target_matrix  << std::endl;
 
     return target_matrix;
   }

@@ -1,15 +1,25 @@
 # h2mixer_xform.in -- basic test of tbme xform
 
-set-target-indexing-oscillator tb 2
+# test case: unitary xform on square-truncated input to square-truncated output
+
+set-target-indexing-oscillator ob 6
 set-target-multipolarity 0 0 0
 set-output-format 0
 set-mass 999
 
-define-xform-source identity-1.000 test/tbme-identity-tb-2-v0.dat 2 2 2 2 2 test/radial-olap-ho-b1.000-Nmax20.dat
-define-xform-source identity-1.414 test/tbme-identity-tb-2-v0.dat 2 2 2 2 2 test/radial-olap-ho-b1.414-Nmax20.dat
+# standard oscillator
 
-define-target identity-1.000 test/tbme-xform.dat
+define-xform-source identity-1.000 test/tbme-identity-ob-6-v0.dat 6 6 12 12 12 test/radial-olap-ho-b1.000-Nmax20.dat
+define-target identity-1.000 test/tbme-identity-ob-6-xform-b1.000.dat
   add-source identity-1.000 1
 
-define-target identity-1.414 test/tbme-xform.dat
+define-xform-source identity-1.414 test/tbme-identity-ob-6-v0.dat 6 6 12 12 12 test/radial-olap-ho-b1.414-Nmax20.dat
+define-target identity-1.414 test/tbme-identity-ob-6-xform-b1.414.dat
   add-source identity-1.414 1
+
+# permutation
+define-xform-source identity-permute test/tbme-identity-ob-6-v0.dat 6 6 12 12 12 test/radial-olap-permute-Nmax06.dat
+define-target identity-permute test/tbme-identity-ob-6-xform-permute.dat
+  add-source identity-permute 1
+
+

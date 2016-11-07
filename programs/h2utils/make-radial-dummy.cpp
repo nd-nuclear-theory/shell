@@ -6,20 +6,20 @@
   Mark A. Caprio
   University of Notre Dame
 
-  10/30/16 (mac): Created, based on radial_io_test.
+  10/30/16 (mac): Created (make_dummy_radial), based on radial_io_test.
   11/1/16 (mac): Update to use RadialOperatorType::kO.
+  11/6/16 (mac): Rename to make_radial_dummy.
 
 ****************************************************************/
 
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <string>
 
-#include "radial/radial_io.h"
+#include "eigen3/Eigen/Dense"
 
-#include "eigen3/Eigen/Core"
 #include "basis/nlj_orbital.h"
+#include "radial/radial_io.h"
 
 ////////////////////////////////////////////////////////////////
 // test code
