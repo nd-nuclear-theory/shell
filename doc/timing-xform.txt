@@ -1,0 +1,479 @@
+tbme xform timing tests
+
+----------------------------------------------------------------
+
+mac, 11/6/16
+
+testing at ob-6
+
+ASCII I/O
+
+  mac03:~/projects/shell/programs/h2utils% setenv OMP_NUM_THREADS 1
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_xform-timing.in
+
+  h2mixer -- MFDn H2 file generation
+
+  Parallelization: max_threads 1, num_procs 4
+
+  Input stream (xform) -- identity-1.000
+    File: test/tbme-identity-ob-6-v0.dat
+    Format: 0 (text)
+    Orbitals: p 28 n 28 (oscillator-like true)
+    Truncation: p 6.0000 n 6.0000 pp 12.0000 nn 12.0000 pn 12.0000
+    Sectors: pp 26 nn 26 pn 27 => total 79
+    Matrix elements: pp 78000 nn 78000 pn 311032 => total 467032
+
+  Reading radial overlaps from test/radial-olap-ho-b1.000-Nmax20.dat...
+    82 sectors; 3322 matrix elements
+
+  Output stream -- identity-1.000
+    File: test/tbme-identity-ob-6-xform-b1.000.dat
+    Format: 0 (text)
+    Orbitals: p 28 n 28 (oscillator-like true)
+    Truncation: p 6.0000 n 6.0000 pp 6.0000 nn 6.0000 pn 6.0000
+    Sectors: pp 15 nn 15 pn 15 => total 45
+    Matrix elements: pp 4060 nn 4060 pn 16078 => total 24198
+
+  .............................................
+  (Total time: 2.698)
+
+  2.542u 0.311s 0:02.94 96.9%     0+0k 0+0io 4109pf+0w
+
+binary I/O
+
+  h2mixer -- MFDn H2 file generation
+
+  Parallelization: max_threads 1, num_procs 4
+
+  Input stream (xform) -- identity-1.000
+    File: test/tbme-identity-ob-6-v0.bin
+    Format: 0 (binary)
+    Orbitals: p 28 n 28 (oscillator-like true)
+    Truncation: p 6.0000 n 6.0000 pp 12.0000 nn 12.0000 pn 12.0000
+    Sectors: pp 26 nn 26 pn 27 => total 79
+    Matrix elements: pp 78000 nn 78000 pn 311032 => total 467032
+
+  Reading radial overlaps from test/radial-olap-ho-b1.000-Nmax20.dat...
+    82 sectors; 3322 matrix elements
+
+  Output stream -- identity-1.000
+    File: test/tbme-identity-ob-6-xform-b1.000.bin
+    Format: 0 (binary)
+    Orbitals: p 28 n 28 (oscillator-like true)
+    Truncation: p 6.0000 n 6.0000 pp 6.0000 nn 6.0000 pn 6.0000
+    Sectors: pp 15 nn 15 pn 15 => total 45
+    Matrix elements: pp 4060 nn 4060 pn 16078 => total 24198
+
+  .............................................
+  (Total time: 1.014)
+
+  1.014u 0.046s 0:01.06 99.0%     0+0k 0+0io 4081pf+0w
+
+enabling Eigen matmul parallelization
+
+  mac03:~/projects/shell/programs/h2utils% setenv OMP_NUM_THREADS 2
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_xform-timing.in                                                                                                                                                         
+
+
+  h2mixer -- MFDn H2 file generation
+
+  Parallelization: max_threads 2, num_procs 4
+
+  Input stream (xform) -- identity-1.000
+    File: test/tbme-identity-ob-6-v0.bin
+    Format: 0 (binary)
+    Orbitals: p 28 n 28 (oscillator-like true)
+    Truncation: p 6.0000 n 6.0000 pp 12.0000 nn 12.0000 pn 12.0000
+    Sectors: pp 26 nn 26 pn 27 => total 79
+    Matrix elements: pp 78000 nn 78000 pn 311032 => total 467032
+
+  Reading radial overlaps from test/radial-olap-ho-b1.000-Nmax20.dat...
+    82 sectors; 3322 matrix elements
+
+  Output stream -- identity-1.000
+    File: test/tbme-identity-ob-6-xform-b1.000.bin
+    Format: 0 (binary)
+    Orbitals: p 28 n 28 (oscillator-like true)
+    Truncation: p 6.0000 n 6.0000 pp 6.0000 nn 6.0000 pn 6.0000
+    Sectors: pp 15 nn 15 pn 15 => total 45
+    Matrix elements: pp 4060 nn 4060 pn 16078 => total 24198
+
+  .............................................
+  (Total time: 1.029)
+
+  0.998u 0.061s 0:00.95 110.5%    0+0k 0+0io 4127pf+0w
+
+
+Going back and removing output entirely (target tb-6)...
+
+  mac03:~/projects/shell/programs/h2utils% setenv OMP_NUM_THREADS 1                                                                                                                                                                            
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_xform-timing.in                                                                                                                                                         
+
+  h2mixer -- MFDn H2 file generation
+
+  Parallelization: max_threads 1, num_procs 4
+
+  Input stream (xform) -- identity-1.000
+    File: test/tbme-identity-ob-6-v0.bin
+    Format: 0 (binary)
+    Orbitals: p 28 n 28 (oscillator-like true)
+    Truncation: p 6.0000 n 6.0000 pp 12.0000 nn 12.0000 pn 12.0000
+    Sectors: pp 26 nn 26 pn 27 => total 79
+    Matrix elements: pp 78000 nn 78000 pn 311032 => total 467032
+
+  Reading radial overlaps from test/radial-olap-ho-b1.000-Nmax20.dat...
+    82 sectors; 3322 matrix elements
+
+  .............................................
+  (Total time: 0.982)
+
+  0.998u 0.061s 0:01.04 100.9%    0+0k 0+0io 4082pf+0w
+
+----------------------------------------------------------------
+
+Now for size scaling...
+
+input ob-13, target tb-6
+
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_xform-timing.in
+
+  h2mixer -- MFDn H2 file generation
+
+  Parallelization: max_threads 1, num_procs 4
+
+  Input stream (xform) -- identity-1.000
+    File: test/tbme-identity-ob-13-v0.bin
+    Format: 0 (binary)
+    Orbitals: p 105 n 105 (oscillator-like true)
+    Truncation: p 13.0000 n 13.0000 pp 26.0000 nn 26.0000 pn 26.0000
+    Sectors: pp 54 nn 54 pn 55 => total 163
+    Matrix elements: pp 22938542 nn 22938542 pn 91779872 => total 137656956
+
+  Reading radial overlaps from test/radial-olap-ho-b1.000-Nmax20.dat...
+    82 sectors; 3322 matrix elements
+
+  .............................................
+  (Total time: 96.611)
+
+  94.832u 1.856s 1:36.67 100.0%   0+0k 0+0io 723199pf+0w
+
+check how much of this is just the scaling and trivial remapping, by
+reading ob-13 file at target truncation ob-13; not quite valid, since
+this involves reading more sectors than for tb-6 target, but those are
+mainly the higher small and "fast" sectors
+
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_xform-timing.in
+
+  h2mixer -- MFDn H2 file generation
+
+  Parallelization: max_threads 1, num_procs 4
+
+  Input stream (direct) -- identity-direct
+    File: test/tbme-identity-ob-13-v0.bin
+    Format: 0 (binary)
+    Orbitals: p 105 n 105 (oscillator-like true)
+    Truncation: p 13.0000 n 13.0000 pp 26.0000 nn 26.0000 pn 26.0000
+    Sectors: pp 54 nn 54 pn 55 => total 163
+    Matrix elements: pp 22938542 nn 22938542 pn 91779872 => total 137656956
+
+  ...................................................................................................................................................................
+  (Total time: 67.408)
+
+  64.210u 3.260s 1:07.45 100.0%   0+0k 0+0io 1619484pf+0w
+
+Most of it comes from input or remapping!
+
+But we can see the input time from h2stat...
+
+mac03:~/projects/shell/programs/h2utils% time h2stat --verify test/tbme-identity-ob-13-v0.bin                                                                                                                                                
+
+  h2stat  -- MFDn H2 file statistics
+
+  Input stream
+    File: test/tbme-identity-ob-13-v0.bin
+    Format: 0 (binary)
+    Orbitals: p 105 n 105 (oscillator-like true)
+    Truncation: p 13.0000 n 13.0000 pp 26.0000 nn 26.0000 pn 26.0000
+    Sectors: pp 54 nn 54 pn 55 => total 163
+    Matrix elements: pp 22938542 nn 22938542 pn 91779872 => total 137656956
+
+  Mode: verify
+
+  Verification scan
+  ...................................................................................................................................................................
+  (Total time: 12.854)
+
+  11.372u 1.606s 0:12.97 100.0%   0+0k 0+0io 4015pf+0w
+
+So it looks like the remapping is the slow part.  Truncated remapping could be replaced
+with an in-place mask, generated efficiently by:
+
+(1) creating a mask array using an outer product vector or
+
+(2) by sandwiching between two masked identity matrices.
+
+Alternatively, one could try reimplementing the remapping through a
+sparse-dense-sparse matmul.
+
+Putting that aside...  Let's look at ramping up to larger target
+truncation...
+
+input ob-13, target tb-8
+
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_xform-timing.in                                                                                                                                                         
+
+  h2mixer -- MFDn H2 file generation
+
+  Parallelization: max_threads 1, num_procs 4
+
+  Input stream (xform) -- identity-1.000
+    File: test/tbme-identity-ob-13-v0.bin
+    Format: 0 (binary)
+    Orbitals: p 105 n 105 (oscillator-like true)
+    Truncation: p 13.0000 n 13.0000 pp 26.0000 nn 26.0000 pn 26.0000
+    Sectors: pp 54 nn 54 pn 55 => total 163
+    Matrix elements: pp 22938542 nn 22938542 pn 91779872 => total 137656956
+
+  Reading radial overlaps from test/radial-olap-ho-b1.000-Nmax20.dat...
+    82 sectors; 3322 matrix elements
+
+  .........................................................
+  (Total time: 236.576)
+
+  234.516u 2.121s 3:56.65 99.9%   0+0k 0+0io 1011805pf+0w
+
+input ob-13, target tb-12
+
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_xform-timing.in
+
+  h2mixer -- MFDn H2 file generation
+
+  Parallelization: max_threads 1, num_procs 4
+
+  Input stream (xform) -- identity-1.000
+    File: test/tbme-identity-ob-13-v0.bin
+    Format: 0 (binary)
+    Orbitals: p 105 n 105 (oscillator-like true)
+    Truncation: p 13.0000 n 13.0000 pp 26.0000 nn 26.0000 pn 26.0000
+    Sectors: pp 54 nn 54 pn 55 => total 163
+    Matrix elements: pp 22938542 nn 22938542 pn 91779872 => total 137656956
+
+  Reading radial overlaps from test/radial-olap-ho-b1.000-Nmax20.dat...
+    82 sectors; 3322 matrix elements
+
+  .................................................................................
+  (Total time: 1116.67)
+
+  1113.769u 2.963s 18:36.85 99.9% 0+0k 0+0io 1455612pf+0w
+
+
+All that is with no optimization...  Let's try again with -O3.
+
+input ob-13, target tb-8
+
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_xform-timing.in                                                                                                                                                 
+  
+  h2mixer -- MFDn H2 file generation
+
+  Parallelization: max_threads 1, num_procs 4
+
+  Input stream (xform) -- identity-1.000
+    File: test/tbme-identity-ob-13-v0.bin
+    Format: 0 (binary)
+    Orbitals: p 105 n 105 (oscillator-like true)
+    Truncation: p 13.0000 n 13.0000 pp 26.0000 nn 26.0000 pn 26.0000
+    Sectors: pp 54 nn 54 pn 55 => total 163
+    Matrix elements: pp 22938542 nn 22938542 pn 91779872 => total 137656956
+
+  Reading radial overlaps from test/radial-olap-ho-b1.000-Nmax20.dat...
+    82 sectors; 3322 matrix elements
+
+  .........................................................
+  (Total time: 18.018)
+
+  15.942u 2.230s 0:18.22 99.7%    0+0k 0+0io 1011859pf+0w
+
+input ob-13, target tb-12
+
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_xform-timing.in
+
+  h2mixer -- MFDn H2 file generation
+
+  Parallelization: max_threads 1, num_procs 4
+
+  Input stream (xform) -- identity-1.000
+    File: test/tbme-identity-ob-13-v0.bin
+    Format: 0 (binary)
+    Orbitals: p 105 n 105 (oscillator-like true)
+    Truncation: p 13.0000 n 13.0000 pp 26.0000 nn 26.0000 pn 26.0000
+    Sectors: pp 54 nn 54 pn 55 => total 163
+    Matrix elements: pp 22938542 nn 22938542 pn 91779872 => total 137656956
+
+  Reading radial overlaps from test/radial-olap-ho-b1.000-Nmax20.dat...
+    82 sectors; 3322 matrix elements
+
+  .................................................................................
+  (Total time: 44.397)
+
+  41.621u 2.869s 0:44.47 100.0%   0+0k 0+0io 1455576pf+0w
+
+input ob-13, target tb-16
+
+
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_xform-timing.in
+
+  h2mixer -- MFDn H2 file generation
+
+  Parallelization: max_threads 1, num_procs 4
+
+  Input stream (xform) -- identity-1.000
+    File: test/tbme-identity-ob-13-v0.bin
+    Format: 0 (binary)
+    Orbitals: p 105 n 105 (oscillator-like true)
+    Truncation: p 13.0000 n 13.0000 pp 26.0000 nn 26.0000 pn 26.0000
+    Sectors: pp 54 nn 54 pn 55 => total 163
+    Matrix elements: pp 22938542 nn 22938542 pn 91779872 => total 137656956
+
+  Reading radial overlaps from test/radial-olap-ho-b1.000-Nmax20.dat...
+    82 sectors; 3322 matrix elements
+  INFO: xform stream identity-1.000: specified pre-xform truncation does not provide full coverage of target indexing (may be okay)
+
+
+  .........................................................................................................
+  (Total time: 120.12)
+
+  116.361u 3.805s 2:00.16 100.0%  0+0k 0+0io 1988698pf+0w
+
+going back and redoing the ob-13 direct input test (with mapping to
+target ob-13) now that -O3 is on...
+
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_xform-timing.in
+
+  h2mixer -- MFDn H2 file generation
+
+  Parallelization: max_threads 1, num_procs 4
+
+  Input stream (direct) -- identity-direct
+    File: test/tbme-identity-ob-13-v0.bin
+    Format: 0 (binary)
+    Orbitals: p 105 n 105 (oscillator-like true)
+    Truncation: p 13.0000 n 13.0000 pp 26.0000 nn 26.0000 pn 26.0000
+    Sectors: pp 54 nn 54 pn 55 => total 163
+    Matrix elements: pp 22938542 nn 22938542 pn 91779872 => total 137656956
+
+  ...................................................................................................................................................................
+  (Total time: 16.988)
+
+  13.572u 3.478s 0:17.03 100.0%   0+0k 0+0io 1619449pf+0w
+
+This is consistent with the raw input time from before, but, actually, now even h2stat is faster...
+
+  mac03:~/projects/shell/programs/h2utils% time h2stat --verify test/tbme-identity-ob-13-v0.bin                                                                                                                                                
+
+  h2stat  -- MFDn H2 file statistics
+
+  Input stream
+    File: test/tbme-identity-ob-13-v0.bin
+    Format: 0 (binary)
+    Orbitals: p 105 n 105 (oscillator-like true)
+    Truncation: p 13.0000 n 13.0000 pp 26.0000 nn 26.0000 pn 26.0000
+    Sectors: pp 54 nn 54 pn 55 => total 163
+    Matrix elements: pp 22938542 nn 22938542 pn 91779872 => total 137656956
+
+  Mode: verify
+
+  Verification scan
+  ...................................................................................................................................................................
+  (Total time: 6.318)
+
+  4.710u 1.731s 0:06.52 98.7%     0+0k 0+0io 3997pf+0w
+
+Allow parallelization on the Eigen matmuls...
+
+  mac03:~/projects/shell/programs/h2utils% setenv OMP_NUM_THREADS 2                                                                                                                                                                            
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_xform-timing.in
+
+  h2mixer -- MFDn H2 file generation
+
+  Parallelization: max_threads 2, num_procs 4
+
+  Input stream (xform) -- identity-1.000
+    File: test/tbme-identity-ob-13-v0.bin
+    Format: 0 (binary)
+    Orbitals: p 105 n 105 (oscillator-like true)
+    Truncation: p 13.0000 n 13.0000 pp 26.0000 nn 26.0000 pn 26.0000
+    Sectors: pp 54 nn 54 pn 55 => total 163
+    Matrix elements: pp 22938542 nn 22938542 pn 91779872 => total 137656956
+
+  Reading radial overlaps from test/radial-olap-ho-b1.000-Nmax20.dat...
+    82 sectors; 3322 matrix elements
+  INFO: xform stream identity-1.000: specified pre-xform truncation does not provide full coverage of target indexing (may be okay)
+
+
+  .........................................................................................................
+  (Total time: 153.894)
+
+  149.994u 3.930s 1:26.47 178.0%  0+0k 0+0io 2052062pf+0w
+
+This isn't the greatest parallel scaling, but it helps!
+
+Going to 4 threads is pointless...
+
+  mac03:~/projects/shell/programs/h2utils% setenv OMP_NUM_THREADS 4 
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_xform-timing.in                                                                                                                                                         
+
+  h2mixer -- MFDn H2 file generation
+
+  Parallelization: max_threads 4, num_procs 4
+
+  Input stream (xform) -- identity-1.000
+    File: test/tbme-identity-ob-13-v0.bin
+    Format: 0 (binary)
+    Orbitals: p 105 n 105 (oscillator-like true)
+    Truncation: p 13.0000 n 13.0000 pp 26.0000 nn 26.0000 pn 26.0000
+    Sectors: pp 54 nn 54 pn 55 => total 163
+    Matrix elements: pp 22938542 nn 22938542 pn 91779872 => total 137656956
+
+  Reading radial overlaps from test/radial-olap-ho-b1.000-Nmax20.dat...
+    82 sectors; 3322 matrix elements
+  INFO: xform stream identity-1.000: specified pre-xform truncation does not provide full coverage of target indexing (may be okay)
+
+
+  .........................................................................................................
+  (Total time: 259.054)
+
+  255.358u 3.758s 1:21.52 317.8%  0+0k 0+0io 2103863pf+0w
+
+Going back to one thread and adding file output (at least with binary files) has negligible impact...
+
+  mac03:~/projects/shell/programs/h2utils% time h2mixer < test/h2mixer_xform-timing.in
+
+  h2mixer -- MFDn H2 file generation
+
+  Parallelization: max_threads 1, num_procs 4
+
+  Input stream (xform) -- identity-1.000
+    File: test/tbme-identity-ob-13-v0.bin
+    Format: 0 (binary)
+    Orbitals: p 105 n 105 (oscillator-like true)
+    Truncation: p 13.0000 n 13.0000 pp 26.0000 nn 26.0000 pn 26.0000
+    Sectors: pp 54 nn 54 pn 55 => total 163
+    Matrix elements: pp 22938542 nn 22938542 pn 91779872 => total 137656956
+
+  Reading radial overlaps from test/radial-olap-ho-b1.000-Nmax20.dat...
+    82 sectors; 3322 matrix elements
+  INFO: xform stream identity-1.000: specified pre-xform truncation does not provide full coverage of target indexing (may be okay)
+
+
+  Output stream -- identity-1.000
+    File: test/tmp.bin
+    Format: 0 (binary)
+    Orbitals: p 153 n 153 (oscillator-like true)
+    Truncation: p 16.0000 n 16.0000 pp 16.0000 nn 16.0000 pn 16.0000
+    Sectors: pp 35 nn 35 pn 35 => total 105
+    Matrix elements: pp 2748515 nn 2748515 pn 10998746 => total 16495776
+
+  .........................................................................................................
+  (Total time: 122.678)
+
+  118.856u 3.883s 2:02.71 100.0%  0+0k 0+0io 2067513pf+0w

@@ -2,7 +2,7 @@
 
 # test case: unitary xform on square-truncated input to square-truncated output
 
-set-target-indexing-oscillator tb 12
+set-target-indexing-oscillator tb 16
 set-target-multipolarity 0 0 0
 set-output-format 0
 set-mass 999
@@ -14,13 +14,14 @@ set-mass 999
 #   add-source identity-1.000 1
 
 # check read time on input ob-13
+
 # define-input-source identity-direct test/tbme-identity-ob-13-v0.bin
 
 # xform from input ob-13
 
 define-xform-source identity-1.000 test/tbme-identity-ob-13-v0.bin 13 13 26 26 26 test/radial-olap-ho-b1.000-Nmax20.dat
 # define-target identity-1.000 test/tmp.bin
-#  add-source identity-1.000 1
+#   add-source identity-1.000 1
 
 
 
