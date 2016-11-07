@@ -55,7 +55,8 @@ CPPFLAGS += -DSPLINE_NO_FANCY_INTEGRATION
 #   map vs. hash for space lookup in basis library
 CPPFLAGS += -DINDEXING_HASH
 
-
+# optimization mode
+CPPFLAGS += -O3
 
 # debugging mode
 CXXFLAGS += -g
