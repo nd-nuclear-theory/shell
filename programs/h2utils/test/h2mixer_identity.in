@@ -5,10 +5,10 @@ set-target-multipolarity 0 0 0
 set-output-format 0
 set-mass 2
 
-define-operator-source identity
+define-source operator identity
 
-# define-target identity test/tbme-identity-ob-13-v0.dat
+# define-target test/tbme-identity-ob-13-v0.dat
 #   add-source identity 1
 
-define-target identity test/tbme-identity-ob-13-v0.bin
+define-target test/tbme-identity-ob-13-v0.bin
   add-source identity 1

@@ -5,6 +5,23 @@
   Syntax:
     h2mixer
 
+  Input format:
+
+    set-target-indexing orbital_filename wp wn wpp wnn wpn
+    set-target-indexing-oscillator rank cutoff
+      rank = ob|tb
+    set-target-multipolarity J0 g0 Tz0
+    set-mass A
+    define-radial-operator operator_type power radial_filename
+      operator_type = r|k
+      power = 1|2
+    define_source mode id ...
+      define-source input id tbme_filename
+      define-source operator id
+        id = identity|Ursqr|...
+      define-source xform id tbme_filename wp wn wpp wnn wpn olap_filename
+    add-source id coefficient
+
   Mark A. Caprio
   University of Notre Dame
 
@@ -18,6 +35,9 @@
   + 11/6/16 (mac):
     - Add OpenMP/Eigen parallel initialization.
     - Update xform stream calculation to match implementation in tbme_xform.
+  + 11/7/16 (mac):
+    - Remove id on target channels.
+    - Update input format.
 
 ******************************************************************************/
 
@@ -209,11 +229,11 @@ struct XformChannel
   XformChannel(
       const std::string& id_, const std::string& filename_,
       const basis::WeightMax& pre_xform_weight_max_,
-      const std::string& xform_filename_
+      const std::string& olap_filename_
     )
     : id(id_), filename(filename_),
       pre_xform_weight_max(pre_xform_weight_max_),
-      xform_filename(xform_filename_),
+      olap_filename(olap_filename_),
       stream_ptr(NULL)
   {}
 
@@ -229,7 +249,7 @@ struct XformChannel
   shell::TwoBodyMapping pre_xform_two_body_mapping;
 
   // xform
-  std::string xform_filename;
+  std::string olap_filename;
   RadialOperatorData radial_operator_data;
 
   // target mapping
@@ -239,11 +259,11 @@ struct XformChannel
 struct TargetChannel
 // Target channel parameters and stream.
 {
-  TargetChannel(const std::string& id_, const std::string& filename_)
-    : id(id_), filename(filename_), stream_ptr(NULL)
+  TargetChannel(const std::string& filename_)
+    : filename(filename_), stream_ptr(NULL)
   {}
 
-  std::string id;
+  // std::string id;  // id is actually superfluous
 
   // construction
   std::vector<std::pair<std::string,double>> coefficients;
@@ -369,48 +389,59 @@ void ReadParameters(
           RadialOperatorLabels labels(radial_operator_type,power);
           radial_operators.insert({labels,RadialOperatorData(labels,filename)});
         }
-      else if (keyword=="define-input-source")
+      else if (keyword=="define-source")
         {
-          std::string id, filename;
-          line_stream >> id >> filename;
-          ParsingCheck(line_stream,line_count,line);
-          input_channels.emplace_back(id,filename);
-        }
-      else if (keyword=="define-operator-source")
-        {
-          std::string id;
-          line_stream >> id;
+          std::string sub_keyword;
+          line_stream >> sub_keyword;
           ParsingCheck(line_stream,line_count,line);
 
-          if (!(
-                  kIdentityOperatorIdSet.count(id)
-                || kKinematicOperatorDefinitions.count(id)
-                  || kAngularMomentumOperatorDefinitions.count(id)
-                ))
-          ParsingError(line_count,line,"Unrecognized operator ID");
+          if (sub_keyword=="input")
+            {
+              std::string id, filename;
+              line_stream >> id >> filename;
+              ParsingCheck(line_stream,line_count,line);
+              input_channels.emplace_back(id,filename);
+            }
+          else if (sub_keyword=="operator")
+            {
+              std::string id;
+              line_stream >> id;
+              ParsingCheck(line_stream,line_count,line);
+
+              if (!(
+                      kIdentityOperatorIdSet.count(id)
+                      || kKinematicOperatorDefinitions.count(id)
+                      || kAngularMomentumOperatorDefinitions.count(id)
+                    ))
+                ParsingError(line_count,line,"Unrecognized operator ID");
           
-          operator_channels.emplace_back(id);
-        }
-      else if (keyword=="define-xform-source")
-        {
-          std::string id, filename, xform_filename;
-          double wp, wn, wpp, wnn, wpn;
-          line_stream
-            >> id >> filename
-            >> wp >> wn >> wpp >> wnn >> wpn
-            >> xform_filename;
-          ParsingCheck(line_stream,line_count,line);
+              operator_channels.emplace_back(id);
+            }
+          else if (sub_keyword=="xform")
+            {
+              std::string id, filename, olap_filename;
+              double wp, wn, wpp, wnn, wpn;
+              line_stream
+                >> id >> filename
+                >> wp >> wn >> wpp >> wnn >> wpn
+                >> olap_filename;
+              ParsingCheck(line_stream,line_count,line);
 
-          xform_channels.emplace_back(
-              id,filename,basis::WeightMax(wp,wn,wpp,wnn,wpn),xform_filename
-            );
+              xform_channels.emplace_back(
+                  id,filename,basis::WeightMax(wp,wn,wpp,wnn,wpn),olap_filename
+                );
+            }
+          else
+            {
+              ParsingError(line_count,line,"Unrecognized sub-keyword");
+            }
         }
       else if (keyword=="define-target")
         {
-          std::string id, filename;
-          line_stream >> id >> filename;
+          std::string filename;
+          line_stream >> filename;
           ParsingCheck(line_stream,line_count,line);
-          target_channels.emplace_back(id,filename);
+          target_channels.emplace_back(filename);
         }
       else if (keyword=="add-source")
         {
@@ -542,7 +573,7 @@ void InitializeInputChannels(
         {
           std::cout
             << fmt::format(
-                "INFO: input stream {}: source does not provide full coverage of target indexing",
+                "INFO: input file does not provide full coverage of target indexing",
                 input_channel.id
               )
             << std::endl
@@ -592,7 +623,7 @@ void InitializeXformChannels(
         {
           std::cout
             << fmt::format(
-                "INFO: xform stream {}: source does not provide full coverage of specified pre-xform truncation",
+                "INFO: input file does not provide full coverage of specified pre-xform truncation",
                 xform_channel.id
               )
             << std::endl
@@ -604,7 +635,7 @@ void InitializeXformChannels(
       // analogous to InitializeRadialOperators
 
       std::cout
-        << fmt::format("Reading radial overlaps from {}...",xform_channel.xform_filename)
+        << fmt::format("Reading radial overlaps from {}...",xform_channel.olap_filename)
         << std::endl;
 
       // set up alias (to keep code parallel to InitializeRadialOperators)
@@ -614,7 +645,7 @@ void InitializeXformChannels(
       shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kO;
       int radial_operator_power = 0;
       radial_operator_data = 
-        RadialOperatorData(RadialOperatorLabels(radial_operator_type,radial_operator_power),xform_channel.xform_filename);
+        RadialOperatorData(RadialOperatorLabels(radial_operator_type,radial_operator_power),xform_channel.olap_filename);
 
       // open radial operator file
       shell::InRadialStream radial_operator_stream(radial_operator_data.filename);
@@ -660,7 +691,7 @@ void InitializeXformChannels(
         {
           std::cout
             << fmt::format(
-                "INFO: xform stream {}: specified pre-xform truncation does not provide full coverage of target indexing (may be okay)",
+                "INFO: specified pre-xform truncation does not provide full coverage of target indexing",
                 xform_channel.id
               )
             << std::endl
@@ -689,7 +720,7 @@ void InitializeTargetChannels(
         );
 
       // write diagnostic
-      std::cout << fmt::format("Output stream -- {}",target_channel.id) << std::endl;
+      std::cout << fmt::format("Output stream") << std::endl;
       std::cout << target_channel.stream_ptr->DiagnosticStr();
       std::cout << std::endl;
     }

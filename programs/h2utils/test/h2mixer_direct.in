@@ -1,12 +1,12 @@
-# h2mixer_basic.in -- basic trivial test of mixing
+# h2mixer_direct.in -- basic trivial test of mixing
 
 set-target-indexing-oscillator ob 2
 set-target-multipolarity 0 0 0
 set-output-format 15099
 set-mass 999
 
-define-input-source in1 test/test-tb-2.dat
+define-source input in1 test/tbme-identity-ob-2-v0.dat
 
-define-target out1 test/out1.dat
+define-target test/out1.dat
   add-source in1 999
-define-target out2 test/out2.dat
+define-target test/out2.dat

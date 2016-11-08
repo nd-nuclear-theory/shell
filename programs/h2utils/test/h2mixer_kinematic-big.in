@@ -13,7 +13,7 @@ define-radial-operator r 2 test/radial-me-ho-r2-Nmax24.dat
 define-radial-operator k 1 test/radial-me-ho-k1-Nmax24.dat
 define-radial-operator k 2 test/radial-me-ho-k2-Nmax24.dat
 
-define-operator-source Ursqr
+define-source operator Ursqr
 
-# define-target Ursqr tbme-rsqr-tb-16-v0.bin
+# define-target tbme-rsqr-tb-16-v0.bin
 #  add-source Ursqr 1

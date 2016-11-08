@@ -6,22 +6,22 @@ set-target-multipolarity 0 0 0
 set-output-format 0
 set-mass 2
 
-define-operator-source L
-define-target L test/tbme-L-ob-1-v0.dat
+define-source operator L
+define-target test/tbme-L-ob-1-v0.dat
   add-source L 1
 
-define-operator-source Sp
-define-target Sp test/tbme-Sp-ob-1-v0.dat
+define-source operator Sp
+define-target test/tbme-Sp-ob-1-v0.dat
   add-source Sp 1
 
-define-operator-source Sn
-define-target Sn test/tbme-Sn-ob-1-v0.dat
+define-source operator Sn
+define-target test/tbme-Sn-ob-1-v0.dat
   add-source Sn 1
 
-define-operator-source S
-define-target S test/tbme-S-ob-1-v0.dat
+define-source operator S
+define-target test/tbme-S-ob-1-v0.dat
   add-source S 1
 
-define-operator-source J
-define-target J test/tbme-J-ob-1-v0.dat
+define-source operator J
+define-target test/tbme-J-ob-1-v0.dat
   add-source J 1

@@ -13,20 +13,20 @@ define-radial-operator r 2 test/radial-me-ho-r2-Nmax24.dat
 define-radial-operator k 1 test/radial-me-ho-k1-Nmax24.dat
 define-radial-operator k 2 test/radial-me-ho-k2-Nmax24.dat
 
-define-operator-source Ursqr
-define-operator-source Vr1r2
-define-operator-source Uksqr
-define-operator-source Vk1k2
+define-source operator Ursqr
+define-source operator Vr1r2
+define-source operator Uksqr
+define-source operator Vk1k2
 
-define-target Ursqr test/tbme-rsqr-tb-6-v0.dat
+define-target test/tbme-rsqr-tb-6-v0.dat
   add-source Ursqr 1
-define-target Vr1r2 test/tbme-r1r2-tb-6-v0.dat
+define-target test/tbme-r1r2-tb-6-v0.dat
  add-source Vr1r2 1
-define-target Uksqr test/tbme-ksqr-tb-6-v0.dat
+define-target test/tbme-ksqr-tb-6-v0.dat
   add-source Uksqr 1
-define-target Vk1k2 test/tbme-k1k2-tb-6-v0.dat
+define-target test/tbme-k1k2-tb-6-v0.dat
   add-source Vk1k2 1
 
-# define-target Trel test/tbme-Trel-tb-6-v0.dat
+# define-target xtest/tbme-Trel-tb-6-v0.dat
 #   add-source Uksqr 999
 #   add-source Vk1k2 999
