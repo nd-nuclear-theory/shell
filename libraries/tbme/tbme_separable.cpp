@@ -66,7 +66,7 @@ namespace shell {
       {
         // for upper-triangular pairs of states in sector
         const int subspace_size = subspace.size();
-#pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2) if (0)  // disabled until have chance to profile
         for (int bra_index = 0; bra_index < subspace_size; ++bra_index)
           for (int ket_index = 0; ket_index < subspace_size; ++ket_index)
             {
@@ -423,7 +423,7 @@ namespace shell {
 
     // for upper-triangular pairs of states in sector
     const int subspace_size = subspace.size();
-#pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2) if (0)  // disabled until have chance to profile
     for (int bra_index = 0; bra_index < subspace_size; ++bra_index)
       for (int ket_index = 0; ket_index < subspace_size; ++ket_index)
 	{
@@ -716,7 +716,7 @@ namespace shell {
 
     // for upper-triangular pairs of states in sector
     const int subspace_size = subspace.size();
-#pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2) if (0)  // disabled until have chance to profile
     for (int bra_index = 0; bra_index < subspace_size; ++bra_index)
       for (int ket_index = 0; ket_index < subspace_size; ++ket_index)
 	{
