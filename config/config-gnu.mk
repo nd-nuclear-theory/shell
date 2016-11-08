@@ -51,20 +51,13 @@ install_prefix :=
 # C++ compiler
 CXX := g++
 
-# static linking
-# to reduce dependence on run-time library configuration changes
-# (e.g., need to load same modules as at compile time)
-#
-# CAVEAT: may cause trouble with system library linkage on OS X
-## CXXFLAGS += -static
-
 # langage standard
 CXXFLAGS += -std=c++11 -fopenmp
 
 # avoid gcc 5 warnings on Eigen library
 CXXFLAGS += -Wno-deprecated-declarations
 # avoid gcc 6 warnings on Eigen library
-CXXFLAGS += -Wno-ignored-attributes
+## CXXFLAGS += -Wno-ignored-attributes
 
 ################################################################
 # FORTRAN compiler-specific configuration

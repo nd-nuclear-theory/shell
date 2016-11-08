@@ -51,13 +51,6 @@ install_prefix :=
 # C++ compiler
 CXX := icpc
 
-# static linking
-# to reduce dependence on run-time library configuration changes
-# (e.g., need to load same modules as at compile time)
-#
-# CAVEAT: may cause trouble with system library linkage on OS X
-## CXXFLAGS += -static
-
 # langage standard
 CXXFLAGS += -std=c++11 -qopenmp
 
