@@ -44,6 +44,7 @@ void MakeRadialOut(
     {
       Eigen::MatrixXd& matrix = matrices[sector_index];
       assert(matrix.rows()==matrix.cols());
+      int dimension = matrix.rows();
 
       for (int row_index=0; row_index<dimension; ++row_index)
         {
