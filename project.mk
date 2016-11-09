@@ -11,7 +11,7 @@ project_name := shellutils
 
 # programs
 
-modules += programs/h2utils programs/h2utils_legacy programs/radialutils
+modules += programs/h2utils programs/radialutils
 
 # legacy programs -- DEPRECATED
 ## modules += programs/h2utils_legacy
