@@ -34,10 +34,6 @@ Installation instructions: shell and spncci projects
 
   % git clone --recursive ssh://netid@crcfe01.crc.nd.edu/afs/crc.nd.edu/group/nuclthy/git/spncci.git
 
-  OR (read only snapshot)
-
-  % git clone --recursive http://nuclear-theory.nd.edu/git/spncci.git
-
   Then change your working directory (cd) to the project directory for
   all the following steps.
 
@@ -191,6 +187,13 @@ Installation instructions: shell and spncci projects
   || separate.  The files will be installed to
   || install/$(CRAY_CPU_TARGET)/bin, e.g., install/haswell/bin or
   || install/mic-knl/bin.
+
+  You may wish to define the environment variable SHELL_DIR to point
+  to the installation directory, so that you can then run, e.g.,
+
+     ${SHELL_DIR}/bin/h2mixer
+
+  in scripts.
 
 6) Sanity check (for shell project):
 

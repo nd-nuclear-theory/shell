@@ -1,0 +1,13 @@
+Example 01: harmonic oscillator run with interaction tbmes given directly at hw
+
+4He Nmax06 hw20
+
+
+% python3 ../script/h2mixer_input.py
+
+% setenv SHELL_DIR ${PWD}/../install
+
+% csh run.csh
+
+% ../../mfdn/mfdn-v14-beta06-newmake/xmfdn-h2-lan.exe    
+

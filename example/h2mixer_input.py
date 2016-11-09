@@ -6,7 +6,7 @@
     Mark A. Caprio
     University of Notre Dame
 
-    + 11/17/16 (mac): Created.
+    + 11/7/16 (mac): Created.
 
 """
 
@@ -20,16 +20,18 @@ k_hbar_c = 197.327  # (hbar c)~197.327 Mev fm
 # parameter template
 params = {
     # stored radial
-    "Nmax_orb" : 20,
-    "radial_me_filename_pattern" : "radial-me-ho-{}{}-Nmax20.dat",  # "{}{}" will be replaced by {"r1","r2","k1","k2"}
-    "radial_olap_filename" : "radial-olap-ho-b1.414.dat",
-    "orbitals_filename" : "orbitals-ho-Nmax20.dat",
+    "Nmax_orb" : 4,  # for target space
+    "Nmax_orb_int" : 20,  # for overlaps from interaction tbmes
+    "orbitals_filename" : "orbitals.dat",  # for target space
+    "orbitals_int_filename" : "orbitals-int.dat",  # for overlaps from interaction tbmes
+    "radial_me_filename_pattern" : "radial-me-{}{}.dat",  # "{}{}" will be replaced by {"r1","r2","k1","k2"}
+    "radial_olap_filename" : "radial-olap.dat",
     # stored input TBMEs
     "VNN_filename" : os.path.join(os.getenv("HOME"),"research/data/h2/run0164-ob-9/JISP16-ob-9-20.bin"),
     "VC_filename" : os.path.join(os.getenv("HOME"),"research/data/h2/run0164-ob-9/VC-ob-9-20.bin"),
     # scaling/transformation/basis parameters
     "hw" : 20,
-    "target_truncation" : ("tb",6),
+    "target_truncation" : ("tb",4),
     "hw_int" : 20,
     "hw_c" : 20,
     "xform_enabled" : False,
@@ -42,26 +44,6 @@ params = {
     # output file format
     "h2_format" : 0  # h2 formats: 0, 15099
 }
-
-# 
-# define-radial-operator r 1 test/radial-me-ho-r1-Nmax24.dat
-# define-radial-operator r 2 test/radial-me-ho-r2-Nmax24.dat
-# define-radial-operator k 1 test/radial-me-ho-k1-Nmax24.dat
-# define-radial-operator k 2 test/radial-me-ho-k2-Nmax24.dat
-# 
-# define-operator-source Ursqr
-# define-operator-source Vr1r2
-# define-operator-source Uksqr
-# define-operator-source Vk1k2
-# 
-# define-target Ursqr test/tbme-rsqr-tb-6-v0.dat
-#   add-source Ursqr 1
-# define-target Vr1r2 test/tbme-r1r2-tb-6-v0.dat
-#  add-source Vr1r2 1
-# define-target Uksqr test/tbme-ksqr-tb-6-v0.dat
-#   add-source Uksqr 1
-# define-target Vk1k2 test/tbme-k1k2-tb-6-v0.dat
-#   add-source Vk1k2 1
 
 def weight_max_string(truncation):
     """ Convert (rank,cutoff) to "wp wn wpp wnn wpn" string.
@@ -96,7 +78,7 @@ def oscillator_length(hw):
     
 
 def run_script(params):
-    """ Generate shell run script lines.
+    """ Generate shell run script.
 
     Arguments:
         params (dict): parameter dictionary
@@ -106,13 +88,31 @@ def run_script(params):
     """
 
     lines = []
-    
-    lines.append("orbital-gen --oscillator {Nmax_orb} {orbital_filename}".format(**params))
 
-    return lines
+    # orbital generation
+    lines.append("${{SHELL_DIR}}/bin/orbital-gen --oscillator {Nmax_orb} {orbitals_filename}".format(**params))
+    lines.append("${{SHELL_DIR}}/bin/orbital-gen --oscillator {Nmax_orb_int} {orbitals_int_filename}".format(**params))
+
+    # radial operator generation
+    for operator_type in ["r","k"]:
+        for power in [1,2]:
+            radial_me_filename = params["radial_me_filename_pattern"].format(operator_type,power)
+            lines.append("${{SHELL_DIR}}/bin/radial-gen --kinematic {} {} oscillator orbitals.dat {}".format(operator_type,power,radial_me_filename))
+
+    # radial overlap generation
+    if (params["xform_enabled"]):
+        hw = params["hw"]
+        hw_int = params["hw_int"]
+        b_ratio = math.sqrt(hw_int/hw)
+        lines.append("${{SHELL_DIR}}/bin/radial-gen --overlaps {} oscillator {orbitals_filename_int} {radial_olap_filename}".format(b_ratio=b_ratio,**params))
+
+    # invoke h2mixer
+    lines.append("${{SHELL_DIR}}/bin/h2mixer < h2mixer.in".format())
+
+    return "\n".join(lines)
 
 def h2mixer_input(params):
-    """ Generate input lines for h2mixer.
+    """ Generate input for h2mixer.
 
     Arguments:
         params (dict): parameter dictionary
@@ -189,7 +189,7 @@ def h2mixer_input(params):
     lines.append("  add-source identity {:e}".format(coef_identity))
     lines.append("  add-source VNN {}".format(1.))
     if (params["use_coulomb"]):
-        coef_VC = math.sqrt(params["hw"]/params["hw_c"])
+        coef_VC = math.sqrt(hw/hw_c)
         lines.append("  add-source VC {:e}".format(coef_VC))
 
     # target: radius squared
@@ -214,6 +214,67 @@ def h2mixer_input(params):
     lines.append("  add-source Vk1k2 {:e}".format(coef_Vk1k2))
     lines.append("  add-source identity {:e}".format(coef_identity))
     
-    return lines
+    return "\n".join(lines)
 
-print("\n".join(h2mixer_input(params)))
+def mfdn_input(params):
+    """ Generate input for mfdn v14 beta06.
+
+    Arguments:
+        params (dict): parameter dictionary
+
+    Returns:
+        (list of str): input file lines
+    """
+    
+    lines = []
+
+    mfdn_params = {
+        "ndiag" : 1,
+        "nuclide" : (2,2),
+        "Nshell" : params["Nmax_orb"]+1,
+        "Nmin" : 0,
+        "Nmax" : 4,
+        "Nstep" : 2,
+        "Mj" : 0,
+        "eigenvectors" : 4,
+        "lanczos" : 400,
+        "initial_vector" : -2,
+        "tolerance" : 1e-6,
+        "hw_for_trans" : 20,
+        "obs_basename_list" : ["tbme-rrel2","tbme-Ncm"]
+    }
+
+    # base parameters
+    twice_Mj = int(2*mfdn_params["Mj"])
+    lines.append("{:d}  # IFLAGMBSI".format(0))
+    lines.append("{ndiag:d}  # ndiag (0: no spares, automatic ndiag)".format(**mfdn_params))
+    lines.append("{:d}  # number of classes".format(2))
+    lines.append("{nuclide[0]:d}  # protons (class 1 particles)".format(**mfdn_params))
+    lines.append("{nuclide[1]:d}  # protons (class 2 particles)".format(**mfdn_params))
+    lines.append("1 {Nshell:d}  # min, max # S.P. shells for class 1 particles".format(**mfdn_params))
+    lines.append("1 {Nshell:d}  # min, max # S.P. shells for class 2 particles".format(**mfdn_params))
+    lines.append("{Nmin:d} {Nmax:d} {Nstep:d}  # N_min, N_max, delta_N".format(**mfdn_params))
+    lines.append("{:d}   # Total 2 M_j".format(twice_Mj))
+    lines.append("{eigenvectors:d} {lanczos:d} {initial_vector:d} {tolerance:e}  # number of eigenvalues/vectors, max number of its, ...)".format(**mfdn_params))
+    lines.append("{:d} {:d}  # rank of input Hamiltonian/interaction".format(2,2))
+    lines.append("{hw_for_trans:g} {k_mN_csqr:g}  # h-bar*omega, Nucleon mass (MeV) ".format(k_mN_csqr=k_mN_csqr,**mfdn_params))
+
+    # tbo parameters
+    lines.append("tbme-H")  # Hamiltonian basename
+    num_obs = 2 + len(mfdn_params["obs_basename_list"])
+    lines.append("{:d}   # number of observables (J, T, R2, ...)".format(num_obs))
+
+    lines += mfdn_params["obs_basename_list"]
+
+    
+    # obdme parameters
+    # TODO
+
+    return "\n".join(lines)
+
+with open("run.csh","w") as os:
+    os.write(run_script(params))
+with open("h2mixer.in","w") as os:
+    os.write(h2mixer_input(params))
+with open("mfdn.dat","w") as os:
+    os.write(mfdn_input(params))
