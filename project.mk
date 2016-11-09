@@ -13,24 +13,24 @@ project_name := shellutils
 
 modules += programs/h2utils programs/h2utils_legacy programs/radialutils
 
+# legacy programs -- DEPRECATED
+## modules += programs/h2utils_legacy
+
 # libraries
 
 # Caution: Order is important since used also in linking.  Caller must
 # precede callee.
 
-modules += libraries/moshinsky libraries/relative libraries/tbme libraries/no
+modules += libraries/moshinsky libraries/relative libraries/tbme
 modules += libraries/radial
 
-modules += libraries/legacy  # DEPRECATED
+# legacy libraries -- DEPRECATED
+## modules += libraries/no libraries/legacy
 
 # additional libraries -- cloned as submodule
 #
-# Dependency: basis <- am
+# Dependency: basis depends on am and mcutils
 modules += libraries/basis libraries/am libraries/mcutils libraries/spline libraries/cppformat
-
-
-#programs
-## modules += programs/interactions
 
 ################################################################
 # extras -- list of extra files to be included

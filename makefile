@@ -1,6 +1,6 @@
 ################################################################
 #
-# makefile -- hybrid C++/FORTRAN project
+# makefile -- hybrid C++/FORTRAN project makefile
 #
 # Language: GNU make
 #
@@ -13,7 +13,9 @@
 # 5/02/11 (tdyt): Launch prepare_install_directory script during install.
 # 11/5/11 (mac): Add installation script hook install_script.
 # 7/4/13 (mac): Dereference symlinks when creating distribution tarball.
-# Last modified 7/4/13 (mac).
+# 9/16/16 (mac):
+#   - Add defaults for config.mk variables.
+#   - Add "make install_lib" to optionally also install libraries.
 ################################################################
 
 ################################################################
@@ -29,16 +31,33 @@
 #
 # Variables to set up in config.mk:
 #
-# search_prefix -- list of one or more directory trees into which
-#   external libraries have been installed, e.g., $HOME/local,
-#   instead of or in addition to /usr/local
-# search_dirs_include -- additional directory to search for include files
-# search_dirs_lib -- additional directory to search for library files
-# fortran_libs -- the libraries required for a C++ project to
-#   properly link when including FORTRAN objects
-# fortran_flags -- linking flags required for a C++ project to 
-#   include FORTRAN objects
-# MPICXX -- (optional) the MPI C++ command, if your project uses MPI
+#   search_prefix -- list of one or more directory trees into which
+#     external libraries have been installed, e.g., $HOME/local,
+#     instead of or in addition to the compiler's default paths (e.g.,
+#     /usr/local)
+#
+#   search_dirs_include -- additional directory to search for include
+#     files *only* (useful if a source library is installed with a
+#     nonconventional tree structure)
+#
+#   search_dirs_lib -- additional directory to search for library
+#     files *only* (useful if a source library is installed with a
+#     nonconventional tree structure)
+#
+#   fortran_libs -- the libraries required for a C++ project to
+#     properly link when including FORTRAN objects
+#
+#   fortran_flags -- linking flags required for a C++ project to 
+#     include FORTRAN objects
+#
+#   MPICXX -- (optional) the MPI C++ command, if your project uses MPI
+#     (DEPRECATED)
+#
+# These are all initialized to a null string, so config.mk can
+# append to them (with +=) if preferred.
+#
+#   install_
+
 #
 # --------
 #
@@ -63,7 +82,7 @@
 #   a module.mk include file
 # extras -- list of extra files or directories to be bundled in the 
 #   source tar distribution (e.g., README)
-# install_prefix -- install prefix, i.e., binaries installed to 
+# install_prefix (default: ".") -- install prefix, i.e., binaries installed to 
 #   install_prefix/bin (e.g., "$(current-dir)/.." for install from
 #   project_dir/src to project_dir/bin) 
 # install_script -- script to be run during "make install", after binaries 
@@ -269,6 +288,13 @@ endef
 ################################################################
 # read in system-specific configuration
 ################################################################
+
+search_prefix :=
+search_dirs_include :=
+search_dirs_lib :=
+fortran_libs := 
+fortran_flags :=
+install_prefix := .
 
 HYBRID_MAKE_DIR ?= .
 include $(HYBRID_MAKE_DIR)/config.mk
@@ -566,14 +592,33 @@ generated: $(generated)
 ################################################################
 
 install_dir_bin := $(install_prefix)/bin
+install_dir_include := $(install_prefix)/include
+install_dir_lib := $(install_prefix)/lib
 MKDIR := mkdir -p 
 
+.PHONY: install_bin
+install_bin: programs
+	@echo Installing binaries to $(install_dir_bin)...
+	install -D $(executables) --target-directory=$(install_dir_bin)
+
+.PHONY: install_include
+install_include: ${sources_h}
+	@echo Installing includes to $(install_dir_include)...
+	@echo WARNING: not yet supported
+##	install -D ${sources_h} --target-directory=$(install_dir_lib)
+##	@ $(foreach source,$(sources_h),echo $(source); )
+
+
+.PHONY: install_lib
+install_lib: libraries
+	@echo Installing libraries to $(install_dir_lib)...
+	install -D $(archives) --target-directory=$(install_dir_lib) --mode=u=rw,go=r
+
 .PHONY: install
-install: programs
-	@echo Installing to $(install_dir_bin)...
-	$(MKDIR) $(install_dir_bin)
-	install $(executables) $(install_dir_bin)
+##install: install_bin install_include install_lib
+install: install_bin
 	$(install_script) 
+
 
 ################################################################
 # source tarball

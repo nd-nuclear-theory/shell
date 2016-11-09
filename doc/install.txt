@@ -183,6 +183,15 @@ Installation instructions: shell and spncci projects
 
   % make all -j8
 
+  To copy all executable binaries to the directory install/bin:
+
+  % make install
+
+  || @NERSC: We need to keep binaries for different architectures
+  || separate.  The files will be installed to
+  || install/$(CRAY_CPU_TARGET)/bin, e.g., install/haswell/bin or
+  || install/mic-knl/bin.
+
 6) Sanity check (for shell project):
 
    % cd programs/h2utils
