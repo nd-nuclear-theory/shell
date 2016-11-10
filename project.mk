@@ -2,35 +2,43 @@
 # project name
 ################################################################
 
-project_name := shellutils
+# This name is used for the distribution tar file.
+
+project_name := shell
 
 ################################################################
 # modules -- list of directories in which to search
 # for module.mk include files
 ################################################################
 
+# Caution: The order in which modules are declares is important, since
+# it is also used in linking.  The object/library file for the
+# *caller* must precede the object/library file for the *callee* for
+# successful linking.
+
+################
 # programs
+################
 
 modules += programs/h2utils programs/radialutils
 
 # legacy programs -- DEPRECATED
-## modules += programs/h2utils_legacy
+modules += programs/h2utils_legacy
 
+################
 # libraries
+################
 
-# Caution: Order is important since used also in linking.  Caller must
-# precede callee.
-
-modules += libraries/moshinsky libraries/relative libraries/tbme
-modules += libraries/radial
+modules += libraries/relative libraries/moshinsky
+modules += libraries/tbme libraries/radial
 
 # legacy libraries -- DEPRECATED
-## modules += libraries/no libraries/legacy
+modules += libraries/no libraries/legacy
 
 # additional libraries -- cloned as submodule
-#
-# Dependency: basis depends on am and mcutils
-modules += libraries/basis libraries/am libraries/mcutils libraries/spline libraries/cppformat
+
+modules += libraries/basis  # ordering note: basis depends on am and mcutils
+modules += libraries/am libraries/mcutils libraries/spline libraries/cppformat
 
 ################################################################
 # extras -- list of extra files to be included
