@@ -3,7 +3,7 @@ Example 01: harmonic oscillator run with interaction tbmes given directly at hw
 4He Nmax06 hw20
 
 
-% python3 ../script/h2mixer_input.py
+% python3 h2mixer_input.py
 
 % setenv SHELL_DIR ${PWD}/../install
 
