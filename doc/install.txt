@@ -12,6 +12,7 @@ Installation instructions: shell and spncci projects
 + 11/8/16 (mac): Merge shell and spncci install.
   - Overhaul and clearly mark cluster-specific instructions.
   - Merge in notes from install_NDCRC.txt, created 6/29/16 (aem).
++ 11/13/16 (mac): Update shell h2mixer example.
 
 ----------------------------------------------------------------
 
@@ -198,8 +199,9 @@ Installation instructions: shell and spncci projects
 6) Sanity check (for shell project):
 
    % cd programs/h2utils
-   % ./h2mixer < test/h2mixer_identity.in
+   % ./h2mixer < test/h2mixer_identity-v0.in
    % ./h2stat --verify test/tbme-identity-tb-2-v0.dat
+   % ./h2stat --verify test/tbme-identity-tb-2-v0.bin
 
    You should see something like the following output:
 
@@ -249,7 +251,7 @@ eigen-eigen-b30b87236a1b.tar.gz and want to install it to
    % mv eigen-eigen-b30b87236a1b/Eigen <groupdir>/opt/eigen-3.2.7/include/eigen3/
    % rm -r eigen-eigen-b30b87236a1b
 
-6/29/16 (aem, mac): When cloning on the NDCRC, one can use direct
+6/29/16 (aem, mac): @NDCRC: When cloning on the NDCRC, one can use direct
 file access rather than ssh access.
 
   In general 

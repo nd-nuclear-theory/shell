@@ -422,12 +422,10 @@ namespace shell {
               orbital_space().GetSubspace(1).size()
             )
           << std::endl
-          // body
+          // orbital listing body
           << basis::OrbitalDefinitionStr(orbital_space().OrbitalInfo(),false);
 
-        space().weight_max().one_body[0],space().weight_max().one_body[1],
-        space().weight_max().two_body[0],space().weight_max().two_body[1],space().weight_max().two_body[2],
-
+        // write two-body header info
         stream()
           // header line 1: operator properties
           << fmt::format("{} {}",sectors().J0(),sectors().g0()) << std::endl
@@ -450,12 +448,72 @@ namespace shell {
       }
     else if (h2_mode()==H2Mode::kBinary)
       {
-        //TODO
-        assert(false);
-        int num_fields = 5;
-        int bytes = num_fields * kIntegerSize;
-        WriteI4(stream(),bytes);
-        WriteI4(stream(),bytes);
+        // dump orbitals
+
+        // header: dimensions
+        WriteI4(stream(),2*kIntegerSize);
+        for (int subspace_index=0; subspace_index < orbital_space().size(); ++subspace_index)
+          WriteI4(stream(),orbital_space().GetSubspace(subspace_index).size());
+        WriteI4(stream(),2*kIntegerSize);
+
+        // orbital listing body
+        for (int subspace_index=0; subspace_index < orbital_space().size(); ++subspace_index)
+          {
+            const std::vector<basis::OrbitalPNInfo> orbitals = orbital_space().GetSubspace(subspace_index).OrbitalInfo();
+            const int num_orbitals = orbitals.size();
+
+            WriteI4(stream(),num_orbitals*kIntegerSize);
+            for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
+              WriteI4(stream(),orbitals[orbital_index].n);
+            WriteI4(stream(),num_orbitals*kIntegerSize);
+            WriteI4(stream(),num_orbitals*kIntegerSize);
+            for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
+              WriteI4(stream(),orbitals[orbital_index].l);
+            WriteI4(stream(),num_orbitals*kIntegerSize);
+            WriteI4(stream(),num_orbitals*kIntegerSize);
+            for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
+              WriteI4(stream(),TwiceValue(orbitals[orbital_index].j));
+            WriteI4(stream(),num_orbitals*kIntegerSize);
+            WriteI4(stream(),num_orbitals*kFloatSize);
+            for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
+              WriteFloat(stream(),orbitals[orbital_index].weight);
+            WriteI4(stream(),num_orbitals*kFloatSize);
+          }         
+        
+        // two-body indexing
+
+        // header line 1: operator properties
+        WriteI4(stream(),2*kIntegerSize);
+        WriteI4(stream(),sectors().J0());
+        WriteI4(stream(),sectors().g0());
+        WriteI4(stream(),2*kIntegerSize);
+        
+        // header line 2: 1-body basis limit
+        WriteI4(stream(),2*kFloatSize);
+        WriteFloat(stream(),space().weight_max().one_body[0]);
+        WriteFloat(stream(),space().weight_max().one_body[1]);
+        WriteI4(stream(),2*kFloatSize);
+
+        // header line 3: 2-body basis limit
+        WriteI4(stream(),3*kFloatSize);
+        WriteFloat(stream(),space().weight_max().two_body[0]);
+        WriteFloat(stream(),space().weight_max().two_body[1]);
+        WriteFloat(stream(),space().weight_max().two_body[2]);
+        WriteI4(stream(),3*kFloatSize);
+
+        // header line 4: 2-body basis a.m. limit
+        WriteI4(stream(),3*kIntegerSize);
+        WriteI4(stream(),2*Jmax_by_type()[0]);
+        WriteI4(stream(),2*Jmax_by_type()[1]);
+        WriteI4(stream(),2*Jmax_by_type()[2]);
+        WriteI4(stream(),3*kIntegerSize);
+
+        // header line 5: matrix size
+        WriteI4(stream(),3*kIntegerSize);
+        WriteI4(stream(),size_by_type()[0]);
+        WriteI4(stream(),size_by_type()[1]);
+        WriteI4(stream(),size_by_type()[2]);
+        WriteI4(stream(),3*kIntegerSize);
       }
   };
 
@@ -508,8 +566,8 @@ namespace shell {
     // read FORTRAN record beginning delimiter
     if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
       {
-        int bytes = size_by_type()[int(ket_subspace.two_body_species())] * kIntegerSize;
-        VerifyI4(stream(),bytes);
+        int entries = size_by_type()[int(ket_subspace.two_body_species())];
+        VerifyI4(stream(),entries*kIntegerSize);
       }
 
     // iterate over matrix elements
@@ -568,8 +626,8 @@ namespace shell {
     // read FORTRAN record ending delimiter
     if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
       {
-        int bytes = size_by_type()[int(ket_subspace.two_body_species())] * kIntegerSize;
-        VerifyI4(stream(),bytes);
+        int entries = size_by_type()[int(ket_subspace.two_body_species())];
+        VerifyI4(stream(),entries*kIntegerSize);
       }
   }
 
@@ -600,8 +658,8 @@ namespace shell {
     // write FORTRAN record beginning delimiter
     if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
       {
-        int bytes = size_by_type()[int(ket_subspace.two_body_species())] * kIntegerSize;
-        WriteI4(stream(),bytes);
+        int entries = size_by_type()[int(ket_subspace.two_body_species())];
+        WriteI4(stream(),entries*kIntegerSize);
       }
 
     // iterate over matrix elements
@@ -649,8 +707,8 @@ namespace shell {
     // write FORTRAN record ending delimiter
     if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
       {
-        int bytes = size_by_type()[int(ket_subspace.two_body_species())] * kIntegerSize;
-        WriteI4(stream(),bytes);
+        int entries = size_by_type()[int(ket_subspace.two_body_species())];
+        WriteI4(stream(),entries*kIntegerSize);
       }
   }
 
@@ -671,8 +729,8 @@ namespace shell {
     // write FORTRAN record beginning delimiter
     if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
       {
-        int bytes = size_by_type()[int(ket_subspace.two_body_species())] * kIntegerSize;
-        WriteI4(stream(),bytes);
+        int entries = size_by_type()[int(ket_subspace.two_body_species())];
+        WriteI4(stream(),entries*kIntegerSize);
       }
 
     // iterate over matrix elements
@@ -722,8 +780,8 @@ namespace shell {
     // write FORTRAN record ending delimiter
     if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
       {
-        int bytes = size_by_type()[int(ket_subspace.two_body_species())] * kIntegerSize;
-        WriteI4(stream(),bytes);
+        int entries = size_by_type()[int(ket_subspace.two_body_species())];
+        WriteI4(stream(),entries*kIntegerSize);
       }
   }
 
