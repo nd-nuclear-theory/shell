@@ -1,0 +1,16 @@
+0  # IFLAGMBSI
+1  # ndiag (0: no spares, automatic ndiag)
+2  # number of classes
+2  # protons (class 1 particles)
+2  # protons (class 2 particles)
+1 3  # min, max # S.P. shells for class 1 particles
+1 3  # min, max # S.P. shells for class 2 particles
+0 2 2  # N_min, N_max, delta_N
+0   # Total 2 M_j
+1 50 -2 1.000000e-06  # number of eigenvalues/vectors, max number of its, ...)
+2 2  # rank of input Hamiltonian/interaction
+20 938.92  # h-bar*omega, Nucleon mass (MeV) 
+tbme-H
+4   # number of observables (J, T, R2, ...)
+tbme-rrel2
+tbme-Ncm

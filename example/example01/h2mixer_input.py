@@ -17,10 +17,10 @@ import os
 k_mN_csqr = 938.92  # (m_N c^2)~938.92 MeV
 k_hbar_c = 197.327  # (hbar c)~197.327 Mev fm
 
-# parameter template
+# h2mixer parameter template
 params = {
     # stored radial
-    "Nmax_orb" : 4,  # for target space
+    "Nmax_orb" : 2,  # for target space
     "Nmax_orb_int" : 20,  # for overlaps from interaction tbmes
     "orbitals_filename" : "orbitals.dat",  # for target space
     "orbitals_int_filename" : "orbitals-int.dat",  # for overlaps from interaction tbmes
@@ -31,7 +31,7 @@ params = {
     "VC_filename" : os.path.join(os.getenv("HOME"),"research/data/h2/run0164-ob-9/VC-ob-9-20.bin"),
     # scaling/transformation/basis parameters
     "hw" : 20,
-    "target_truncation" : ("tb",4),
+    "target_truncation" : ("tb",2),
     "hw_int" : 20,
     "hw_c" : 20,
     "xform_enabled" : False,
@@ -44,6 +44,25 @@ params = {
     # output file format
     "h2_format" : 0  # h2 formats: 0, 15099
 }
+
+# MFdn parameter template
+mfdn_params = {
+    "ndiag" : 1,
+    "nuclide" : (2,2),
+    "Nshell" : params["Nmax_orb"]+1,
+    "Nmin" : 0,
+    "Nmax" : 2,
+    "Nstep" : 2,
+    "Mj" : 0,
+    "eigenvectors" : 1,
+    "lanczos" : 50,
+    "initial_vector" : -2,
+    "tolerance" : 1e-6,
+    "hw_for_trans" : 20,
+    "obs_basename_list" : ["tbme-rrel2","tbme-Ncm"]
+}
+
+
 
 def weight_max_string(truncation):
     """ Convert (rank,cutoff) to "wp wn wpp wnn wpn" string.
@@ -181,7 +200,7 @@ def h2mixer_input(params):
     coef_Ursqr = 1/(2*A)*a*(hw_cm/hw)
     coef_Vr1r2 = 1/A*a*(hw_cm/hw)
     coef_identity = -3/2*a
-    lines.append("define-target tbme-H.dat")
+    lines.append("define-target tbme-H.bin")
     lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
     lines.append("  add-source Vr1r2 {:e}".format(coef_Vr1r2))
     lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
@@ -195,7 +214,7 @@ def h2mixer_input(params):
     # target: radius squared
     coef_Ursqr = (A-1)*(oscillator_length(hw)/A)**2
     coef_Vr1r2 = -2*(oscillator_length(hw)/A)**2
-    lines.append("define-target tbme-rrel2.dat")
+    lines.append("define-target tbme-rrel2.bin")
     lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
     lines.append("  add-source Vr1r2 {:e}".format(coef_Vr1r2))
 
@@ -207,7 +226,7 @@ def h2mixer_input(params):
     coef_Ursqr = 1/(2*A)*(hw_cm/hw)
     coef_Vr1r2 = 1/A*(hw_cm/hw)
     coef_identity = -3/2
-    lines.append("define-target tbme-Ncm.dat")
+    lines.append("define-target tbme-Ncm.bin")
     lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
     lines.append("  add-source Vr1r2 {:e}".format(coef_Vr1r2))
     lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
@@ -216,33 +235,17 @@ def h2mixer_input(params):
     
     return "\n".join(lines)
 
-def mfdn_input(params):
+def mfdn_input(mfdn_params):
     """ Generate input for mfdn v14 beta06.
 
     Arguments:
-        params (dict): parameter dictionary
+        mfdn_params (dict): MFDn parameter dictionary
 
     Returns:
         (list of str): input file lines
     """
     
     lines = []
-
-    mfdn_params = {
-        "ndiag" : 1,
-        "nuclide" : (2,2),
-        "Nshell" : params["Nmax_orb"]+1,
-        "Nmin" : 0,
-        "Nmax" : 4,
-        "Nstep" : 2,
-        "Mj" : 0,
-        "eigenvectors" : 4,
-        "lanczos" : 400,
-        "initial_vector" : -2,
-        "tolerance" : 1e-6,
-        "hw_for_trans" : 20,
-        "obs_basename_list" : ["tbme-rrel2","tbme-Ncm"]
-    }
 
     # base parameters
     twice_Mj = int(2*mfdn_params["Mj"])
@@ -277,4 +280,4 @@ with open("run.csh","w") as os:
 with open("h2mixer.in","w") as os:
     os.write(h2mixer_input(params))
 with open("mfdn.dat","w") as os:
-    os.write(mfdn_input(params))
+    os.write(mfdn_input(mfdn_params))
