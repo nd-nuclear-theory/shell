@@ -11,3 +11,9 @@ Example 01: harmonic oscillator run with interaction tbmes given directly at hw
 
 % mpiexec -n 1 /home/mcaprio/projects/mfdn/mfdn-v14-beta06-newmake/xmfdn-h2-lan.exe
 
+
+
+
+foreach f (*.bin)
+${SHELL_DIR}/bin/h2stat --matrices $f > ${f:r}.mat
+end

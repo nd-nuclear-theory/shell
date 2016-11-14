@@ -6,13 +6,13 @@ h2cp
   Truncation: N1b 9, N2b 18
   Matrix size: PP/NN 1392314, PN 5568860
 
-  Output file: tbme-VNN.bin (binary)
+  Output file: tbme-VNN-hw20.bin (binary)
   Mode: format 0, species 2
   Truncation: N1b 2, N2b 2
   Matrix size: PP/NN 32, PN 110
 
 ....................................................................................................................
-(Total time: 0.42)
+(Total time: 0.421)
 
 
 h2cp
@@ -22,13 +22,13 @@ h2cp
   Truncation: N1b 9, N2b 18
   Matrix size: PP/NN 1392314, PN 5568860
 
-  Output file: tbme-VC.bin (binary)
+  Output file: tbme-VC-hw20.bin (binary)
   Mode: format 0, species 2
   Truncation: N1b 2, N2b 2
   Matrix size: PP/NN 32, PN 110
 
 ....................................................................................................................
-(Total time: 0.421)
+(Total time: 0.436)
 
 
 h2gen
@@ -71,8 +71,8 @@ Input truncation: N1b 2 N2b 2
 Output truncation: N1b 2 N2b 2
 Scales:( Z 2 N 2) A 4 hw 20
 Input basename (in#1-4): legacy-r2k2
-Input filename (in#5): tbme-VNN
-Input filename (in#6): tbme-VC
+Input filename (in#5): tbme-VNN-hw20
+Input filename (in#6): tbme-VC-hw20
 Output filename (out#1): tbme-H
 Adding to (out#1): (in#3) * 2.5 <== Trel
 Adding to (out#1): (in#4) * -5 <== Trel
@@ -82,7 +82,7 @@ Adding to (out#1): (in#1) * 0.833333 <== NCM(20) * 20
 Adding to (out#1): (in#2) * 5 <== NCM(20) * 20
 Adding to (out#1): (Identity) * -5 <== NCM(20) * 20
 Adding to (out#1): (in#5) * 1
-Adding to (out#1): (in#6) * 20
+Adding to (out#1): (in#6) * 1 after hw rescaling 1
 Output filename (out#2): tbme-rrel2
 Adding to (out#2): (in#1) * 0.129597 <== rrel2
 Adding to (out#2): (in#2) * -0.259194 <== rrel2
@@ -92,6 +92,13 @@ Adding to (out#3): (in#4) * 0.25 <== NCM(20) * 1
 Adding to (out#3): (in#1) * 0.0416667 <== NCM(20) * 1
 Adding to (out#3): (in#2) * 0.25 <== NCM(20) * 1
 Adding to (out#3): (Identity) * -0.25 <== NCM(20) * 1
+Output filename (out#4): tbme-Trel
+Adding to (out#4): (in#3) * 2.5 <== Trel
+Adding to (out#4): (in#4) * -5 <== Trel
+Output filename (out#5): tbme-VNN
+Adding to (out#5): (in#5) * 1
+Output filename (out#6): tbme-VC
+Adding to (out#6): (in#6) * 1 after hw rescaling 1
 
 Input initialization
   Input file: legacy-r2k2-r2.bin (binary)
@@ -110,11 +117,11 @@ Input initialization
   Mode: format 0, species 2
   Truncation: N1b 2, N2b 2
   Matrix size: PP/NN 32, PN 110
-  Input file: tbme-VNN.bin (binary)
+  Input file: tbme-VNN-hw20.bin (binary)
   Mode: format 0, species 2
   Truncation: N1b 2, N2b 2
   Matrix size: PP/NN 32, PN 110
-  Input file: tbme-VC.bin (binary)
+  Input file: tbme-VC-hw20.bin (binary)
   Mode: format 0, species 2
   Truncation: N1b 2, N2b 2
   Matrix size: PP/NN 32, PN 110
@@ -129,6 +136,18 @@ Output initialization
   Truncation: N1b 2, N2b 2
   Matrix size: PP/NN 32, PN 110
   Output file: tbme-Ncm.bin (binary)
+  Mode: format 0, species 2
+  Truncation: N1b 2, N2b 2
+  Matrix size: PP/NN 32, PN 110
+  Output file: tbme-Trel.bin (binary)
+  Mode: format 0, species 2
+  Truncation: N1b 2, N2b 2
+  Matrix size: PP/NN 32, PN 110
+  Output file: tbme-VNN.bin (binary)
+  Mode: format 0, species 2
+  Truncation: N1b 2, N2b 2
+  Matrix size: PP/NN 32, PN 110
+  Output file: tbme-VC.bin (binary)
   Mode: format 0, species 2
   Truncation: N1b 2, N2b 2
   Matrix size: PP/NN 32, PN 110

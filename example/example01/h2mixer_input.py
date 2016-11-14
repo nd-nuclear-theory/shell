@@ -232,6 +232,24 @@ def h2mixer_input(params):
     lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
     lines.append("  add-source Vk1k2 {:e}".format(coef_Vk1k2))
     lines.append("  add-source identity {:e}".format(coef_identity))
+
+    # target: Trel (diagnostic)
+    #
+    # These are the "non-a" terms from the Hamiltonian.
+    coef_Uksqr = (A-1)/(2*A)*hw
+    coef_Vk1k2 = -1/A*hw
+    lines.append("define-target tbme-Trel.bin")
+    lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
+    lines.append("  add-source Vk1k2 {:e}".format(coef_Vk1k2))
+
+    # target: VNN (diagnostic)
+    lines.append("define-target tbme-VNN.bin")
+    lines.append("  add-source VNN {}".format(1.))
+
+    # target: VC (diagnostic)
+    lines.append("define-target tbme-VC.bin")
+    coef_VC = math.sqrt(hw/hw_c)
+    lines.append("  add-source VC {:e}".format(coef_VC))
     
     return "\n".join(lines)
 

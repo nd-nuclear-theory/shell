@@ -22,8 +22,8 @@ in r2k2 legacy-r2k2
 
 c input 5: interaction
 c input 6: Coulomb
-in tbme-VNN
-in tbme-VC
+in tbme-VNN-hw20
+in tbme-VC-hw20
 
 c cccccccccccccccc
 c outputs
@@ -37,7 +37,7 @@ c    add NCM <hw_tilde>  <multiplier> (requires in-r2k2)
 c    add in <in#> <multiplier> 
   add in 5 1.0
 c    add scaled <in#> <hw_ref> <degree> <multiplier> 
-  add in 6 20.0 -1 1.0
+  add scaled 6 20.0 -1 1.0
 
 out tbme-rrel2
 c    add rrel2  (requires in-r2k2)
@@ -46,3 +46,15 @@ c    add rrel2  (requires in-r2k2)
 out tbme-Ncm
 c    add NCM <hw_tilde>  <multiplier> (requires in-r2k2)
   add NCM 20.0 1.0
+
+out tbme-Trel
+c    add Trel   (requires in-r2k2)
+  add Trel
+
+out tbme-VNN
+c    add in <in#> <multiplier> 
+  add in 5 1.0
+
+out tbme-VC
+c    add scaled <in#> <hw_ref> <degree> <multiplier> 
+  add scaled 6 20.0 -1 1.0
