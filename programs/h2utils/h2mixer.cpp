@@ -38,6 +38,7 @@
   + 11/7/16 (mac):
     - Remove id on target channels.
     - Update input format.
+  + 11/13/16 (mac): Move matrix utilities into mcutils/eigen.
 
 ******************************************************************************/
 
@@ -49,52 +50,13 @@
 
 #include "basis/operator.h"
 #include "cppformat/format.h"
+#include "mcutils/eigen.h"
 #include "mcutils/profiling.h"
 #include "radial/radial_io.h"
 #include "tbme/h2_io.h"
 #include "tbme/tbme_separable.h"
 #include "tbme/tbme_xform.h"
 #include "tbme/tbme_mapping.h"
-
-////////////////////////////////////////////////////////////////
-// matrix utilities
-////////////////////////////////////////////////////////////////
-
-template<typename tMatrixType>
-void ChopMatrix(tMatrixType& matrix, double tolerance=1e-10)
-// Round near-zero entries in matrix to zero.
-//
-// Default tolerance value is same as Mathematica Chop function's.
-//
-// Template arguments:
-//   tMatrixType: Eigen matrix type
-//
-// Arguments:
-//   matrix (tMatrixType): matrix to chop
-//   tolerance (double, optional): truncation tolerance
-{
-  for (int i=0; i<matrix.rows(); ++i)
-    for (int j=0; j<matrix.cols(); ++j)
-      // Caution: Important to use std::abs() rather than integer abs().
-      if (std::abs(matrix(i,j))<tolerance)
-        matrix(i,j) = 0.;
-}
-
-template<typename tMatrixType>
-void CompleteLowerTriangle(tMatrixType& matrix)
-// Populate lower triangle of matrix as mirror of upper triangle.
-//
-// Template arguments:
-//   tMatrixType: Eigen matrix type
-//
-// Arguments:
-//   matrix (tMatrixType): matrix to complete
-{
-  for (int i=0; i<matrix.rows(); ++i)
-    for (int j=0; j<matrix.cols(); ++j)
-      if (i>j)
-        matrix(i,j) = matrix(j,i);
-}
 
 ////////////////////////////////////////////////////////////////
 // radial operator containers
@@ -783,7 +745,7 @@ void GenerateInputSources(
       assert(input_channel.stream_ptr->sectors().g0()==0);
       assert(input_channel.stream_ptr->sectors().Tz0()==0);
       if (input_sector.IsDiagonal())
-        CompleteLowerTriangle(input_matrix);
+        mcutils::CompleteLowerTriangle(input_matrix);
 
       // remap input matrix to target indexing
       Eigen::MatrixXd matrix
@@ -925,7 +887,7 @@ void GenerateXformSources(
       assert(xform_channel.stream_ptr->sectors().g0()==0);
       assert(xform_channel.stream_ptr->sectors().Tz0()==0);
       if (input_sector.IsDiagonal())
-        CompleteLowerTriangle(input_matrix);
+        mcutils::CompleteLowerTriangle(input_matrix);
 
       // remap input matrix to pre-xform indexing
       //
@@ -988,7 +950,7 @@ void GenerateTargets(
         }
 
       // write target matrix
-      ChopMatrix(target_matrix);  // "neaten" output by eliminating near-zero values
+      mcutils::ChopMatrix(target_matrix);  // "neaten" output by eliminating near-zero values
       target_channel.stream_ptr->WriteSector(target_matrix);
     }
 
