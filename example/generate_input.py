@@ -132,7 +132,7 @@ def run_script(params):
         hw = params["hw"]
         hw_int = params["hw_int"]
         b_ratio = math.sqrt(hw_int/hw)
-        lines.append("{install_dir}/bin/radial-gen --overlaps {} oscillator {orbitals_filename_int} {radial_olap_filename}".format(install_dir=install_dir,b_ratio=b_ratio,**params))
+        lines.append("{install_dir}/bin/radial-gen --overlaps {b_ratio} oscillator {orbitals_int_filename} {radial_olap_filename}".format(install_dir=install_dir,b_ratio=b_ratio,**params))
 
     # invoke h2mixer
     lines.append("{install_dir}/bin/h2mixer < h2mixer.in".format(install_dir=install_dir))
@@ -186,7 +186,6 @@ def h2mixer_input(params):
 
     # sources: VNN
     if (params["xform_enabled"]):
-        # TODO
         xform_weight_max = weight_max_string(params["xform_truncation"])
         lines.append("define-source xform VNN {VNN_filename} {xform_weight_max} {radial_olap_filename}".format(xform_weight_max=xform_weight_max,**params))
     else:
@@ -318,10 +317,3 @@ def mfdn_input(mfdn_params):
     lines.append("")
 
     return "\n".join(lines)
-
-with open("run.csh","w") as os:
-    os.write(run_script(params))
-with open("h2mixer.in","w") as os:
-    os.write(h2mixer_input(params))
-with open("mfdn.dat","w") as os:
-    os.write(mfdn_input(mfdn_params))

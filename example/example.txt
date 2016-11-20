@@ -1,0 +1,46 @@
+Requires environment configuration, such as:
+
+  setenv SHELL_PROJECT_DIR "${HOME}/projects/shell"
+  setenv SHELL_MFDN_DIR "${HOME}/projects/mfdn"
+  setenv SHELL_DATA_DIR_H2 "/afs/crc.nd.edu/group/nuclthy/data/h2"
+
+Execute:
+
+  % mkdir example01
+  % cd example01
+  % python3 ../exampe01.py
+  % csh run.csh
+  % mpiexec -n 1 ${SHELL_MFDN_DIR}/mfdn-v14-beta06-newmake/xmfdn-h2-lan
+
+or, simply,
+
+  % ${SHELL_MFDN_DIR}/mfdn-v14-beta06-newmake/xmfdn-h2-lan
+
+----------------------------------------------------------------
+
+Example 01: harmonic oscillator run with interaction tbmes given directly at hw
+
+  4He Nmax06 hw20
+
+
+Example 02: same but with trivial identity transformation
+
+  4He Nmax06 hw20  (from hwint=20)
+
+Example 03: same but with transformation from hwint=40
+
+  4He Nmax06 hw20  (from hwint=40)
+
+Example 04: same but with transformation from hwint=40 -- upgrade to ob-13
+
+  4He Nmax06 hw20  (from hwint=40)
+
+
+
+----------------------------------------------------------------
+
+To inspect matrices:
+
+foreach f (*.bin)
+${SHELL_INSTALL_DIR}/bin/h2stat --matrices $f > ${f:r}.mat
+end
