@@ -1,4 +1,4 @@
-"""h2mixer_input.py
+"""generate_input.py
 
     Provide simple standalone code for generating input file for
     h2mixer.
@@ -7,6 +7,7 @@
     University of Notre Dame
 
     + 11/7/16 (mac): Created.
+    + 11/20/16 (mac): Use paths from environment.
 
 """
 
@@ -16,6 +17,12 @@ import os
 # physical constants
 k_mN_csqr = 938.92  # (m_N c^2)~938.92 MeV
 k_hbar_c = 197.327  # (hbar c)~197.327 Mev fm
+
+# environment
+data_dir_h2 = os.environ.get("SHELL_DATA_DIR_H2")
+print("SHELL_DATA_DIR_H2",data_dir_h2)
+install_dir = os.environ.get("SHELL_INSTALL_DIR")
+print("SHELL_INSTALL_DIR",install_dir)
 
 # h2mixer parameter template
 params = {
@@ -27,8 +34,8 @@ params = {
     "radial_me_filename_pattern" : "radial-me-{}{}.dat",  # "{}{}" will be replaced by {"r1","r2","k1","k2"}
     "radial_olap_filename" : "radial-olap.dat",
     # stored input TBMEs
-    "VNN_filename" : os.path.join(os.getenv("HOME"),"research/data/h2/run0164-ob-9/JISP16-ob-9-20.bin"),
-    "VC_filename" : os.path.join(os.getenv("HOME"),"research/data/h2/run0164-ob-9/VC-ob-9-20.bin"),
+    "VNN_filename" : os.path.join(data_dir_h2,"run0164-ob-9/JISP16-ob-9-20.bin"),
+    "VC_filename" : os.path.join(data_dir_h2,"run0164-ob-9/VC-ob-9-20.bin"),
     # scaling/transformation/basis parameters
     "hw" : 20,
     "target_truncation" : ("tb",2),
@@ -111,24 +118,24 @@ def run_script(params):
     lines = []
 
     # orbital generation
-    lines.append("${{SHELL_DIR}}/bin/orbital-gen --oscillator {Nmax_orb} {orbitals_filename}".format(**params))
-    lines.append("${{SHELL_DIR}}/bin/orbital-gen --oscillator {Nmax_orb_int} {orbitals_int_filename}".format(**params))
+    lines.append("{install_dir}/bin/orbital-gen --oscillator {Nmax_orb} {orbitals_filename}".format(install_dir=install_dir,**params))
+    lines.append("{install_dir}/bin/orbital-gen --oscillator {Nmax_orb_int} {orbitals_int_filename}".format(install_dir=install_dir,**params))
 
     # radial operator generation
     for operator_type in ["r","k"]:
         for power in [1,2]:
             radial_me_filename = params["radial_me_filename_pattern"].format(operator_type,power)
-            lines.append("${{SHELL_DIR}}/bin/radial-gen --kinematic {} {} oscillator orbitals.dat {}".format(operator_type,power,radial_me_filename))
+            lines.append("{install_dir}/bin/radial-gen --kinematic {} {} oscillator orbitals.dat {}".format(operator_type,power,radial_me_filename,install_dir=install_dir))
 
     # radial overlap generation
     if (params["xform_enabled"]):
         hw = params["hw"]
         hw_int = params["hw_int"]
         b_ratio = math.sqrt(hw_int/hw)
-        lines.append("${{SHELL_DIR}}/bin/radial-gen --overlaps {} oscillator {orbitals_filename_int} {radial_olap_filename}".format(b_ratio=b_ratio,**params))
+        lines.append("{install_dir}/bin/radial-gen --overlaps {} oscillator {orbitals_filename_int} {radial_olap_filename}".format(install_dir=install_dir,b_ratio=b_ratio,**params))
 
     # invoke h2mixer
-    lines.append("${{SHELL_DIR}}/bin/h2mixer < h2mixer.in".format())
+    lines.append("{install_dir}/bin/h2mixer < h2mixer.in".format(install_dir=install_dir))
 
     # ensure terminal line
     lines.append("")
