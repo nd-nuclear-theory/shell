@@ -16,6 +16,7 @@
 # 9/16/16 (mac):
 #   - Add defaults for config.mk variables.
 #   - Add "make install_lib" to optionally also install libraries.
+# 11/20/16 (mac): Restore mkdir in install.
 ################################################################
 
 ################################################################
@@ -594,17 +595,22 @@ generated: $(generated)
 install_dir_bin := $(install_prefix)/bin
 install_dir_include := $(install_prefix)/include
 install_dir_lib := $(install_prefix)/lib
-MKDIR := mkdir -p 
+MKDIR := mkdir --parents 
+
+# 11/20/16 (mac): The "mkdir --parents" *should* be redundant to
+# "install -D", but it seems to be necessary on the ndcrc.
 
 .PHONY: install_bin
 install_bin: programs
 	@echo Installing binaries to $(install_dir_bin)...
+	$(MKDIR) $(install_dir_bin)
 	install -D $(executables) --target-directory=$(install_dir_bin)
 
 .PHONY: install_include
 install_include: ${sources_h}
 	@echo Installing includes to $(install_dir_include)...
 	@echo WARNING: not yet supported
+##	$(MKDIR) $(install_dir_lib)
 ##	install -D ${sources_h} --target-directory=$(install_dir_lib)
 ##	@ $(foreach source,$(sources_h),echo $(source); )
 
@@ -612,6 +618,7 @@ install_include: ${sources_h}
 .PHONY: install_lib
 install_lib: libraries
 	@echo Installing libraries to $(install_dir_lib)...
+	$(MKDIR) $(install_dir_lib)
 	install -D $(archives) --target-directory=$(install_dir_lib) --mode=u=rw,go=r
 
 .PHONY: install
