@@ -59,7 +59,9 @@ mfdn_params = {
     "initial_vector" : -2,
     "tolerance" : 1e-6,
     "hw_for_trans" : 20,
-    "obs_basename_list" : ["tbme-rrel2","tbme-Ncm"]
+    "obs_basename_list" : ["tbme-rrel2","tbme-Ncm"],
+    "obdme_multipolarity" : 2,
+    "obdme_reference_state_list" : [(0,0,1)]
 }
 
 
@@ -128,6 +130,9 @@ def run_script(params):
     # invoke h2mixer
     lines.append("${{SHELL_DIR}}/bin/h2mixer < h2mixer.in".format())
 
+    # ensure terminal line
+    lines.append("")
+    
     return "\n".join(lines)
 
 def h2mixer_input(params):
@@ -250,6 +255,9 @@ def h2mixer_input(params):
     lines.append("define-target tbme-VC.bin")
     coef_VC = math.sqrt(hw/hw_c)
     lines.append("  add-source VC {:e}".format(coef_VC))
+
+    # ensure terminal line
+    lines.append("")
     
     return "\n".join(lines)
 
@@ -289,7 +297,18 @@ def mfdn_input(mfdn_params):
 
     
     # obdme parameters
-    # TODO
+    lines.append("{enable_obd:d} {twice_multipolarity:d} # static one-body density matrix elements (0: no one-body densities), twice multipolarity".format(
+        enable_obd=1,twice_multipolarity=2*mfdn_params["obdme_multipolarity"]
+    ))
+    lines.append("{num_reference_states:d} {max_delta_J:d} #number of reference states for transitions (0: no transitions, -1: all2all), max delta2J (?)".format(
+        num_reference_states=len(mfdn_params["obdme_reference_state_list"]),
+        max_delta_J=2*mfdn_params["obdme_multipolarity"]
+    ))
+    for reference_state in mfdn_params["obdme_reference_state_list"]:
+        lines.append("{:d} {:d} {:d}".format(2*reference_state[0],reference_state[1],reference_state[-2]))
+
+    # ensure terminal line
+    lines.append("")
 
     return "\n".join(lines)
 
