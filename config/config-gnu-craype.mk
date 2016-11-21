@@ -1,4 +1,4 @@
-include config/config-gcc.mk
+include config/config-gnu.mk
 
 # use Cray programming environment compilers
 FC := ftn

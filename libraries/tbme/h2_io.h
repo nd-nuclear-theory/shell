@@ -30,6 +30,7 @@
   10/25/16 (mac): Add InH2Stream::SeekToSector.
   11/1/16 (mac):
     - Convert from AS to NAS storage.
+  11/13/16 (mac): Implement H2 Version15099 binary output.
      
 ****************************************************************/
 

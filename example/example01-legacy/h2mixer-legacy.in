@@ -1,0 +1,60 @@
+2 2
+2 2
+
+c legacy h2mixer input
+c 4He Nmax2 hw20 JISP16 calculation
+
+c Header (at top):
+c    <N1b> <N2b> (for input)
+c    <N1b> <N2b> (for output)
+
+c     scale <Z> <N> <hw> (reference nucleon numbers & length scale of output basis)
+scale 2 2 20.0
+
+c  First four input streams established with "in r2k2":
+c    1 = <basename>-r2.bin
+c    2 = <basename>-r1r2.bin
+c    3 = <basename>-k2.bin
+c    4 = <basename>-k1k2.bin
+c
+c     in r2k2 <basename>  (sets first four input streams as r^2, ..., using basename)
+in r2k2 legacy-r2k2
+
+c input 5: interaction
+c input 6: Coulomb
+in tbme-VNN-hw20
+in tbme-VC-hw20
+
+c cccccccccccccccc
+c outputs
+c cccccccccccccccc
+
+out tbme-H
+c    add Trel   (requires in-r2k2)
+  add Trel
+c    add NCM <hw_tilde>  <multiplier> (requires in-r2k2)
+  add NCM 20.0 20.0
+c    add in <in#> <multiplier> 
+  add in 5 1.0
+c    add scaled <in#> <hw_ref> <degree> <multiplier> 
+  add scaled 6 20.0 -1 1.0
+
+out tbme-rrel2
+c    add rrel2  (requires in-r2k2)
+  add rrel2
+
+out tbme-Ncm
+c    add NCM <hw_tilde>  <multiplier> (requires in-r2k2)
+  add NCM 20.0 1.0
+
+out tbme-Trel
+c    add Trel   (requires in-r2k2)
+  add Trel
+
+out tbme-VNN
+c    add in <in#> <multiplier> 
+  add in 5 1.0
+
+out tbme-VC
+c    add scaled <in#> <hw_ref> <degree> <multiplier> 
+  add scaled 6 20.0 -1 1.0

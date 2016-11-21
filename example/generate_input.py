@@ -1,4 +1,4 @@
-"""h2mixer_input.py
+"""generate_input.py
 
     Provide simple standalone code for generating input file for
     h2mixer.
@@ -7,6 +7,7 @@
     University of Notre Dame
 
     + 11/7/16 (mac): Created.
+    + 11/20/16 (mac): Use paths from environment.
 
 """
 
@@ -17,21 +18,27 @@ import os
 k_mN_csqr = 938.92  # (m_N c^2)~938.92 MeV
 k_hbar_c = 197.327  # (hbar c)~197.327 Mev fm
 
-# parameter template
+# environment
+data_dir_h2 = os.environ.get("SHELL_DATA_DIR_H2")
+print("SHELL_DATA_DIR_H2",data_dir_h2)
+install_dir = os.environ.get("SHELL_INSTALL_DIR")
+print("SHELL_INSTALL_DIR",install_dir)
+
+# h2mixer parameter template
 params = {
     # stored radial
-    "Nmax_orb" : 4,  # for target space
+    "Nmax_orb" : 2,  # for target space
     "Nmax_orb_int" : 20,  # for overlaps from interaction tbmes
     "orbitals_filename" : "orbitals.dat",  # for target space
     "orbitals_int_filename" : "orbitals-int.dat",  # for overlaps from interaction tbmes
     "radial_me_filename_pattern" : "radial-me-{}{}.dat",  # "{}{}" will be replaced by {"r1","r2","k1","k2"}
     "radial_olap_filename" : "radial-olap.dat",
     # stored input TBMEs
-    "VNN_filename" : os.path.join(os.getenv("HOME"),"research/data/h2/run0164-ob-9/JISP16-ob-9-20.bin"),
-    "VC_filename" : os.path.join(os.getenv("HOME"),"research/data/h2/run0164-ob-9/VC-ob-9-20.bin"),
+    "VNN_filename" : os.path.join(data_dir_h2,"run0164-ob-9/JISP16-ob-9-20.bin"),
+    "VC_filename" : os.path.join(data_dir_h2,"run0164-ob-9/VC-ob-9-20.bin"),
     # scaling/transformation/basis parameters
     "hw" : 20,
-    "target_truncation" : ("tb",4),
+    "target_truncation" : ("tb",2),
     "hw_int" : 20,
     "hw_c" : 20,
     "xform_enabled" : False,
@@ -44,6 +51,27 @@ params = {
     # output file format
     "h2_format" : 0  # h2 formats: 0, 15099
 }
+
+# MFdn parameter template
+mfdn_params = {
+    "ndiag" : 1,
+    "nuclide" : (2,2),
+    "Nshell" : params["Nmax_orb"]+1,
+    "Nmin" : 0,
+    "Nmax" : 2,
+    "Nstep" : 2,
+    "Mj" : 0,
+    "eigenvectors" : 1,
+    "lanczos" : 50,
+    "initial_vector" : -2,
+    "tolerance" : 1e-6,
+    "hw_for_trans" : 20,
+    "obs_basename_list" : ["tbme-rrel2","tbme-Ncm"],
+    "obdme_multipolarity" : 2,
+    "obdme_reference_state_list" : [(0,0,1)]
+}
+
+
 
 def weight_max_string(truncation):
     """ Convert (rank,cutoff) to "wp wn wpp wnn wpn" string.
@@ -90,25 +118,28 @@ def run_script(params):
     lines = []
 
     # orbital generation
-    lines.append("${{SHELL_DIR}}/bin/orbital-gen --oscillator {Nmax_orb} {orbitals_filename}".format(**params))
-    lines.append("${{SHELL_DIR}}/bin/orbital-gen --oscillator {Nmax_orb_int} {orbitals_int_filename}".format(**params))
+    lines.append("{install_dir}/bin/orbital-gen --oscillator {Nmax_orb} {orbitals_filename}".format(install_dir=install_dir,**params))
+    lines.append("{install_dir}/bin/orbital-gen --oscillator {Nmax_orb_int} {orbitals_int_filename}".format(install_dir=install_dir,**params))
 
     # radial operator generation
     for operator_type in ["r","k"]:
         for power in [1,2]:
             radial_me_filename = params["radial_me_filename_pattern"].format(operator_type,power)
-            lines.append("${{SHELL_DIR}}/bin/radial-gen --kinematic {} {} oscillator orbitals.dat {}".format(operator_type,power,radial_me_filename))
+            lines.append("{install_dir}/bin/radial-gen --kinematic {} {} oscillator orbitals.dat {}".format(operator_type,power,radial_me_filename,install_dir=install_dir))
 
     # radial overlap generation
     if (params["xform_enabled"]):
         hw = params["hw"]
         hw_int = params["hw_int"]
         b_ratio = math.sqrt(hw_int/hw)
-        lines.append("${{SHELL_DIR}}/bin/radial-gen --overlaps {} oscillator {orbitals_filename_int} {radial_olap_filename}".format(b_ratio=b_ratio,**params))
+        lines.append("{install_dir}/bin/radial-gen --overlaps {b_ratio} oscillator {orbitals_int_filename} {radial_olap_filename}".format(install_dir=install_dir,b_ratio=b_ratio,**params))
 
     # invoke h2mixer
-    lines.append("${{SHELL_DIR}}/bin/h2mixer < h2mixer.in".format())
+    lines.append("{install_dir}/bin/h2mixer < h2mixer.in".format(install_dir=install_dir))
 
+    # ensure terminal line
+    lines.append("")
+    
     return "\n".join(lines)
 
 def h2mixer_input(params):
@@ -155,7 +186,6 @@ def h2mixer_input(params):
 
     # sources: VNN
     if (params["xform_enabled"]):
-        # TODO
         xform_weight_max = weight_max_string(params["xform_truncation"])
         lines.append("define-source xform VNN {VNN_filename} {xform_weight_max} {radial_olap_filename}".format(xform_weight_max=xform_weight_max,**params))
     else:
@@ -181,7 +211,7 @@ def h2mixer_input(params):
     coef_Ursqr = 1/(2*A)*a*(hw_cm/hw)
     coef_Vr1r2 = 1/A*a*(hw_cm/hw)
     coef_identity = -3/2*a
-    lines.append("define-target tbme-H.dat")
+    lines.append("define-target tbme-H.bin")
     lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
     lines.append("  add-source Vr1r2 {:e}".format(coef_Vr1r2))
     lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
@@ -195,7 +225,7 @@ def h2mixer_input(params):
     # target: radius squared
     coef_Ursqr = (A-1)*(oscillator_length(hw)/A)**2
     coef_Vr1r2 = -2*(oscillator_length(hw)/A)**2
-    lines.append("define-target tbme-rrel2.dat")
+    lines.append("define-target tbme-rrel2.bin")
     lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
     lines.append("  add-source Vr1r2 {:e}".format(coef_Vr1r2))
 
@@ -207,42 +237,47 @@ def h2mixer_input(params):
     coef_Ursqr = 1/(2*A)*(hw_cm/hw)
     coef_Vr1r2 = 1/A*(hw_cm/hw)
     coef_identity = -3/2
-    lines.append("define-target tbme-Ncm.dat")
+    lines.append("define-target tbme-Ncm.bin")
     lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
     lines.append("  add-source Vr1r2 {:e}".format(coef_Vr1r2))
     lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
     lines.append("  add-source Vk1k2 {:e}".format(coef_Vk1k2))
     lines.append("  add-source identity {:e}".format(coef_identity))
+
+    # target: Trel (diagnostic)
+    #
+    # These are the "non-a" terms from the Hamiltonian.
+    coef_Uksqr = (A-1)/(2*A)*hw
+    coef_Vk1k2 = -1/A*hw
+    lines.append("define-target tbme-Trel.bin")
+    lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
+    lines.append("  add-source Vk1k2 {:e}".format(coef_Vk1k2))
+
+    # target: VNN (diagnostic)
+    lines.append("define-target tbme-VNN.bin")
+    lines.append("  add-source VNN {}".format(1.))
+
+    # target: VC (diagnostic)
+    lines.append("define-target tbme-VC.bin")
+    coef_VC = math.sqrt(hw/hw_c)
+    lines.append("  add-source VC {:e}".format(coef_VC))
+
+    # ensure terminal line
+    lines.append("")
     
     return "\n".join(lines)
 
-def mfdn_input(params):
+def mfdn_input(mfdn_params):
     """ Generate input for mfdn v14 beta06.
 
     Arguments:
-        params (dict): parameter dictionary
+        mfdn_params (dict): MFDn parameter dictionary
 
     Returns:
         (list of str): input file lines
     """
     
     lines = []
-
-    mfdn_params = {
-        "ndiag" : 1,
-        "nuclide" : (2,2),
-        "Nshell" : params["Nmax_orb"]+1,
-        "Nmin" : 0,
-        "Nmax" : 4,
-        "Nstep" : 2,
-        "Mj" : 0,
-        "eigenvectors" : 4,
-        "lanczos" : 400,
-        "initial_vector" : -2,
-        "tolerance" : 1e-6,
-        "hw_for_trans" : 20,
-        "obs_basename_list" : ["tbme-rrel2","tbme-Ncm"]
-    }
 
     # base parameters
     twice_Mj = int(2*mfdn_params["Mj"])
@@ -268,13 +303,17 @@ def mfdn_input(params):
 
     
     # obdme parameters
-    # TODO
+    lines.append("{enable_obd:d} {twice_multipolarity:d} # static one-body density matrix elements (0: no one-body densities), twice multipolarity".format(
+        enable_obd=1,twice_multipolarity=2*mfdn_params["obdme_multipolarity"]
+    ))
+    lines.append("{num_reference_states:d} {max_delta_J:d} #number of reference states for transitions (0: no transitions, -1: all2all), max delta2J (?)".format(
+        num_reference_states=len(mfdn_params["obdme_reference_state_list"]),
+        max_delta_J=2*mfdn_params["obdme_multipolarity"]
+    ))
+    for reference_state in mfdn_params["obdme_reference_state_list"]:
+        lines.append("{:d} {:d} {:d}".format(2*reference_state[0],reference_state[1],reference_state[-2]))
+
+    # ensure terminal line
+    lines.append("")
 
     return "\n".join(lines)
-
-with open("run.csh","w") as os:
-    os.write(run_script(params))
-with open("h2mixer.in","w") as os:
-    os.write(h2mixer_input(params))
-with open("mfdn.dat","w") as os:
-    os.write(mfdn_input(params))
