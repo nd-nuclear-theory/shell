@@ -22,7 +22,7 @@ params = {
     "radial_olap_filename" : "radial-olap.dat",
     # stored input TBMEs
     "VNN_filename" : os.path.join(generate_input.data_dir_h2,"run0164-ob-13/JISP16-ob-13-40.bin"),
-    "VC_filename" : os.path.join(generate_input.data_dir_h2,"run0164-tb-20/VC-ob-13-20.bin"),
+    "VC_filename" : os.path.join(generate_input.data_dir_h2,"run0164-tb-20/VC-tb-20-20.bin"),
     # scaling/transformation/basis parameters
     "hw" : 20,
     "target_truncation" : ("tb",16),
