@@ -297,3 +297,20 @@ version of icpc too.
   boost/1.61
   gsl/2.1
   m2032/opt/eigen-3.2.10
+
+11/20/16 (mac): @NERSC: On Edison, successful build with gnu, but
+failed build with intel.  Is it an issue with the older intel
+compiler?  Chokes on std::vector<Eigen::MatrixXd>.
+
+  PrgEnv-gnu/5.2.56 => gcc/6.1.0
+  gcc/6.1.0
+  boost/1.54
+  gsl/1.16 
+  m2032/opt/eigen-3.2.10
+
+  PrgEnv-intel/5.2.56 => intel/15.0.1.133
+  gcc/6.1.0
+  boost/1.54
+  gsl/1.16 
+  m2032/opt/eigen-3.2.10
+
