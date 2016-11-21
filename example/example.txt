@@ -29,11 +29,15 @@ Example 02: same but with trivial identity transformation
 
 Example 03: same but with transformation from hwint=40
 
-  4He Nmax06 hw20  (from hwint=40)
+  4He Nmax06 hw20  (from hwint=40 at ob-9)
 
-Example 04: same but with transformation from hwint=40 -- upgrade to ob-13
+Example 04: same but upgrade to ob-13
 
-  4He Nmax06 hw20  (from hwint=40)
+  4He Nmax06 hw20  (from hwint=40 at ob-13)
+
+Example 05: recover ob-9 truncation from ob-13 source file
+
+  4He Nmax06 hw20  (from hwint=40 at ob-13->ob-9)
 
 
 
