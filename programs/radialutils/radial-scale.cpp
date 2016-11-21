@@ -4,9 +4,11 @@
   rescale radial matrix elements with new oscillator length
 
   Syntax:
-    + radial-scale proton_length_ratio neutron_length_ratio input_file output_file
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    radial-scale proton_length_ratio neutron_length_ratio input_file output_file
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  Patrick J. Fasano
+  @author Patrick J. Fasano
   University of Notre Dame
 
   + 11/4/16 (pjf): Created, based on radial-gen.cpp.
@@ -23,7 +25,6 @@
 #include "mcutils/profiling.h"
 #include "basis/nlj_orbital.h"
 #include "radial/radial_io.h"
-#include "spline/wavefunction_class.h"
 
 ////////////////////////////////////////////////////////////////
 // process arguments
@@ -137,8 +138,9 @@ int main(int argc, char **argv) {
   is.Read(matrices);
 
   // main loop
+  const int sectors_size = sectors.size();
   #pragma omp parallel for
-  for (int sector_index=0; sector_index < sectors.size(); ++sector_index) {
+  for (int sector_index=0; sector_index < sectors_size; ++sector_index) {
     if (sectors.GetSector(sector_index).bra_subspace().orbital_species() == basis::OrbitalSpeciesPN::kP) {
       matrices[sector_index] *= proton_scale_factor;
     } else if (sectors.GetSector(sector_index).bra_subspace().orbital_species() == basis::OrbitalSpeciesPN::kN) {
