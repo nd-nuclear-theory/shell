@@ -61,10 +61,13 @@ Example 06: harmonic oscillator direct run, expanded to Nmax20
 
   4He Nmax16 hw20  (tb-20->tb-16)
 
+  Edison (num_threads=4): 6.37
+
 Example 07: harmonic oscillator dilated run, expanded to Nmax20
 
   4He Nmax16 hw20  (ob-13->tb-16 + coulomb tb-20->tb-16)
 
+  Edison (num_threads=4): 11.68
 
 
 ----------------------------------------------------------------
