@@ -1,4 +1,5 @@
-/**************************************************************************//**
+/**************************************************************************/
+/**
   @file radial-xform.cpp
 
   transform single-particle matrix elements
@@ -12,6 +13,7 @@
   University of Notre Dame
 
   + 11/7/16 (pjf): Created, based on radial-scale.cpp.
+  + 11/22/16 (pjf): Implemented similarity transforms.
 
 ******************************************************************************/
 
@@ -22,6 +24,7 @@
 
 #include "mcutils/profiling.h"
 #include "basis/nlj_orbital.h"
+#include "basis/nlj_operator.h"
 #include "radial/radial_io.h"
 
 ////////////////////////////////////////////////////////////////
@@ -87,7 +90,7 @@ void ProcessArguments(const int argc, const char *argv[], RunParameters& run_par
   }
 }
 
-int main(int argc, char **argv) {
+int main(int argc, const char *argv[]) {
   RunParameters run_parameters;
   ProcessArguments(argc, argv, run_parameters);
 
@@ -104,39 +107,72 @@ int main(int argc, char **argv) {
   basis::OrbitalSpaceLJPN olap_bra_space, olap_ket_space;
   basis::OrbitalSectorsLJPN olap_sectors;
   shell::RadialOperatorType olap_type = olaps.radial_operator_type();
-  xs.SetToIndexing(olap_bra_space, olap_ket_space, olap_sectors);
+  olaps.SetToIndexing(olap_bra_space, olap_ket_space, olap_sectors);
+
+  // check that operator is transformable (bra and ket spaces are the same)
+  if (in_bra_space.OrbitalInfo() != in_ket_space.OrbitalInfo()) {
+    std::cerr << "ERROR: Bra and ket spaces of this operator are not the same. "
+              << "Cannot transform." << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+
+  // check that overlaps are valid
+  if ((olap_type != shell::RadialOperatorType::kO) ||
+      (in_ket_space.OrbitalInfo() != olap_bra_space.OrbitalInfo()))
+  {
+    std::cerr << "ERROR: Invalid olap for this input." << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+
+  // check that we know how to handle this type of transformation
+  /// @note Only similarity transforms are currently supported.
+  if (olap_bra_space.OrbitalInfo() != olap_ket_space.OrbitalInfo()) {
+    std::cerr << "ERROR: Overlap bra and ket spaces differ. Only similarity "
+              << "transforms are currently supported." << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+
+  // construct new indexing
+  const shell::RadialOperatorType& out_operator_type = in_operator_type;
+  const basis::OrbitalSpaceLJPN& out_bra_space = olap_ket_space;
+  const basis::OrbitalSpaceLJPN& out_ket_space = olap_ket_space;
+  basis::OrbitalSectorsLJPN out_sectors(out_ket_space, out_ket_space, in_sectors.l0max(), in_sectors.Tz0());
 
   // Eigen initialization
   basis::MatrixVector olap_matrices, input_matrices, output_matrices;
   is.Read(input_matrices);
   olaps.Read(olap_matrices);
 
-  if ((olap_type != shell::RadialOperatorType::kOverlaps)
-      (in_bra_space.OrbitalInfo() != in_ket_space.OrbitalInfo()) ||
-      (in_ket_space.OrbitalInfo() != olap_bra_space.OrbitalInfo()))
-  {
-    std::cerr << "Invalid olap for this input." << std::endl;
-    std::exit(EXIT_FAILURE);
-  }
-
-  // construct new sectors
-  basis::OrbitalSectorsLJPN out_sectors(olap_ket_space, olap_ket_space, in_sectors.l0max(), in_sectors.Tz0());
-
   // main loop
-  for (int sector_index=0; sector_index < out_sectors.size(); ++sector_index) {
+  for (int sector_index=0; sector_index < in_sectors.size(); ++sector_index) {
+    const auto& operator_sector = in_sectors.GetSector(sector_index);
+    int bra_subspace_index = operator_sector.bra_subspace_index();
+    int ket_subspace_index = operator_sector.ket_subspace_index();
+
+    // Sanity check on olap sector
+    // This is only true in general for similarity transforms.
+    assert(olap_sectors.ContainsSector(bra_subspace_index, bra_subspace_index));
+    assert(olap_sectors.ContainsSector(ket_subspace_index, ket_subspace_index));
+
+    // Get olap sector index
+    int left_olap_sector_index  = olap_sectors.LookUpSectorIndex(bra_subspace_index, bra_subspace_index);
+    int right_olap_sector_index = olap_sectors.LookUpSectorIndex(ket_subspace_index, ket_subspace_index);
+
+    // do matrix multipication and add to the output sectors
     output_matrices.push_back(
-      olap_matrices[sector_index].transpose() * input_matrices[sector_index] * olap_matrices[sector_index]
+      olap_matrices[left_olap_sector_index].transpose() * input_matrices[sector_index] * olap_matrices[right_olap_sector_index]
     );
   }
 
   // write out to file
   shell::OutRadialStream os(run_parameters.output_filename,
-                            olap_ket_space, olap_ket_space, out_sectors,
+                            out_ket_space, out_ket_space, out_sectors,
                             in_operator_type);
   os.Write(output_matrices);
 
   is.Close();
   os.Close();
+  olaps.Close();
 
   return EXIT_SUCCESS;
 }
