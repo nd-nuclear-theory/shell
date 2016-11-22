@@ -15,6 +15,7 @@
 
 #include "radial/radial_io.h"
 #include "mcutils/parsing.h"
+#include "mcutils/eigen.h"
 
 namespace shell {
 
@@ -38,7 +39,7 @@ namespace shell {
     // subspaces -- simple copy
     bra_orbital_space__ = bra_orbital_space();
     ket_orbital_space__ = ket_orbital_space();
-    
+
     // sectors -- must reconstruct sectors pointing to these new copies of the subspaces
     sectors__ = basis::OrbitalSectorsLJPN(
         bra_orbital_space__,ket_orbital_space__,
@@ -283,16 +284,22 @@ namespace shell {
     assert(sector.bra_subspace().size() == matrix.rows());
     assert(sector.ket_subspace().size() == matrix.cols());
 
+    // chop away very small values
+    auto chopped_matrix = matrix;
+    mcutils::ChopMatrix(chopped_matrix, 1e-14);
+
+    stream() << mcutils::FormatMatrix(chopped_matrix, "16.8e") << std::endl;
+
     // Write in one row per line
-    std::string line;
-    stream().precision(precision);
-    for (int j=0; j < sector.bra_subspace().size(); ++j) {
-      // write columns to line
-      for (int k=0; k < sector.ket_subspace().size(); ++k) {
-        stream() << " " << std::scientific << std::setw(width+1+precision) << matrix(j, k);
-      }
-      stream() << std::endl; ++line_count_;
-    }
+    // std::string line;
+    // stream().precision(precision);
+    // for (int j=0; j < sector.bra_subspace().size(); ++j) {
+    //   // write columns to line
+    //   for (int k=0; k < sector.ket_subspace().size(); ++k) {
+    //     stream() << " " << std::scientific << std::setw(width+1+precision) << matrix(j, k);
+    //   }
+    //   stream() << std::endl; ++line_count_;
+    // }
 
     // blank line separating sectors
     stream() << std::endl; ++line_count_;
