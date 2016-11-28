@@ -31,7 +31,8 @@
   11/1/16 (mac):
     - Convert from AS to NAS storage.
   11/13/16 (mac): Implement H2 Version15099 binary output.
-     
+  11/28/16 (mac): Add Tz0 to h2 format 15099 output header.
+
 ****************************************************************/
 
 #ifndef H2_IO_H_

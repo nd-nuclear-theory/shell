@@ -18,9 +18,10 @@ or, simply,
 
 ----------------------------------------------------------------
 
-Example 01: harmonic oscillator direct run, i.e., with interaction tbmes given directly at hw
+Example 01: harmonic oscillator direct run, i.e., with interaction
+tbmes given directly at hw
 
-  4He Nmax02 hw20
+  4He Nmax02 hw20 (direct)
 
     -9.53646660e+00 -4.51187420e+00 +2.60493112e+00 +3.68392897e+00
     -4.51187420e+00 -7.91358614e+00 -9.36970770e-01 -1.32507706e+00
@@ -69,6 +70,11 @@ Example 07: harmonic oscillator dilated run, expanded to Nmax20
 
   Edison (num_threads=4): 11.68
 
+Example 08: harmonic oscillator direct run (example01) but with h2
+format 15099
+
+  4He Nmax02 hw20 (direct)
+  TODO
 
 ----------------------------------------------------------------
 
@@ -76,4 +82,10 @@ To inspect matrices:
 
 foreach f (*.bin)
 ${SHELL_INSTALL_DIR}/bin/h2stat --matrices $f > ${f:r}.mat
+end
+
+foreach f (*.bin)
+${SHELL_INSTALL_DIR}/bin/h2conv 0 $f ${f:r}.dat
+${SHELL_INSTALL_DIR}/bin/h2conv 15099 $f ${f:r}-15099.bin
+${SHELL_INSTALL_DIR}/bin/h2conv 15099 $f ${f:r}-15099.dat
 end

@@ -214,6 +214,7 @@ namespace shell {
     std::string str = fmt::format(
         "  File: {}\n"
         "  Format: {} ({})\n"
+        "  Operator properties: J0 {} g0 {} Tz0 {}\n"
         "  Orbitals: p {} n {} (oscillator-like {})\n"
         // "  One-body truncation: p {:.4f} n {:.4f}\n"
         // "  Two-body truncation: pp {:.4f} nn {:.4f} pn {:.4f}\n"
@@ -222,6 +223,7 @@ namespace shell {
         "  Matrix elements: pp {} nn {} pn {} => total {}\n",
         filename_,
         int(h2_format()),kH2ModeDescription[int(h2_mode())],
+        sectors().J0(),sectors().g0(),sectors().Tz0(),
         orbital_space().GetSubspace(0).size(),orbital_space().GetSubspace(1).size(),orbital_space().is_oscillator_like(),
         space().weight_max().one_body[0],space().weight_max().one_body[1],
         space().weight_max().two_body[0],space().weight_max().two_body[1],space().weight_max().two_body[2],
@@ -428,7 +430,7 @@ namespace shell {
         // write two-body header info
         stream()
           // header line 1: operator properties
-          << fmt::format("{} {}",sectors().J0(),sectors().g0()) << std::endl
+          << fmt::format("{} {} {}",sectors().J0(),sectors().g0(),sectors().Tz0()) << std::endl
           // header line 2: 1-body basis limit
           << fmt::format(
               "{:e} {:e}",
@@ -483,10 +485,11 @@ namespace shell {
         // two-body indexing
 
         // header line 1: operator properties
-        WriteI4(stream(),2*kIntegerSize);
+        WriteI4(stream(),3*kIntegerSize);
         WriteI4(stream(),sectors().J0());
         WriteI4(stream(),sectors().g0());
-        WriteI4(stream(),2*kIntegerSize);
+        WriteI4(stream(),sectors().Tz0());
+        WriteI4(stream(),3*kIntegerSize);
         
         // header line 2: 1-body basis limit
         WriteI4(stream(),2*kFloatSize);
