@@ -69,14 +69,12 @@
 
 """
   
-import os
-import glob
-import shutil
 import datetime
+import glob
+import os
+import shutil
 
 import mcscript
-import ncsm_config
-
 
 ################################################################
 # utility calculations
@@ -130,15 +128,17 @@ class Configuration(object):
     def __init__(self):
 
         # environment
-        data_dir_h2 = os.environ.get("SHELL_DATA_DIR_H2")
-        print("SHELL_DATA_DIR_H2",data_dir_h2)
-        install_dir = os.environ.get("SHELL_INSTALL_DIR")
-        print("SHELL_INSTALL_DIR",install_dir)
-        interaction_run_list = []
+        self.data_dir_h2 = os.environ.get("SHELL_DATA_DIR_H2")
+        self.install_dir = os.environ.get("SHELL_INSTALL_DIR")
+        self.interaction_run_list = []
 
-    def shell_filename(self,code_name):
+    def shell_filename(self,name):
         """Construct filename for shell package executable."""
-        return os.path.join(install_dir,"bin",code_name)
+        return os.path.join(self.install_dir,"bin",name)
+
+    def interaction_filename(self,name):
+        """Construct filename for interaction h2 file."""
+        return os.path.join(self.data_dir_h2,name)
 
 
 configuration = Configuration()
@@ -191,6 +191,10 @@ angular_momentum_operator_list = [
 ]
 
 
+##################################################################
+# traditional ho run
+##################################################################
+
 def task_handler_ho(current_task):
     """ Invoke mfdn in h2 run, given current task parameters.
 
@@ -200,24 +204,46 @@ def task_handler_ho(current_task):
     # temporary filenames
     orbitals_int_filename = "orbitals-int.dat"  # for overlaps from interaction tbmes
     orbitals_filename = "orbitals.dat"  # for target space
+    radial_me_filename_template = "radial-me-{}{}.dat"  # "{}{}" will be replaced by {"r1","r2","k1","k2"}
+    radial_olap_filename = "radial-olap.dat"  # for radial overlaps
 
-    # orbital generation -- interaction files
-    mcscript.utils.call(
+    print("current_task:",current_task)
+
+    # generate orbitals -- interaction files
+    mcscript.call(
         [
             configuration.shell_filename("orbital-gen"),
             "--oscillator",
-            "{Nmax_orb_int:d}".format(current_task),
+            "{Nmax_orb_int:d}".format(**current_task),
             "{:s}".format(orbitals_int_filename)
         ]
+    )
 
-    # orbital generation -- target space
-    mcscript.utils.call(
+    # generate orbitals -- target space
+    mcscript.call(
         [
             configuration.shell_filename("orbital-gen"),
             "--oscillator",
-            "{Nmax_orb:d}".format(current_task),
+            "{Nmax_orb:d}".format(**current_task),
             "{:s}".format(orbitals_filename)
         ]
+    )
+
+    # generate radial integrals
+    for operator_type in ["r","k"]:
+        for power in [1,2]:
+            radial_me_filename = radial_me_filename_template.format(operator_type,power)
+            mcscript.call(
+                [
+                    configuration.shell_filename("radial-gen"),
+                    "--kinematic",
+                    "{:s}".format(operator_type),
+                    "{:d}".format(power),
+                    "oscillator",
+                    orbitals_filename,
+                    radial_me_filename
+                ]
+            )
 
 ##################################################################
 # h2mixer 
@@ -474,5 +500,5 @@ def task_handler_mfdn_h2(current_task):
     mcscript.call(["rm", "-vf"] + scratch_file_list)
            
     
-if (___name___ == "___MAIN___"):
+if (__name__ == "__MAIN__"):
     pass

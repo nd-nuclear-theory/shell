@@ -1,5 +1,9 @@
 """ runmfdn01.py -- h2mixer+mfdn mscript test run
 
+rm runmfdn01/flags/*
+qsubm --here mfdn01 --pool=test --limit=1 --noredirect 
+
+
     Mark A. Caprio
     University of Notre Dame
 
@@ -7,6 +11,7 @@
       
 """
 
+import mcscript
 import mfdn_h2
 
 # load mcscript
@@ -25,9 +30,9 @@ params = {
     "orbitals_int_filename" : "orbitals-int.dat",  # for overlaps from interaction tbmes
     "radial_me_filename_pattern" : "radial-me-{}{}.dat",  # "{}{}" will be replaced by {"r1","r2","k1","k2"}
     "radial_olap_filename" : "radial-olap.dat",
-    # stored input TBMEs
-    "VNN_filename" : os.path.join(generate_input.data_dir_h2,"run0164-ob-9/JISP16-ob-9-20.bin"),
-    "VC_filename" : os.path.join(generate_input.data_dir_h2,"run0164-ob-9/VC-ob-9-20.bin"),
+    # stored input TBMEs -- TO GENERALIZE
+    "VNN_filename" : "run0164-ob-9/JISP16-ob-9-20.bin",
+    "VC_filename" : "run0164-ob-9/VC-ob-9-20.bin",
     # scaling/transformation/basis parameters
     "hw" : 20,
     "target_truncation" : ("tb",2),
@@ -57,33 +62,11 @@ tasks = [
 # into their own module.
 ##################################################################
 
-def task_descriptor_hello (current_task):
+def task_descriptor(current_task):
     """ Return task descriptor for hello task.
     """
 
-    return "{world_name}".format(**current_task)
-
-def task_handler_hello (current_task):
-    """ Do a hello world task  given current task parameters.
-
-    Expected dictionary keys:
-
-    "world_name" : name of world to greet
-
-    """
-
-    # write greeting message to file
-
-    mcscript.utils.write_input(
-        "hello.txt",
-        input_lines=[
-            "Dear {world_name},".format(**current_task),
-            "   Hello!",
-            "Your script",
-            mcscript.run.name
-            ]
-        )
-
+    return "test"
 
 ##################################################################
 # task list entry annotation functions
@@ -93,7 +76,7 @@ def task_pool (current_task):
     """ Create task pool identifier.
     """
     
-    return "greet"
+    return "test"
 
 ##################################################################
 # master loop
@@ -101,7 +84,7 @@ def task_pool (current_task):
 
 mcscript.task.init(
     tasks,
-    task_descriptor=task_descriptor_hello,
+    task_descriptor=task_descriptor,
     task_pool=task_pool,
     phase_handler_list=[mfdn_h2.task_handler_ho]
     )
