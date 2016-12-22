@@ -13,6 +13,7 @@ Installation instructions: shell and spncci projects
   - Overhaul and clearly mark cluster-specific instructions.
   - Merge in notes from install_NDCRC.txt, created 6/29/16 (aem).
 + 11/13/16 (mac): Update shell h2mixer example.
++ 12/22/16 (mac): Rename craype config files to nersc.
 
 ----------------------------------------------------------------
 
@@ -138,19 +139,19 @@ Installation instructions: shell and spncci projects
   For HPC systems with more specialized compiler invocations, you can
   probably "wrap" one of these generic config files as in include
   file, then overriding a few variable settings.  See
-  config/config-gnu-craype.mk as an example.
+  config/config-gnu-nersc.mk as an example.
 
   || @NDCRC: Use the generic config files.
 
   || @NERSC: For compiling under gcc:
   || 
-  || % ln -s config/config-gnu-craype.mk config.mk
+  || % ln -s config/config-gnu-nersc.mk config.mk
   || 
   || For compiling under intel:
   || 
-  || % ln -s config/config-intel-craype.mk config.mk
+  || % ln -s config/config-intel-nersc.mk config.mk
   || 
-  || It is important to use these "...-craype.mk" config files, since
+  || It is important to use these "...-nersc.mk" config files, since
   || they configure make to invoke the correct Cray Programming
   || Environment compiler wrapper "CC" to generate optimized executables
   || for the compute nodes and to link to the correct libraries.
