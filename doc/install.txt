@@ -13,7 +13,10 @@ Installation instructions: shell and spncci projects
   - Overhaul and clearly mark cluster-specific instructions.
   - Merge in notes from install_NDCRC.txt, created 6/29/16 (aem).
 + 11/13/16 (mac): Update shell h2mixer example.
-+ 12/22/16 (mac): Rename craype config files to nersc.
++ 12/22/16 (mac):
+  - Rename NERSC config files from "...-craype.mk" to
+    "...-nersc.mk".
+  - Add NDCRC config files.
 
 ----------------------------------------------------------------
 
@@ -141,7 +144,18 @@ Installation instructions: shell and spncci projects
   file, then overriding a few variable settings.  See
   config/config-gnu-nersc.mk as an example.
 
-  || @NDCRC: Use the generic config files.
+  || @NDCRC: For compiling under gcc:
+  || 
+  || % ln -s config/config-gnu-ndcrc.mk config.mk
+  || 
+  || For compiling under intel:
+  || 
+  || % ln -s config/config-intel-ndcrc.mk config.mk
+  ||
+  || Actually, the generic config gnu or intel config files would work
+  || just fine at the NDCRC, but it is good to have the framework in
+  || place to easily add flags specific to the NDCRC, e.g.,
+  || architecture optimizations.
 
   || @NERSC: For compiling under gcc:
   || 
@@ -315,3 +329,6 @@ compiler?  Chokes on std::vector<Eigen::MatrixXd>.
   gsl/1.16 
   m2032/opt/eigen-3.2.10
 
+12/22/16 (mac): @NDCRC: We will include the ompi module in
+module-load-ndcrc, even though not currently needed, both convenience
+when compiling LSU3shell and for future MPI support.
