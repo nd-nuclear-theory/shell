@@ -186,8 +186,13 @@ Installation instructions: shell and spncci projects
   || 
   || % source config/module-load-ndcrc.csh
 
-  || @NERSRC:
+  || @NERSC:
   || 
+  || % source config/module-load-nersc.csh
+  ||
+  || or, for gnu,
+  ||
+  || % module swap PrgEnv-intel PrgEnv-gnu
   || % source config/module-load-nersc.csh
 
   Then, "make all", and a parallel make (with the -j option) is
