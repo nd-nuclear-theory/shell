@@ -69,7 +69,6 @@
         # version parameters
         "h2_format" (int): h2 file format to use (values include: 0, 15099)
         "mfdn_executable" (string): mfdn executable name
-        "mfdn_wrapper" (string): wrapper code for given MFDn version
 
         # emcalc postprocessing parameters
         "em_multipolarity_list" (list, optional): list of multipolarities ("E"|"M",lambda) 
@@ -82,6 +81,7 @@
 
   - 12/14/16 (mac): Created, drawing on ncsm.py (created 2/12/13) and
     shell package example code generate_input.py (created 11/7/16).
+  - 12/27/16 (mac): Rough in scripting of MFDn v14 run.
 
 """
   
@@ -128,6 +128,14 @@ k_basis_mode_dilated = 1
 k_basis_mode_generic = 2
 
 ################################################################
+# physical constants
+################################################################
+
+k_mN_csqr = 938.92  # (m_N c^2)~938.92 MeV
+k_hbar_c = 197.327  # (hbar c)~197.327 Mev fm
+    
+
+################################################################
 # utility calculations
 ################################################################
 
@@ -160,10 +168,6 @@ def oscillator_length(hw):
         (float): b in fm
     """
 
-    # physical constants
-    k_mN_csqr = 938.92  # (m_N c^2)~938.92 MeV
-    k_hbar_c = 197.327  # (hbar c)~197.327 Mev fm
-    
     return k_hbar_c/math.sqrt(k_mN_csqr*hw)
 
 ################################################################
@@ -174,30 +178,43 @@ class Configuration(object):
     """Object to collect MFDn environment configuration parameters into
     common name space.
 
-    Defines several variables based on information provided through
-    the environment:
-    
-        run:
+    Data members:
+
+        install_dir (str): installation directory for shell project ("SHELL_INSTALL_DIR")
+        mfdn_dir (str): base directory for finding MFDn executables ("SHELL_MFDN_DIR")
+          EX: base directory "${HOME}/projects/mfdn" may contain "mfdn-v14-beta06-newmake/xmfdn-h2-lan"
+          and "beta00/xmfdn-h2-lan"
+        data_dir_h2 (str): base directory for interaction tbme files ("SHELL_DATA_DIR_H2")
+        interaction_run_list (list of str): subdirectories for interaction tbme files
+            (to be set by calling run script)
 
     Methods:
 
         shell_filename(name): Generate full qualified filename for
-        shell utility code, given root name.
+            shell utility executable, given root name.
+
+        mfdn_filename(name): Generate full qualified filename for
+            MFDn executable, given root name.
 
         interaction_filename(name): Generate full qualified filename
-        for interaction h2 file, given root name.
+            for interaction h2 file, given root name.
 
     """
     def __init__(self):
 
         # environment
-        self.data_dir_h2 = os.environ.get("SHELL_DATA_DIR_H2")
         self.install_dir = os.environ.get("SHELL_INSTALL_DIR")
+        self.mfdn_dir = os.environ.get("SHELL_MFDN_DIR")
+        self.data_dir_h2 = os.environ.get("SHELL_DATA_DIR_H2")
         self.interaction_run_list = []
 
     def shell_filename(self,name):
         """Construct filename for shell package executable."""
         return os.path.join(self.install_dir,"bin",name)
+
+    def mfdn_filename(self,name):
+        """Construct filename for MFDn executable."""
+        return os.path.join(self.mfdn_dir,name)
 
     def interaction_filename(self,name):
         """Construct filename for interaction h2 file."""
@@ -299,7 +316,10 @@ def set_up_orbitals(task):
 
     # generate orbitals -- target basis
     if (task["ho_truncation"]):
-        Nmax_orb = task["Nmax"] + task["Nv"]
+        if (task["many_body_truncation"]=="Nmax"):
+            Nmax_orb = task["Nmax"] + task["Nv"]
+        elif (task["many_body_truncation"]=="FCI"):
+            Nmax_orb = task["Nmax"]
         mcscript.call(
             [
                 configuration.shell_filename("orbital-gen"),
@@ -620,146 +640,102 @@ def generate_tbme(task):
         mode = "serial"  # SMP only
     )
 
+def run_mfdn_v14(task):
+    """Generate TBMEs for MFDn run.
 
+    Arguments:
+        task (dict): as described in module docstring
     
-## ##################################################################
-## # h2mixer 
-## ##################################################################
-## 
-## def task_handler_h2mixer(task):
-##     """ Invoke mfdn in h2 run, given current task parameters.
-## 
-##     Expected dictionary keys: see initial module docstring
-##     """
-##     print ("h2mixer", task["descriptor"])
-## 
-##     # recall parameters
-##     nuclide = task["nuclide"] 
-##     interaction = task["interaction"] 
-##     coulomb = task["coulomb"] 
-##     hw_int = task["hw_int"] 
-##     aLawson = task["aLawson"] 
-##     hwLawson = task["hwLawson"]
-##     hw = task["hw"] 
-##     basis = task["basis"] 
-##     scaled_basis = task["scaled_basis"] 
-##     xform_cutoff = task["xform_cutoff"] 
-##     Nmax = task["Nmax"] 
-##     Nv = task["Nv"]
-## 
-##     # basic setup
-##     (Z, N) = nuclide
-##     input_truncation = interaction_truncation_for_Nmax(Nv,Nmax)
-##     r2k2_basename_unresolved = mcscript.dashify(("r2k2", basis_string_pn(basis), mcscript.dashify(input_truncation)))
-##     r2k2_basename = mcscript.subpath_search_basename (ncsm_config.data_dir_h2, r2k2_run_list, r2k2_basename_unresolved)
-##     output_truncation = interaction_truncation_for_Nmax(Nv,Nmax,standardize=False)
-##     h2mixer_params = {
-##         "input_truncation" : input_truncation,
-##         "output_truncation" : output_truncation,
-##         "Z": Z, "N" : N, "hw" : hw,
-##         "r2k2_basename" : r2k2_basename,
-##         "input_basenames" : [],
-##         "output_streams" : []
-##         }
-## 
-##     # input stream setup
-##     # input 5 -- built interaction matrix elements -- for scaled basis
-##     tbme_basename_VNN_unresolved = mcscript.dashify((interaction, basis_string_pn(scaled_basis), mcscript.dashify(xform_cutoff), mcscript.dashify(input_truncation), format(hw_int,"g")))
-##     h2mixer_params["input_basenames"].append(
-##         mcscript.subpath_search_basename (ncsm_config.data_dir_h2, xform_run_list, tbme_basename_VNN_unresolved)
-##         )
-##     # input 6 (OPTIONAL) -- built Coulomb matrix elements -- for unscaled basis
-##     if (coulomb):
-##         hw_int_coul = task["hw_int_coul"] 
-##         xform_cutoff_coul = task["xform_cutoff_coul"] 
-##         tbme_basename_VC_unresolved = mcscript.dashify(("VC", basis_string_pn(basis), mcscript.dashify(xform_cutoff_coul), mcscript.dashify(input_truncation), format(hw_int_coul,"g")))
-##         h2mixer_params["input_basenames"].append(
-##             mcscript.subpath_search_basename (ncsm_config.data_dir_h2, xform_run_list, tbme_basename_VC_unresolved)
-##         )
-##         
-##     # output stream -- Hamiltonian
-##     components = [
-##             ("Trel",), # Trel
-##             ("in", 5, 1.0), # VNN
-##             ("NCM", hwLawson, aLawson) # Lawson
-##             ]
-##     if (coulomb):
-##         components += [
-##             ("scaled", 6, hw_int_coul, -1, 1.0) # VC  -- add scaled <in#> <hw_ref> <degree> <multiplier> 
-##         ]
-##     h2mixer_params["output_streams"].append(
-##         {
-##             "basename" : "tbme-h2",
-##             "components" : components
-##         }
-##     )
-## 
-##     # output stream -- rrel2 (required observable)
-##     h2mixer_params["output_streams"].append(
-##         {
-##         "basename" : "tbme-rrel2",
-##         "components" : [ ("rrel2",) ]
-##         }
-##         )
-## 
-##     # output stream -- NCM(hwLawson)
-##     h2mixer_params["output_streams"].append(
-##         {
-##         "basename" : "tbme-NCM",
-##         "components" : [ ("NCM", hwLawson, 1.0) ]
-##         }
-##         )
-## 
-##     # output stream -- CM observables R20 & K20
-##     if (task.get("obs-R20K20",False)):
-##         h2mixer_params["output_streams"].append(
-##             {
-##                 "basename" : "tbme-R20",
-##                 "components" : [ ("R20",) ]
-##             }
-##         )
-##         h2mixer_params["output_streams"].append(
-##             {
-##                 "basename" : "tbme-K20",
-##                 "components" : [ ("K20",) ]
-##             }
-##         )
-## 
-##     # output stream -- squared angular momentum observables
-##     if (task.get("obs-am-sqr",False)):
-##         for op in angular_momentum_operator_list:
-##             h2mixer_params["output_streams"].append(
-##                 {
-##                     "basename" : "tbme-{}2".format(op),
-##                     "components" : [ ("am-sqr", op) ]
-##                 }
-##             )
-## 
-##     # output streams -- tbme for H components (debugging)
-##     if (task.get("obs-H-components",False)):
-##         h2mixer_params["output_streams"].append(
-##             {
-##                 "basename" : "tbme-Trel",
-##                 "components" : [ ("Trel",) ]
-##             }
-##         )
-##         h2mixer_params["output_streams"].append(
-##             {
-##                 "basename" : "tbme-VNN",
-##                 "components" : [ ("in", 5, 1.0) ]
-##             }
-##         )
-##         h2mixer_params["output_streams"].append(
-##             {
-##                 "basename" : "tbme-coul",
-##                 "components" : [ ("scaled", 6, hw_int_coul, -1, 1.0) ]
-##             }
-##         )
-## 
-## 
-##     # run h2mixer
-##     call_h2mixer (h2mixer_params)
-## 
+    Raises:
+        ScriptError: if MFDn output not found
+
+    """
+
+    # validate basis mode
+    if (not task["ho_truncation"]):
+        raise ValueError("expecting ho_truncation to be True but found {ho_truncation}".format(**task))
+
+    # accumulate MFDn input lines
+    lines = []
+
+    # base parameters
+    twice_Mj = int(2*task["Mj"])
+    if (task["many_body_truncation"]=="Nmax"):
+        Nmax_orb = task["Nmax"] + task["Nv"]
+    elif (task["many_body_truncation"]=="FCI"):
+        Nmax_orb = task["Nmax"]
+    Nshell = Nmax_orb+1
+    if (task["basis_mode"] in {k_basis_mode_direct,k_basis_mode_dilated}):  
+        hw_for_trans = task["hw"]
+    else:
+        hw_for_trans = 0  # disable MFDn hard-coded oscillator one-body observables
+    ## ndiag = int(os.environ.get("MFDN_NDIAG",0))  # allows override for spares, not so elegant
+    ndiag = 0
+    if (task["Nstep"]==2):
+        Nmin = task["Nmax"]%2
+    else:
+        Nmin = 1
+
+    lines.append("{:d}  # IFLAGMBSI".format(0))
+    lines.append("{ndiag:d}  # ndiag (0: no spares, automatic ndiag)".format(ndiag=ndiag,**task))
+    lines.append("{:d}  # number of classes".format(2))
+    lines.append("{nuclide[0]:d}  # protons (class 1 particles)".format(**task))
+    lines.append("{nuclide[1]:d}  # protons (class 2 particles)".format(**task))
+    lines.append("1 {Nshell:d}  # min, max # S.P. shells for class 1 particles".format(Nshell=Nshell,**task))
+    lines.append("1 {Nshell:d}  # min, max # S.P. shells for class 2 particles".format(Nshell=Nshell,**task))
+    lines.append("{Nmin:d} {Nmax:d} {Nstep:d}  # N_min, N_max, delta_N".format(Nmin=Nmin,**task))
+    lines.append("{:d}   # Total 2 M_j".format(twice_Mj))
+    lines.append("{eigenvectors:d} {lanczos:d} {initial_vector:d} {tolerance:e}  # number of eigenvalues/vectors, max number of its, ...)".format(**task))
+    lines.append("{:d} {:d}  # rank of input Hamiltonian/interaction".format(2,2))
+    lines.append("{hw_for_trans:g} {k_mN_csqr:g}  # h-bar*omega, Nucleon mass (MeV) ".format(
+        hw_for_trans=hw_for_trans,k_mN_csqr=k_mN_csqr,**task
+    ))
+
+    # collect tbo names
+    obs_basename_list = ["tbme-rrel2","tbme-Ncm"]
+    if ("H-components" in task["observable_sets"]):
+        obs_basename_list += ["tbme-Trel","tbme-VNN"]
+        if (task["use_coulomb"]):
+            obs_basename_list += ["tbme-VC"]
+    if ("am-sqr" in task["observable_sets"]):
+        obs_basename_list += ["tbme-L","tbme-Sp","tbme-Sn","tbme-S","tbme-J"]
+
+    # tbo parameters
+    lines.append("tbme-H")  # Hamiltonian basename
+    num_obs = 2 + len(obs_basename_list)
+    lines.append("{:d}   # number of observables (J, T, R2, ...)".format(num_obs))
+    lines += obs_basename_list
+    
+    # obdme parameters
+    lines.append("{enable_obd:d} {twice_multipolarity:d} # static one-body density matrix elements (0: no one-body densities), twice multipolarity".format(
+        enable_obd=1,twice_multipolarity=2*task["obdme_multipolarity"]
+    ))
+    lines.append("{num_reference_states:d} {max_delta_J:d} #number of reference states for transitions (0: no transitions, -1: all2all), max delta2J (?)".format(
+        num_reference_states=len(task["obdme_reference_state_list"]),
+        max_delta_J=2*task["obdme_multipolarity"]
+    ))
+    for reference_state in task["obdme_reference_state_list"]:
+        lines.append("{:d} {:d} {:d}".format(2*reference_state[0],reference_state[1],reference_state[-2]))
+
+    # ensure terminal line
+    lines.append("")
+
+    # generate MFDn input file
+    mcscript.utils.write_input("mfdn.dat",input_lines=lines,verbose=False)
+    
+    # invoke MFDn
+    mcscript.call(
+        [
+            configuration.mfdn_filename(task["mfdn_executable"])
+        ],
+        mode = "parallel"
+    )
+
+    # test for success
+    if (not os.path.exists("mfdn.res")):
+        raise ScriptError("mfdn.res not found")
+
+
 ## ##################################################################
 ## # mfdn h2 run
 ## ##################################################################

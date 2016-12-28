@@ -76,8 +76,7 @@ task = {
 
     # version parameters
     "h2_format" : 0,
-    "mfdn_executable" : "",
-    "mfdn_wrapper" : ""
+    "mfdn_executable" : "mfdn-v14-beta06-newmake/xmfdn-h2-lan"
 
 }
 
@@ -120,6 +119,7 @@ def task_pool (current_task):
 mfdn.set_up_orbitals(task)
 mfdn.set_up_radial_analytic(task)
 mfdn.generate_tbme(task)
+mfdn.run_mfdn_v14(task)
 
 ################################################################
 # termination
