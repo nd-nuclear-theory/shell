@@ -3,6 +3,7 @@
 rm runmfdn01/flags/*
 qsubm --here mfdn01 --pool=test --limit=1 --noredirect 
 
+qsubm --here mfdn01
 
     Mark A. Caprio
     University of Notre Dame
@@ -12,48 +13,75 @@ qsubm --here mfdn01 --pool=test --limit=1 --noredirect
 """
 
 import mcscript
-import mfdn_h2
+import mfdn
 
-# load mcscript
-import mcscript
+# initialize mcscript
 mcscript.init()
 
 ##################################################################
 # build task list
 ##################################################################
 
-params = {
-    # stored radial
-    "Nmax_orb" : 2,  # for target space
-    "Nmax_orb_int" : 20,  # for overlaps from interaction tbmes
-    "orbitals_filename" : "orbitals.dat",  # for target space
-    "orbitals_int_filename" : "orbitals-int.dat",  # for overlaps from interaction tbmes
-    "radial_me_filename_pattern" : "radial-me-{}{}.dat",  # "{}{}" will be replaced by {"r1","r2","k1","k2"}
-    "radial_olap_filename" : "radial-olap.dat",
-    # stored input TBMEs -- TO GENERALIZE
-    "VNN_filename" : "run0164-ob-9/JISP16-ob-9-20.bin",
-    "VC_filename" : "run0164-ob-9/VC-ob-9-20.bin",
-    # scaling/transformation/basis parameters
-    "hw" : 20,
-    "target_truncation" : ("tb",2),
-    "hw_int" : 20,
-    "hw_c" : 20,
-    "xform_enabled" : False,
-    "xform_truncation" : ("ob",9),
+mfdn.configuration.interaction_run_list = ["run0164-ob-9"]
+
+task = {
+    # nuclide parameters
+    "nuclide" : (2,2),
+
     # Hamiltonian parameters
-    "A" : 4,   # atomic mass number of nucleus (for kinematic operators)
-    "a" : 20,  # coefficient on Ncm in Lawson term
-    "hw_cm" : None,  # hw for Ncm in Lawson term; if None, defaults to "hw"
+    "interaction" : "JISP16",
     "use_coulomb" : True,
-    # output file format
-    "h2_format" : 0  # h2 formats: 0, 15099
+    "a_cm" : 20.,
+    "hw_cm" : None,
+
+    # input TBME parameters
+    "truncation_int" : ("ob",9),
+    "hw_int" : 20.,
+    "truncation_coul" : ("ob",9),
+    "hw_coul" : 20.,
+
+    # basis parameters
+    "basis_mode" : mfdn.k_basis_mode_direct,
+    "hw" : 20.,
+
+    # transformation parameters
+    "xform_truncation_int" : None,
+    "xform_truncation_coul" : None,
+    "hw_coul_rescaled" : None,
+    "target_truncation" : None,
+
+    # traditional oscillator many-body truncation
+    "ho_truncation" : True,
+    "Nv" : 0,
+    "Nmax" : 2,
+    "many_body_truncation" : "Nmax",
+    "Nstep" : 2,
+
+    # diagonalization parameters
+    "Mj" : 0,
+    "eigenvectors" : 2,
+    "initial_vector" : -2,
+    "lanczos" : 200,
+    "tolerance" : 1e-6,
+
+    # obdme parameters
+    ## "hw_for_trans" : 20,
+    "obdme_multipolarity" : 2,
+    "obdme_reference_state_list" : [(0,0,1)],
+    "save_obdme" : True,
+
+    # two-body observables
+    ## "obs_basename_list" : ["tbme-rrel2","tbme-Ncm"],
+    "observable_sets" : ["H-components","am-sqr"],
+
+    # version parameters
+    "h2_format" : 0,
+    "mfdn_executable" : "",
+    "mfdn_wrapper" : ""
+
 }
 
-# generate task list
-
-tasks = [
-    params
-]
+## mfdn.configuration.interaction_filename("JISP16-ob-9-20.bin")
 
 ##################################################################
 # implementation functions for doing a "hello world" task
@@ -82,12 +110,16 @@ def task_pool (current_task):
 # master loop
 ##################################################################
 
-mcscript.task.init(
-    tasks,
-    task_descriptor=task_descriptor,
-    task_pool=task_pool,
-    phase_handler_list=[mfdn_h2.task_handler_ho]
-    )
+## mcscript.task.init(
+##     tasks,
+##     task_descriptor=task_descriptor,
+##     task_pool=task_pool,
+##     phase_handler_list=[mfdn_h2.task_handler_ho]
+##     )
+
+mfdn.set_up_orbitals(task)
+mfdn.set_up_radial_analytic(task)
+mfdn.generate_tbme(task)
 
 ################################################################
 # termination

@@ -7,23 +7,34 @@
         
         # Hamiltonian parameters
         "interaction" (string): name for interaction (for use in descriptor and filenames)
-        "coulomb" (bool): whether or not to include Coulomb
-        "aLawson" (float): aLawson
-        "hwLawson" (float): hwLawson (typically hw of basis)
+        "use_coulomb" (bool): whether or not to include Coulomb
+        "a_cm" (float): coefficient of N_cm for Lawson term
+        "hw_cm" (float): hw of N_cm for Lawson term (None: use hw of basis)
+
+        # input TBME parameters
+        "truncation_int" (tuple): input interaction TBME cutoff, as tuple ("ob"|"tb",N) 
+        "hw_int" (float): hw of basis for source interaction TBMEs
+        "truncation_coul" (tuple): input Coulomb TBME cutoff, as tuple ("ob"|"tb",N) 
+        "hw_coul" (float): hw of basis for source Coulomb TBMEs
 
         # basis parameters
         "basis_mode" (int): enumerated value indicating direct oscillator, dilated oscillator,
-            or generic run mode
+            or generic run mode (see definitions below); beware that subsequent natural orbital runs
+            must be treated as generic even if the initial (starting basis) run is of oscillator type
         "hw" (float): hw of basis
-        "hw_int" (float): hw of basis for source interaction TBMEs
-        "truncation_int" (tuple): input interaction TBME cutoff, as tuple ("ob"|"tb",N) 
-        "hw_coul" (float): hw of basis for source Coulomb TBMEs
-        "hw_coul_prime" (float): hw to which to rescale Coulomb TBMEs before two-body transformation
-        "truncation_coul" (tuple): input Coulomb tbme cutoff, as tuple ("ob"|"tb",N) 
 
         # transformation parameters
         "xform_truncation_int" (tuple): transform cutoff for interaction, as tuple ("ob"|"tb",N) 
-        "xform_truncation_coul" (tuple): transform cutoff for Coulomb, as tuple ("ob"|"tb",N) 
+        "xform_truncation_coul" (tuple): transform cutoff for Coulomb, as tuple ("ob"|"tb",N)
+        "hw_coul_rescaled" (float): hw to which to rescale Coulomb TBMEs before two-body
+            transformation (None: use hw of basis)
+             - direct oscillator run: naturally hw to avoid any two-body transformation
+             - dilated oscillator run: naturally hw to avoid any two-body transformation, but one could
+               also prefer hw_int for uniformity in the two-body transformation (at the expense of
+               introducing some transformation error in the Coulomb interaction)
+             - generic run: naturally hw_int for uniformity in the two-body transformation
+        "target_truncation" (tuple): truncation of target TBMEs, as weight_max tuple
+             (None: deduce automatically from valence shell and many-body truncation information)
 
         # legacy -- to adapt or remove
         "basis" (tuple): logical basis (radial_basis_p,1.,radial_basis_n,beta_n), to be scaled by hw
@@ -33,10 +44,12 @@
         "ho_truncation" (bool): whether or not to assume traditional HO-style many-body truncation
         "Nv" (int): N of valence shell (for use in truncation)
         "Nmax" (int): Nmax
+        "many_body_truncation" (str): many-body truncation type ("Nmax" for A-body or "FCI" for one-body)
         "Nstep" (int): Nstep (2 for single parity, 1 for mixed parity)
-
+ 
         # diagonalization parameters
-        "Mj" (float): M-scheme Mj value
+        "Mj" (float): M-scheme angular momentum projection value (as true value,
+            possibly half-integral, *not* doubled!)
         "eigenvectors" (int): number of eigenvectors to calculate
         "initial_vector" (int): initial vector code for mfdn
         "lanczos" (int): lanczos iterations
@@ -47,19 +60,23 @@
         "obdme_reference_state_list" (list): list of reference states (J,g,i) for density calculation, or "all2all"
         "save_obdme" (bool): whether or not to save obdme files in archive
 
-        # two-body observable parameters
-        "obs-R20K20" (bool, optional): whether or not to include center-of-mass diagnostic observables (default: False)
-        "obs-am-sqr" (bool, optional): whether or not to include squared angular momentum (default: False)
-        "obs-H-components" (bool, optional): whether or not to include Hamiltonian terms (default: False)
+        # two-body observables
+        "observable_sets" (list of str): codes for predefined observable sets to include
+            "H-components": Hamiltonian terms
+            "am-sqr": squared angular momenta
+            "R20K20": center-of-mass diagnostic observables (TODO)
         
         # version parameters
+        "h2_format" (int): h2 file format to use (values include: 0, 15099)
         "mfdn_executable" (string): mfdn executable name
         "mfdn_wrapper" (string): wrapper code for given MFDn version
 
         # emcalc postprocessing parameters
         "em_multipolarity_list" (list, optional): list of multipolarities ("E"|"M",lambda) 
 
-
+        # natural orbital postprocessing
+        "enable_natural_orbitals" (bool): whether or not to generate natural orbital auxiliary files
+          
   Mark A. Caprio
   University of Notre Dame
 
@@ -70,6 +87,7 @@
   
 import datetime
 import glob
+import math
 import os
 import shutil
 
@@ -81,7 +99,7 @@ import mcscript
 
 # General modes of operation for radial basis
 #
-# k_radial_direct:
+# k_basis_mode_direct:
 #   - final basis is oscillator basis (hw)
 #   - source basis for VNN is oscillator basis of same
 #     oscillator length (hw_int=hw); therefore no transformation
@@ -89,7 +107,7 @@ import mcscript
 #   - Coulomb TBMEs need only scaling for dilation (hw_c -> hw)
 #   - MFDn can use built-in oscillator OBMEs for observables
 #
-# k_radial_dilated:
+# k_basis_mode_dilated:
 #   - final basis is oscillator basis (hw)
 #   - source basis for VNN is oscillator basis of different
 #     oscillator length; therefore transformation
@@ -97,7 +115,7 @@ import mcscript
 #   - Coulomb TBMEs need only scaling for dilation (hw_c -> hw)
 #   - MFDn can use built-in oscillator OBMEs for observables
 #
-# k_radial_generic:
+# k_basis_mode_generic:
 #   - final basis is not assumed to be oscillator basis
 #     (still has nominal hw to define a length parameter)
 #   - transformation needed on VNN TBMEs (hw_int HO -> hw generic)
@@ -105,9 +123,9 @@ import mcscript
 #     transformation (hw_cp HO -> hw generic)
 #   - MFDn *cannot* use built-in oscillator OBMEs for observables
 
-k_radial_direct = 0
-k_radial_dilated = 1
-k_radial_generic = 2
+k_basis_mode_direct = 0
+k_basis_mode_dilated = 1
+k_basis_mode_generic = 2
 
 ################################################################
 # utility calculations
@@ -141,6 +159,10 @@ def oscillator_length(hw):
     Returns:
         (float): b in fm
     """
+
+    # physical constants
+    k_mN_csqr = 938.92  # (m_N c^2)~938.92 MeV
+    k_hbar_c = 197.327  # (hbar c)~197.327 Mev fm
     
     return k_hbar_c/math.sqrt(k_mN_csqr*hw)
 
@@ -179,7 +201,8 @@ class Configuration(object):
 
     def interaction_filename(self,name):
         """Construct filename for interaction h2 file."""
-        return os.path.join(self.data_dir_h2,name)
+        ##return os.path.join(self.data_dir_h2,name)
+        return mcscript.utils.search_in_subdirectories(self.data_dir_h2,self.interaction_run_list,name)
 
 
 configuration = Configuration()
@@ -236,41 +259,24 @@ angular_momentum_operator_list = [
 # traditional ho run
 ##################################################################
 
-def task_handler_mfdn_analytic(task):
-    """Carry out MFDn run in analytic basis: direct oscillator, dilated
-    oscillator, or generic (TODO).
+def set_up_orbitals(task):
+    """Set up source and target orbitals for MFDn run.
+
+    Arguments:
+        task (dict): as described in module docstring
 
     Limitation: Currently only supports harmonic oscillator style
     truncation.
-
-    Expected dictionary keys: see initial module docstring
-
     """
-
-    print("task:",task)
 
     # orbital filenames
     orbitals_int_filename = "orbitals-int.dat"  # orbitals for interaction tbme basis
     orbitals_coul_filename = "orbitals-coul.dat"  # orbitals for Coulomb tbme basis
     orbitals_filename = "orbitals.dat"  # orbitals for target basis
 
-    # radial matrix element filenames (for kinematic radial matrix elements)
-    #
-    # "{}{}" will be replaced by {"r1","r2","k1","k2"}
-    radial_me_filename_template = "radial-me-{}{}.dat"
-
-    # radial overlap filenames
-    radial_olap_int_filename = "radial-olap-int.dat"  # overlaps from interaction tbme basis
-    radial_olap_coul_filename = "radial-olap-coul.dat"  # overlaps from Coulomb tbme basis
-
     # validate basis mode
-    if (task["basis_mode"] not in {k_radial_direct,k_radial_dilated}):  # no k_radial_generic yet
-        raise ValueError("invalid basis mode {basis_mode}".format(**task))
     if (not task["ho_truncation"]):
         raise ValueError("expecting ho_truncation to be True but found {ho_truncation}".format(**task))
-    
-    # basis radial code -- expected by radial_utils codes
-    basis_radial_code = "oscillator"  # TO GENERALIZE: if not oscillator basis
 
     # generate orbitals -- interaction bases
     mcscript.call(
@@ -281,7 +287,7 @@ def task_handler_mfdn_analytic(task):
             "{:s}".format(orbitals_int_filename)
         ]
     )
-    if (task["coulomb"]):
+    if (task["use_coulomb"]):
         mcscript.call(
             [
                 configuration.shell_filename("orbital-gen"),
@@ -303,6 +309,39 @@ def task_handler_mfdn_analytic(task):
             ]
         )
 
+def set_up_radial_analytic(task):
+    """Generate radial integrals and overlaps by integration for MFDn run
+    in analytic basis.
+
+    Operation mode may in general be direct oscillator, dilated
+    oscillator, or generic (TODO).
+
+    Arguments:
+        task (dict): as described in module docstring
+
+    """
+
+    # orbital filenames
+    orbitals_int_filename = "orbitals-int.dat"  # orbitals for interaction tbme basis
+    orbitals_coul_filename = "orbitals-coul.dat"  # orbitals for Coulomb tbme basis
+    orbitals_filename = "orbitals.dat"  # orbitals for target basis
+
+    # radial matrix element filenames (for kinematic radial matrix elements)
+    #
+    # "{}{}" will be replaced by {"r1","r2","k1","k2"}
+    radial_me_filename_template = "radial-me-{}{}.dat"
+
+    # radial overlap filenames
+    radial_olap_int_filename = "radial-olap-int.dat"  # overlaps from interaction tbme basis
+    radial_olap_coul_filename = "radial-olap-coul.dat"  # overlaps from Coulomb tbme basis
+
+    # validate basis mode
+    if (task["basis_mode"] not in {k_basis_mode_direct,k_basis_mode_dilated}):  # no k_basis_mode_generic yet
+        raise ValueError("invalid basis mode {basis_mode}".format(**task))
+    
+    # basis radial code -- expected by radial_utils codes
+    basis_radial_code = "oscillator"  # TO GENERALIZE: if not oscillator basis
+
     # generate radial integrals
     for operator_type in ["r","k"]:
         for power in [1,2]:
@@ -316,11 +355,12 @@ def task_handler_mfdn_analytic(task):
                     basis_radial_code,
                     orbitals_filename,
                     radial_me_filename
-                ]
+                ],
+                mode = "serial"  # SMP only
             )
 
     # generate radial overlaps
-    if (task["basis_mode"] not in {k_radial_direct}):
+    if (task["basis_mode"] not in {k_basis_mode_direct}):
         b_ratio = math.sqrt(task["hw_int"]/task["hw"])
         mcscript.call(
             [
@@ -330,10 +370,11 @@ def task_handler_mfdn_analytic(task):
                 basis_radial_code,
                 orbitals_int_filename,
                 radial_olap_int_filename
-            ]
+            ],
+            mode = "serial"  # SMP only
         )
-    if (task["coulomb"] and (task["basis_mode"] not in {k_radial_direct,k_radial_dilated})):
-        b_ratio = math.sqrt(task["hw_coul_prime"]/task["hw"])
+    if (task["use_coulomb"] and (task["basis_mode"] not in {k_basis_mode_direct,k_basis_mode_dilated})):
+        b_ratio = math.sqrt(task["hw_coul_rescaled"]/task["hw"])
         mcscript.call(
             [
                 configuration.shell_filename("radial-gen"),
@@ -342,9 +383,245 @@ def task_handler_mfdn_analytic(task):
                 basis_radial_code,
                 orbitals_coul_filename,
                 radial_olap_coul_filename
-            ]
+            ],
+            mode = "serial"  # SMP only
         )
 
+def generate_tbme(task):
+    """Generate TBMEs for MFDn run.
+
+    Operation mode may in general be direct oscillator, dilated
+    oscillator, or generic (TODO).
+
+    Arguments:
+        task (dict): as described in module docstring
+
+    """
+
+    # validate basis mode
+    if (not task["ho_truncation"]):
+        raise ValueError("expecting ho_truncation to be True but found {ho_truncation}".format(**task))
+
+    # extract parameters for convenience
+    A = sum(task["nuclide"])
+    a_cm = task["a_cm"]
+    hw = task["hw"]
+    hw_cm = task["hw_cm"]
+    if (hw_cm is None):
+        hw_cm = hw
+    hw_coul = task["hw_coul"]
+    hw_coul_rescaled = task["hw_coul_rescaled"]
+    if (hw_coul_rescaled is None):
+        hw_coul_rescaled = hw
+
+    # orbital filenames
+    orbitals_int_filename = "orbitals-int.dat"  # orbitals for interaction tbme basis
+    orbitals_coul_filename = "orbitals-coul.dat"  # orbitals for Coulomb tbme basis
+    orbitals_filename = "orbitals.dat"  # orbitals for target basis
+
+    # radial matrix element filenames (for kinematic radial matrix elements)
+    #
+    # "{}{}" will be replaced by {"r1","r2","k1","k2"}
+    radial_me_filename_template = "radial-me-{}{}.dat"
+
+    # radial overlap filenames
+    radial_olap_int_filename = "radial-olap-int.dat"  # overlaps from interaction tbme basis
+    radial_olap_coul_filename = "radial-olap-coul.dat"  # overlaps from Coulomb tbme basis
+
+    # accumulate h2mixer input lines
+    lines = []
+
+    # initial comment
+    lines.append("# task: {}".format(task))
+    lines.append("")
+
+    # global mode definitions
+    target_truncation = task["target_truncation"]
+    if (target_truncation is None):
+        # automatic derivation
+        if (task["ho_truncation"]):
+            if (task["many_body_truncation"]=="Nmax"):
+                N2_max = 2*task["Nv"]+task["Nmax"]
+                target_weight_max = weight_max_string(("tb",N2_max))
+            elif (task["many_body_truncation"]=="FCI"):
+                N1_max = task["Nmax"]
+                target_weight_max = weight_max_string(("ob",N1_max))
+        else:
+            # calculation of required weight_max will require external program for occupation counting
+            pass
+    else:
+        # given value
+        target_weight_max = target_truncation
+    lines.append("set-target-indexing {orbitals_filename} {target_weight_max}".format(
+        orbitals_filename=orbitals_filename,
+        target_weight_max=target_weight_max,
+        **task
+    ))
+    lines.append("set-target-multipolarity 0 0 0")
+    lines.append("set-output-format {h2_format}".format(**task))
+    lines.append("set-mass {A}".format(A=A,**task))
+    lines.append("")
+
+    # radial operator inputs
+    for operator_type in ["r","k"]:
+        for power in [1,2]:
+            radial_me_filename = radial_me_filename_template.format(operator_type,power)
+            lines.append("define-radial-operator {} {} {}".format(operator_type,power,radial_me_filename))
+    lines.append("")
+    
+    # sources: identity and kinematic operators
+    lines.append("define-source operator identity")
+    lines.append("define-source operator Ursqr")
+    lines.append("define-source operator Vr1r2")
+    lines.append("define-source operator Uksqr")
+    lines.append("define-source operator Vk1k2")
+    lines.append("")
+
+    # sources: VNN
+    VNN_filename = configuration.interaction_filename(
+        "{}-{}-{:g}.bin".format(
+            task["interaction"],
+            mcscript.utils.dashify(task["truncation_int"]),
+            task["hw_int"]
+        )
+    )
+    if (task["basis_mode"]==k_basis_mode_direct):
+        lines.append("define-source input VNN {VNN_filename}".format(VNN_filename=VNN_filename,**task))
+    else:
+        xform_weight_max_int = weight_max_string(task["xform_truncation_int"])
+        lines.append("define-source xform VNN {VNN_filename} {xform_weight_max_int} {radial_olap_int_filename}".format(
+            VNN_filename=VNN_filename,xform_weight_max=xform_weight_max_int,**task
+        ))
+
+    # sources: Coulomb
+    #
+    # Note: This is the "unscaled" Coulomb, still awaiting the scaling
+    # factor from dilation.
+    if (task["use_coulomb"]):
+        VC_filename = configuration.interaction_filename(
+            "{}-{}-{:g}.bin".format(
+                "VC",
+                mcscript.utils.dashify(task["truncation_coul"]),
+                task["hw_coul"]
+            )
+        )
+        if (task["basis_mode"]==k_basis_mode_direct):
+            lines.append("define-source input VC_unscaled {VC_filename}".format(VC_filename=VC_filename,**task))
+        else:
+            xform_weight_max_coul = weight_max_string(task["xform_truncation_coul"])
+            lines.append("define-source xform VC_unscaled {VC_filename} {xform_weight_max_coul} {radial_olap_coul_filename}".format(
+                VC_filename=VC_filename,xform_weight_max_coul=xform_weight_max_coul,**task
+            ))
+
+    lines.append("")
+
+
+    # target: Hamiltonian
+    coef_Uksqr = (A-1)/(2*A)*hw+1/(2*A)*a_cm*(hw/hw_cm)
+    coef_Vk1k2 = -1/A*hw+1/A*a_cm*(hw/hw_cm)
+    coef_Ursqr = 1/(2*A)*a_cm*(hw_cm/hw)
+    coef_Vr1r2 = 1/A*a_cm*(hw_cm/hw)
+    coef_identity = -3/2*a_cm
+    lines.append("define-target tbme-H.bin")
+    lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
+    lines.append("  add-source Vr1r2 {:e}".format(coef_Vr1r2))
+    lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
+    lines.append("  add-source Vk1k2 {:e}".format(coef_Vk1k2))
+    lines.append("  add-source identity {:e}".format(coef_identity))
+    lines.append("  add-source VNN {}".format(1.))
+    if (task["use_coulomb"]):
+        coef_VC = math.sqrt(hw_coul_rescaled/hw_coul)
+        lines.append("  add-source VC_unscaled {:e}".format(coef_VC))
+
+    # target: radius squared
+    coef_Ursqr = (A-1)*(oscillator_length(hw)/A)**2
+    coef_Vr1r2 = -2*(oscillator_length(hw)/A)**2
+    lines.append("define-target tbme-rrel2.bin")
+    lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
+    lines.append("  add-source Vr1r2 {:e}".format(coef_Vr1r2))
+
+    # target: NCM
+    #
+    # These are the "a_cm" terms from the Hamiltonian (as above), but
+    # without including the factor of "a_cm".
+    coef_Uksqr = 1/(2*A)*(hw/hw_cm)
+    coef_Vk1k2 = 1/A*(hw/hw_cm)
+    coef_Ursqr = 1/(2*A)*(hw_cm/hw)
+    coef_Vr1r2 = 1/A*(hw_cm/hw)
+    coef_identity = -3/2
+    lines.append("define-target tbme-Ncm.bin")
+    lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
+    lines.append("  add-source Vr1r2 {:e}".format(coef_Vr1r2))
+    lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
+    lines.append("  add-source Vk1k2 {:e}".format(coef_Vk1k2))
+    lines.append("  add-source identity {:e}".format(coef_identity))
+
+    # optional observable sets
+
+    # Hamiltonian components
+    if ("H-components" in task["observable_sets"]):
+
+        # target: Trel (diagnostic)
+        #
+        # These are the "non-a_cm" terms from the Hamiltonian (as above).
+        coef_Uksqr = (A-1)/(2*A)*hw
+        coef_Vk1k2 = -1/A*hw
+        lines.append("define-target tbme-Trel.bin")
+        lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
+        lines.append("  add-source Vk1k2 {:e}".format(coef_Vk1k2))
+
+        # target: VNN (diagnostic)
+        lines.append("define-target tbme-VNN.bin")
+        lines.append("  add-source VNN {}".format(1.))
+
+        # target: VC (diagnostic)
+        if (task["use_coulomb"]):
+            lines.append("define-target tbme-VC.bin")
+            coef_VC = math.sqrt(hw_coul_rescaled/hw_coul)
+            lines.append("  add-source VC_unscaled {:e}".format(coef_VC))
+
+    # squared angular momenta
+    if ("am-sqr" in task["observable_sets"]):
+
+        # sources: squared angular momentum operators
+        lines.append("define-source operator L")
+        lines.append("define-source operator Sp")
+        lines.append("define-source operator Sn")
+        lines.append("define-source operator S")
+        lines.append("define-source operator J")
+
+        # targets: squared angular momentum operators
+        lines.append("define-target tbme-L.bin")
+        lines.append("  add-source L {:e}".format(1))
+        lines.append("define-target tbme-Sp.bin")
+        lines.append("  add-source Sp {:e}".format(1))
+        lines.append("define-target tbme-Sn.bin")
+        lines.append("  add-source Sn {:e}".format(1))
+        lines.append("define-target tbme-S.bin")
+        lines.append("  add-source S {:e}".format(1))
+        lines.append("define-target tbme-J.bin")
+        lines.append("  add-source J {:e}".format(1))
+
+    # ensure terminal line
+    lines.append("")
+    
+    # diagnostic: log input lines to file
+    #
+    # This is purely for easy diagnostic purposes, since lines will be
+    # fed directly to h2mixer as stdin below.
+    mcscript.utils.write_input("h2mixer.in",input_lines=lines,verbose=False)
+
+    # invoke h2mixer
+    mcscript.call(
+        [
+            configuration.shell_filename("h2mixer")
+        ],
+        input_lines=lines,        
+        mode = "serial"  # SMP only
+    )
+
+
+    
 ## ##################################################################
 ## # h2mixer 
 ## ##################################################################
