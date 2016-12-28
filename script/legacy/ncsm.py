@@ -82,7 +82,7 @@
   7/20/15 (mac): Allow control over choice of partition file.
   8/4/15 (mac): Revise control over choice of partition file.
   9/22/16 (mac): Add Hamiltonian components as two-body observables.
-  11/7/16 (mac): Preserve as ncsm_legacy.py.  (FROZEN)
+  11/7/16 (mac): Preserve as legacy implementation (slight edits).  (FROZEN)
 
 """
 

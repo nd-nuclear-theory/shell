@@ -18,9 +18,13 @@
         "hw_coul" (float): hw of basis for source Coulomb TBMEs
 
         # basis parameters
-        "basis_mode" (int): enumerated value indicating direct oscillator, dilated oscillator,
-            or generic run mode (see definitions below); beware that subsequent natural orbital runs
-            must be treated as generic even if the initial (starting basis) run is of oscillator type
+        "basis_mode" (int): enumerated value indicating direct
+            oscillator (k_basis_mode_direct), dilated oscillator
+            (k_basis_mode_dilated), or generic run mode
+            (k_basis_mode_generic), as explained further where these
+            constants are defined below; beware that natural orbital
+            runs must be treated as generic even if the initial
+            (starting basis) run is of oscillator type
         "hw" (float): hw of basis
 
         # transformation parameters
@@ -40,11 +44,18 @@
         "basis" (tuple): logical basis (radial_basis_p,1.,radial_basis_n,beta_n), to be scaled by hw
         "scaled_basis" (tuple): deduced basis used in task descriptor, etc.
 
-        # traditional oscillator many-body truncation
-        "ho_truncation" (bool): whether or not to assume traditional HO-style many-body truncation
+        # traditional oscillator truncation
+        "ho_truncation" (bool): whether or not to assume traditional HO-style truncation
+            - weighting is by N=2n+l
+            - two-body truncation is by a one-body or two-body N cutoff (compatible with MFDn
+              version 14 and h2 format 0), rather than any more general (Wp,Wn,Wpp,Wnn,Wpn)
+              cutoff (which requires MFDn version 15 and h2 format 15099)
+            - many-body truncation is by a one-body (FCI) or many-body (Nmax) N cutoff
+        "many_body_truncation" (str): many-body truncation rank ("FCI" for one-body, or
+            "Nmax" for A-body)
         "Nv" (int): N of valence shell (for use in truncation)
-        "Nmax" (int): Nmax
-        "many_body_truncation" (str): many-body truncation type ("Nmax" for A-body or "FCI" for one-body)
+        "Nmax" (int): many-body oscillator cutoff (interpreted as one-body Nmax_orb for "FCI"
+             truncation, or many-body excitation cutoff Nmax for "Nmax" truncation)
         "Nstep" (int): Nstep (2 for single parity, 1 for mixed parity)
  
         # diagonalization parameters
@@ -54,6 +65,9 @@
         "initial_vector" (int): initial vector code for mfdn
         "lanczos" (int): lanczos iterations
         "tolerance" (float): diagonalization tolerance parameter
+        "partition_filename" (str): filename for partition file to use with MFDn (None: no
+            partition file); for now absolute path is required, but path search protocol may
+            be restored in future
 
         # obdme parameters
         "obdme_multipolarity" (int): maximum multipolarity for calculation of densities
@@ -229,35 +243,42 @@ configuration = Configuration()
 ################################################################
 
 
-def task_descriptor_format_7(task):
-    """ runxxxx -- (in progress)
+def task_descriptor_7(task):
+    """ Task descriptor format 7
+
+        Overhaul for new h2utils scripting:
+        - Strip back down to basic form for oscillator-like runs only.
+        - Adjust some field labels.
+        - Add tolerance.
     """
 
-    if(task["traditional_ho"]):
+    if(
+        task["ho_truncation"]
+        and
+        task["basis_mode"] in {k_basis_mode_direct,k_basis_mode_dilated}
+    ):
+        # traditional oscillator run
         template_string = (
-            "Z{nuclide[0]}-N{nuclide[1]}-{interaction}-{coulomb:d}"
+            "Z{nuclide[0]}-N{nuclide[1]}-{interaction}-coul{coulomb_flag:d}"
             "-hw{hw:.3f}"
-            "-aL{aLawson:g}"
+            "-a_cm{a_cm:g}"
             "-Nmax{Nmax:02d}{mixed_parity_flag}{fci_flag}-Mj{Mj:03.1f}"
-            "-lan{lanczos:d}"
+            "-lan{lanczos:d}-tol{tolerance:.1e}"
             )
     else:
-        template_string =(
-            "Z{nuclide[0]}-N{nuclide[1]}-{interaction}-{coulomb:d}"
-            "-{basis_string_pn}"  # general basis
-            "-hw{hw:.3f}"
-            "-aL{aLawson:g}"
-            "-hwL{hwLawson:.3f}"  # general basis
-            "-Nmax{Nmax:02d}{mixed_parity_flag}{fci_flag}-Mj{Mj:03.1f}"
-            "-hwint{hw_int:g}-{xform_cutoff_name:s}" # general basis
-            "-lan{lanczos:d}"
-            )
+        raise ScriptError("mode not supported by task descriptor")
+
+    if (task["many_body_truncation"]=="fci"):
+        fci_flag = "fci"
+    else:
+        fci_flag = ""
+    mixed_parity_flag = mcscript.utils.ifelse(task["Nstep"]==1,"x","")
+    coulomb_flag = int(task["use_coulomb"])
 
     descriptor = template_string.format(
-        basis_string_pn=basis_string_pn(task["basis"]),
-        mixed_parity_flag=mcscript.ifelse(task["Nstep"]==1,"x",""),
-        fci_flag = mcscript.ifelse(task.get("fci",False),"-fci",""),
-        xform_cutoff_name=mcscript.dashify(task["xform_cutoff"]),
+        coulomb_flag=coulomb_flag,
+        mixed_parity_flag=mixed_parity_flag,
+        fci_flag=fci_flag,
         **task
         )
 
@@ -640,8 +661,8 @@ def generate_tbme(task):
         mode = "serial"  # SMP only
     )
 
-def run_mfdn_v14(task):
-    """Generate TBMEs for MFDn run.
+def run_mfdn_v14_b06(task):
+    """Generate input file and execute MFDn version 14 beta 06.
 
     Arguments:
         task (dict): as described in module docstring
@@ -691,7 +712,7 @@ def run_mfdn_v14(task):
         hw_for_trans=hw_for_trans,k_mN_csqr=k_mN_csqr,**task
     ))
 
-    # collect tbo names
+    # tbo: collect tbo names
     obs_basename_list = ["tbme-rrel2","tbme-Ncm"]
     if ("H-components" in task["observable_sets"]):
         obs_basename_list += ["tbme-Trel","tbme-VNN"]
@@ -700,40 +721,114 @@ def run_mfdn_v14(task):
     if ("am-sqr" in task["observable_sets"]):
         obs_basename_list += ["tbme-L","tbme-Sp","tbme-Sn","tbme-S","tbme-J"]
 
-    # tbo parameters
+    # tbo: log tbo names in separate file to aid future data analysis
+    mcscript.utils.write_input("tbo_names.dat",input_lines=obs_basename_list)
+
+    # tbo: write list of operators
     lines.append("tbme-H")  # Hamiltonian basename
     num_obs = 2 + len(obs_basename_list)
     lines.append("{:d}   # number of observables (J, T, R2, ...)".format(num_obs))
     lines += obs_basename_list
     
-    # obdme parameters
+    # obdme: parameters
     lines.append("{enable_obd:d} {twice_multipolarity:d} # static one-body density matrix elements (0: no one-body densities), twice multipolarity".format(
         enable_obd=1,twice_multipolarity=2*task["obdme_multipolarity"]
     ))
-    lines.append("{num_reference_states:d} {max_delta_J:d} #number of reference states for transitions (0: no transitions, -1: all2all), max delta2J (?)".format(
+    lines.append("{num_reference_states:d} {max_delta_J:d} # number of reference states for transitions (0: no transitions, -1: all2all), max delta2J (?)".format(
         num_reference_states=len(task["obdme_reference_state_list"]),
         max_delta_J=2*task["obdme_multipolarity"]
     ))
+
+    # obdme: validate reference state list
+    #
+    # guard against pathetically common mistakes
+    for (J,g_rel,i) in task["obdme_reference_state_list"]:
+        # validate integer/half-integer character of angular momentum
+        twice_J = int(2*J)
+        if ((twice_J%2) != (sum(task["nuclide"])%2)):
+            raise ValueError("invalid angular momentum for reference state")
+        # validate grade (here taken relative to natural grade)
+        if ((g_rel != (task["Nmax"]%2)) and (task["Nstep"] != 1)):
+            raise ValueError("invalid parity for reference state")
+
+    # obdme: write reference state list
     for reference_state in task["obdme_reference_state_list"]:
-        lines.append("{:d} {:d} {:d}".format(2*reference_state[0],reference_state[1],reference_state[-2]))
+        lines.append("{:d} {:d} {:d}".format(2*reference_state[0],reference_state[1],reference_state[2]))
 
     # ensure terminal line
     lines.append("")
 
     # generate MFDn input file
-    mcscript.utils.write_input("mfdn.dat",input_lines=lines,verbose=False)
+    mcscript.utils.write_input("mfdn.dat",input_lines=lines)
     
+    # import partitioning file
+    if (task["partition_filename"] is not None):
+        if (not os.path.exists(task["partition_filename"])):
+            raise mcscript.task.ScriptError("partition file not found")
+        mcscript.call(["cp","--verbose",task["partition_filename"],"mfdn_partitioning.info"])
+
     # invoke MFDn
     mcscript.call(
         [
             configuration.mfdn_filename(task["mfdn_executable"])
         ],
-        mode = "parallel"
+        mode = "parallel",
+        check_return=False  # TEMP
     )
 
-    # test for success
+    # test for basic indications of success
+    if (not os.path.exists("mfdn.out")):
+        raise ScriptError("mfdn.out not found")
     if (not os.path.exists("mfdn.res")):
         raise ScriptError("mfdn.res not found")
+
+def save_mfdn_output(task):
+    """Generate input file and execute MFDn version 14 beta 06.
+
+    Arguments:
+        task (dict): as described in module docstring
+    
+    Raises:
+        ScriptError: if MFDn output not found
+
+    """
+
+    # save quick inspection copies of mfdn.{res,out}
+    print("Saving basic output files...")
+    res_filename = "{:s}-mfdn-{:s}.res".format(mcscript.run.name,task["descriptor"])
+    mcscript.call(["cp","--verbose","mfdn.res",res_filename]) 
+    out_filename = "{:s}-mfdn-{:s}.out".format(mcscript.run.name,task["descriptor"])
+    mcscript.call(["cp","--verbose","mfdn.out",out_filename]) 
+
+    # save full archive of input, log, and output files
+    print("Saving full output files...")
+    # logging
+    archive_file_list = [
+        "h2mixer.in","tbo_names.dat"
+        ]
+    # MFDn output
+    archive_file_list += [
+        "mfdn.dat","mfdn.out","mfdn.res","mfdn_partitioning.generated","mfdn_spstates.info"
+    ]
+    # renamed versions
+    archive_file_list += [out_filename,res_filename]
+    # MFDN obdme
+    if (task["save_obdme"]):
+        archive_file_list += glob.glob("*obdme*")
+    # generate archive
+    archive_filename = "{:s}-mfdn-{:s}.tgz".format(mcscript.run.name,task["descriptor"])
+    mcscript.call(["tar", "zcvf", archive_filename] + archive_file_list)
+
+    # copy results out (if in multi-task run)
+    if (mcscript.task.results_dir is not None):
+        mcscript.call(
+            [
+                "cp",
+                "--verbose",
+                res_filename,out_filename,archive_filename,
+                "--target-directory={}".format(mcscript.task.results_dir)
+            ]
+        )
 
 
 ## ##################################################################

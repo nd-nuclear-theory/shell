@@ -1,9 +1,7 @@
-""" runmfdn01.py -- h2mixer+mfdn mscript test run
+""" runmfdn01.py -- h2mixer+mfdn example: direct oscillator run
 
-rm runmfdn01/flags/*
-qsubm --here mfdn01 --pool=test --limit=1 --noredirect 
-
-qsubm --here mfdn01
+    Usage:
+        qsubm --here mfdn01
 
     Mark A. Caprio
     University of Notre Dame
@@ -63,6 +61,7 @@ task = {
     "initial_vector" : -2,
     "lanczos" : 200,
     "tolerance" : 1e-6,
+    "partition_filename" : None,
 
     # obdme parameters
     ## "hw_for_trans" : 20,
@@ -80,46 +79,29 @@ task = {
 
 }
 
-## mfdn.configuration.interaction_filename("JISP16-ob-9-20.bin")
+################################################################
+# run control
+################################################################
 
-##################################################################
-# implementation functions for doing a "hello world" task
-#
-# For a more complicated application, you would separate these out
-# into their own module.
-##################################################################
-
-def task_descriptor(current_task):
-    """ Return task descriptor for hello task.
-    """
-
-    return "test"
-
-##################################################################
-# task list entry annotation functions
-##################################################################
-
-def task_pool (current_task):
-    """ Create task pool identifier.
-    """
-    
-    return "test"
-
-##################################################################
-# master loop
-##################################################################
-
-## mcscript.task.init(
-##     tasks,
-##     task_descriptor=task_descriptor,
-##     task_pool=task_pool,
-##     phase_handler_list=[mfdn_h2.task_handler_ho]
-##     )
+# add task descriptor field (needed for filenames)
+task["descriptor"] = mfdn.task_descriptor_7(task)
 
 mfdn.set_up_orbitals(task)
 mfdn.set_up_radial_analytic(task)
 mfdn.generate_tbme(task)
-mfdn.run_mfdn_v14(task)
+mfdn.run_mfdn_v14_b06(task)
+mfdn.save_mfdn_output(task)
+
+##################################################################
+# task control
+##################################################################
+
+## mcscript.task.init(
+##     tasks,
+##     task_descriptor=mfdn.task_descriptor_7,
+##     task_pool=task_pool,
+##     phase_handler_list=[mfdn_h2.task_handler_ho]
+##     )
 
 ################################################################
 # termination

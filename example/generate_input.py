@@ -8,6 +8,7 @@
 
     + 11/7/16 (mac): Created.
     + 11/20/16 (mac): Use paths from environment.
+    + 12/28/16 (mac): Fix reference state list.
 
 """
 
@@ -311,7 +312,7 @@ def mfdn_input(mfdn_params):
         max_delta_J=2*mfdn_params["obdme_multipolarity"]
     ))
     for reference_state in mfdn_params["obdme_reference_state_list"]:
-        lines.append("{:d} {:d} {:d}".format(2*reference_state[0],reference_state[1],reference_state[-2]))
+        lines.append("{:d} {:d} {:d}".format(2*reference_state[0],reference_state[1],reference_state[2]))
 
     # ensure terminal line
     lines.append("")
