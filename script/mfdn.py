@@ -559,7 +559,7 @@ def generate_tbme(task):
                 task["hw_coul"]
             )
         )
-        if (task["basis_mode"]==k_basis_mode_direct):
+        if (task["basis_mode"] in {k_basis_mode_direct,k_basis_mode_dilated}):
             lines.append("define-source input VC_unscaled {VC_filename}".format(VC_filename=VC_filename,**task))
         else:
             xform_weight_max_coul = weight_max_string(task["xform_truncation_coul"])
