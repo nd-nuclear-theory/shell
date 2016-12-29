@@ -25,6 +25,7 @@
     - Overhaul control logic for matrix.
     - Implement transformation to between different basis function types.
     - Flag possible fencepost error in spline integration point/steps.
+  + 12/29/16 (mac): Add OMP diagnostic.
 
 ******************************************************************************/
 
@@ -34,8 +35,9 @@
 #include <string>
 #include <vector>
 
-#include "mcutils/profiling.h"
 #include "basis/nlj_orbital.h"
+#include "cppformat/format.h"
+#include "mcutils/profiling.h"
 #include "radial/radial_io.h"
 #include "spline/wavefunction_class.h"
 
@@ -229,8 +231,24 @@ void CalculateMatrixElements(
 }
 
 int main(int argc, char **argv) {
+
+  // header
+  std::cout << std::endl;
+  std::cout << "radial-gen -- radial integral evaluation" << std::endl;
+  std::cout << std::endl;
+
+  // process arguments
   RunParameters run_parameters;
   ProcessArguments(argc, argv, run_parameters);
+
+  // parallel performance diagnostic
+  std::cout
+    << fmt::format(
+        "INFO: OMP max_threads {}, num_procs {}",
+        omp_get_max_threads(), omp_get_num_procs()
+      )
+    << std::endl
+    << std::endl;
 
   // Read orbitals
   std::ifstream is(run_parameters.orbital_filename);
