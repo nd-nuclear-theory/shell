@@ -1,0 +1,43 @@
+Notes on config files for use with MFDn
+
+----------------------------------------------------------------
+
+version14-beta06-newmake
+
+ND git repository provides config files under config...
+
+  git clone ssh://<netid>@crcfe01.crc.nd.edu/afs/crc.nd.edu/group/nuclthy/git/mfdn/mfdn-v14-beta06-newmake.git
+
+For NDCRC:
+
+  % ln -s config/config-gnu-ndcrc.mk config.mk
+  % config/module-load-gnu-ndcrc.csh
+
+But, for easier use with MFDn v15, which is under SVN, let's move the
+config files under the shell project, in shell/config/mfdn...
+
+----------------------------------------------------------------
+
+MFDn v15b00
+
+SVN repository access...
+
+  svn co svn+ssh://<username>@portal-auth.nersc.gov/project/projectdirs/m94/version15_SVN_repo/beta00
+
+or, locally on nersc,
+
+  svn co file:///project/projectdirs/m94/version15_SVN_repo/beta00
+
+e.g., 
+
+  svn co svn+ssh://mcaprio@portal-auth.nersc.gov/project/projectdirs/m94/version15_SVN_repo/beta00
+  svn update
+  svn log
+
+Debugging connection: SVN failure with error "Network connection
+closed unexpectedly" is due to stale key in .ssh/known_hosts.
+
+   % ln -s ~/projects/shell/config/mfdn config
+   % ln -s config/config-gnu.ndcrc.mk config.mk
+   % source config/module-load-ndcrc.csh
+
