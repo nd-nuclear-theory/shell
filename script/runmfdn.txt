@@ -1,0 +1,39 @@
+
+runmfdn01: harmonic oscillator direct run, i.e., with interaction
+tbmes given directly at hw
+
+    4He Nmax02 hw20 (direct)
+
+    Interaction: run0164-JISP16-tb-10
+
+    Usage: qsubm --here mfdn02
+
+    We use tb-10 as the smallest available set of files.
+
+runmfdn02: same harmonic oscillator run, but with trivial identity
+dilation
+
+    4He Nmax02 hw20 (direct)
+
+    Interaction: run0164-JISP16-tb-10
+
+    Usage: qsubm --here mfdn02
+
+    We use tb-10 as the smallest available set of files, though more
+    commonly files in ob truncation would be used for such a
+    dilation.
+
+runmfdn03: same harmonic oscillator run, but with dilation from
+hw_int=40 (at ob-13 truncation)
+
+    4He Nmax02 hw20  (from hwint=40 at ob-13)
+
+    Interaction: run0164-JISP16-ob-13
+
+    Usage: qsubm --here mfdn03
+
+runmfdn04: harmonic oscillator direct run, at higher Nmax
+
+  4He Nmax16 hw20
+
+  Interaction: run0164-JISP16-tb-20

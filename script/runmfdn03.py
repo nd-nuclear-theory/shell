@@ -1,13 +1,12 @@
-""" runmfdn01.py
+""" runmfdn02.py
 
     See runmfdn.txt for description.
 
     Mark A. Caprio
     University of Notre Dame
 
-    - 12/14/16 (mac): Created.
-    - 12/29/16 (mac): Complete run.  Add full run list.
-      
+    - 12/29/16 (mac): Created.
+
 """
 
 import mcscript
@@ -40,17 +39,17 @@ task = {
     "hw_cm" : None,
 
     # input TBME parameters
-    "truncation_int" : ("tb",10),
-    "hw_int" : 20.,
-    "truncation_coul" : ("tb",10),
+    "truncation_int" : ("ob",13),
+    "hw_int" : 40.,
+    "truncation_coul" : ("ob",13),
     "hw_coul" : 20.,
 
     # basis parameters
-    "basis_mode" : mfdn.k_basis_mode_direct,
+    "basis_mode" : mfdn.k_basis_mode_dilated,
     "hw" : 20.,
 
     # transformation parameters
-    "xform_truncation_int" : None,
+    "xform_truncation_int" : ("ob",13),
     "xform_truncation_coul" : None,
     "hw_coul_rescaled" : None,
     "target_truncation" : None,

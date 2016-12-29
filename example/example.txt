@@ -39,7 +39,8 @@ tbmes given directly at hw
     +3.68392897e+00 -1.32507706e+00 -5.65546799e+00 -3.91456604e+00
 
 
-Example 02: same harmonic oscillator run, but with trivial identity transformation
+Example 02: same harmonic oscillator run, but with trivial identity
+transformation as dilation
 
   4He Nmax02 hw20  (from hwint=20)
 
@@ -68,13 +69,13 @@ Example 05: recover ob-9 truncation from ob-13 source file
   This is just a check that truncation masking is working as
   advertised.
 
-Example 06: harmonic oscillator direct run, expanded to Nmax20
+Example 06: harmonic oscillator direct run, expanded to tb-20
 
   4He Nmax16 hw20  (tb-20->tb-16)
 
   Edison (num_threads=4): 6.37
 
-Example 07: harmonic oscillator dilated run, expanded to Nmax20
+Example 07: harmonic oscillator dilated run, expanded to tb-20
 
   4He Nmax16 hw20  (ob-13->tb-16 + coulomb tb-20->tb-16)
 

@@ -1,12 +1,11 @@
-""" runmfdn01.py
+""" runmfdn04.py
 
     See runmfdn.txt for description.
 
     Mark A. Caprio
     University of Notre Dame
 
-    - 12/14/16 (mac): Created.
-    - 12/29/16 (mac): Complete run.  Add full run list.
+    - 12/29/16 (mac): Created.
       
 """
 
@@ -40,9 +39,9 @@ task = {
     "hw_cm" : None,
 
     # input TBME parameters
-    "truncation_int" : ("tb",10),
+    "truncation_int" : ("tb",20),
     "hw_int" : 20.,
-    "truncation_coul" : ("tb",10),
+    "truncation_coul" : ("tb",20),
     "hw_coul" : 20.,
 
     # basis parameters
@@ -58,7 +57,7 @@ task = {
     # traditional oscillator many-body truncation
     "ho_truncation" : True,
     "Nv" : 0,
-    "Nmax" : 2,
+    "Nmax" : 16,
     "many_body_truncation" : "Nmax",
     "Nstep" : 2,
 
