@@ -541,7 +541,10 @@ def generate_tbme(task):
     else:
         xform_weight_max_int = weight_max_string(task["xform_truncation_int"])
         lines.append("define-source xform VNN {VNN_filename} {xform_weight_max_int} {radial_olap_int_filename}".format(
-            VNN_filename=VNN_filename,xform_weight_max_int=xform_weight_max_int,**task
+            VNN_filename=VNN_filename,
+            xform_weight_max_int=xform_weight_max_int,
+            radial_olap_int_filename=radial_olap_int_filename,
+            **task
         ))
 
     # sources: Coulomb
@@ -561,7 +564,10 @@ def generate_tbme(task):
         else:
             xform_weight_max_coul = weight_max_string(task["xform_truncation_coul"])
             lines.append("define-source xform VC_unscaled {VC_filename} {xform_weight_max_coul} {radial_olap_coul_filename}".format(
-                VC_filename=VC_filename,xform_weight_max_coul=xform_weight_max_coul,**task
+                VC_filename=VC_filename,
+                xform_weight_max_coul=xform_weight_max_coul,
+                radial_olap_coul_filename=radial_olap_coul_filename,
+                **task
             ))
 
     lines.append("")
