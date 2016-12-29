@@ -96,6 +96,7 @@
   - 12/14/16 (mac): Created, drawing on ncsm.py (created 2/12/13) and
     shell package example code generate_input.py (created 11/7/16).
   - 12/27/16 (mac): Rough in scripting of MFDn v14 run.
+  - 12/29/16 (mac): Complete basic scripting for MFDn v14 oscillator-type runs.
 
 """
   
@@ -540,7 +541,7 @@ def generate_tbme(task):
     else:
         xform_weight_max_int = weight_max_string(task["xform_truncation_int"])
         lines.append("define-source xform VNN {VNN_filename} {xform_weight_max_int} {radial_olap_int_filename}".format(
-            VNN_filename=VNN_filename,xform_weight_max=xform_weight_max_int,**task
+            VNN_filename=VNN_filename,xform_weight_max_int=xform_weight_max_int,**task
         ))
 
     # sources: Coulomb
