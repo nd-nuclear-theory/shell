@@ -77,8 +77,8 @@ task = {
     "save_obdme" : True,
 
     # two-body observables
-    ## "obs_basename_list" : ["tbme-rrel2","tbme-Ncm"],
-    "observable_sets" : ["H-components","am-sqr"],
+    ## "observable_sets" : ["H-components","am-sqr"],
+    "observable_sets" : ["H-components"],
 
     # version parameters
     "h2_format" : 0,
