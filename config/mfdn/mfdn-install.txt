@@ -37,7 +37,8 @@ e.g.,
 Debugging connection: SVN failure with error "Network connection
 closed unexpectedly" is due to stale key in .ssh/known_hosts.
 
+   % rm config.mk
    % ln -s ~/projects/shell/config/mfdn config
-   % ln -s config/config-gnu.ndcrc.mk config.mk
+   % ln -s config/config-gnu-ndcrc.mk config.mk
    % source config/module-load-ndcrc.csh
 

@@ -196,9 +196,10 @@ class Configuration(object):
 
         install_dir (str): installation directory for shell project ("SHELL_INSTALL_DIR")
         mfdn_dir (str): base directory for finding MFDn executables ("SHELL_MFDN_DIR")
-          EX: base directory "${HOME}/projects/mfdn" may contain "mfdn-v14-beta06-newmake/xmfdn-h2-lan"
-          and "beta00/xmfdn-h2-lan"
-        data_dir_h2 (str): base directory for interaction tbme files ("SHELL_DATA_DIR_H2")
+            EX: base directory "${HOME}/projects/mfdn" may contain "mfdn-v14-beta06-newmake/xmfdn-h2-lan"
+            and "beta00/xmfdn-h2-lan"
+        data_dir_h2_list (str): base directories for interaction tbme files ("SHELL_DATA_DIR_H2")
+            Environment variable is interpreted as a PATH-style colon-delimited list.
         interaction_run_list (list of str): subdirectories for interaction tbme files
             (to be set by calling run script)
 
@@ -219,7 +220,7 @@ class Configuration(object):
         # environment
         self.install_dir = os.environ.get("SHELL_INSTALL_DIR")
         self.mfdn_dir = os.environ.get("SHELL_MFDN_DIR")
-        self.data_dir_h2 = os.environ.get("SHELL_DATA_DIR_H2")
+        self.data_dir_h2_list = os.environ.get("SHELL_DATA_DIR_H2").split(":")
         self.interaction_run_list = []
 
     def shell_filename(self,name):
@@ -233,7 +234,7 @@ class Configuration(object):
     def interaction_filename(self,name):
         """Construct filename for interaction h2 file."""
         ##return os.path.join(self.data_dir_h2,name)
-        return mcscript.utils.search_in_subdirectories(self.data_dir_h2,self.interaction_run_list,name)
+        return mcscript.utils.search_in_subdirectories(self.data_dir_h2_list,self.interaction_run_list,name)
 
 
 configuration = Configuration()
@@ -262,23 +263,31 @@ def task_descriptor_7(task):
             "Z{nuclide[0]}-N{nuclide[1]}-{interaction}-coul{coulomb_flag:d}"
             "-hw{hw:.3f}"
             "-a_cm{a_cm:g}"
-            "-Nmax{Nmax:02d}{mixed_parity_flag}{fci_flag}-Mj{Mj:03.1f}"
+            "-Nmax{Nmax:02d}{mixed_parity_indicator}{fci_indicator}-Mj{Mj:03.1f}"
             "-lan{lanczos:d}-tol{tolerance:.1e}"
+            "{natural_orbital_indicator}"
             )
     else:
         raise ScriptError("mode not supported by task descriptor")
 
     if (task["many_body_truncation"]=="fci"):
-        fci_flag = "fci"
+        fci_indicator = "fci"
     else:
-        fci_flag = ""
-    mixed_parity_flag = mcscript.utils.ifelse(task["Nstep"]==1,"x","")
+        fci_indicator = ""
+    mixed_parity_indicator = mcscript.utils.ifelse(task["Nstep"]==1,"x","")
     coulomb_flag = int(task["use_coulomb"])
+
+    natural_orbital_iteration = task.get("natural_orbital_iteration")
+    if (natural_orbital_iteration is None):
+        natural_orbital_indicator = ""
+    else:
+        natural_orbital_indicator = "-no{:1d}".format(natural_orbital_iteration)
 
     descriptor = template_string.format(
         coulomb_flag=coulomb_flag,
-        mixed_parity_flag=mixed_parity_flag,
-        fci_flag=fci_flag,
+        mixed_parity_indicator=mixed_parity_indicator,
+        fci_indicator=fci_indicator,
+        natural_orbital_indicator=natural_orbital_indicator,
         **task
         )
 

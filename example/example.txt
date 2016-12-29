@@ -1,3 +1,13 @@
+Examples of "manual" h2mixer+MFDn runs
+(i.e., not requiring mcscript machinery)
+
+Mark A. Caprio
+University of Notre Dame
+
+Fall 2016
+
+----------------------------------------------------------------
+
 Requires environment configuration, such as:
 
   setenv SHELL_PROJECT_DIR "${HOME}/projects/shell"
