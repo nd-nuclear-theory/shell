@@ -269,7 +269,7 @@ def task_descriptor_7(task):
             "{natural_orbital_indicator}"
             )
     else:
-        raise ScriptError("mode not supported by task descriptor")
+        raise mcscript.ScriptError("mode not supported by task descriptor")
 
     if (task["many_body_truncation"]=="fci"):
         fci_indicator = "fci"
@@ -684,7 +684,7 @@ def run_mfdn_v14_b06(task):
         task (dict): as described in module docstring
     
     Raises:
-        ScriptError: if MFDn output not found
+        mcscript.ScriptError: if MFDn output not found
 
     """
 
@@ -780,7 +780,7 @@ def run_mfdn_v14_b06(task):
     # import partitioning file
     if (task["partition_filename"] is not None):
         if (not os.path.exists(task["partition_filename"])):
-            raise mcscript.task.ScriptError("partition file not found")
+            raise mcscript.ScriptError("partition file not found")
         mcscript.call(["cp","--verbose",task["partition_filename"],"mfdn_partitioning.info"])
 
     # invoke MFDn
@@ -794,9 +794,9 @@ def run_mfdn_v14_b06(task):
 
     # test for basic indications of success
     if (not os.path.exists("mfdn.out")):
-        raise ScriptError("mfdn.out not found")
+        raise mcscript.ScriptError("mfdn.out not found")
     if (not os.path.exists("mfdn.res")):
-        raise ScriptError("mfdn.res not found")
+        raise mcscript.ScriptError("mfdn.res not found")
 
 def save_mfdn_output(task):
     """Generate input file and execute MFDn version 14 beta 06.
@@ -805,7 +805,7 @@ def save_mfdn_output(task):
         task (dict): as described in module docstring
     
     Raises:
-        ScriptError: if MFDn output not found
+        mcscript.ScriptError: if MFDn output not found
 
     """
 
@@ -846,122 +846,9 @@ def save_mfdn_output(task):
             ]
         )
 
-
-## ##################################################################
-## # mfdn h2 run
-## ##################################################################
-## 
-## def task_handler_mfdn_h2(task):
-##     """ Invoke mfdn in h2 run, given current task parameters.
-##     
-##     Expected dictionary keys: see initial module docstring
-##     """
-## 
-##     print ("MFDn", task["descriptor"])
-## 
-##     # optional dictionary keys
-##     # TODO: neaten up with setdefault method
-##     if ("obs-R20K20" not in task):
-##         task["obs-R20K20"] = False
-##     if ("obs-am-sqr" not in task):
-##         task["obs-am-sqr"] = False
-##     if ("obs-H-components" not in task):
-##         task["obs-H-components"] = False
-##     if ("em_multipolarity_list" not in task):
-##         task["em_multipolarity_list"] = []
-##     if ("keep_obdme" not in task):
-##         task["keep_obdme"] = True
-## 
-##     # set up MFDn basis truncation parameters
-##     Nv = task["Nv"]
-##     Nmin = task["Nmax"] % task["Nstep"]
-##     truncation = interaction_truncation_for_Nmax(Nv,task["Nmax"],standardize=False)
-##     ## BUG: through 130520: Nshell = truncation[1] + 1
-##     ## BUG: through 150805: Nshell given to MFDn was one step higher than needed for odd Nmax (default standardize="True")
-##     Nshell = truncation[0] + 1
-##     ## print("truncation",truncation,"Nshell",Nshell)
-## 
-## 
-##     # set up h2 filenames
-##     h2_basename = "tbme-h2"
-##     obs_basename_list = [ "tbme-rrel2", "tbme-NCM" ]
-##     if (task["obs-R20K20"]):
-##         obs_basename_list += [ "tbme-R20", "tbme-K20" ]
-##     if (task["obs-am-sqr"]):
-##         for op in angular_momentum_operator_list:
-##             obs_basename_list.append("tbme-{}2".format(op))
-##     if (task["obs-H-components"]):
-##         obs_basename_list += [ "tbme-Trel", "tbme-VNN", "tbme-coul"]
-## 
-##     # guard against pathetically common mistakes
-##     reference_state_list = task["obdme_reference_state_list"]
-##     for (J,g,i) in reference_state_list:
-##         twice_J = int(2*J)
-##         if ((twice_J%2) != (sum(task["nuclide"])%2)):
-##             raise ValueError("invalid angular momentum for reference state")
-##         if ((g != (task["Nmax"]%2)) and (task["Nstep"] != 1)):
-##             raise ValueError("invalid parity for reference state")
-## 
-##        
-##     # import partitioning file
-##     partitioning_suffix = os.environ.get("MFDN_PARTITIONING",None)
-##     if (partitioning_suffix is not None):
-##         partitioning_filename = os.path.join(
-##             ncsm_config.data_dir_partitioning,
-##             "mfdn_partitioning.info_Nsh{:02d}_{}".format(Nshell,partitioning_suffix)
-##         )
-##         print ("Checking for partition file %s..." % partitioning_filename)
-##         if (os.path.exists(partitioning_filename)):
-##             mcscript.call(["cp", partitioning_filename, "mfdn_partitioning.info"])
-##         else:
-##             raise mcscript.task.ScriptError("partition file not found")
-## 
-##     ## partitioning_filename = os.path.join(
-##     ##     ncsm_config.data_dir_partitioning,
-##     ##     "mfdn_partitioning.info_Nsh{}".format(Nshell)
-##     ## )
-## 
-##     # invoke mfdn
-##     task.update(
-##         {
-##             "Nmin" : Nmin,
-##             "Nshell" : Nshell,
-##             "h2_basename" : h2_basename,
-##             "obs_basename_list" : obs_basename_list
-##             }
-##         )
-##     mfdn_wrapper = task["mfdn_wrapper"]
-##     mfdn_wrapper(task)
-## 
-##     # process results file
-##     result_filename = "%s-mfdn-%s.res" % (mcscript.run.name, task["descriptor"])
-##     out_filename = "%s-mfdn-%s.out" % (mcscript.run.name, task["descriptor"])
-##     # remove detailed occupation listing
-##     # TO NEATEN: replace with shell-free subprocess call and pipes
-##     ## print ("Filtering mfdn.res...") 
-##     ## mcscript.call(["sed '/More/,$d' < mfdn.res > " + result_filename],shell=True) 
-##     ## mcscript.call(["cat < mfdn.res > " + result_filename],shell=True) 
-##     ## mcscript.call(["cat < mfdn.out > " + out_filename],shell=True) 
-##     mcscript.call(["cp","mfdn.res",result_filename]) 
-##     mcscript.call(["cp","mfdn.out",out_filename]) 
-## 
-##     # archive obdme and other data files
-##     # including unfiltered mfdn.res
-##     archive_filename = "%s-mfdn-%s.tgz" % (mcscript.run.name, task["descriptor"])
-##     print ("Archiving output files...")
-##     obdme_file_list = ["mfdn.out", "mfdn.dat", "mfdn.res", "mfdn_spstates.info"]
-##     if (task["keep_obdme"]):
-##         obdme_file_list += glob.glob("*obdme*") 
-##     print ("obdme files:", obdme_file_list)
-##     mcscript.call(["tar", "zcvf", archive_filename] + obdme_file_list)
-## 
-##     # move results out
-##     ##mcscript.call(["mv run* -t "+mcscript.task.results_dir],shell=True)
-##     mcscript.call(["mv", result_filename, out_filename, archive_filename, "--target-directory="+mcscript.task.results_dir])
-## 
-##     # cleanup of wave function files
-##     scratch_file_list = glob.glob("mfdn_smwf*") + glob.glob("mfdn_MBgroups0*")
-##     mcscript.call(["rm", "-vf"] + scratch_file_list)
+    # cleanup of wave function files
+    scratch_file_list = glob.glob("mfdn_smwf*") + glob.glob("mfdn_MBgroups0*")
+    mcscript.call(["rm", "-vf"] + scratch_file_list)
            
     
 if (__name__ == "__MAIN__"):

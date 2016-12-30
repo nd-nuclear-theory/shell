@@ -34,6 +34,10 @@ hw_int=40 (at ob-13 truncation)
 
 runmfdn04: harmonic oscillator direct run, at higher Nmax
 
-  4He Nmax16 hw20
+    4He Nmax16 hw20
 
-  Interaction: run0164-JISP16-tb-20
+    Interaction: run0164-JISP16-tb-20
+
+    Usage: qsubm --here mfdn04
+
+        or qsubm --here mfdn04 --depth=6 --nodesize=64   # for OMP parallel on front end

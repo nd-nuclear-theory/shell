@@ -337,3 +337,24 @@ compiler?  Chokes on std::vector<Eigen::MatrixXd>.
 12/22/16 (mac): @NDCRC: We will include the ompi module in
 module-load-ndcrc, even though not currently needed, both convenience
 when compiling LSU3shell and for future MPI support.
+
+12/29/16 (mac): @NERSC: Edison's CRAY_CPU_TARGET is normally
+ivybridge, but sometimes seems to wander off to sandybridge at runtime
+on the front end.  An ugly workaround is to set up a symlink.
+
+   % ln -s ivybridge sandybridge
+
+12/29/16 (mac): @NDCRC: For gnu, *could* update modules to those expecting gcc 5.2.0:
+
+  module load gcc/5.2.0
+  module load ompi/2.0.1-gcc-5.2.0
+  boost/1.62
+
+But then compilation of mfdn v14b06 fails, since mpif90 seems to is missing library.
+
+For intel, most recent ompi has no corresponding boost (could try default boost/1.54):
+
+  module load intel/15.0
+  module load  ompi/1.8.7-intel-15.0
+
+But mfdn v14b06 fails to compile.
