@@ -5,9 +5,9 @@
   transform single-particle matrix elements
 
   Syntax:
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    radial-xform input_olap_file input_me_file output_me_file
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    radial-xform orbital_file input_olap_file input_me_file output_me_file
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   @author Patrick J. Fasano
   University of Notre Dame
@@ -34,6 +34,7 @@
 // Stores simple parameters for run
 struct RunParameters {
   // filenames
+  std::string orbital_filename;
   std::string olap_filename;
   std::string input_filename;
   std::string output_filename;
@@ -41,25 +42,37 @@ struct RunParameters {
 
 void PrintUsage(const char *argv[]) {
   std::cout << "Usage: "
-            << argv[0] << " input_olap_file input_me_file output_me_file"
+            << argv[0] << " orbital_file input_olap_file input_me_file output_me_file"
             << std::endl;
 }
 
 void ProcessArguments(const int argc, const char *argv[], RunParameters& run_parameters) {
   // usage message
-  if (argc-1 != 3) {
+  if (argc-1 != 4) {
     PrintUsage(argv);
-    std::cerr << "Wrong number of arguments." << std::endl;
+    std::cerr << "ERROR: Wrong number of arguments." << std::endl;
     std::exit(EXIT_FAILURE);
+  }
+
+  // orbital file
+  {
+    std::istringstream parameter_stream(argv[1]);
+    parameter_stream >> run_parameters.orbital_filename;
+    if (!parameter_stream) {
+      PrintUsage(argv);
+      std::cerr << "ERROR: Invalid input filename." << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+    /** @todo check for file existence */
   }
 
   // olap file
   {
-    std::istringstream parameter_stream(argv[1]);
+    std::istringstream parameter_stream(argv[2]);
     parameter_stream >> run_parameters.olap_filename;
     if (!parameter_stream) {
       PrintUsage(argv);
-      std::cerr << "Invalid input filename." << std::endl;
+      std::cerr << "ERROR: Invalid input filename." << std::endl;
       std::exit(EXIT_FAILURE);
     }
     /** @todo check for file existence */
@@ -67,11 +80,11 @@ void ProcessArguments(const int argc, const char *argv[], RunParameters& run_par
 
   // input file
   {
-    std::istringstream parameter_stream(argv[2]);
+    std::istringstream parameter_stream(argv[3]);
     parameter_stream >> run_parameters.input_filename;
     if (!parameter_stream) {
       PrintUsage(argv);
-      std::cerr << "Invalid input filename." << std::endl;
+      std::cerr << "ERROR: Invalid input filename." << std::endl;
       std::exit(EXIT_FAILURE);
     }
     /** @todo check for file existence */
@@ -79,11 +92,11 @@ void ProcessArguments(const int argc, const char *argv[], RunParameters& run_par
 
   // output file
   {
-    std::istringstream parameter_stream(argv[3]);
+    std::istringstream parameter_stream(argv[4]);
     parameter_stream >> run_parameters.output_filename;
     if (!parameter_stream) {
       PrintUsage(argv);
-      std::cerr << "Invalid output filename." << std::endl;
+      std::cerr << "ERROR: Invalid output filename." << std::endl;
       std::exit(EXIT_FAILURE);
     }
     /** @todo check and warn if overwriting existing file */
@@ -97,6 +110,11 @@ int main(int argc, const char *argv[]) {
   // Read input
   shell::InRadialStream is(run_parameters.input_filename);
   shell::InRadialStream olaps(run_parameters.olap_filename);
+
+  // Read orbitals
+  std::ifstream orbitals(run_parameters.orbital_filename);
+  std::vector<basis::OrbitalPNInfo> input_orbitals = basis::ParseOrbitalPNStream(orbitals, true);
+  basis::OrbitalSpaceLJPN space(input_orbitals);
 
   // get indexing
   basis::OrbitalSpaceLJPN in_bra_space, in_ket_space;
@@ -116,6 +134,12 @@ int main(int argc, const char *argv[]) {
     std::exit(EXIT_FAILURE);
   }
 
+  // check that operator matches provided orbital file
+  if (space.OrbitalInfo() != in_ket_space.OrbitalInfo()) {
+    std::cerr << "ERROR: Operator space does not match orbitals provided." << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+
   // check that overlaps are valid
   if ((olap_type != shell::RadialOperatorType::kO) ||
       (in_ket_space.OrbitalInfo() != olap_bra_space.OrbitalInfo()))
@@ -129,6 +153,12 @@ int main(int argc, const char *argv[]) {
   if (olap_bra_space.OrbitalInfo() != olap_ket_space.OrbitalInfo()) {
     std::cerr << "ERROR: Overlap bra and ket spaces differ. Only similarity "
               << "transforms are currently supported." << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+
+  // check that overlaps match provided orbital file
+  if (space.OrbitalInfo() != olap_ket_space.OrbitalInfo()) {
+    std::cerr << "ERROR: Overlaps space does not match orbitals provided." << std::endl;
     std::exit(EXIT_FAILURE);
   }
 
@@ -165,6 +195,7 @@ int main(int argc, const char *argv[]) {
   }
 
   // write out to file
+  std::cout << "INFO: Writing to file " << run_parameters.output_filename << std::endl;
   shell::OutRadialStream os(run_parameters.output_filename,
                             out_ket_space, out_ket_space, out_sectors,
                             in_operator_type);
