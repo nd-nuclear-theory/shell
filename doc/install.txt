@@ -29,15 +29,15 @@ Installation instructions: shell and spncci projects
 
   Clone the shell repository and all submodules.  You will be asked for
   your ND netid password several times.  In the following, replace
-  "netid" with your ND NetID.
+  "netid" with your ND NetID:
 
-  For "shell":
+  For "shell"...
 
-  % git clone --recursive ssh://netid@crcfe01.crc.nd.edu/afs/crc.nd.edu/group/nuclthy/git/shell.git
+  % git clone --recursive ssh://<netid>@crcfe01.crc.nd.edu/afs/crc.nd.edu/group/nuclthy/git/shell.git
 
-  For "spncci":
+  For "spncci"...
 
-  % git clone --recursive ssh://netid@crcfe01.crc.nd.edu/afs/crc.nd.edu/group/nuclthy/git/spncci.git
+  % git clone --recursive ssh://<netid>@crcfe01.crc.nd.edu/afs/crc.nd.edu/group/nuclthy/git/spncci.git
 
   Then change your working directory (cd) to the project directory for
   all the following steps.
@@ -46,7 +46,7 @@ Installation instructions: shell and spncci projects
   || -rf shell", and try again.  If it keeps hanging, split up the
   || process...
   || 
-  ||   % git clone ssh://netid@crcfe01.crc.nd.edu/afs/crc.nd.edu/group/nuclthy/git/shell.git
+  ||   % git clone ssh://<netid>@crcfe01.crc.nd.edu/afs/crc.nd.edu/group/nuclthy/git/shell.git
   ||   % cd shell
   ||   % submodule init
   ||   % submodule update
@@ -355,6 +355,17 @@ But then compilation of mfdn v14b06 fails, since mpif90 seems to is missing libr
 For intel, most recent ompi has no corresponding boost (could try default boost/1.54):
 
   module load intel/15.0
-  module load  ompi/1.8.7-intel-15.0
+  module load ompi/1.8.7-intel-15.0
 
 But mfdn v14b06 fails to compile.
+
+1/9/16 (mac): @NDCRC: After maintenance, default is gcc/5.2.0.
+Latest versions are:
+
+  module load gcc/6.2.0
+  module load gsl/1.16
+  module load boost/1.62
+  module load ompi/2.0.1-gcc-6.2.0
+
+But boost/1.62 requires gcc/5.2.0.  And python/3.5.2 requires
+gcc/4.9.2.  Sent request to NDCRC support...

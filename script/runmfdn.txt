@@ -40,4 +40,4 @@ runmfdn04: harmonic oscillator direct run, at higher Nmax
 
     Usage: qsubm --here mfdn04
 
-        or qsubm --here mfdn04 --depth=6 --nodesize=64   # for OMP parallel on front end
+        or...   qsubm mfdn04 debug 10 --width=2145 --nodesize=24 --opt=--mail-type-ALL   # for edison
