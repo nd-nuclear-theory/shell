@@ -21,8 +21,8 @@ params = {
     "radial_me_filename_pattern" : "radial-me-{}{}.dat",  # "{}{}" will be replaced by {"r1","r2","k1","k2"}
     "radial_olap_filename" : "radial-olap.dat",
     # stored input TBMEs
-    "VNN_filename" : os.path.join(generate_input.data_dir_h2,"run0164-ob-13/JISP16-ob-13-40.bin"),
-    "VC_filename" : os.path.join(generate_input.data_dir_h2,"run0164-tb-20/VC-tb-20-20.bin"),
+    "VNN_filename" : os.path.join(generate_input.data_dir_h2,"run0164-JISP16-ob-13/JISP16-ob-13-40.bin"),
+    "VC_filename" : os.path.join(generate_input.data_dir_h2,"run0164-JISP16-tb-20/VC-tb-20-20.bin"),
     # scaling/transformation/basis parameters
     "hw" : 20,
     "target_truncation" : ("tb",16),

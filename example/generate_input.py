@@ -35,8 +35,8 @@ params = {
     "radial_me_filename_pattern" : "radial-me-{}{}.dat",  # "{}{}" will be replaced by {"r1","r2","k1","k2"}
     "radial_olap_filename" : "radial-olap.dat",
     # stored input TBMEs
-    "VNN_filename" : os.path.join(data_dir_h2,"run0164-ob-9/JISP16-ob-9-20.bin"),
-    "VC_filename" : os.path.join(data_dir_h2,"run0164-ob-9/VC-ob-9-20.bin"),
+    "VNN_filename" : os.path.join(data_dir_h2,"run0164-JISP16-ob-9/JISP16-ob-9-20.bin"),
+    "VC_filename" : os.path.join(data_dir_h2,"run0164-JISP16-ob-9/VC-ob-9-20.bin"),
     # scaling/transformation/basis parameters
     "hw" : 20,
     "target_truncation" : ("tb",2),
@@ -102,9 +102,9 @@ def oscillator_length(hw):
     Returns:
         (float): b in fm
     """
-    
+
     return k_hbar_c/math.sqrt(k_mN_csqr*hw)
-    
+
 
 def run_script(params):
     """ Generate shell run script.
@@ -140,7 +140,7 @@ def run_script(params):
 
     # ensure terminal line
     lines.append("")
-    
+
     return "\n".join(lines)
 
 def h2mixer_input(params):
@@ -176,7 +176,7 @@ def h2mixer_input(params):
             radial_me_filename = params["radial_me_filename_pattern"].format(operator_type,power)
             lines.append("define-radial-operator {} {} {}".format(operator_type,power,radial_me_filename))
     lines.append("")
-    
+
     # sources: identity and kinematic operators
     lines.append("define-source operator identity")
     lines.append("define-source operator Ursqr")
@@ -265,7 +265,7 @@ def h2mixer_input(params):
 
     # ensure terminal line
     lines.append("")
-    
+
     return "\n".join(lines)
 
 def mfdn_input(mfdn_params):
@@ -277,7 +277,7 @@ def mfdn_input(mfdn_params):
     Returns:
         (list of str): input file lines
     """
-    
+
     lines = []
 
     # base parameters
@@ -302,7 +302,7 @@ def mfdn_input(mfdn_params):
 
     lines += mfdn_params["obs_basename_list"]
 
-    
+
     # obdme parameters
     lines.append("{enable_obd:d} {twice_multipolarity:d} # static one-body density matrix elements (0: no one-body densities), twice multipolarity".format(
         enable_obd=1,twice_multipolarity=2*mfdn_params["obdme_multipolarity"]
