@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <iomanip>
+#include <cmath>
 
 #include "eigen3/Eigen/Core"
 
@@ -159,8 +160,8 @@ void InOBDMEReader::ReadMultipole(const std::string& data_filename, int order, b
       orbital_space(), orbital_space(), sectors, info_line.bra_labels, info_line.ket_labels
     );
 
-    // store matrix element
-    matrices[sector_index](bra_index,ket_index) = temp_matrix_element;
+    // store matrix element -- multiply by sqrt(4*pi) to fix MFDn bug
+    matrices[sector_index](bra_index,ket_index) = temp_matrix_element * 3.54490770181103205459633496668229;
   }
 
   data_stream.close();
