@@ -30,7 +30,7 @@ modules += programs/h2utils_legacy
 ################
 
 modules += libraries/relative libraries/moshinsky
-modules += libraries/tbme libraries/radial
+modules += libraries/tbme libraries/radial libraries/density
 
 # legacy libraries -- DEPRECATED
 modules += libraries/no libraries/legacy
