@@ -131,13 +131,15 @@ int main(int argc, const char *argv[]) {
   if (in_bra_space.OrbitalInfo() != in_ket_space.OrbitalInfo()) {
     std::cerr << "ERROR: Bra and ket spaces of this operator are not the same. "
               << "Cannot transform." << std::endl;
-    std::exit(EXIT_FAILURE);
+    ////////////// CHECKS TURNED OFF FOR NATURAL ORBITAL TESTING! //////////////
+    // std::exit(EXIT_FAILURE);
   }
 
   // check that operator matches provided orbital file
   if (space.OrbitalInfo() != in_ket_space.OrbitalInfo()) {
     std::cerr << "ERROR: Operator space does not match orbitals provided." << std::endl;
-    std::exit(EXIT_FAILURE);
+    ////////////// CHECKS TURNED OFF FOR NATURAL ORBITAL TESTING! //////////////
+    // std::exit(EXIT_FAILURE);
   }
 
   // check that overlaps are valid
@@ -145,7 +147,8 @@ int main(int argc, const char *argv[]) {
       (in_ket_space.OrbitalInfo() != olap_bra_space.OrbitalInfo()))
   {
     std::cerr << "ERROR: Invalid olap for this input." << std::endl;
-    std::exit(EXIT_FAILURE);
+    ////////////// CHECKS TURNED OFF FOR NATURAL ORBITAL TESTING! //////////////
+    // std::exit(EXIT_FAILURE);
   }
 
   // check that we know how to handle this type of transformation
@@ -153,13 +156,15 @@ int main(int argc, const char *argv[]) {
   if (olap_bra_space.OrbitalInfo() != olap_ket_space.OrbitalInfo()) {
     std::cerr << "ERROR: Overlap bra and ket spaces differ. Only similarity "
               << "transforms are currently supported." << std::endl;
-    std::exit(EXIT_FAILURE);
+    ////////////// CHECKS TURNED OFF FOR NATURAL ORBITAL TESTING! //////////////
+    // std::exit(EXIT_FAILURE);
   }
 
   // check that overlaps match provided orbital file
   if (space.OrbitalInfo() != olap_ket_space.OrbitalInfo()) {
     std::cerr << "ERROR: Overlaps space does not match orbitals provided." << std::endl;
-    std::exit(EXIT_FAILURE);
+    ////////////// CHECKS TURNED OFF FOR NATURAL ORBITAL TESTING! //////////////
+    // std::exit(EXIT_FAILURE);
   }
 
   // construct new indexing
@@ -181,8 +186,9 @@ int main(int argc, const char *argv[]) {
 
     // Sanity check on olap sector
     // This is only true in general for similarity transforms.
-    assert(olap_sectors.ContainsSector(bra_subspace_index, bra_subspace_index));
-    assert(olap_sectors.ContainsSector(ket_subspace_index, ket_subspace_index));
+    ////////////// CHECKS TURNED OFF FOR NATURAL ORBITAL TESTING! //////////////
+    // assert(olap_sectors.ContainsSector(bra_subspace_index, bra_subspace_index));
+    // assert(olap_sectors.ContainsSector(ket_subspace_index, ket_subspace_index));
 
     // Get olap sector index
     int left_olap_sector_index  = olap_sectors.LookUpSectorIndex(bra_subspace_index, bra_subspace_index);
