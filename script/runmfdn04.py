@@ -57,7 +57,7 @@ task = {
     # traditional oscillator many-body truncation
     "ho_truncation" : True,
     "Nv" : 0,
-    "Nmax" : 16,
+    "Nmax" : 12,
     "many_body_truncation" : "Nmax",
     "Nstep" : 2,
 

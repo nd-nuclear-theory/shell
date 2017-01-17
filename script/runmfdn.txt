@@ -34,10 +34,12 @@ hw_int=40 (at ob-13 truncation)
 
 runmfdn04: harmonic oscillator direct run, at higher Nmax
 
-    4He Nmax16 hw20
+    4He Nmax12 hw20
 
     Interaction: run0164-JISP16-tb-20
 
     Usage: qsubm --here mfdn04
 
-        or...   qsubm mfdn04 debug 10 --width=2145 --nodesize=24 --opt=--mail-type-ALL   # for edison
+        or...
+
+        qsubm mfdn04 debug 10 --width=120 --nodesize=24 --opt=--mail-type=ALL   # for edison
