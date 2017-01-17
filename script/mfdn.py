@@ -674,7 +674,7 @@ def generate_tbme(task):
             configuration.shell_filename("h2mixer")
         ],
         input_lines=lines,        
-        mode = "serial"  # SMP only
+        mode = mcscript.call.serial
     )
 
 def run_mfdn_v14_b06(task):
