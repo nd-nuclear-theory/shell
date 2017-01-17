@@ -407,7 +407,7 @@ def set_up_radial_analytic(task):
                     orbitals_filename,
                     radial_me_filename
                 ],
-                mode = mcscript.call.serial  # TODO: upgrade to SMP
+                mode = mcscript.call.serial
             )
 
     # generate radial overlaps
@@ -422,7 +422,7 @@ def set_up_radial_analytic(task):
                 orbitals_int_filename,
                 radial_olap_int_filename
             ],
-            mode = mcscript.call.serial  # TODO: upgrade to SMP
+            mode = mcscript.call.serial
         )
     if (task["use_coulomb"] and (task["basis_mode"] not in {k_basis_mode_direct,k_basis_mode_dilated})):
         b_ratio = math.sqrt(task["hw_coul_rescaled"]/task["hw"])
@@ -435,7 +435,7 @@ def set_up_radial_analytic(task):
                 orbitals_coul_filename,
                 radial_olap_coul_filename
             ],
-            mode = mcscript.call.serial  # TODO: upgrade to SMP
+            mode = mcscript.call.serial
         )
 
 def generate_tbme(task):
