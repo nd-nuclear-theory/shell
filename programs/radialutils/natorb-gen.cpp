@@ -35,23 +35,33 @@
 ////////////////////////////////////////////////////////////////
 // define a function mapping eigenvalue to weight
 /////////////////////////////////////////////////////////////////
-void ComputeOrbitalWeights(std::vector<basis::OrbitalPNInfo>& orbitals) {
-  double max_eigenvalue[2];
-  for (auto& orbital : orbitals) {
-    if (orbital.weight > max_eigenvalue[static_cast<int>(orbital.orbital_species)]) {
-      max_eigenvalue[static_cast<int>(orbital.orbital_species)] = orbital.weight;
-    }
-  }
 
-  for (auto& orbital : orbitals) {
-    if (orbital.weight > 0 ) {
-      orbital.weight = 0.25 *
-        std::abs(std::log(orbital.weight / max_eigenvalue[static_cast<int>(orbital.orbital_species)]));
-    } else {
-      orbital.weight = 999;
-    }
+// traditional oscillator weight
+void ComputeOrbitalWeights(std::vector<basis::OrbitalPNInfo>& orbitals) {
+  for (auto& orbital: orbitals) {
+    orbital.weight = 2 * orbital.n + orbital.l;
   }
 }
+
+// // weight = 0.25 * |log(eigenvalue/max_eigenvalue)|
+// //   -- max_eigenvalue specific to species
+// void ComputeOrbitalWeights(std::vector<basis::OrbitalPNInfo>& orbitals) {
+//   double max_eigenvalue[2];
+//   for (auto& orbital : orbitals) {
+//     if (orbital.weight > max_eigenvalue[static_cast<int>(orbital.orbital_species)]) {
+//       max_eigenvalue[static_cast<int>(orbital.orbital_species)] = orbital.weight;
+//     }
+//   }
+//
+//   for (auto& orbital : orbitals) {
+//     if (orbital.weight > 0 ) {
+//       orbital.weight = 0.25 *
+//         std::abs(std::log(orbital.weight / max_eigenvalue[static_cast<int>(orbital.orbital_species)]));
+//     } else {
+//       orbital.weight = 999;
+//     }
+//   }
+// }
 
 ////////////////////////////////////////////////////////////////
 // process arguments
