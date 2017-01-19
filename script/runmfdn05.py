@@ -166,7 +166,9 @@ mcscript.task.init(
     task_descriptor=mfdn.task_descriptor_7,
     task_pool=task_pool,
     task_mask=task_mask,
-    phase_handler_list=[task_handler_v14_b06]
+    phase_handler_list=[task_handler_v14_b06],
+    # Note: change to mcscript.task.archive_handler_hsi for tape backup
+    archive_phase_handler_list=[mcscript.task.archive_handler_generic]
     )
 
 ################################################################

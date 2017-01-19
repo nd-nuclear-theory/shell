@@ -60,3 +60,7 @@ runmfdn05: Nmax and hw scan demo
         qsubm mfdn05 debug 30 --width=15 --depth=6 --pool=Nmax16-Mj0.0 --serialthreads=24 --nodesize=24
         qsubm mfdn05 debug 30 --width=66 --depth=6 --pool=Nmax18-Mj0.0 --serialthreads=24 --nodesize=24
         qsubm mfdn05 debug 30 --width=190 --depth=6 --pool=Nmax20-Mj0.0 --serialthreads=24 --nodesize=24
+
+    Then, to generate archive,
+
+        qsubm mfdn05 --archive
