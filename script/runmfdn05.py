@@ -106,9 +106,9 @@ task_list = [
 
         # diagonalization parameters
         "Mj" : 0,
-        "eigenvectors" : 2,
+        "eigenvectors" : 5,
         "initial_vector" : -2,
-        "lanczos" : 200,
+        "lanczos" : 500,
         "tolerance" : 1e-6,
         "partition_filename" : None,
 
