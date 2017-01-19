@@ -17,6 +17,8 @@ Installation instructions: shell and spncci projects
   - Rename NERSC config files from "...-craype.mk" to
     "...-nersc.mk".
   - Add NDCRC config files.
++ 1/18/17 (mac): Add description of environment variables for
+  mcscript scripting (with script/mfdn.py).
 
 ----------------------------------------------------------------
 
@@ -244,6 +246,29 @@ Installation instructions: shell and spncci projects
    You can also try out the conversion code h2conv:
 
    % ./h2conv 15099 test/tbme-identity-tb-2-v0.dat test/tbme-identity-tb-2-v15099.dat
+
+7) Scripting support
+
+If you are using the shell's project mcscript support, you will want
+to set additional environment variables in your .cshrc file.
+
+  || @NERSC:
+  || 
+  ||     # shell
+  ||     setenv SHELL_PROJECT_DIR "${HOME}/projects/shell"
+  ||     setenv SHELL_INSTALL_DIR "${SHELL_PROJECT_DIR}/install"
+  ||     setenv SHELL_MFDN_DIR "${HOME}/projects/mfdn"
+  ||     setenv SHELL_DATA_DIR_H2 "/afs/crc.nd.edu/group/nuclthy/data/h2"
+  ||     setenv PYTHONPATH ${SHELL_PROJECT_DIR}/script:${PYTHONPATH}
+
+  || @NERSC:
+  || 
+  ||     # shell
+  ||     setenv SHELL_PROJECT_DIR "${HOME}/projects/shell"
+  ||     setenv SHELL_INSTALL_DIR "${SHELL_PROJECT_DIR}/install/${CRAY_CPU_TARGET}"
+  ||     setenv SHELL_MFDN_DIR "${HOME}/projects/mfdn"
+  ||     setenv SHELL_DATA_DIR_H2 "/project/projectdirs/m2032/data/h2"
+  ||     setenv PYTHONPATH ${SHELL_PROJECT_DIR}/script:${PYTHONPATH}
 
 ----------------------------------------------------------------
 
