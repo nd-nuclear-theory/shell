@@ -100,7 +100,7 @@ task_list = [
         # traditional oscillator many-body truncation
         "ho_truncation" : True,
         "Nv" : 0,
-        "Nmax" : 12,
+        "Nmax" : Nmax,
         "many_body_truncation" : "Nmax",
         "Nstep" : 2,
 

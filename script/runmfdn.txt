@@ -50,4 +50,4 @@ runmfdn05: Nmax and hw scan demo
 
     Usage (for submission on edison):
 
-        qsubm mfdn05 debug 10 --pool=Nmax01-Mj0.0 --serialthreads=24 --nodesize=24
+        qsubm mfdn05 debug 10 --pool=Nmax00-Mj0.0 --serialthreads=24 --nodesize=24
