@@ -38,8 +38,16 @@ runmfdn04: harmonic oscillator direct run, at higher Nmax
 
     Interaction: run0164-JISP16-tb-20
 
-    Usage: qsubm --here mfdn04
+    Usage (for submission on edison):
 
-        or...
+        qsubm mfdn04 debug 10 --width=120 --serialthreads=24 --nodesize=24 --opt=--mail-type=ALL
 
-        qsubm mfdn04 debug 10 --width=120 --nodesize=24 --opt=--mail-type=ALL   # for edison
+runmfdn05: Nmax and hw scan demo
+
+    4He Nmax-2..20 hw=15..25:5
+ 
+    Interaction: JISP16/N2LOopt500
+
+    Usage (for submission on edison):
+
+        qsubm mfdn05 debug 10 --pool=Nmax01-Mj0.0 --serialthreads=24 --nodesize=24

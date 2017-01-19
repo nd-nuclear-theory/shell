@@ -7,8 +7,8 @@
 
         line 1: n_v n_lan
 
-            n_lan (int) : number of Lanczos iterations (and thus Lanczos vectors)
             n_v (int) : number of stored eigenvectors
+            n_lan (int) : number of Lanczos iterations (and thus Lanczos vectors)
 
         line 2: memory_core_Gb
 
@@ -19,8 +19,8 @@
         line n: Z N Nmax Mj D n_nz
 
             Z (int), N (int), Nmax (int), Mj (float): labels for output
-            n_nz (int or float) : number of nonzero matrix elements in matrix
             D (int or float) : dimension of matrix
+            n_nz (int or float) : number of nonzero matrix elements in matrix
 
         Any extra junk on a line is ignored.
 

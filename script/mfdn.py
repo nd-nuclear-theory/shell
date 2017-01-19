@@ -849,6 +849,8 @@ def save_mfdn_output(task):
     # cleanup of wave function files
     scratch_file_list = glob.glob("mfdn_smwf*") + glob.glob("mfdn_MBgroups0*")
     mcscript.call(["rm", "-vf"] + scratch_file_list)
+
+
            
     
 if (__name__ == "__MAIN__"):
