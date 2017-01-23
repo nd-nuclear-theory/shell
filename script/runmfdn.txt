@@ -34,10 +34,33 @@ hw_int=40 (at ob-13 truncation)
 
 runmfdn04: harmonic oscillator direct run, at higher Nmax
 
-    4He Nmax16 hw20
+    4He Nmax12 hw20
 
     Interaction: run0164-JISP16-tb-20
 
-    Usage: qsubm --here mfdn04
+    Usage (for submission on edison):
 
-        or...   qsubm mfdn04 debug 10 --width=2145 --nodesize=24 --opt=--mail-type-ALL   # for edison
+        qsubm mfdn04 debug 10 --width=120 --serialthreads=24 --nodesize=24 --opt=--mail-type=ALL
+
+runmfdn05: Nmax and hw scan demo
+
+    4He Nmax-2..20 hw=15..25:5
+ 
+    Interaction: JISP16/N2LOopt500
+
+    Usage (for submission on edison):
+
+        qsubm mfdn05 debug 10 --width=1 --depth=6 --pool=Nmax02-Mj0.0 --serialthreads=24 --nodesize=24
+        qsubm mfdn05 debug 10 --width=1 --depth=6 --pool=Nmax04-Mj0.0 --serialthreads=24 --nodesize=24
+        qsubm mfdn05 debug 10 --width=1 --depth=6 --pool=Nmax06-Mj0.0 --serialthreads=24 --nodesize=24
+        qsubm mfdn05 debug 10 --width=1 --depth=6 --pool=Nmax08-Mj0.0 --serialthreads=24 --nodesize=24
+        qsubm mfdn05 debug 30 --width=1 --depth=6 --pool=Nmax10-Mj0.0 --serialthreads=24 --nodesize=24
+        qsubm mfdn05 debug 30 --width=6 --depth=6 --pool=Nmax12-Mj0.0 --serialthreads=24 --nodesize=24
+        qsubm mfdn05 debug 30 --width=6 --depth=6 --pool=Nmax14-Mj0.0 --serialthreads=24 --nodesize=24
+        qsubm mfdn05 debug 30 --width=15 --depth=6 --pool=Nmax16-Mj0.0 --serialthreads=24 --nodesize=24
+        qsubm mfdn05 debug 30 --width=66 --depth=6 --pool=Nmax18-Mj0.0 --serialthreads=24 --nodesize=24
+        qsubm mfdn05 debug 30 --width=190 --depth=6 --pool=Nmax20-Mj0.0 --serialthreads=24 --nodesize=24
+
+    Then, to generate archive,
+
+        qsubm mfdn05 --archive

@@ -407,7 +407,7 @@ def set_up_radial_analytic(task):
                     orbitals_filename,
                     radial_me_filename
                 ],
-                mode = "serial"  # SMP only
+                mode = mcscript.call.serial
             )
 
     # generate radial overlaps
@@ -422,7 +422,7 @@ def set_up_radial_analytic(task):
                 orbitals_int_filename,
                 radial_olap_int_filename
             ],
-            mode = "serial"  # SMP only
+            mode = mcscript.call.serial
         )
     if (task["use_coulomb"] and (task["basis_mode"] not in {k_basis_mode_direct,k_basis_mode_dilated})):
         b_ratio = math.sqrt(task["hw_coul_rescaled"]/task["hw"])
@@ -435,7 +435,7 @@ def set_up_radial_analytic(task):
                 orbitals_coul_filename,
                 radial_olap_coul_filename
             ],
-            mode = "serial"  # SMP only
+            mode = mcscript.call.serial
         )
 
 def generate_tbme(task):
@@ -674,7 +674,7 @@ def generate_tbme(task):
             configuration.shell_filename("h2mixer")
         ],
         input_lines=lines,        
-        mode = "serial"  # SMP only
+        mode = mcscript.call.serial
     )
 
 def run_mfdn_v14_b06(task):
@@ -788,8 +788,8 @@ def run_mfdn_v14_b06(task):
         [
             configuration.mfdn_filename(task["mfdn_executable"])
         ],
-        mode = "parallel",
-        check_return=False  # TEMP
+        mode = mcscript.call.hybrid,
+        check_return=True
     )
 
     # test for basic indications of success
@@ -849,7 +849,45 @@ def save_mfdn_output(task):
     # cleanup of wave function files
     scratch_file_list = glob.glob("mfdn_smwf*") + glob.glob("mfdn_MBgroups0*")
     mcscript.call(["rm", "-vf"] + scratch_file_list)
-           
+
+
+################################################################
+# mfdn archiving
+################################################################
+
+def archive_handler_mfdn_res_only(task):
+    """ Generate summary archive of MFDn results files.
+
+    TODO: Update and test.
+    """
+
+    # write current toc
+    toc_filename = mcscript.task.write_current_toc()
+
+    # make archive -- results
+    archive_filename = os.path.join(
+        ##ncsm_config.data_dir_results_archive,
+        mcscript.task.archive_dir,
+        "%s-results-%s.tgz" % (mcscript.run.name, mcscript.date_tag())
+        )
+    ## # store toc -- TODO once restructure subdirectories in tar file
+    ## mcscript.call(
+    ##     ["tar", "zcvf", archive_filename, toc_filename]
+    ##     )
+    os.chdir(mcscript.task.results_dir)
+    result_files = glob.glob("*.res") + glob.glob("*.out") + glob.glob("*-emcalc-*.dat")
+    mcscript.call(
+        ["tar", "-zcvf", archive_filename ] + result_files,
+        cwd=mcscript.task.results_dir
+    )
+
+    # copy archive out to home results archive directory
+    mcscript.call(
+        ["cp","-v",archive_filename,"-t",ncsm_config.data_dir_results_archive],
+        cwd=mcscript.task.results_dir
+    )
+          
+
     
 if (__name__ == "__MAIN__"):
     pass
