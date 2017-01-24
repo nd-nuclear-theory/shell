@@ -6,7 +6,8 @@
   Syntax:
     + radial-gen --kinematic operator_type order analytic_basis_type orbital_file output_filename
       - operator_type={r,k}
-    + radial-gen --overlaps scale_ratio analytic_basis_type orbital_file output_filename
+    + radial-gen --overlaps scale_ratio analytic_basis_type bra_orbital_file [ket_orbital_file] output_filename
+    + radial-gen --identity orbital_file output_filename
 
   @note Currently only computes radial matrix elements between harmonic oscillator
   or Laguerre basis functions with identical bra and ket spaces.
@@ -26,9 +27,14 @@
     - Implement transformation to between different basis function types.
     - Flag possible fencepost error in spline integration point/steps.
   + 12/29/16 (mac): Add OMP diagnostic.
+  + 1/23/16 (pjf): Add identity mode.
+  + 1/24/16 (pjf):
+    - Add non-square overlap mode.
+    - Add file existence checks.
 
 ******************************************************************************/
 
+#include <sys/stat.h>
 #include <cstdlib>
 #include <iostream>
 #include <iomanip>
@@ -49,12 +55,13 @@ enum class AnalyticBasisType : int {
   kOscillator = 0, kLaguerre = 1
 };
 
-enum class OperationMode {kKinematic, kOverlaps};
+enum class OperationMode {kKinematic, kOverlaps, kIdentity};
 
 // Stores simple parameters for run
 struct RunParameters {
   // filenames
-  std::string orbital_filename;
+  std::string bra_orbital_filename;
+  std::string ket_orbital_filename;
   std::string output_filename;
   // mode
   OperationMode mode;
@@ -69,7 +76,10 @@ void PrintUsage(char **argv) {
             << " --kinematic {r|k} order analytic_basis_type orbital_file output_filename"
             << std::endl;
   std::cout << "       " << argv[0]
-            << " --overlaps scale_ratio analytic_basis_type orbital_file output_filename"
+            << " --overlaps scale_ratio analytic_basis_type bra_orbital_file [ket_orbital_file] output_filename"
+            << std::endl;
+  std::cout << "       " << argv[0]
+            << " --identity orbital_file output_filename"
             << std::endl;
 }
 
@@ -77,8 +87,8 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters) {
   // argument counter
   int arg = 1;
 
-  // usage message
-  if (argc-1 < 5) {
+  // usage message (must at least provide mode)
+  if (argc-1 < 3) {
     PrintUsage(argv);
     std::exit(EXIT_FAILURE);
   }
@@ -88,8 +98,14 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters) {
     std::istringstream parameter_stream(argv[arg++]);
     if (parameter_stream.str() == "--kinematic") {
       run_parameters.mode = OperationMode::kKinematic;
-    } else if (parameter_stream.str() == "--overlaps"){
+    } else if (parameter_stream.str() == "--overlaps") {
       run_parameters.mode = OperationMode::kOverlaps;
+      run_parameters.order = 0;
+      run_parameters.radial_operator = shell::RadialOperatorType::kO;
+    } else if (parameter_stream.str() == "--identity") {
+      run_parameters.mode = OperationMode::kIdentity;
+      run_parameters.order = 0;
+      run_parameters.radial_operator = shell::RadialOperatorType::kO;
     } else {
       PrintUsage(argv);
       std::cerr << "Invalid operation mode." << std::endl;
@@ -155,6 +171,7 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters) {
   }
 
   // basis type
+  if (run_parameters.mode == OperationMode::kKinematic || run_parameters.mode == OperationMode::kOverlaps)
   {
     std::istringstream parameter_stream(argv[arg++]);
     if (parameter_stream.str() == "oscillator") {
@@ -170,16 +187,39 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters) {
     }
   }
 
-  // orbital file
+  // bra orbital file
   {
     std::istringstream parameter_stream(argv[arg++]);
-    parameter_stream >> run_parameters.orbital_filename;
+    parameter_stream >> run_parameters.bra_orbital_filename;
     if (!parameter_stream) {
       PrintUsage(argv);
       std::cerr << "Invalid orbital filename." << std::endl;
       std::exit(EXIT_FAILURE);
     }
-    /** @todo check for file existence */
+    struct stat st;
+    if (stat(run_parameters.bra_orbital_filename.c_str(), &st) != 0) {
+      std::cerr << "ERROR: file " << run_parameters.bra_orbital_filename << " does not exist!" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+  }
+
+  // ket orbital file -- only parse an argument if there were 6 arguments
+  if (run_parameters.mode == OperationMode::kOverlaps && (argc-1) == 6)
+  {
+    std::istringstream parameter_stream(argv[arg++]);
+    parameter_stream >> run_parameters.ket_orbital_filename;
+    if (!parameter_stream) {
+      PrintUsage(argv);
+      std::cerr << "Invalid ket orbital filename." << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+    struct stat st;
+    if (stat(run_parameters.ket_orbital_filename.c_str(), &st) != 0) {
+      std::cerr << "ERROR: file " << run_parameters.ket_orbital_filename << " does not exist!" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+  } else {
+    run_parameters.ket_orbital_filename = run_parameters.bra_orbital_filename;
   }
 
   // output file
@@ -191,7 +231,10 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters) {
       std::cerr << "Invalid output filename." << std::endl;
       std::exit(EXIT_FAILURE);
     }
-    /** @todo check and warn if overwriting existing file */
+    struct stat st;
+    if (stat(run_parameters.output_filename.c_str(), &st) == 0) {
+      std::cerr << "WARN: overwriting file " << run_parameters.output_filename << std::endl;
+    }
   }
 }
 
@@ -251,13 +294,17 @@ int main(int argc, char **argv) {
     << std::endl;
 
   // Read orbitals
-  std::ifstream is(run_parameters.orbital_filename);
-  std::vector<basis::OrbitalPNInfo> input_orbitals =
-    basis::ParseOrbitalPNStream(is, true);
+  std::ifstream bra_orbital_stream(run_parameters.bra_orbital_filename);
+  std::vector<basis::OrbitalPNInfo> bra_input_orbitals =
+    basis::ParseOrbitalPNStream(bra_orbital_stream, true);
+  std::ifstream ket_orbital_stream(run_parameters.ket_orbital_filename);
+  std::vector<basis::OrbitalPNInfo> ket_input_orbitals =
+    basis::ParseOrbitalPNStream(ket_orbital_stream, true);
 
   // Construct indexing
-  basis::OrbitalSpaceLJPN space(input_orbitals);
-  basis::OrbitalSectorsLJPN sectors(space, space, run_parameters.order, 0);
+  basis::OrbitalSpaceLJPN bra_space(bra_input_orbitals);
+  basis::OrbitalSpaceLJPN ket_space(ket_input_orbitals);
+  basis::OrbitalSectorsLJPN sectors(bra_space, ket_space, run_parameters.order, 0);
   /** @note currently has hard-coded Tz0=0 */
 
   // Eigen initialization
@@ -299,16 +346,26 @@ int main(int argc, char **argv) {
         ket_basis_type = spline::Basis::LC;
     }
 
-  CalculateMatrixElements(
-      bra_basis_type, ket_basis_type,
-      bra_scale_ratio, ket_scale_ratio,
-      order,
-      sectors, matrices
-    );
+  if (run_parameters.mode == OperationMode::kKinematic || run_parameters.mode == OperationMode::kOverlaps)
+  {
+    CalculateMatrixElements(
+        bra_basis_type, ket_basis_type,
+        bra_scale_ratio, ket_scale_ratio,
+        order,
+        sectors, matrices
+      );
+  }
+  else if (run_parameters.mode == OperationMode::kIdentity)
+  {
+    for (int sector_index = 0; sector_index < sectors.size(); ++sector_index) {
+      const basis::OrbitalSectorsLJPN::SectorType sector = sectors.GetSector(sector_index);
+      matrices.push_back(Eigen::MatrixXd::Identity(sector.bra_subspace().size(), sector.ket_subspace().size()));
+    }
+  }
 
   // write out to file
   shell::OutRadialStream os(run_parameters.output_filename,
-                            space, space, sectors,
+                            bra_space, ket_space, sectors,
                             run_parameters.radial_operator);
   os.Write(matrices);
 
