@@ -84,7 +84,7 @@ FFLAGS += -fopenmp -frecursive
 #   for GCC 4.x gfortran: -lgfortran
 #   for Intel ifort: -lifport -lifcore -limf
 
-fortran_libs := -lgfortran
+fortran_libs := -lgfortran -lquadmath
 
 # FORTRAN linking flags (added to LDFLAGS)
 # Not yet needed but provided as hook.
