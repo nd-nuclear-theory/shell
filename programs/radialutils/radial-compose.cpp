@@ -146,7 +146,7 @@ int main(int argc, const char *argv[]) {
   const shell::RadialOperatorType& out_operator_type = shell::RadialOperatorType::kO;
   const basis::OrbitalSpaceLJPN& out_bra_space = olap1_bra_space;
   const basis::OrbitalSpaceLJPN& out_ket_space = olap2_ket_space;
-  basis::OrbitalSectorsLJPN out_sectors(out_ket_space, out_ket_space, 0, 0);
+  basis::OrbitalSectorsLJPN out_sectors(out_bra_space, out_ket_space, 0, 0);
 
   // Eigen initialization
   basis::MatrixVector olap1_matrices, olap2_matrices, output_matrices;
@@ -157,18 +157,28 @@ int main(int argc, const char *argv[]) {
 
   // main loop
   for (int sector_index=0; sector_index < out_sectors.size(); ++sector_index) {
+    // get indexing
     const auto& out_sector = out_sectors.GetSector(sector_index);
-    int bra_subspace_index = out_sector.bra_subspace_index();
-    int ket_subspace_index = out_sector.ket_subspace_index();
+    const auto& out_bra_subspace = out_sector.bra_subspace();
+    const int out_bra_subspace_index = out_sector.bra_subspace_index();
+    const auto& out_ket_subspace = out_sector.ket_subspace();
+    const int out_ket_subspace_index = out_sector.ket_subspace_index();
+
+    // make sure we can look up subspace index for shared subspace by labels
+    assert(out_bra_subspace.labels() == out_ket_subspace.labels());
+    assert(olap1_ket_space.ContainsSubspace(out_bra_subspace.labels()));
+
+    // get index of shared subspace (olap1_ket_space, olap2_bra_space)
+    const int shared_subspace_index = olap1_ket_space.LookUpSubspaceIndex(out_bra_subspace.labels());
 
     // Sanity check on olap sector
     // This is only true in general for similarity transforms.
-    assert(olap1_sectors.ContainsSector(bra_subspace_index, bra_subspace_index));
-    assert(olap2_sectors.ContainsSector(ket_subspace_index, ket_subspace_index));
+    assert(olap1_sectors.ContainsSector(out_bra_subspace_index, shared_subspace_index));
+    assert(olap2_sectors.ContainsSector(shared_subspace_index, out_ket_subspace_index));
 
-    // Get olap sector index
-    int left_olap_sector_index  = olap1_sectors.LookUpSectorIndex(bra_subspace_index, bra_subspace_index);
-    int right_olap_sector_index = olap2_sectors.LookUpSectorIndex(ket_subspace_index, ket_subspace_index);
+    // Get olap sector indices
+    int left_olap_sector_index  = olap1_sectors.LookUpSectorIndex(out_bra_subspace_index, shared_subspace_index);
+    int right_olap_sector_index = olap2_sectors.LookUpSectorIndex(shared_subspace_index, out_ket_subspace_index);
 
     // do matrix multipication and add to the output sectors
     output_matrices.push_back(
@@ -179,7 +189,7 @@ int main(int argc, const char *argv[]) {
   // write out to file
   std::cout << "INFO: Writing to file " << run_parameters.output_filename << std::endl;
   shell::OutRadialStream os(run_parameters.output_filename,
-                            out_ket_space, out_ket_space, out_sectors,
+                            out_bra_space, out_ket_space, out_sectors,
                             out_operator_type);
   os.Write(output_matrices);
   os.Close();
