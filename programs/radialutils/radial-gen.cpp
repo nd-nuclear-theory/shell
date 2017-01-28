@@ -7,7 +7,7 @@
     + radial-gen --kinematic operator_type order analytic_basis_type orbital_file output_filename
       - operator_type={r,k}
     + radial-gen --overlaps scale_ratio analytic_basis_type bra_orbital_file [ket_orbital_file] output_filename
-    + radial-gen --identity orbital_file output_filename
+    + radial-gen --identity bra_orbital_file [ket_orbital_file] output_filename
 
   @note Currently only computes radial matrix elements between harmonic oscillator
   or Laguerre basis functions with identical bra and ket spaces.
@@ -31,6 +31,7 @@
   + 1/24/16 (pjf):
     - Add non-square overlap mode.
     - Add file existence checks.
+  + 1/27/16 (pjf): Add identity for non-square matrices
 
 ******************************************************************************/
 
@@ -79,7 +80,7 @@ void PrintUsage(char **argv) {
             << " --overlaps scale_ratio analytic_basis_type bra_orbital_file [ket_orbital_file] output_filename"
             << std::endl;
   std::cout << "       " << argv[0]
-            << " --identity orbital_file output_filename"
+            << " --identity bra_orbital_file [ket_orbital_file] output_filename"
             << std::endl;
 }
 
@@ -204,7 +205,8 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters) {
   }
 
   // ket orbital file -- only parse an argument if there were 6 arguments
-  if (run_parameters.mode == OperationMode::kOverlaps && (argc-1) == 6)
+  if ((run_parameters.mode == OperationMode::kOverlaps && (argc-1) == 6) ||
+      (run_parameters.mode == OperationMode::kIdentity && (argc-1) == 4))
   {
     std::istringstream parameter_stream(argv[arg++]);
     parameter_stream >> run_parameters.ket_orbital_filename;
