@@ -183,6 +183,15 @@ void SortEigensystem(Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>& eigensolver
 }
 
 ////////////////////////////////////////////////////////////////
+// Sort function for orbitals by (orbital_species,weight,l,j,n)
+////////////////////////////////////////////////////////////////
+bool cmp(const basis::OrbitalPNInfo& lhs, const basis::OrbitalPNInfo& rhs) {
+  auto lhs_labels = std::make_tuple(lhs.orbital_species, lhs.weight, lhs.l, lhs.j, lhs.n);
+  auto rhs_labels = std::make_tuple(rhs.orbital_species, rhs.weight, rhs.l, rhs.j, rhs.n);
+  return lhs_labels < rhs_labels;
+}
+
+////////////////////////////////////////////////////////////////
 // main program
 ////////////////////////////////////////////////////////////////
 int main(int argc, const char *argv[]) {
@@ -241,9 +250,11 @@ int main(int argc, const char *argv[]) {
                             shell::RadialOperatorType::kO);
   xs.Write(xform_matrices);
 
-  basis::OrbitalSpacePN output_space_pn(output_orbitals);
+  // sort orbitals and write out
+  std::sort(output_orbitals.begin(), output_orbitals.end(), cmp);
   std::ofstream output_orbital_s(run_parameters.output_orbital_file);
-  output_orbital_s << basis::OrbitalDefinitionStr(output_space_pn.OrbitalInfo(), true);
+  output_orbital_s << basis::OrbitalDefinitionStr(output_orbitals, true);
+  output_orbital_s.close();
 
   /* return code */
   return EXIT_SUCCESS;
