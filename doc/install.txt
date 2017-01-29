@@ -394,3 +394,13 @@ Latest versions are:
 
 But boost/1.62 requires gcc/5.2.0.  And python/3.5.2 requires
 gcc/4.9.2.  Sent request to NDCRC support...
+
+1/15/17 (mac): @NDCRC: NDCRC support built boost and python under
+gcc/6.2.0 and claims this provides compatible ompi + python + boost +
+gsl:
+
+  module load gcc/6.2.0
+  module load gsl/1.16
+  module load boost/1.63
+  module load ompi/2.0.1-gcc-6.2.0
+  module load python/3.6.0
