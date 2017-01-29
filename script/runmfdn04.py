@@ -6,7 +6,8 @@
     University of Notre Dame
 
     - 12/29/16 (mac): Created.
-      
+    - 1/29/17 (pjf): Updated for new truncation_mode parameter.
+
 """
 
 import mcscript
@@ -55,11 +56,13 @@ task = {
     "target_truncation" : None,
 
     # traditional oscillator many-body truncation
-    "ho_truncation" : True,
-    "Nv" : 0,
-    "Nmax" : 12,
-    "many_body_truncation" : "Nmax",
-    "Nstep" : 2,
+    "truncation_mode" : mfdn.k_truncation_mode_ho,
+    "truncation_parameters": {
+        "Nv" : 0,
+        "Nmax" : 12,
+        "many_body_truncation" : "Nmax",
+        "Nstep" : 2,
+        },
 
     # diagonalization parameters
     "Mj" : 0,
@@ -93,10 +96,10 @@ task = {
 task["descriptor"] = mfdn.task_descriptor_7(task)
 
 mfdn.set_up_orbitals(task)
-mfdn.set_up_radial_analytic(task)
+mfdn.set_up_radial(task)
 mfdn.generate_tbme(task)
 mfdn.run_mfdn_v14_b06(task)
-mfdn.save_mfdn_output(task)
+mfdn.save_mfdn_v14_output(task)
 
 ##################################################################
 # task control

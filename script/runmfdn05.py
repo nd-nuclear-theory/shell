@@ -6,7 +6,7 @@
     University of Notre Dame
 
     - 1/18/17 (mac): Created.
-      
+
 """
 
 import mcscript
@@ -33,7 +33,7 @@ hw_range = (15,25,5)
 hw_list = mcscript.utils.value_range(*hw_range)
 
 # hw -- log mesh
-## hw_log_range = (5,40,8)  
+## hw_log_range = (5,40,8)
 ## hw_list = mcscript.utils.log_range(*hw_log_range)
 
 # Nmax
@@ -52,7 +52,7 @@ interaction_coulomb_truncation_list = [
 #    # mj
 #    # cycle first on M, since decreasing M-space dimension within each nuclide/Nmax category
 #    # should be robust against walltime overruns
-#    for Mj in Mj_list  
+#    for Mj in Mj_list
 #    # nuclide
 #    for nuclide in nuclide_list
 #    # many-body-truncation
@@ -63,7 +63,7 @@ interaction_coulomb_truncation_list = [
 #    # scaling
 #    for hw in hw_list
 #    # Lawson
-#    for hwLawson in hwLawson_list 
+#    for hwLawson in hwLawson_list
 #    # source xform
 #    for hw_int in mcscript.auto_value(hw_int_list,[hw])
 #    for (interaction, coulomb, xform_cutoff_list) in interaction_tuple_list
@@ -98,11 +98,13 @@ task_list = [
         "target_truncation" : None,
 
         # traditional oscillator many-body truncation
-        "ho_truncation" : True,
-        "Nv" : 0,
-        "Nmax" : Nmax,
-        "many_body_truncation" : "Nmax",
-        "Nstep" : 2,
+        "truncation_mode" : mfdn.k_truncation_mode_ho,
+        "truncation_parameters": {
+            "Nv" : 0,
+            "Nmax" : Nmax,
+            "many_body_truncation" : "Nmax",
+            "Nstep" : 2,
+            },
 
         # diagonalization parameters
         "Mj" : 0,
@@ -152,10 +154,10 @@ def task_handler_v14_b06(task):
     """ Task handler for basic run with mfdn v14 b06.
     """
     mfdn.set_up_orbitals(task)
-    mfdn.set_up_radial_analytic(task)
+    mfdn.set_up_radial(task)
     mfdn.generate_tbme(task)
     mfdn.run_mfdn_v14_b06(task)
-    mfdn.save_mfdn_output(task)
+    mfdn.save_mfdn_v14_output(task)
 
 ##################################################################
 # task control
