@@ -138,7 +138,7 @@ task_list = [
 ##################################################################
 
 def task_pool(current_task):
-    pool = "Nmax{Nmax:02d}-Mj{Mj:3.1f}".format(**current_task)
+    pool = "Nmax{truncation_parameters[Nmax]:02d}-Mj{Mj:3.1f}".format(**current_task)
     return pool
 
 def task_mask (current_task):
