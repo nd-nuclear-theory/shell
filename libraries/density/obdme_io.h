@@ -74,12 +74,18 @@ class InOBDMEReader {
 
   // read info header
   void ReadInfoHeader();
+  void ReadInfoHeader1405();
+  void ReadInfoHeader1500();
 
   // read info
   void ReadInfo();
+  void ReadInfo1405();
+  void ReadInfo1500();
 
   // read data header
   void ReadDataHeader(std::ifstream& data_stream, int& data_line_count);
+  void ReadDataHeader1405(std::ifstream& data_stream, int& data_line_count);
+  void ReadDataHeader1500(std::ifstream& data_stream, int& data_line_count);
 
   // indexing accessors
   const basis::OrbitalSpaceLJPN& orbital_space() const {
@@ -98,6 +104,7 @@ class InOBDMEReader {
   int line_count_;
 
   // info file header
+  int version_number_;
   int max_K_;
   int num_proton_obdme_;
   int num_neutron_obdme_;

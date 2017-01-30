@@ -50,18 +50,82 @@ void InOBDMEReader::SetToIndexing(int order, basis::OrbitalSectorsLJPN& sectors)
 
 void InOBDMEReader::ReadInfoHeader() {
   std::string line;
-  int line_count_ = 0;
+  line_count_ = 0;
 
   // line 1: version
   {
     ++line_count_;
     std::getline(info_stream(), line);
     std::istringstream line_stream(line);
-    int version;
-    line_stream >> version;
+    line_stream >> version_number_;
     ParsingCheck(line_stream, line_count_, line);
-    assert(version == 1500);
   }
+
+  if (version_number_ == 1405) {
+    ReadInfoHeader1405();
+  } else if (version_number_ == 1500) {
+    ReadInfoHeader1500();
+  } else {
+    std::cerr << "ERROR: Unknown OBDME info file version" << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+}
+
+void InOBDMEReader::ReadInfoHeader1405() {
+  std::string line;
+
+  // make sure we didn't get here by mistake
+  assert(version_number_ == 1405);
+
+  // line 2: number of sp orbitals
+  {
+    int num_sp_orbitals;
+    ++line_count_;
+    std::getline(info_stream(), line);
+    std::istringstream line_stream(line);
+    line_stream >> num_sp_orbitals;
+    ParsingCheck(line_stream, line_count_, line);
+
+    // this is a silly way to check that the correct number of orbitals exist
+    basis::OrbitalSpacePN pn_space(orbital_space().OrbitalInfo());
+    assert(pn_space.GetSubspace(0).size() == num_sp_orbitals);
+    assert(pn_space.GetSubspace(1).size() == num_sp_orbitals);
+  }
+
+  // line 3: max K in multipole expansion
+  {
+    ++line_count_;
+    std::getline(info_stream(), line);
+    std::istringstream line_stream(line);
+    line_stream >> max_K_;
+    ParsingCheck(line_stream, line_count_, line);
+  }
+
+  // line 4: number of OBDMEs per type
+  {
+    ++line_count_;
+    std::getline(info_stream(), line);
+    std::istringstream line_stream(line);
+    line_stream >> num_proton_obdme_;
+    num_neutron_obdme_ = num_proton_obdme_;
+    ParsingCheck(line_stream, line_count_, line);
+  }
+
+  // line 5-6: comment line
+  {
+    ++line_count_;
+    std::getline(info_stream(), line);
+    ++line_count_;
+    std::getline(info_stream(), line);
+  }
+
+}
+
+void InOBDMEReader::ReadInfoHeader1500() {
+  std::string line;
+
+  // make sure we didn't get here by mistake
+  assert(version_number_ == 1500);
 
   // line 2: max K in multipole expansion
   {
@@ -100,11 +164,58 @@ void InOBDMEReader::ReadInfoHeader() {
   {
     ++line_count_;
     std::getline(info_stream(), line);
+    ++line_count_;
     std::getline(info_stream(), line);
   }
 }
 
 void InOBDMEReader::ReadInfo() {
+  // switch to the correct parsing function
+  if (version_number_ == 1405) {
+    ReadInfo1405();
+  } else if (version_number_ == 1500) {
+    ReadInfo1500();
+  } else {
+    std::cerr << "ERROR: Unknown OBDME info file version" << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+}
+
+void InOBDMEReader::ReadInfo1405() {
+  // make sure we haven't gotten here by mistake
+  assert(version_number_ == 1405);
+
+  // loop through lines and put them into obdme_info_
+  for (int i=0; i < num_proton_obdme_; ++i) {
+    std::string line;
+    int index, na, la, twoja, nb, lb, twojb, K;
+
+    ++line_count_;
+    std::getline(info_stream(), line);
+    std::istringstream line_stream(line);
+    line_stream >> index >> na >> la >> twoja >> nb >> lb >> twojb >> K;
+    ParsingCheck(line_stream, line_count_, line);
+
+    basis::FullOrbitalLabels orbital_a(basis::OrbitalSpeciesPN::kP, na, la, HalfInt(twoja,2));
+    basis::FullOrbitalLabels orbital_b(basis::OrbitalSpeciesPN::kP, nb, lb, HalfInt(twojb,2));
+
+    obdme_info_.emplace_back(orbital_a, orbital_b, K);
+  }
+
+  // version 1405 only stores one set of info for both species
+  // run through and copy the InfoLines changing only the class
+  for (int i=0; i < num_neutron_obdme_; ++i) {
+    InfoLine fake_line = obdme_info_[i];
+    std::get<0>(fake_line.bra_labels) = basis::OrbitalSpeciesPN::kN;
+    std::get<0>(fake_line.ket_labels) = basis::OrbitalSpeciesPN::kN;
+    obdme_info_.push_back(fake_line);
+  }
+}
+
+void InOBDMEReader::ReadInfo1500() {
+  // make sure we haven't gotten here by mistake
+  assert(version_number_ == 1500);
+
   // loop through lines and put them into obdme_info_
   for (int i=0; i < num_proton_obdme_ + num_neutron_obdme_; ++i) {
     std::string line;
@@ -172,17 +283,16 @@ void InOBDMEReader::ReadDataHeader(std::ifstream& data_stream, int& data_line_co
   int num_protons, num_neutrons;
   int bra_seq, ket_seq, bra_n, ket_n;
   HalfInt bra_J, ket_J, bra_T, ket_T;
-  int total_obdmes;
+  int version;
 
   // line 1: version
   {
     ++data_line_count;
     std::getline(data_stream, line);
     std::istringstream line_stream(line);
-    int version;
     line_stream >> version;
     ParsingCheck(line_stream, data_line_count, line);
-    assert(version == 1500);
+    assert(version == version_number_);
   }
 
   // line 2: number of particles per class
@@ -221,8 +331,18 @@ void InOBDMEReader::ReadDataHeader(std::ifstream& data_stream, int& data_line_co
     ket_T = HalfInt(ket_2T, 2);
   }
 
-  // line 5: total number of OBDMEs
-  {
+  // line 5: number of OBDMEs
+  if (version == 1405) {
+    int proton_obdmes, neutron_obdmes;
+    ++data_line_count;
+    std::getline(data_stream, line);
+    std::istringstream line_stream(line);
+    line_stream >> proton_obdmes >> neutron_obdmes;
+    ParsingCheck(line_stream, data_line_count, line);
+    assert(proton_obdmes == num_proton_obdme_);
+    assert(neutron_obdmes == num_neutron_obdme_);
+  } else if (version == 1500){
+    int total_obdmes;
     ++data_line_count;
     std::getline(data_stream, line);
     std::istringstream line_stream(line);
