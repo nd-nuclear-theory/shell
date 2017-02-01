@@ -91,7 +91,7 @@
     shell package example code generate_input.py (created 11/7/16).
   - 12/27/16 (mac): Rough in scripting of MFDn v14 run.
   - 12/29/16 (mac): Complete basic scripting for MFDn v14 oscillator-type runs.
-  - 1/22-28/16 (pjf): Implement iterated natural orbitals.
+  - 1/22-28/17 (pjf): Implement iterated natural orbitals.
     + Turn k_basis_mode_* into Python enum BasisMode
     + Add TruncationMode enumeration
     + Add FilenameConfiguration to hold filename patterns
@@ -101,7 +101,8 @@
       which states are included in the single and two-body bases.
     + MFDn is now run in a temporary work/ subdirectory. This ensures that MFDn
       can't get confused by earlier natural orbital runs.
-  - 1/30/16 (mac): Downgrade syntax to python 3.4.
+  - 1/30/17 (mac): Downgrade syntax to python 3.4.
+  - 1/31/17 (mac): Fix one-body truncation on Hamiltonian tbme files.
 """
 
 import datetime
@@ -206,19 +207,31 @@ k_hbar_c = 197.327  # (hbar c)~197.327 Mev fm
 def weight_max_string(truncation):
     """ Convert (rank,cutoff) to "wp wn wpp wnn wpn" string.
 
+    Valid truncations:
+        ("ob",w1b)
+        ("tb",w2b)
+        (w1b,w2b)
+        (wp,wn,wpp,wnn,wpn) -- TODO
+
     >>> weight_max_string(("ob",4))
         "4 4 8 8 8"
     >>> weight_max_string(("tb",4))
         "4 4 4 4 4"
     """
 
-    (code, N) = truncation
-    if (code == "ob"):
-        cutoffs = (N,2*N)
-    elif (code == "tb"):
-        cutoffs = (N,N)
+    if (truncation[0] == "ob"):
+        (code, N) = truncation
+        cutoffs = (N,N,2*N,2*N,2*N)
+    elif (truncation[0] == "tb"):
+        (code, N) = truncation
+        cutoffs = (N,N,N,N,N)
+    elif (len(truncation)==2):
+        (w1,w2) = truncation
+        cutoffs = (w1,w1,w2,w2,w2)
+    elif (len(truncation)==5):
+        cutoffs = truncation
 
-    return "{0[0]} {0[0]} {0[1]} {0[1]} {0[1]}".format(cutoffs)
+    return "{0[0]} {0[1]} {0[2]} {0[3]} {0[4]}".format(cutoffs)
 
 def oscillator_length(hw):
     """ Calculate oscillator length for given oscillator frequency.
@@ -772,8 +785,12 @@ def generate_tbme(task):
         if (task["truncation_mode"] is k_truncation_mode_ho):
             truncation_parameters = task["truncation_parameters"]
             if (truncation_parameters["many_body_truncation"]=="Nmax"):
+                # important: truncation of orbitals file, one-body
+                # truncation of interaction file, and MFDn
+                # single-particle shells (beware 1-based) must agree
+                N1_max = truncation_parameters["Nv"]+truncation_parameters["Nmax"]
                 N2_max = 2*truncation_parameters["Nv"]+truncation_parameters["Nmax"]
-                target_weight_max = weight_max_string(("tb",N2_max))
+                target_weight_max = weight_max_string((N1_max,N2_max))
             elif (truncation_parameters["many_body_truncation"]=="FCI"):
                 N1_max = truncation_parameters["Nmax"]
                 target_weight_max = weight_max_string(("ob",N1_max))
