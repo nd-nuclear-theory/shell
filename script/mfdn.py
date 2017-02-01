@@ -101,7 +101,7 @@
       which states are included in the single and two-body bases.
     + MFDn is now run in a temporary work/ subdirectory. This ensures that MFDn
       can't get confused by earlier natural orbital runs.
-
+  - 1/30/16 (mac): Downgrade syntax to python 3.4.
 """
 
 import datetime
@@ -463,7 +463,7 @@ def task_descriptor_7(task):
         mixed_parity_indicator=mixed_parity_indicator,
         fci_indicator=fci_indicator,
         natural_orbital_indicator=natural_orbital_indicator(max_natural_orbital_iteration),
-        **task, **truncation_parameters
+        **mcscript.utils.dict_union(task,truncation_parameters)
         )
 
     return descriptor
@@ -1005,7 +1005,7 @@ def run_mfdn_v14_b06(task):
     lines.append("{nuclide[1]:d}  # protons (class 2 particles)".format(**task))
     lines.append("1 {Nshell:d}  # min, max # S.P. shells for class 1 particles".format(Nshell=Nshell,**task))
     lines.append("1 {Nshell:d}  # min, max # S.P. shells for class 2 particles".format(Nshell=Nshell,**task))
-    lines.append("{Nmin:d} {Nmax:d} {Nstep:d}  # N_min, N_max, delta_N".format(Nmin=Nmin,**task,**truncation_parameters))
+    lines.append("{Nmin:d} {Nmax:d} {Nstep:d}  # N_min, N_max, delta_N".format(Nmin=Nmin,**mcscript.utils.dict_union(task,truncation_parameters)))
     lines.append("{:d}   # Total 2 M_j".format(twice_Mj))
     lines.append("{eigenvectors:d} {lanczos:d} {initial_vector:d} {tolerance:e}  # number of eigenvalues/vectors, max number of its, ...)".format(**task))
     lines.append("{:d} {:d}  # rank of input Hamiltonian/interaction".format(2,2))
@@ -1173,9 +1173,8 @@ def save_mfdn_v14_output(task):
         [
             "tar", "zcvf", archive_filename,
             "--transform=s,work/,,",
-            "--show-transformed",
-            *archive_file_list
-        ]
+            "--show-transformed"
+        ] + archive_file_list
     )
 
     # copy results out (if in multi-task run)
