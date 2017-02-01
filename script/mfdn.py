@@ -77,7 +77,6 @@
 
         # natural orbital parameters
         "natorb_iteration" (int): 0-based iteration number
-        "natorb_max_iteration" (int): maximum natural orbital iteration number
         "natorb_base_state" (int): MFDn sequence number of state off which to
             build natural orbitals
 
@@ -469,13 +468,14 @@ def task_descriptor_7(task):
         fci_indicator = ""
     mixed_parity_indicator = mcscript.utils.ifelse(truncation_parameters["Nstep"]==1,"x","")
     coulomb_flag = int(task["use_coulomb"])
-    max_natural_orbital_iteration = task.get("natorb_max_iteration")
+    natural_orbital_iteration = task.get("natorb_iteration")
+    natural_orbital_str = ("-natorb" if (natural_orbital_indicator is not None) else "")
 
     descriptor = template_string.format(
         coulomb_flag=coulomb_flag,
         mixed_parity_indicator=mixed_parity_indicator,
         fci_indicator=fci_indicator,
-        natural_orbital_indicator=natural_orbital_indicator(max_natural_orbital_iteration),
+        natural_orbital_indicator=natural_orbital_str,
         **mcscript.utils.dict_union(task,truncation_parameters)
         )
 
