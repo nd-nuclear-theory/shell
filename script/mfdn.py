@@ -100,6 +100,7 @@
       which states are included in the single and two-body bases.
     + MFDn is now run in a temporary work/ subdirectory. This ensures that MFDn
       can't get confused by earlier natural orbital runs.
+    + Rename save_mfdn_output -> save_mfdn_v14_output.
   - 1/30/17 (mac): Downgrade syntax to python 3.4.
   - 1/31/17 (mac): Fix one-body truncation on Hamiltonian tbme files.
 """
@@ -1167,10 +1168,11 @@ def save_mfdn_v14_output(task):
         filenames.radial_olap_coul_filename(natural_orbital_iteration),
         ]
     # natural orbital information
-    archive_file_list += [
-        filenames.natorb_info_filename(natural_orbital_iteration),
-        filenames.natorb_obdme_filename(natural_orbital_iteration),
-        ]
+    if natural_orbital_iteration not in {None}:
+        archive_file_list += [
+            filenames.natorb_info_filename(natural_orbital_iteration),
+            filenames.natorb_obdme_filename(natural_orbital_iteration),
+            ]
     if (natural_orbital_iteration not in {None,0}):
         archive_file_list += [
             filenames.natorb_xform_filename(natural_orbital_iteration),
