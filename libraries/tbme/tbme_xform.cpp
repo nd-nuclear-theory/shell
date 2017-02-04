@@ -131,7 +131,7 @@ namespace shell {
     if (two_body_species != basis::TwoBodySpeciesPN::kPN)
       {
         int phase = - ParitySign(J-a1.j()-a2.j());
-        matrix_element += TwoBodyOverlapProduct(
+        matrix_element += phase * TwoBodyOverlapProduct(
             radial_source_orbital_space,radial_target_orbital_space,radial_sectors,radial_matrices,
             a1,a2,a2p,a1p
           );
@@ -172,14 +172,14 @@ namespace shell {
     // #pragma omp parallel for collapse(2)
     for (int bra_index = 0; bra_index < bra_subspace_size; ++bra_index)
       for (int ket_index = 0; ket_index < ket_subspace_size; ++ket_index)
-	{
+        {
 
-	  // construct states
-	  basis::TwoBodyStateJJJPN bra(bra_subspace,bra_index);
-	  basis::TwoBodyStateJJJPN ket(ket_subspace,ket_index);
+          // construct states
+          basis::TwoBodyStateJJJPN bra(bra_subspace,bra_index);
+          basis::TwoBodyStateJJJPN ket(ket_subspace,ket_index);
 
-	  // calculate matrix element (pn or AS)
-	  double matrix_element = TwoBodyOverlap(
+          // calculate matrix element (pn or AS)
+          double matrix_element = TwoBodyOverlap(
               radial_source_orbital_space,radial_target_orbital_space,radial_sectors,radial_matrices,
               bra,ket
             );
@@ -193,9 +193,9 @@ namespace shell {
                 matrix_element *= 1/(sqrt(2.));
             }
 
-	  // store matrix element
-	  matrix(bra_index,ket_index) = matrix_element;
-	}
+          // store matrix element
+          matrix(bra_index,ket_index) = matrix_element;
+        }
 
     return matrix;
 
