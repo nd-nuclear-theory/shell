@@ -457,7 +457,7 @@ def task_descriptor_7(task):
         # traditional oscillator run
         template_string = (
             "Z{nuclide[0]}-N{nuclide[1]}-{interaction}-coul{coulomb_flag:d}"
-            "-hw{hw:.3f}"
+            "-hw{hw:06.3f}"
             "-a_cm{a_cm:g}"
             "-Nmax{Nmax:02d}{mixed_parity_indicator}{fci_indicator}-Mj{Mj:03.1f}"
             "-lan{lanczos:d}-tol{tolerance:.1e}"
