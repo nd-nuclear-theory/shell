@@ -26,8 +26,8 @@
         "hw" (float): hw of basis
 
         # transformation parameters
-        "xform_truncation_int" (tuple): transform cutoff for interaction, as tuple ("ob"|"tb",N)
-        "xform_truncation_coul" (tuple): transform cutoff for Coulomb, as tuple ("ob"|"tb",N)
+        "xform_truncation_int" (tuple, optional): transform cutoff for interaction, as tuple ("ob"|"tb",N)
+        "xform_truncation_coul" (tuple, optional): transform cutoff for Coulomb, as tuple ("ob"|"tb",N)
         "hw_coul_rescaled" (float): hw to which to rescale Coulomb TBMEs before two-body
             transformation (None: use hw of basis)
              - direct oscillator run: naturally hw to avoid any two-body transformation
@@ -103,6 +103,10 @@
     + Rename save_mfdn_output -> save_mfdn_v14_output.
   - 1/30/17 (mac): Downgrade syntax to python 3.4.
   - 1/31/17 (mac): Fix one-body truncation on Hamiltonian tbme files.
+  - 2/03/17 (pjf):
+    + Make "xform_truncation_int" and "xform_truncation_coul" optional.
+    + Fix save_mfdn_v14_output() when Coulomb is turned off.
+    + Fix natural orbital indicator in task_descriptor_7.
 """
 
 import datetime
@@ -470,7 +474,7 @@ def task_descriptor_7(task):
     mixed_parity_indicator = mcscript.utils.ifelse(truncation_parameters["Nstep"]==1,"x","")
     coulomb_flag = int(task["use_coulomb"])
     natural_orbital_iteration = task.get("natorb_iteration")
-    natural_orbital_str = ("-natorb" if (natural_orbital_indicator is not None) else "")
+    natural_orbital_str = ("-natorb" if (natural_orbital_iteration is not None) else "")
 
     descriptor = template_string.format(
         coulomb_flag=coulomb_flag,
@@ -667,7 +671,10 @@ def set_up_radial_analytic(task):
                 mode = mcscript.call.serial
             )
         else:
-            b_ratio = math.sqrt(task["hw_coul_rescaled"]/task["hw"])
+            if task.get("hw_coul_rescaled") is None:
+                b_ratio = 1
+            else:
+                b_ratio = math.sqrt(task["hw_coul_rescaled"]/task["hw"])
             mcscript.call(
                 [
                     configuration.shell_filename("radial-gen"),
@@ -771,6 +778,12 @@ def generate_tbme(task):
     hw_coul_rescaled = task["hw_coul_rescaled"]
     if (hw_coul_rescaled is None):
         hw_coul_rescaled = hw
+    xform_truncation_int = task.get("xform_truncation_int")
+    if (xform_truncation_int is None):
+        xform_truncation_int = task["truncation_int"]
+    xform_truncation_coul = task.get("xform_truncation_coul")
+    if (xform_truncation_coul is None):
+        xform_truncation_coul = task["truncation_coul"]
 
     # accumulate h2mixer input lines
     lines = []
@@ -837,7 +850,7 @@ def generate_tbme(task):
     if (task["basis_mode"]==k_basis_mode_direct and natural_orbital_iteration in {None,0}):
         lines.append("define-source input VNN {VNN_filename}".format(VNN_filename=VNN_filename,**task))
     else:
-        xform_weight_max_int = weight_max_string(task["xform_truncation_int"])
+        xform_weight_max_int = weight_max_string(xform_truncation_int)
         lines.append("define-source xform VNN {VNN_filename} {xform_weight_max_int} {radial_olap_int_filename}".format(
             VNN_filename=VNN_filename,
             xform_weight_max_int=xform_weight_max_int,
@@ -860,7 +873,7 @@ def generate_tbme(task):
         if (task["basis_mode"] in {k_basis_mode_direct,k_basis_mode_dilated} and natural_orbital_iteration in {None,0}):
             lines.append("define-source input VC_unscaled {VC_filename}".format(VC_filename=VC_filename,**task))
         else:
-            xform_weight_max_coul = weight_max_string(task["xform_truncation_coul"])
+            xform_weight_max_coul = weight_max_string(xform_truncation_coul)
             lines.append("define-source xform VC_unscaled {VC_filename} {xform_weight_max_coul} {radial_olap_coul_filename}".format(
                 VC_filename=VC_filename,
                 xform_weight_max_coul=xform_weight_max_coul,
@@ -1157,7 +1170,6 @@ def save_mfdn_v14_output(task):
     # orbital information
     archive_file_list += [
         filenames.orbitals_int_filename(natural_orbital_iteration),
-        filenames.orbitals_coul_filename(natural_orbital_iteration),
         filenames.orbitals_filename(natural_orbital_iteration),
         ]
     # transformation information
@@ -1165,7 +1177,12 @@ def save_mfdn_v14_output(task):
         filenames.radial_xform_filename(natural_orbital_iteration),
         # filenames.radial_me_filename(natural_orbital_iteration, operator_type, power),
         filenames.radial_olap_int_filename(natural_orbital_iteration),
-        filenames.radial_olap_coul_filename(natural_orbital_iteration),
+        ]
+    # Coulomb information:
+    if task["use_coulomb"]:
+        archive_file_list += [
+            filenames.orbitals_coul_filename(natural_orbital_iteration),
+            filenames.radial_olap_coul_filename(natural_orbital_iteration),
         ]
     # natural orbital information
     if natural_orbital_iteration not in {None}:
