@@ -56,6 +56,7 @@
         "initial_vector" (int): initial vector code for mfdn
         "lanczos" (int): lanczos iterations
         "tolerance" (float): diagonalization tolerance parameter
+        "ndiag" (int): number of spare diagonal nodes
         "partition_filename" (str): filename for partition file to use with MFDn (None: no
             partition file); for now absolute path is required, but path search protocol may
             be restored in future
@@ -103,10 +104,13 @@
     + Rename save_mfdn_output -> save_mfdn_v14_output.
   - 1/30/17 (mac): Downgrade syntax to python 3.4.
   - 1/31/17 (mac): Fix one-body truncation on Hamiltonian tbme files.
-  - 2/03/17 (pjf):
+  - 2/3/17 (pjf):
     + Make "xform_truncation_int" and "xform_truncation_coul" optional.
     + Fix save_mfdn_v14_output() when Coulomb is turned off.
     + Fix natural orbital indicator in task_descriptor_7.
+  - 2/10/17 (pjf):
+    + Fix "fci" -> "-fci" flag
+    + Add ndiag parameter to task dictionary.
 """
 
 import datetime
@@ -468,7 +472,7 @@ def task_descriptor_7(task):
 
     truncation_parameters = task["truncation_parameters"]
     if (truncation_parameters["many_body_truncation"]=="fci"):
-        fci_indicator = "fci"
+        fci_indicator = "-fci"
     else:
         fci_indicator = ""
     mixed_parity_indicator = mcscript.utils.ifelse(truncation_parameters["Nstep"]==1,"x","")
@@ -1023,7 +1027,9 @@ def run_mfdn_v14_b06(task):
     else:
         hw_for_trans = 0  # disable MFDn hard-coded oscillator one-body observables
     ## ndiag = int(os.environ.get("MFDN_NDIAG",0))  # allows override for spares, not so elegant
-    ndiag = 0
+    ndiag = task.get("ndiag")
+    if ndiag is None:
+        ndiag = 0
     if (truncation_parameters["Nstep"]==2):
         Nmin = truncation_parameters["Nmax"]%2
     else:
