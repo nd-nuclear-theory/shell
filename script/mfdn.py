@@ -103,10 +103,12 @@
     + Rename save_mfdn_output -> save_mfdn_v14_output.
   - 1/30/17 (mac): Downgrade syntax to python 3.4.
   - 1/31/17 (mac): Fix one-body truncation on Hamiltonian tbme files.
-  - 2/03/17 (pjf):
+  - 2/3/17 (pjf):
     + Make "xform_truncation_int" and "xform_truncation_coul" optional.
     + Fix save_mfdn_v14_output() when Coulomb is turned off.
     + Fix natural orbital indicator in task_descriptor_7.
+  - 2/10/17 (pjf):
+    + Fix "fci" -> "-fci" flag
 """
 
 import datetime
@@ -468,7 +470,7 @@ def task_descriptor_7(task):
 
     truncation_parameters = task["truncation_parameters"]
     if (truncation_parameters["many_body_truncation"]=="fci"):
-        fci_indicator = "fci"
+        fci_indicator = "-fci"
     else:
         fci_indicator = ""
     mixed_parity_indicator = mcscript.utils.ifelse(truncation_parameters["Nstep"]==1,"x","")
