@@ -974,6 +974,25 @@ def generate_tbme(task):
         lines.append("define-target work/tbme-J.bin")
         lines.append("  add-source J {:e}".format(1))
 
+    # relative quanta
+    if ("N-intrinsic" in task["observable_sets"]):
+        # Note: For now, only calculate the number of intrinsic quanta
+        # for oscillator length corresponding to that of the
+        # diagonalization basis.
+        hw_intr = hw
+        coef_Ursqr = (A-1)/(4*A)*(hw_intr/hw)
+        coef_Vr1r2 = -1/(2*A)*(hw_intr/hw)
+        coef_Uksqr = (A-1)/(2*A)*(hw/hw_intr)
+        coef_Vk1k2 = -1/A*(hw/hw_intr)
+        coef_identity = -3/2*(A-1)
+        lines.append("define-target work/tbme-Nintr.bin")
+        lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
+        lines.append("  add-source Vr1r2 {:e}".format(coef_Vr1r2))
+        lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
+        lines.append("  add-source Vk1k2 {:e}".format(coef_Vk1k2))
+        lines.append("  add-source identity {:e}".format(coef_identity))
+
+
     # ensure terminal line
     lines.append("")
 
