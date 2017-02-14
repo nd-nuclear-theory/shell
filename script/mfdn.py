@@ -916,10 +916,10 @@ def generate_tbme(task):
     #
     # These are the "a_cm" terms from the Hamiltonian (as above), but
     # without including the factor of "a_cm".
-    coef_Uksqr = 1/(2*A)*(hw/hw_cm)
-    coef_Vk1k2 = 1/A*(hw/hw_cm)
     coef_Ursqr = 1/(2*A)*(hw_cm/hw)
     coef_Vr1r2 = 1/A*(hw_cm/hw)
+    coef_Uksqr = 1/(2*A)*(hw/hw_cm)
+    coef_Vk1k2 = 1/A*(hw/hw_cm)
     coef_identity = -3/2
     lines.append("define-target work/tbme-Ncm.bin")
     lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
@@ -980,8 +980,8 @@ def generate_tbme(task):
         # for oscillator length corresponding to that of the
         # diagonalization basis.
         hw_intr = hw
-        coef_Ursqr = (A-1)/(4*A)*(hw_intr/hw)
-        coef_Vr1r2 = -1/(2*A)*(hw_intr/hw)
+        coef_Ursqr = (A-1)/(2*A)*(hw_intr/hw)
+        coef_Vr1r2 = -1/A*(hw_intr/hw)
         coef_Uksqr = (A-1)/(2*A)*(hw/hw_intr)
         coef_Vk1k2 = -1/A*(hw/hw_intr)
         coef_identity = -3/2*(A-1)
@@ -990,6 +990,17 @@ def generate_tbme(task):
         lines.append("  add-source Vr1r2 {:e}".format(coef_Vr1r2))
         lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
         lines.append("  add-source Vk1k2 {:e}".format(coef_Vk1k2))
+        lines.append("  add-source identity {:e}".format(coef_identity))
+
+    # oscillator quanta
+    if ("N-total" in task["observable_sets"]):
+        hw_intr = hw
+        coef_Ursqr = (1/2)*(hw_intr/hw)
+        coef_Uksqr = (1/2)*(hw/hw_intr)
+        coef_identity = -3/2*A
+        lines.append("define-target work/tbme-Ntot.bin")
+        lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
+        lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
         lines.append("  add-source identity {:e}".format(coef_identity))
 
 
@@ -1077,6 +1088,10 @@ def run_mfdn_v14_b06(task):
             obs_basename_list += ["tbme-VC"]
     if ("am-sqr" in task["observable_sets"]):
         obs_basename_list += ["tbme-L","tbme-Sp","tbme-Sn","tbme-S","tbme-J"]
+    if ("N-intrinsic" in task["observable_sets"]):
+        obs_basename_list += ["tbme-Nintr"]
+    if ("N-total" in task["observable_sets"]):
+        obs_basename_list += ["tbme-Ntot"]
 
     # tbo: log tbo names in separate file to aid future data analysis
     mcscript.utils.write_input("tbo_names.dat",input_lines=obs_basename_list)
