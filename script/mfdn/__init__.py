@@ -10,6 +10,8 @@
         "use_coulomb" (bool): whether or not to include Coulomb
         "a_cm" (float): coefficient of N_cm for Lawson term
         "hw_cm" (float): hw of N_cm for Lawson term (None: use hw of basis)
+        "hamiltonian" (CoefficientDict, optional): specification of Hamiltonian as a
+            CoefficientDict of two-body operators passed as sources to h2mixer (see mfdn.operators)
 
         # input TBME parameters
         "truncation_int" (tuple): input interaction TBME cutoff, as tuple ("ob"|"tb",N)
@@ -67,6 +69,8 @@
         "save_obdme" (bool): whether or not to save obdme files in archive
 
         # two-body observables
+        "observables" (dict of {"basename": CoefficientDict}): additional observable definitions
+            (see mfdn.operators)
         "observable_sets" (list of str): codes for predefined observable sets to include
             "H-components": Hamiltonian terms
             "am-sqr": squared angular momenta
@@ -124,6 +128,7 @@ import enum
 import mcscript
 
 from .utils import *
+import mfdn.operators
 
 ################################################################
 # radial basis modes
@@ -722,6 +727,51 @@ def generate_tbme(task):
     if (xform_truncation_coul is None):
         xform_truncation_coul = task["truncation_coul"]
 
+    # accumulate h2mixer targets
+    targets = {}
+
+    # target: Hamiltonian
+    if (task.get("hamiltonian")):
+        targets["tbme-H"] = task["hamiltonian"]
+    else:
+        targets["tbme-H"] = mfdn.operators.Hamiltonian(
+            A=A, hw=hw, a_cm=a_cm, bsqr_intr=hw_cm/hw,
+            use_coulomb=task["use_coulomb"], bsqr_coul=hw_coul_rescaled/hw_coul
+        )
+
+    # accumulate observables
+    if (task.get("observables")):
+        targets.update(task.get("observables"))
+
+    # target: radius squared
+    if ("tbme-rrel2" not in targets.keys()):
+        targets["tbme-rrel2"] = mfdn.operators.rrel2(A, hw)
+    # target: Ncm
+    if ("tbme-Ncm" not in targets.keys()):
+        targets["tbme-Ncm"] = mfdn.operators.Ncm(A, hw/hw_cm)
+
+    # optional observable sets
+    # Hamiltonian components
+    if ("H-components" in task["observable_sets"]):
+        # target: Trel (diagnostic)
+        targets["tbme-Trel"] = mfdn.operators.Trel(A, hw)
+        # target: VNN (diagnostic)
+        targets["tbme-VNN"] = mfdn.operators.VNN()
+        # target: VC (diagnostic)
+        if (task["use_coulomb"]):
+            targets["tbme-VC"] = mfdn.operators.VC(hw_coul_rescaled/hw_coul)
+    # squared angular momenta
+    if ("am-sqr" in task["observable_sets"]):
+        targets["tbme-L"] = mfdn.operators.L()
+        targets["tbme-Sp"] = mfdn.operators.Sp()
+        targets["tbme-Sn"] = mfdn.operators.Sn()
+        targets["tbme-S"] = mfdn.operators.S()
+        targets["tbme-J"] = mfdn.operators.J()
+
+    # get set of required sources
+    required_sources = set()
+    required_sources.update(*[op.keys() for op in targets.values()])
+
     # accumulate h2mixer input lines
     lines = []
 
@@ -768,38 +818,37 @@ def generate_tbme(task):
             lines.append("define-radial-operator {} {} {}".format(operator_type,power,radial_me_filename))
     lines.append("")
 
-    # sources: identity and kinematic operators
-    lines.append("define-source operator identity")
-    lines.append("define-source operator Ursqr")
-    lines.append("define-source operator Vr1r2")
-    lines.append("define-source operator Uksqr")
-    lines.append("define-source operator Vk1k2")
+    # sources: h2mixer built-ins
+    builtin_sources = (mfdn.operators.kinematic_operator_set | mfdn.operators.angular_momentum_operator_set)
+    for source in sorted(builtin_sources & required_sources):
+        lines.append("define-source operator " + source)
     lines.append("")
 
     # sources: VNN
-    VNN_filename = configuration.interaction_filename(
-        "{}-{}-{:g}.bin".format(
-            task["interaction"],
-            mcscript.utils.dashify(task["truncation_int"]),
-            task["hw_int"]
+    if ("VNN" in required_sources):
+        VNN_filename = configuration.interaction_filename(
+            "{}-{}-{:g}.bin".format(
+                task["interaction"],
+                mcscript.utils.dashify(task["truncation_int"]),
+                task["hw_int"]
+            )
         )
-    )
-    if (task["basis_mode"]==k_basis_mode_direct and natural_orbital_iteration in {None,0}):
-        lines.append("define-source input VNN {VNN_filename}".format(VNN_filename=VNN_filename,**task))
-    else:
-        xform_weight_max_int = weight_max_string(xform_truncation_int)
-        lines.append("define-source xform VNN {VNN_filename} {xform_weight_max_int} {radial_olap_int_filename}".format(
-            VNN_filename=VNN_filename,
-            xform_weight_max_int=xform_weight_max_int,
-            radial_olap_int_filename=filenames.radial_olap_int_filename(natural_orbital_iteration),
-            **task
-        ))
+        if (task["basis_mode"]==k_basis_mode_direct and natural_orbital_iteration in {None,0}):
+            lines.append("define-source input VNN {VNN_filename}".format(VNN_filename=VNN_filename,**task))
+        else:
+            xform_weight_max_int = weight_max_string(xform_truncation_int)
+            lines.append("define-source xform VNN {VNN_filename} {xform_weight_max_int} {radial_olap_int_filename}".format(
+                VNN_filename=VNN_filename,
+                xform_weight_max_int=xform_weight_max_int,
+                radial_olap_int_filename=filenames.radial_olap_int_filename(natural_orbital_iteration),
+                **task
+            ))
 
     # sources: Coulomb
     #
     # Note: This is the "unscaled" Coulomb, still awaiting the scaling
     # factor from dilation.
-    if (task["use_coulomb"]):
+    if ("VC_unscaled" in required_sources):
         VC_filename = configuration.interaction_filename(
             "{}-{}-{:g}.bin".format(
                 "VC",
@@ -821,121 +870,12 @@ def generate_tbme(task):
     lines.append("")
 
 
-    # target: Hamiltonian
-    coef_Ursqr = 1/(2*A)*a_cm*(hw_cm/hw)
-    coef_Vr1r2 = 1/A*a_cm*(hw_cm/hw)
-    coef_Uksqr = (A-1)/(2*A)*hw+1/(2*A)*a_cm*(hw/hw_cm)
-    coef_Vk1k2 = -1/A*hw+1/A*a_cm*(hw/hw_cm)
-    coef_identity = -3/2*a_cm
-    lines.append("define-target work/tbme-H.bin")
-    lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
-    lines.append("  add-source Vr1r2 {:e}".format(coef_Vr1r2))
-    lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
-    lines.append("  add-source Vk1k2 {:e}".format(coef_Vk1k2))
-    lines.append("  add-source identity {:e}".format(coef_identity))
-    lines.append("  add-source VNN {}".format(1.))
-    if (task["use_coulomb"]):
-        coef_VC = math.sqrt(hw_coul_rescaled/hw_coul)
-        lines.append("  add-source VC_unscaled {:e}".format(coef_VC))
-
-    # target: radius squared
-    coef_Ursqr = (A-1)*(oscillator_length(hw)/A)**2
-    coef_Vr1r2 = -2*(oscillator_length(hw)/A)**2
-    lines.append("define-target work/tbme-rrel2.bin")
-    lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
-    lines.append("  add-source Vr1r2 {:e}".format(coef_Vr1r2))
-
-    # target: NCM
-    #
-    # These are the "a_cm" terms from the Hamiltonian (as above), but
-    # without including the factor of "a_cm".
-    coef_Ursqr = 1/(2*A)*(hw_cm/hw)
-    coef_Vr1r2 = 1/A*(hw_cm/hw)
-    coef_Uksqr = 1/(2*A)*(hw/hw_cm)
-    coef_Vk1k2 = 1/A*(hw/hw_cm)
-    coef_identity = -3/2
-    lines.append("define-target work/tbme-Ncm.bin")
-    lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
-    lines.append("  add-source Vr1r2 {:e}".format(coef_Vr1r2))
-    lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
-    lines.append("  add-source Vk1k2 {:e}".format(coef_Vk1k2))
-    lines.append("  add-source identity {:e}".format(coef_identity))
-
-    # optional observable sets
-
-    # Hamiltonian components
-    if ("H-components" in task["observable_sets"]):
-
-        # target: Trel (diagnostic)
-        #
-        # These are the "non-a_cm" terms from the Hamiltonian (as above).
-        coef_Uksqr = (A-1)/(2*A)*hw
-        coef_Vk1k2 = -1/A*hw
-        lines.append("define-target work/tbme-Trel.bin")
-        lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
-        lines.append("  add-source Vk1k2 {:e}".format(coef_Vk1k2))
-
-        # target: VNN (diagnostic)
-        lines.append("define-target work/tbme-VNN.bin")
-        lines.append("  add-source VNN {}".format(1.))
-
-        # target: VC (diagnostic)
-        if (task["use_coulomb"]):
-            lines.append("define-target work/tbme-VC.bin")
-            coef_VC = math.sqrt(hw_coul_rescaled/hw_coul)
-            lines.append("  add-source VC_unscaled {:e}".format(coef_VC))
-
-    # squared angular momenta
-    if ("am-sqr" in task["observable_sets"]):
-
-        # sources: squared angular momentum operators
-        lines.append("define-source operator L")
-        lines.append("define-source operator Sp")
-        lines.append("define-source operator Sn")
-        lines.append("define-source operator S")
-        lines.append("define-source operator J")
-
-        # targets: squared angular momentum operators
-        lines.append("define-target work/tbme-L.bin")
-        lines.append("  add-source L {:e}".format(1))
-        lines.append("define-target work/tbme-Sp.bin")
-        lines.append("  add-source Sp {:e}".format(1))
-        lines.append("define-target work/tbme-Sn.bin")
-        lines.append("  add-source Sn {:e}".format(1))
-        lines.append("define-target work/tbme-S.bin")
-        lines.append("  add-source S {:e}".format(1))
-        lines.append("define-target work/tbme-J.bin")
-        lines.append("  add-source J {:e}".format(1))
-
-    # relative quanta
-    if ("N-intrinsic" in task["observable_sets"]):
-        # Note: For now, only calculate the number of intrinsic quanta
-        # for oscillator length corresponding to that of the
-        # diagonalization basis.
-        hw_intr = hw
-        coef_Ursqr = (A-1)/(2*A)*(hw_intr/hw)
-        coef_Vr1r2 = -1/A*(hw_intr/hw)
-        coef_Uksqr = (A-1)/(2*A)*(hw/hw_intr)
-        coef_Vk1k2 = -1/A*(hw/hw_intr)
-        coef_identity = -3/2*(A-1)
-        lines.append("define-target work/tbme-Nintr.bin")
-        lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
-        lines.append("  add-source Vr1r2 {:e}".format(coef_Vr1r2))
-        lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
-        lines.append("  add-source Vk1k2 {:e}".format(coef_Vk1k2))
-        lines.append("  add-source identity {:e}".format(coef_identity))
-
-    # oscillator quanta
-    if ("N-total" in task["observable_sets"]):
-        hw_intr = hw
-        coef_Ursqr = (1/2)*(hw_intr/hw)
-        coef_Uksqr = (1/2)*(hw/hw_intr)
-        coef_identity = -3/2*A
-        lines.append("define-target work/tbme-Ntot.bin")
-        lines.append("  add-source Ursqr {:e}".format(coef_Ursqr))
-        lines.append("  add-source Uksqr {:e}".format(coef_Uksqr))
-        lines.append("  add-source identity {:e}".format(coef_identity))
-
+    # targets: generate h2mixer input
+    for (basename, operator) in targets.items():
+        lines.append("define-target work/"+basename+".bin")
+        for (source, coefficient) in operator.items():
+            lines.append("  add-source {:s} {:e}".format(source, coefficient))
+        lines.append("")
 
     # ensure terminal line
     lines.append("")
@@ -1021,10 +961,7 @@ def run_mfdn_v14_b06(task):
             obs_basename_list += ["tbme-VC"]
     if ("am-sqr" in task["observable_sets"]):
         obs_basename_list += ["tbme-L","tbme-Sp","tbme-Sn","tbme-S","tbme-J"]
-    if ("N-intrinsic" in task["observable_sets"]):
-        obs_basename_list += ["tbme-Nintr"]
-    if ("N-total" in task["observable_sets"]):
-        obs_basename_list += ["tbme-Ntot"]
+    obs_basename_list += list(task["observables"].keys())
 
     # tbo: log tbo names in separate file to aid future data analysis
     mcscript.utils.write_input("tbo_names.dat",input_lines=obs_basename_list)
@@ -1032,6 +969,8 @@ def run_mfdn_v14_b06(task):
     # tbo: write list of operators
     lines.append("tbme-H")  # Hamiltonian basename
     num_obs = 2 + len(obs_basename_list)
+    if (num_obs > 8):
+        raise mcscript.ScriptError("Too many observables for MFDn v14")
     lines.append("{:d}   # number of observables (J, T, R2, ...)".format(num_obs))
     lines += obs_basename_list
 
@@ -1080,7 +1019,7 @@ def run_mfdn_v14_b06(task):
         [
             configuration.mfdn_filename(task["mfdn_executable"])
         ],
-        mode = mcscript.call.hybrid,
+        # mode = mcscript.call.hybrid,
         check_return=True
     )
 
