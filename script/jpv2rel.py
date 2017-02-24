@@ -2,6 +2,11 @@
 
     Scripting for jpv2rel conversion runs.
 
+    Ex:
+      % cd nuclthy/data/interaction/jpv-relative/Vrel_JISP16_bare_Jmax4
+      % python3 ~/projects/shell/script/jpv2rel.py
+      % mv *_rel.dat ../../rel/Vrel_JISP16_bare_Jmax4
+
     M. A. Caprio
     Department of Physics
     University of Notre Dame
@@ -29,7 +34,7 @@ projects_root = os.path.join(os.environ["HOME"],"projects")
 jpv2rel_executable = os.path.join(projects_root,"shell","libraries","relative","jpv2rel")
 
 # configuration
-hw_values = mcscript.utils.value_range(10,40,2.5)
+hw_values = mcscript.utils.value_range(10,30,2.5)
 
 # generate task list
 
@@ -43,13 +48,13 @@ tasks = [
         "hw" : hw,
         "Jmax" : 4,
         "Nmax" : 20,
-        "jpv_filename_template" : "Vrel_JISP16_bare_Jmax{Jmax}.hw{hw}",
+        "jpv_filename_template" : "Vrel_JISP16_bare_Jmax{Jmax}.hw{hw:g}",
         "rel_filename_template" : "jisp16_Nmax{Nmax}_hw{hw:2.1f}_rel.dat"
     }
     for hw in hw_values
 ]
 
-def convert_jpv2rel(task):
+pdef convert_jpv2rel(task):
     """ Invoke jpv2rel.
     """
     input_lines = [
