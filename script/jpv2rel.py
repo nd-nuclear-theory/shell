@@ -3,9 +3,11 @@
     Scripting for jpv2rel conversion runs.
 
     Ex:
+      JISP16 truncated at relative Nmax20...
+
       % cd nuclthy/data/interaction/jpv-relative/Vrel_JISP16_bare_Jmax4
       % python3 ~/projects/shell/script/jpv2rel.py
-      % mv *_rel.dat ../../rel/Vrel_JISP16_bare_Jmax4
+      % mv *_rel.dat ../../rel/JISP16_Nmax20
 
     M. A. Caprio
     Department of Physics
@@ -49,7 +51,7 @@ tasks = [
         "Jmax" : 4,
         "Nmax" : 20,
         "jpv_filename_template" : "Vrel_JISP16_bare_Jmax{Jmax}.hw{hw:g}",
-        "rel_filename_template" : "jisp16_Nmax{Nmax}_hw{hw:2.1f}_rel.dat"
+        "rel_filename_template" : "JISP16_Nmax{Nmax}_hw{hw:2.1f}_rel.dat"
     }
     for hw in hw_values
 ]

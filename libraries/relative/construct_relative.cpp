@@ -112,50 +112,7 @@ namespace relative {
       }
   }
 
-  // std::vector<Eigen::MatrixXd>
-  // ImportInteraction_Kinetic(const basis::RelativeSpaceLSJT& space,const basis::RelativeSectorsLSJT& sectors)
-  // {
-  //   int Nmax=40;
-  //   std::vector<Eigen::MatrixXd> sector_vector(sectors.size());
-  // 
-  //   for(int i=0; i<sectors.size(); ++i)
-  //   {
-  //     
-  //     const basis::RelativeSubspaceLSJT& bra_subspace = sectors.GetSector(i).bra_subspace();
-  //     const basis::RelativeSubspaceLSJT& ket_subspace = sectors.GetSector(i).ket_subspace();
-  //     // Extract ket labels 
-  //     int L=ket_subspace.L();
-  //     int S=ket_subspace.S();
-  //     int J=ket_subspace.J();
-  //     int T=ket_subspace.T();
-  //     int g=ket_subspace.g();
-  //     // Extract bra labels
-  //     int Lp=bra_subspace.L();
-  //     int Sp=bra_subspace.S();
-  //     int Jp=bra_subspace.J();
-  //     int Tp=bra_subspace.T();
-  //     int gp=bra_subspace.g();
-  // 
-  //     int npmax=(Nmax-Lp)/2;
-  //     int nmax=(Nmax-L)/2;
-  //     sector_vector[i]=Eigen::MatrixXd::Constant(nmax+1, nmax+1, 0);
-  // 
-  //     if((Lp==L)&&(Sp==S)&&(Jp==J)&&(Tp==T)&&(gp==g))
-  //       {
-  //         for(int n=0; n<=nmax; ++n)
-  //           {
-  //             if((0<=(n-1))&&((n-1)<=npmax))
-  //               sector_vector[i](n-1,n)=-sqrt(n*(n+L+.5))*10;
-  //             if(n<=npmax)
-  //               sector_vector[i](n,n)=(2*n+L+1.5)*10;
-  //             if((0<=(n+1))&&((n+1)<=npmax))
-  //               sector_vector[i](n+1,n)=-sqrt((n+1)*(n+L+1.5))*10;
-  //           }
-  //       }
-  //   }
-  //   return sector_vector;
-  // }
-  // 
+
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
 } // namespace

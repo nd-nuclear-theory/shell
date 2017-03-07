@@ -5,10 +5,6 @@
 
   (The identity operator is provided in basis/lsjt_operator.h.)
 
-  WARNING: This header has its own namespace "relative".  It may be
-  moved out of the moshinsky library someday, into a relative
-  interaction/operator library.
-
   Language: C++11
                                  
   Mark A. Caprio
