@@ -1019,7 +1019,7 @@ def run_mfdn_v14_b06(task):
         [
             configuration.mfdn_filename(task["mfdn_executable"])
         ],
-        # mode = mcscript.call.hybrid,
+        mode = mcscript.call.hybrid,
         check_return=True
     )
 
