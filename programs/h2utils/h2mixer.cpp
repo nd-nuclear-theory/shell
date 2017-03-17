@@ -1029,7 +1029,7 @@ int main(int argc, char **argv)
 
   // set up parallelization
   
-  // for now, disable Eigen internal parallelization (but we will want it later for the matmul
+  // for now, disable Eigen internal parallelization (but we will want it later for the matmul)
   std::cout
     << fmt::format("Parallelization: max_threads {}, num_procs {}",
                    omp_get_max_threads(), omp_get_num_procs()
