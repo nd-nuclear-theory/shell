@@ -1,9 +1,9 @@
-"""operators -- define two-body operators for h2mixer input
+"""operators.py -- define two-body operators for h2mixer input
 
     - 2/18/17 (pjf): Created.
 """
 import mcscript.utils
-from .utils import *
+from . import utils
 
 ################################################################
 # identity operator
@@ -83,8 +83,8 @@ def rrel2(A, hw, **kwargs):
         CoefficientDict containing coefficients for rrel2 operator.
     """
     out = mcscript.utils.CoefficientDict()
-    out += ((A-1)*(oscillator_length(hw)/A)**2) * Ursqr()
-    out += (-2*(oscillator_length(hw)/A)**2) * Vr1r2()
+    out += ((A-1)*(utils.oscillator_length(hw)/A)**2) * Ursqr()
+    out += (-2*(utils.oscillator_length(hw)/A)**2) * Vr1r2()
     return out
 
 def Ncm(A, bsqr, **kwargs):
