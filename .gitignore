@@ -19,6 +19,9 @@
 # local files
 *.local
 
+# local installation
+install/
+
 # symlinks
 config.mk
 
