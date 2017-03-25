@@ -23,7 +23,7 @@ project_name := shell
 modules += programs/h2utils programs/radialutils
 
 # legacy programs -- DEPRECATED
-modules += programs/h2utils_legacy
+##modules += programs/h2utils_legacy
 
 ################
 # libraries
@@ -33,7 +33,7 @@ modules += libraries/relative libraries/moshinsky
 modules += libraries/tbme libraries/radial libraries/density
 
 # legacy libraries -- DEPRECATED
-modules += libraries/no libraries/legacy
+##modules += libraries/no libraries/legacy
 
 # additional libraries -- cloned as submodule
 
