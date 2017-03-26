@@ -954,14 +954,15 @@ def run_mfdn_v14_b06(task):
     ))
 
     # tbo: collect tbo names
-    obs_basename_list = ["tbme-rrel2","tbme-Ncm"]
+    obs_basename_list = ["tbme-rrel2"]
     if ("H-components" in task["observable_sets"]):
-        obs_basename_list += ["tbme-Trel","tbme-VNN"]
+        obs_basename_list += ["tbme-Trel","tbme-Ncm","tbme-VNN"]
         if (task["use_coulomb"]):
             obs_basename_list += ["tbme-VC"]
     if ("am-sqr" in task["observable_sets"]):
         obs_basename_list += ["tbme-L","tbme-Sp","tbme-Sn","tbme-S","tbme-J"]
-    obs_basename_list += list(task["observables"].keys())
+    if ("observables" in task):
+        obs_basename_list += list(task["observables"].keys())
 
     # tbo: log tbo names in separate file to aid future data analysis
     mcscript.utils.write_input("tbo_names.dat",input_lines=obs_basename_list)
@@ -969,7 +970,7 @@ def run_mfdn_v14_b06(task):
     # tbo: write list of operators
     lines.append("tbme-H")  # Hamiltonian basename
     num_obs = 2 + len(obs_basename_list)
-    if (num_obs > 8):
+    if (num_obs > 9):
         raise mcscript.ScriptError("Too many observables for MFDn v14")
     lines.append("{:d}   # number of observables (J, T, R2, ...)".format(num_obs))
     lines += obs_basename_list

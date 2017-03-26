@@ -20,6 +20,7 @@
 #include <iomanip>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "basis/nlj_orbital.h"
 
@@ -187,6 +188,9 @@ int main(int argc, const char *argv[]) {
     std::cerr << "ERROR: No orbitals generated." << std::endl;
     std::exit(EXIT_FAILURE);
   }
+
+  // sort orbitals before output
+  std::sort(orbitals.begin(), orbitals.end(), basis::OrbitalSortCmpWeight);
 
   std::ofstream os(run_parameters.output_filename);
   os << basis::OrbitalDefinitionStr(orbitals, true);
