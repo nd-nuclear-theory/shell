@@ -267,8 +267,8 @@ void CalculateMatrixElements(
         basis::OrbitalStateLJPN ket_state(sector.ket_subspace(), k);
         spline::WaveFunction ket_wavefunction(ket_state.n(), ket_state.l(), ket_scale_ratio, ket_basis_type);
 
-        const int num_integration_steps_or_maybe_points_or_whatever = 3000;
-        sector_matrix(j, k) = bra_wavefunction.MatrixElement(num_integration_steps_or_maybe_points_or_whatever, ket_wavefunction, order);
+        const int num_size = 3000;
+        sector_matrix(j, k) = bra_wavefunction.MatrixElement(num_size, ket_wavefunction, order);
       }
     }
     matrices.push_back(sector_matrix);
