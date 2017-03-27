@@ -5,7 +5,7 @@ $(eval $(begin-module))
 ################################################################
 
 module_units_h := 
-module_units_cpp-h := construct_relative
+module_units_cpp-h := construct_relative jpv_io
 # module_units_f := 
 module_programs_cpp := relative-gen jpv2rel construct_relative_test
 
