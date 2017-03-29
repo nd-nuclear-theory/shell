@@ -241,117 +241,133 @@ namespace relative {
       }
   }
 
-void ReadJPVOperatorPN(
-    const std::array<std::string,3>& source_filenames,
-    const basis::RelativeSpaceLSJT& relative_space,
-    const basis::RelativeOperatorParametersLSJT& operator_parameters,
-    const std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-    std::array<basis::MatrixVector,3>& relative_component_matrices,
-    bool verbose
-  )
-{
+  void ReadJPVOperatorPN(
+      const std::array<std::string,3>& source_filenames,
+      const basis::RelativeSpaceLSJT& relative_space,
+      const basis::RelativeOperatorParametersLSJT& operator_parameters,
+      const std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
+      std::array<basis::MatrixVector,3>& relative_component_matrices,
+      bool verbose
+    )
+  {
 
-  // validate operator labels
-  assert(
-      (operator_parameters.J0==0) && (operator_parameters.g0==0)
-      && (operator_parameters.T0_min==0) && (operator_parameters.T0_max==2)
-      && (operator_parameters.symmetry_phase_mode==basis::SymmetryPhaseMode::kHermitian)
-    );
+    // validate operator labels
+    assert(
+        (operator_parameters.J0==0) && (operator_parameters.g0==0)
+        && (operator_parameters.T0_min==0) && (operator_parameters.T0_max==2)
+        && (operator_parameters.symmetry_phase_mode==basis::SymmetryPhaseMode::kHermitian)
+      );
 
-  // Relation of JT-reduced matrix elements to pp/nn/pn matrix elements
-  //
-  //   < T || A^{T0} || T >  vs.  < TTz | A | TTz>
-  //
-  // For T=0 sectors:
-  //
-  //   <0||A0||0> = <00|A|00>
-  //
-  // For T=1 sectors:
-  // 
-  // {<1||A0||1>, <1||A1||1>, <1||A2||1>}
-  // = 1/3. * {
-  //           {1,1,1},
-  //           {std::sqrt(9./2.),-std::sqrt(9./2.),0},
-  //           {std::sqrt(5./2.),std::sqrt(5./2.),-std::sqrt(10.)}
-  //         }
-  //   * {<1+1|A|1+1>, <1-1|A|1-1>, <10|A|10>}
-  //
-  // We have listed Tz sectors in the order pp/nn/pn to match
-  // the TwoBodySpecies enum ordering.
+    // Relation of JT-reduced matrix elements to pp/nn/pn matrix elements
+    //
+    //   < T || A^{T0} || T >  vs.  < TTz | A | TTz>
+    //
+    // For T=0 sectors:
+    //
+    //   <0||A0||0> = <00|A|00>
+    //
+    // For T=1 sectors:
+    // 
+    // {<1||A0||1>, <1||A1||1>, <1||A2||1>}
+    // = 1/3. * {
+    //           {1,1,1},
+    //           {std::sqrt(9./2.),-std::sqrt(9./2.),0},
+    //           {std::sqrt(5./2.),std::sqrt(5./2.),-std::sqrt(10.)}
+    //         }
+    //   * {<1+1|A|1+1>, <1-1|A|1-1>, <10|A|10>}
+    //
+    // We have listed Tz sectors in the order pp/nn/pn to match
+    // the TwoBodySpecies enum ordering.
     
-  // transformation matrix
-  //
-  // indexed by (T,int(two_body_species))
-  Eigen::Matrix3d isospin_coefficient_matrix;
-  isospin_coefficient_matrix
-    << 1, 1, 1,
-    std::sqrt(9./2.), -std::sqrt(9./2.), 0,
-    std::sqrt(5./2.), std::sqrt(5./2.), -std::sqrt(10.);
-  isospin_coefficient_matrix *= 1/3.;
+    // transformation matrix
+    //
+    // indexed by (T,int(two_body_species))
+    Eigen::Matrix3d isospin_coefficient_matrix;
+    isospin_coefficient_matrix
+      << 1, 1, 1,
+      std::sqrt(9./2.), -std::sqrt(9./2.), 0,
+      std::sqrt(5./2.), std::sqrt(5./2.), -std::sqrt(10.);
+    isospin_coefficient_matrix *= 1/3.;
 
-  // read matrix elements by two-body species
-  for (basis::TwoBodySpeciesPN two_body_species : {basis::TwoBodySpeciesPN::kPP,basis::TwoBodySpeciesPN::kNN,basis::TwoBodySpeciesPN::kPN})
-    {
+    // read matrix elements by two-body species
+    for (basis::TwoBodySpeciesPN two_body_species : {basis::TwoBodySpeciesPN::kPP,basis::TwoBodySpeciesPN::kNN,basis::TwoBodySpeciesPN::kPN})
+      {
 
+        // convert two body species to Tz
+        int Tz = basis::kTwoBodySpeciesPNCodeTz[int(two_body_species)];
 
-      // set up storage for input matrix elements
-      //
-      // Recall that they are stored in the JPV files as if they
-      // were "isoscalar" MEs, so only T0=0 component of each will
-      // be populated
+        // set up storage for input matrix elements
+        //
+        // Recall that they are stored in the JPV files as if they
+        // were "isoscalar" MEs, so only T0=0 component of each will
+        // be populated
 
-      std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors_input;
-      std::array<basis::MatrixVector,3> relative_component_matrices_input;
-      basis::ConstructZeroOperatorRelativeLSJT(
-          basis::RelativeOperatorParametersLSJT(operator_parameters,operator_parameters.Nmax,operator_parameters.Jmax),
-          relative_space,relative_component_sectors_input,relative_component_matrices_input
-        );
+        std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors_input;
+        std::array<basis::MatrixVector,3> relative_component_matrices_input;
+        basis::ConstructZeroOperatorRelativeLSJT(
+            basis::RelativeOperatorParametersLSJT(operator_parameters,operator_parameters.Nmax,operator_parameters.Jmax),
+            relative_space,relative_component_sectors_input,relative_component_matrices_input
+          );
 
-      // read matrix elements
-      const std::string source_filename = source_filenames[int(two_body_species)];
-      const basis::OperatorLabelsJT operator_labels_isoscalar(0,0,0,0,basis::SymmetryPhaseMode::kHermitian);
-      ReadJPVOperator(
-          source_filename,
-          relative_space,
-          operator_labels_isoscalar,
-          relative_component_sectors_input,
-          relative_component_matrices_input,
-          verbose
-        );
+        // read matrix elements
+        const std::string source_filename = source_filenames[int(two_body_species)];
+        const basis::OperatorLabelsJT operator_labels_isoscalar(0,0,0,0,basis::SymmetryPhaseMode::kHermitian);
+        ReadJPVOperator(
+            source_filename,
+            relative_space,
+            operator_labels_isoscalar,
+            relative_component_sectors_input,
+            relative_component_matrices_input,
+            verbose
+          );
 
-      // accumulate matrix elements
-      const int num_sectors = relative_component_sectors_input[0].size();
-      for (int sector_index=0; sector_index < num_sectors; ++sector_index)
-        // for each source "isoscalar operator" sector
-        {
-          const typename basis::RelativeSectorsLSJT::SectorType& input_sector
-            = relative_component_sectors_input[0].GetSector(sector_index);
-
-          // extract sector isospin labels
-          int bra_T = input_sector.bra_subspace().T();
-          int ket_T = input_sector.ket_subspace().T();
-          if (bra_T!=ket_T)
-            continue;  // short circuit known vanishing T-changing sectors
-          int T = ket_T;
+        // accumulate matrix elements
+        const int num_sectors = relative_component_sectors_input[0].size();
+        for (int sector_index=0; sector_index < num_sectors; ++sector_index)
+          // for each source "isoscalar operator" sector
+          {
+            // set up aliases for convenience
+            const typename basis::RelativeSectorsLSJT::SectorType& input_sector
+              = relative_component_sectors_input[0].GetSector(sector_index);
+            const Eigen::MatrixXd& input_matrix
+              = relative_component_matrices_input[0][sector_index];
           
-          // process T=0 sector
-          if (T==0)
-            {
-              // TODO
-            }
+            // extract sector isospin labels
+            int bra_T = input_sector.bra_subspace().T();
+            int ket_T = input_sector.ket_subspace().T();
+            if (bra_T!=ket_T)
+              continue;  // short circuit known vanishing T-changing sectors
+            int T = ket_T;
           
-          // process T=1 sector
-          if (T==1)
-            {
-              double coefficient = isospin_coefficient_matrix(T,int(two_body_species));
-              // TODO
-            }
+            // process T=0 (Tz=0) sector
+            if ((T==0)&&(Tz==0))
+              {
+                // Simple copy to corresponding target sector.  Though we
+                // can write this as an accumulation for consistency.
+                relative_component_matrices[0][sector_index] += input_matrix;
+              }
+          
+            // process T=1 sector
+            if (T==1)
+              {
+                double coefficient = isospin_coefficient_matrix(T,int(two_body_species));
+                for (int T0=0; T0<=2; ++T0)
+                  {
+                    // look up target sector
+                    int target_sector_index = relative_component_sectors[T0].LookUpSectorIndex(input_sector.bra_subspace_index(),input_sector.ket_subspace_index());
+                    assert(sector_index!=basis::kNone);
+
+                    // accumulate matrix for sector
+                    Eigen::MatrixXd& matrix
+                      = relative_component_matrices[T0][target_sector_index];
+                    matrix += coefficient * input_matrix;
+                  }
 
           
-        }
-    }
-
-}
+              }
+          }
+      }
+  }
 
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
