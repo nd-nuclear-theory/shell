@@ -66,10 +66,8 @@
 #include "basis/lsjt_operator.h"
 #include "cppformat/format.h"
 #include "mcutils/parsing.h"
-#include "relative/construct_relative.h"
+#include "relative/relative_me.h"
 #include "spline/wavefunction_class.h"
-
-
 
 ////////////////////////////////////////////////////////////////
 // parameter input
@@ -204,18 +202,16 @@ void PopulateOperator(
   // populate operator containers
   if (parameters.operator_name == "zero")
     {
-      relative::ConstructDiagonalConstantOperator(
+      basis::ConstructZeroOperatorRelativeLSJT(
           operator_parameters,
-          relative_space,relative_component_sectors,relative_component_matrices,
-          0.
+          relative_space,relative_component_sectors,relative_component_matrices
         );
     }
   else if (parameters.operator_name == "identity")
     {
-      relative::ConstructDiagonalConstantOperator(
+      basis::ConstructIdentityOperatorRelativeLSJT(
           operator_parameters,
-          relative_space,relative_component_sectors,relative_component_matrices,
-          1.
+          relative_space,relative_component_sectors,relative_component_matrices
         );
     }
   else if (parameters.operator_name == "rsqr")

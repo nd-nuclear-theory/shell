@@ -1,5 +1,5 @@
 /****************************************************************
-  construct_relative.h
+  relative_me.h
 
   Construction of constant and kinematic (r^2 and k^2) relative
   operators.
@@ -11,43 +11,18 @@
   Mark A. Caprio
   University of Notre Dame
 
-  7/12/16 (mac): Created.
+  7/12/16 (mac): Created (as construct_relative).
+  3/26/17 (mac): Add ConstructCoulombOperator.
+  3/28/17 (mac): Remove ConstructDiagonalConstantOperator.  Rename to relative_me.
 
 ****************************************************************/
 
-#ifndef CONSTRUCT_RELATIVE_H_
-#define CONSTRUCT_RELATIVE_H_
+#ifndef RELATIVE_ME_H_
+#define RELATIVE_ME_H_
 
 #include "basis/lsjt_operator.h"
 
 namespace relative {
-
-  ////////////////////////////////////////////////////////////////
-  // relative LSJT operator construction
-  ////////////////////////////////////////////////////////////////
-
-  void ConstructDiagonalConstantOperator(
-      const basis::OperatorLabelsJT& operator_labels,
-      const basis::RelativeSpaceLSJT& relative_space,
-      std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-      std::array<basis::MatrixVector,3>& relative_component_matrices,
-      double c
-    );
-  // Construct diagonal constant operator in relative LSJT basis.  The
-  // zero and identity operators are special cases.
-  //
-  // Only the T0=0 component is nonzero.
-  //
-  // See notes on "internal representation of an operator in JT
-  // scheme" in lsjt_operator.h for the general principles of how the
-  // operators are represented.
-  //
-  // Arguments:
-  //   operator_labels (basis::OperatorLabelsJT) : tensorial properties of operator
-  //   relative_space (...) : target space
-  //   relative_component_sectors (..., output) : target sectors
-  //   relative_component_matrices (..., output) : target matrices
-  //   c (double) : the constant diagonal value
 
   enum class KinematicOperator {kKSqr,kRSqr};
   void ConstructKinematicOperator(

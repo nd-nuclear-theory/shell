@@ -1,50 +1,16 @@
 /****************************************************************
 
-  construct_relative.cpp
+  relative_me.cpp
 
   Mark A. Caprio, University of Notre Dame.
 
 ****************************************************************/
 
-#include "construct_relative.h"
+#include "relative_me.h"
 
 #include "spline/wavefunction_class.h"
 
 namespace relative {
-
-  void ConstructDiagonalConstantOperator(
-      const basis::OperatorLabelsJT& operator_labels,
-      const basis::RelativeSpaceLSJT& relative_space,
-      std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-      std::array<basis::MatrixVector,3>& relative_component_matrices,
-      double c
-    )
-  {
-
-    // validate operator labels
-    assert(operator_labels.J0==0);
-    assert(operator_labels.g0==0);
-    assert(operator_labels.symmetry_phase_mode==basis::SymmetryPhaseMode::kHermitian);
-    assert(operator_labels.T0_min==0);
-
-    for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
-      // for each isospin component
-      {
-
-        // enumerate sectors
-        relative_component_sectors[T0]
-          = basis::RelativeSectorsLSJT(relative_space,operator_labels.J0,T0,operator_labels.g0);
-         
-        // populate matrices
-        relative_component_matrices[T0].resize(relative_component_sectors[T0].size());
-        if (T0==0)
-          // identity matrices in
-          basis::SetOperatorToDiagonalConstant(relative_component_sectors[T0],relative_component_matrices[T0],c);
-        else
-          basis::SetOperatorToZero(relative_component_sectors[T0],relative_component_matrices[T0]);
-      }
-  }
-
 
   void ConstructKinematicOperator(
       const basis::OperatorLabelsJT& operator_labels,
@@ -55,9 +21,9 @@ namespace relative {
     )
   {
 
-    // zero initialize operator
-    ConstructDiagonalConstantOperator(
-        operator_labels,relative_space,relative_component_sectors,relative_component_matrices,0.
+    // zero initialize operators
+    basis::ConstructZeroOperatorRelativeLSJT(
+        operator_labels,relative_space,relative_component_sectors,relative_component_matrices
       );
 
     // select T0=0 component
@@ -124,8 +90,8 @@ namespace relative {
   {
 
     // zero initialize operator
-    ConstructDiagonalConstantOperator(
-        operator_labels,relative_space,relative_component_sectors,relative_component_matrices,0.
+    basis::ConstructZeroOperatorRelativeLSJT(
+        operator_labels,relative_space,relative_component_sectors,relative_component_matrices
       );
 
     for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)

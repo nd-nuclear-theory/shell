@@ -1,12 +1,12 @@
 /****************************************************************
-  construct_relative_test.cpp
+  relative_me_test.cpp
 
   Mark A. Caprio
   University of Notre Dame
 
 ****************************************************************/
 
-#include "relative/construct_relative.h"
+#include "relative/relative_me.h"
 
 #include "cppformat/format.h"
 

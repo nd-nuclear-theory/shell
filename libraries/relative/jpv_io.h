@@ -9,6 +9,9 @@
   University of Notre Dame
 
   3/26/17 (mac): Extracted from jpv2rel (created 7/25/16).
+  3/28/17 (mac):
+    - Implement input of non-isoscalar operators.
+    - Add verbose option to input functions.
 
 ****************************************************************/
 
@@ -433,6 +436,10 @@
 //     Vrel_JISP16_bare_Jmax4.hw20
 //     jisp16_Nmax238_hw20.0_rel.dat
 
+// JPV operators are always represented within the storage appropriate
+// to an isoscalar operator.  A non-isoscalar operator is stored
+// (indexing-wise) as if it were three isoscalar operators.
+
 #ifndef JPV_IO_H_
 #define JPV_IO_H_
 
@@ -445,15 +452,69 @@ void ReadJPVOperator(
     const basis::RelativeSpaceLSJT& relative_space,
     const basis::OperatorLabelsJT& operator_labels,
     const std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-    std::array<basis::MatrixVector,3>& relative_component_matrices
+    std::array<basis::MatrixVector,3>& relative_component_matrices,
+    bool verbose = false
   );
-// Define operator.
+// Read a single isoscalar Hamiltonian-like relative operator in JPV
+// format.
+//
+// The input operator is represented in terms of non-reduced matrix
+// elements between good-JT (Tz=0) states, which, for an isoscalar
+// operator, are identical to group-theory convention JT-reduced
+// matrix elments.
+//
+// The input process carried out by this function also suffices to
+// read the data for one of the pp, pn, or nn components of a
+// non-isoscalar operator in JPV format, though further processing
+// (see ReadJPVOperatorPN) is required to extract the actual isospin
+// components.
+//
+// The operator_labels argument is only included for validation
+// purposes.  It is checked with an assertion that the operator being
+// read is a Hamiltonian-like operator with T0_max=0.  There is no
+// further useful information in these labels.
+//
+// The returned relative_component_sectors and
+// relative_component_matrices from this function will only have a
+// T0=0 component.
 //
 // Arguments:
-//   source_filename (std::string) : input filename
-//   relative_space (...) : target space
-//   relative_component_sectors (...) : target sectors
-//   relative_component_matrices (..., output) : target matrices to be populated
+//   source_filename (input): input filename
+//   relative_space (input): target space
+//   operator_labels (input): operator labels
+//   relative_component_sectors (input): target sectors
+//   relative_component_matrices (output): target matrices to be populated
+//   verbose (input, optional): verbosity
+
+void ReadJPVOperatorPN(
+    const std::array<std::string,3>& source_filenames,
+    const basis::RelativeSpaceLSJT& relative_space,
+    const basis::RelativeOperatorParametersLSJT& operator_parameters,
+    const std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
+    std::array<basis::MatrixVector,3>& relative_component_matrices,
+    bool verbose = false
+  );
+// Read a generic (non-isoscalar) Hamiltonian-like relative operator in JPV
+// format.
+//
+// The input operator is represented in terms of non-reduced matrix
+// elements between good-JT (and Tz) states, for Tz = +1 (pp), 0 (pn),
+// and -1 (nn).  The T=0 sectors for the pp and nn inputs are
+// explicitly stored but contain all zero entries.
+//
+// The operator_parameters argument is used to allocate intermediate
+// storage to hold the pp/nn/pn matrix elements.  The
+// operator_parameters argument is also validated.  It is checked with
+// an assertion that the operator being read is a Hamiltonian-like
+// operator with T0_max=2.
+//
+// Arguments:
+//   source_filenames (input): input filenames (in order pp, nn, pn)
+//   relative_space (input): target space
+//   operator_parameters (input): operator labels and truncation
+//   relative_component_sectors (input): target sectors
+//   relative_component_matrices (output): target matrices to be populated
+//   verbose (input, optional): verbosity
 
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////

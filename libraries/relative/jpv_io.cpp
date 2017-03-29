@@ -10,6 +10,7 @@
 
 #include <fstream>
 
+#include "basis/jjjpn_scheme.h"  // for TwoBodySpecies enum typedef
 #include "cppformat/format.h"
 #include "mcutils/parsing.h"
 
@@ -20,9 +21,20 @@ namespace relative {
       const basis::RelativeSpaceLSJT& relative_space,
       const basis::OperatorLabelsJT& operator_labels,
       const std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-      std::array<basis::MatrixVector,3>& relative_component_matrices
+      std::array<basis::MatrixVector,3>& relative_component_matrices,
+      bool verbose
     )
   {
+
+    // validate operator labels
+
+    // const basis::OperatorLabelsJT operator_labels_isoscalar(0,0,0,0,basis::SymmetryPhaseMode::kHermitian);
+    // assert(operator_labels==operator_labels_isoscalar);  // no == defined on OperatorLabels
+    assert(
+        (operator_labels.J0==0) && (operator_labels.g0==0)
+        && (operator_labels.T0_min==0) && (operator_labels.T0_max==0)
+        && (operator_labels.symmetry_phase_mode==basis::SymmetryPhaseMode::kHermitian)
+      );
 
     // open stream for reading
     std::cout
@@ -67,8 +79,9 @@ namespace relative {
           line_stream >> S >> L >> Lp >> Nmax >> dimension >> mn >> hw >> identifier;
           ParsingCheck(line_stream,line_count,line);
         }
-        std::cout << fmt::format("  Input sector (raw labels): J {} S {} L {} Lp {} ipcut {} dimension {} mn {} hw {} ident {}",J,S,L,Lp,Nmax,dimension,mn,hw,identifier)
-                  << std::endl;
+        if (verbose)
+          std::cout << fmt::format("  Input sector (raw labels): J {} S {} L {} Lp {} ipcut {} dimension {} mn {} hw {} ident {}",J,S,L,Lp,Nmax,dimension,mn,hw,identifier)
+                    << std::endl;
 
         // canonicalize "lower triangle" sector
         //
@@ -77,16 +90,18 @@ namespace relative {
         bool flip = (Lp>L);
         if (flip)
           std::swap(Lp,L);
-        std::cout << fmt::format("    After transposition to upper triangle: (Lp,L)=({},{}) flip {}",Lp,L,int(flip))
-                  << std::endl;
+        if (verbose)
+          std::cout << fmt::format("    After transposition to upper triangle: (Lp,L)=({},{}) flip {}",Lp,L,int(flip))
+                    << std::endl;
 
         // deduce sector cutoffs
         int nmax = dimension-1;
         int Nmax_bra = 2*nmax+Lp;
         int Nmax_ket = 2*nmax+L;
         int expected_matrix_elements = dimension*(dimension+1)/2;  // JPV always stores just one triangle
-        std::cout << fmt::format("    Input sector properties: expected m.e. {} nmax {} Nmax_bra {} Nmax_ket {}",expected_matrix_elements,nmax,Nmax_bra,Nmax_ket)
-                  << std::endl;
+        if (verbose)
+          std::cout << fmt::format("    Input sector properties: expected m.e. {} nmax {} Nmax_bra {} Nmax_ket {}",expected_matrix_elements,nmax,Nmax_bra,Nmax_ket)
+                    << std::endl;
 
         // check viability of sector
         //
@@ -114,6 +129,12 @@ namespace relative {
         int subspace_index_ket = relative_space.LookUpSubspaceIndex(
             basis::RelativeSubspaceLSJTLabels(L,S,J,T,g)
           );
+        // short circuit if subspace falls outside our target truncation
+        if ((subspace_index_bra==basis::kNone)||(subspace_index_ket==basis::kNone))
+          {
+            std::cout << "ERROR: Input sector contains LSJT subspace not present in target truncation" << std::endl;
+            std::exit(EXIT_FAILURE);
+          }
         assert(subspace_index_bra<=subspace_index_ket);  // subspaces should be canonical after our L swap
         int sector_index = sectors.LookUpSectorIndex(subspace_index_bra,subspace_index_ket);
         const basis::RelativeSectorsLSJT::SectorType& sector = sectors.GetSector(sector_index);
@@ -127,21 +148,24 @@ namespace relative {
           sector_size = dimension_ket * (dimension_ket + 1);
         else
           sector_size = dimension_bra * dimension_ket;
-        std::cout
-          << fmt::format("    Subspace labels: bra {} (dimension {}) ket {}  (dimension {})",
-                         sector.bra_subspace().LabelStr(),
-                         dimension_bra,
-                         sector.ket_subspace().LabelStr(),
-                         dimension_ket
-            )
-          << std::endl
-          << fmt::format("    Sector storage: sector_index {} subspace_index_bra {} subspace_index_ket {} entries {}",
-                         sector_index,
-                         subspace_index_bra,
-                         subspace_index_ket,
-                         sector_size
-            )
-          << std::endl;
+        if (verbose)
+          {
+            std::cout
+              << fmt::format("    Subspace labels: bra {} (dimension {}) ket {}  (dimension {})",
+                             sector.bra_subspace().LabelStr(),
+                             dimension_bra,
+                             sector.ket_subspace().LabelStr(),
+                             dimension_ket
+                )
+              << std::endl
+              << fmt::format("    Sector storage: sector_index {} subspace_index_bra {} subspace_index_ket {} entries {}",
+                             sector_index,
+                             subspace_index_bra,
+                             subspace_index_ket,
+                             sector_size
+                )
+              << std::endl;
+          }
 
         // reading matrix elements for sector:
         //
@@ -216,6 +240,118 @@ namespace relative {
 
       }
   }
+
+void ReadJPVOperatorPN(
+    const std::array<std::string,3>& source_filenames,
+    const basis::RelativeSpaceLSJT& relative_space,
+    const basis::RelativeOperatorParametersLSJT& operator_parameters,
+    const std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
+    std::array<basis::MatrixVector,3>& relative_component_matrices,
+    bool verbose
+  )
+{
+
+  // validate operator labels
+  assert(
+      (operator_parameters.J0==0) && (operator_parameters.g0==0)
+      && (operator_parameters.T0_min==0) && (operator_parameters.T0_max==2)
+      && (operator_parameters.symmetry_phase_mode==basis::SymmetryPhaseMode::kHermitian)
+    );
+
+  // Relation of JT-reduced matrix elements to pp/nn/pn matrix elements
+  //
+  //   < T || A^{T0} || T >  vs.  < TTz | A | TTz>
+  //
+  // For T=0 sectors:
+  //
+  //   <0||A0||0> = <00|A|00>
+  //
+  // For T=1 sectors:
+  // 
+  // {<1||A0||1>, <1||A1||1>, <1||A2||1>}
+  // = 1/3. * {
+  //           {1,1,1},
+  //           {std::sqrt(9./2.),-std::sqrt(9./2.),0},
+  //           {std::sqrt(5./2.),std::sqrt(5./2.),-std::sqrt(10.)}
+  //         }
+  //   * {<1+1|A|1+1>, <1-1|A|1-1>, <10|A|10>}
+  //
+  // We have listed Tz sectors in the order pp/nn/pn to match
+  // the TwoBodySpecies enum ordering.
+    
+  // transformation matrix
+  //
+  // indexed by (T,int(two_body_species))
+  Eigen::Matrix3d isospin_coefficient_matrix;
+  isospin_coefficient_matrix
+    << 1, 1, 1,
+    std::sqrt(9./2.), -std::sqrt(9./2.), 0,
+    std::sqrt(5./2.), std::sqrt(5./2.), -std::sqrt(10.);
+  isospin_coefficient_matrix *= 1/3.;
+
+  // read matrix elements by two-body species
+  for (basis::TwoBodySpeciesPN two_body_species : {basis::TwoBodySpeciesPN::kPP,basis::TwoBodySpeciesPN::kNN,basis::TwoBodySpeciesPN::kPN})
+    {
+
+
+      // set up storage for input matrix elements
+      //
+      // Recall that they are stored in the JPV files as if they
+      // were "isoscalar" MEs, so only T0=0 component of each will
+      // be populated
+
+      std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors_input;
+      std::array<basis::MatrixVector,3> relative_component_matrices_input;
+      basis::ConstructZeroOperatorRelativeLSJT(
+          basis::RelativeOperatorParametersLSJT(operator_parameters,operator_parameters.Nmax,operator_parameters.Jmax),
+          relative_space,relative_component_sectors_input,relative_component_matrices_input
+        );
+
+      // read matrix elements
+      const std::string source_filename = source_filenames[int(two_body_species)];
+      const basis::OperatorLabelsJT operator_labels_isoscalar(0,0,0,0,basis::SymmetryPhaseMode::kHermitian);
+      ReadJPVOperator(
+          source_filename,
+          relative_space,
+          operator_labels_isoscalar,
+          relative_component_sectors_input,
+          relative_component_matrices_input,
+          verbose
+        );
+
+      // accumulate matrix elements
+      const int num_sectors = relative_component_sectors_input[0].size();
+      for (int sector_index=0; sector_index < num_sectors; ++sector_index)
+        // for each source "isoscalar operator" sector
+        {
+          const typename basis::RelativeSectorsLSJT::SectorType& input_sector
+            = relative_component_sectors_input[0].GetSector(sector_index);
+
+          // extract sector isospin labels
+          int bra_T = input_sector.bra_subspace().T();
+          int ket_T = input_sector.ket_subspace().T();
+          if (bra_T!=ket_T)
+            continue;  // short circuit known vanishing T-changing sectors
+          int T = ket_T;
+          
+          // process T=0 sector
+          if (T==0)
+            {
+              // TODO
+            }
+          
+          // process T=1 sector
+          if (T==1)
+            {
+              double coefficient = isospin_coefficient_matrix(T,int(two_body_species));
+              // TODO
+            }
+
+          
+        }
+    }
+
+}
 
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
