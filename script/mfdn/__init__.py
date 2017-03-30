@@ -939,7 +939,7 @@ def run_mfdn_v14_b06(task):
         Nmin = 1
 
     lines.append("{:d}  # IFLAGMBSI".format(0))
-    lines.append("{ndiag:d}  # ndiag (0: no spares, automatic ndiag)".format(ndiag=ndiag,**task))
+    lines.append("{ndiag:d}  # ndiag (0: no spares, automatic ndiag)".format(ndiag=ndiag))
     lines.append("{:d}  # number of classes".format(2))
     lines.append("{nuclide[0]:d}  # protons (class 1 particles)".format(**task))
     lines.append("{nuclide[1]:d}  # protons (class 2 particles)".format(**task))
@@ -1048,9 +1048,9 @@ def save_mfdn_v14_output(task):
     natural_orbital_iteration = task.get("natorb_iteration")
     descriptor = task["descriptor"] + natural_orbital_indicator(natural_orbital_iteration)
     print("Saving basic output files...")
-    res_filename = "{:s}-mfdn-{:s}.res".format(mcscript.run.name,descriptor)
+    res_filename = "{:s}-mfdn-{:s}.res".format(mcscript.parameters.run.name,descriptor)
     mcscript.call(["cp","--verbose","work/mfdn.res",res_filename])
-    out_filename = "{:s}-mfdn-{:s}.out".format(mcscript.run.name,descriptor)
+    out_filename = "{:s}-mfdn-{:s}.out".format(mcscript.parameters.run.name,descriptor)
     mcscript.call(["cp","--verbose","work/mfdn.out",out_filename])
 
     # save OBDME files for next natural orbital iteration
@@ -1117,7 +1117,7 @@ def save_mfdn_v14_output(task):
     if (task["save_obdme"]):
         archive_file_list += glob.glob("work/*obdme*")
     # generate archive (outside work directory)
-    archive_filename = "{:s}-mfdn-{:s}.tgz".format(mcscript.run.name,descriptor)
+    archive_filename = "{:s}-mfdn-{:s}.tgz".format(mcscript.parameters.run.name,descriptor)
     mcscript.call(
         [
             "tar", "zcvf", archive_filename,
@@ -1159,7 +1159,7 @@ def archive_handler_mfdn_res_only(task):
     archive_filename = os.path.join(
         ##ncsm_config.data_dir_results_archive,
         mcscript.task.archive_dir,
-        "%s-results-%s.tgz" % (mcscript.run.name, mcscript.date_tag())
+        "%s-results-%s.tgz" % (mcscript.parameters.run.name, mcscript.date_tag())
         )
     ## # store toc -- TODO once restructure subdirectories in tar file
     ## mcscript.call(
