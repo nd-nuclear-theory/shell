@@ -11,8 +11,6 @@
     relative_filename
     two_body_filename
 
-    N1max, N2max : one-body and two-body basis truncations
-
     coupling : target coupling scheme
       "rcmlsjt" -- relative-cm matrix elements
       "lsjt" -- two-body LSJT-coupled matrix elements

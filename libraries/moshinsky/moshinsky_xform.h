@@ -114,9 +114,9 @@ namespace moshinsky {
   //     defining relative operator
   //   relative_cm_sector (basis::RelativeCMSectorsLSJTN::SectorType) : target sector
   //     for relative-cm operator
-  //    J0, T0, g0 (int) : operator properties
-  //    symmetry_phase_mode (basis::SymmetryPhaseMode) : specification of
-  //      matrix element conjugation properties of the operator
+  //   J0, T0, g0 (int) : operator properties
+  //   symmetry_phase_mode (basis::SymmetryPhaseMode) : specification of
+  //     matrix element conjugation properties of the operator
   //
   // Returns:
   //   (Eigen::MatrixXd) : the matrix representation of this sector
@@ -198,7 +198,7 @@ namespace moshinsky {
   //     source sector information
   //   two_body_sector (basis::TwoBodySectorsLSJTN::SectorType) :
   //     target sector information
-  //    relative_cm_matrix (Eigen::MatrixXd) : source sector matrix
+  //   relative_cm_matrix (Eigen::MatrixXd) : source sector matrix
 
   void TransformOperatorRelativeCMLSJTNToTwoBodyLSJTN(
       const basis::OperatorLabelsJT& operator_labels,
@@ -273,9 +273,12 @@ namespace moshinsky {
 
   Eigen::MatrixXd 
     TwoBodyMatrixJJJTN(
+        const basis::TwoBodySpaceLSJTN& two_body_lsjtn_space,
         const basis::TwoBodySectorsLSJTN& two_body_lsjtn_sectors,
         const basis::MatrixVector& two_body_lsjtn_matrices,
-        const basis::TwoBodySectorsJJJTN::SectorType& two_body_jjjtn_sector
+        const basis::TwoBodySectorsJJJTN::SectorType& two_body_jjjtn_sector,
+        int J0, int T0, int g0,
+        basis::SymmetryPhaseMode symmetry_phase_mode
       );
   // Obtain two-body JJJTN sector by Moshinsky transformation on
   // relative-cm LSJT sector.
@@ -287,12 +290,18 @@ namespace moshinsky {
   // rather than normalized antisymmetrized (NAS) matrix elements.
   //
   // Arguments:
+  //   two_body_lsjtn_space (basis::TwoBodySpaceLSJTN) :
+  //     source space
   //   two_body_lsjtn_sectors (basis::TwoBodySectorsLSJTN) :
   //     all source sectors in given isospin component
   //   two_body_lsjtn_matrices (basis::MatrixVector) :
   //     all source matrices in given isospin component
   //   two_body_jjjtn_sector (basis::TwoBodySectorJJJTN::SectorType) :
   //     target sector information
+  //   J0, T0, g0 (int) : operator properties
+  //   symmetry_phase_mode (basis::SymmetryPhaseMode) : specification of
+  //     matrix element conjugation properties of the operator
+
 
   void TransformOperatorTwoBodyLSJTNToTwoBodyJJJTN(
       const basis::OperatorLabelsJT& operator_labels,
