@@ -5,10 +5,10 @@ $(eval $(begin-module))
 ################################################################
 
 module_units_h := 
-module_units_cpp-h := moshinsky_bracket moshinsky_xform
+module_units_cpp-h :=
 # module_units_f := 
-module_programs_cpp := moshinsky_xform_test
-## module_programs_cpp += moshinsky_bracket_table
+module_programs_cpp := relative-gen jpv2rel jpvstat
+module_programs_cpp += moshinsky 
 
 # module_programs_f :=
 # module_generated :=
@@ -17,6 +17,6 @@ module_programs_cpp := moshinsky_xform_test
 # library creation flag
 ################################################################
 
-$(eval $(library))
+## $(eval $(library))
 
 $(eval $(end-module))

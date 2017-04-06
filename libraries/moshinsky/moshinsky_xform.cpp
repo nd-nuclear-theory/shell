@@ -801,10 +801,6 @@ namespace moshinsky {
     int Jp = two_body_jjjpn_sector.bra_subspace().J();
     int J = two_body_jjjpn_sector.ket_subspace().J();
 
-    // limit to isoscalar operator -- TEMPORARY LIMITATION for initial
-    // implementation
-    assert(operator_labels.T0_max==0);
-
     // scan source sectors
     for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
       // for each isospin component

@@ -20,7 +20,7 @@ project_name := shell
 # programs
 ################
 
-modules += programs/h2utils programs/radialutils
+modules += programs/radialutils programs/relutils programs/h2utils
 
 # legacy programs -- DEPRECATED
 ##modules += programs/h2utils_legacy
