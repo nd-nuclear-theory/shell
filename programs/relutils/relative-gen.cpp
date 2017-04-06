@@ -60,6 +60,7 @@
   10/9/16 (pjf): Rename mcpp -> mcutils.
   3/6/17 (mac): Rough in Coulomb interaction code.
   3/26/17 (mac): Finish implementing Coulomb.  Rename to relative-gen.cpp.
+  4/5/17 (mac): Update call to ConstructZeroOperatorRelativeLSJT.
 
 ****************************************************************/
 
@@ -242,10 +243,9 @@ void PopulateOperator(
   else if (parameters.operator_name == "symmunit")
     {
       // start from zero operator
-      relative::ConstructDiagonalConstantOperator(
+      basis::ConstructZeroOperatorRelativeLSJT(
           operator_parameters,
-          relative_space,relative_component_sectors,relative_component_matrices,
-          0.
+          relative_space,relative_component_sectors,relative_component_matrices
         );
 
       // define shortcut reference to unit tensor labels

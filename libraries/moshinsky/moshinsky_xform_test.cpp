@@ -15,7 +15,7 @@
 #include "basis/jjjpn_operator.h"
 
 #include "mcutils/profiling.h"
-#include "relative/construct_relative.h"
+#include "relative/relative_me.h"
 #include "moshinsky/moshinsky_xform.h"
 
 
