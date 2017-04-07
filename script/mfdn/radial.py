@@ -1,3 +1,5 @@
+from . import config
+
 ##################################################################
 # traditional ho run
 ##################################################################
@@ -13,8 +15,8 @@ def set_up_orbitals(task):
     """
 
     # validate truncation mode
-    if (task["truncation_mode"] is not k_truncation_mode_ho):
-        raise ValueError("expecting truncation_mode to be {} but found {ho_truncation}".format(k_truncation_mode_ho,**task))
+    if (task["truncation_mode"] is not config.TruncationMode.kHO):
+        raise ValueError("expecting truncation_mode to be {} but found {ho_truncation}".format(config.TruncationMode.kHO,**task))
 
     natural_orbital_iteration = task.get("natorb_iteration")
 
@@ -25,24 +27,24 @@ def set_up_orbitals(task):
         # generate orbitals -- interaction bases
         mcscript.call(
             [
-                configuration.shell_filename("orbital-gen"),
+                config.environ.shell_filename("orbital-gen"),
                 "--oscillator",
                 "{truncation_int[1]:d}".format(**task),
-                "{:s}".format(filenames.orbitals_int_filename(natural_orbital_iteration))
+                "{:s}".format(config.filenames.orbitals_int_filename(natural_orbital_iteration))
             ]
         )
         if (task["use_coulomb"]):
             mcscript.call(
                 [
-                    configuration.shell_filename("orbital-gen"),
+                    config.environ.shell_filename("orbital-gen"),
                     "--oscillator",
                     "{truncation_coul[1]:d}".format(**task),
-                    "{:s}".format(filenames.orbitals_coul_filename(natural_orbital_iteration))
+                    "{:s}".format(config.filenames.orbitals_coul_filename(natural_orbital_iteration))
                 ]
             )
 
         # generate orbitals -- target basis
-        if (task["truncation_mode"] is k_truncation_mode_ho):
+        if (task["truncation_mode"] is config.TruncationMode.kHO):
             truncation_parameters = task["truncation_parameters"]
             if (truncation_parameters["many_body_truncation"]=="Nmax"):
                 Nmax_orb = truncation_parameters["Nmax"] + truncation_parameters["Nv"]
@@ -50,18 +52,18 @@ def set_up_orbitals(task):
                 Nmax_orb = truncation_parameters["Nmax"]
             mcscript.call(
                 [
-                    configuration.shell_filename("orbital-gen"),
+                    config.environ.shell_filename("orbital-gen"),
                     "--oscillator",
                     "{Nmax_orb:d}".format(Nmax_orb=Nmax_orb),
-                    "{:s}".format(filenames.orbitals_filename(natural_orbital_iteration))
+                    "{:s}".format(config.filenames.orbitals_filename(natural_orbital_iteration))
                 ]
             )
             mcscript.call(
                 [
-                    configuration.shell_filename("radial-gen"),
+                    config.environ.shell_filename("radial-gen"),
                     "--identity",
-                    filenames.orbitals_filename(natural_orbital_iteration),
-                    filenames.radial_xform_filename(natural_orbital_iteration)
+                    config.filenames.orbitals_filename(natural_orbital_iteration),
+                    config.filenames.radial_xform_filename(natural_orbital_iteration)
                 ]
             )
         else:
@@ -70,12 +72,12 @@ def set_up_orbitals(task):
     else:
         mcscript.call(
             [
-                configuration.shell_filename("natorb-gen"),
-                filenames.orbitals_filename(natural_orbital_iteration-1),
-                filenames.natorb_info_filename(natural_orbital_iteration-1),
-                filenames.natorb_obdme_filename(natural_orbital_iteration-1),
-                filenames.natorb_xform_filename(natural_orbital_iteration),
-                filenames.orbitals_filename(natural_orbital_iteration)
+                config.environ.shell_filename("natorb-gen"),
+                config.filenames.orbitals_filename(natural_orbital_iteration-1),
+                config.filenames.natorb_info_filename(natural_orbital_iteration-1),
+                config.filenames.natorb_obdme_filename(natural_orbital_iteration-1),
+                config.filenames.natorb_xform_filename(natural_orbital_iteration),
+                config.filenames.orbitals_filename(natural_orbital_iteration)
             ]
         )
 
@@ -110,7 +112,7 @@ def set_up_radial_analytic(task):
     """
 
     # validate basis mode
-    if (task["basis_mode"] not in {config.BasisMode.kDirect,k_basis_mode_dilated}):  # no k_basis_mode_generic yet
+    if (task["basis_mode"] not in {config.BasisMode.kDirect,config.BasisMode.kDilated}):  # no config.BasisMode.kGeneric yet
         raise ValueError("invalid basis mode {basis_mode}".format(**task))
 
     # get natural orbital iteration
@@ -124,13 +126,13 @@ def set_up_radial_analytic(task):
         for power in [1,2]:
             mcscript.call(
                 [
-                    configuration.shell_filename("radial-gen"),
+                    config.environ.shell_filename("radial-gen"),
                     "--kinematic",
                     "{:s}".format(operator_type),
                     "{:d}".format(power),
                     basis_radial_code,
-                    filenames.orbitals_filename(natural_orbital_iteration),
-                    filenames.radial_me_filename(natural_orbital_iteration, operator_type, power)
+                    config.filenames.orbitals_filename(natural_orbital_iteration),
+                    config.filenames.radial_me_filename(natural_orbital_iteration, operator_type, power)
                 ],
                 mode = mcscript.call.serial
             )
@@ -139,11 +141,11 @@ def set_up_radial_analytic(task):
     if (task["basis_mode"] in {config.BasisMode.kDirect}):
         mcscript.call(
             [
-                configuration.shell_filename("radial-gen"),
+                config.environ.shell_filename("radial-gen"),
                 "--identity",
-                filenames.orbitals_int_filename(natural_orbital_iteration),
-                filenames.orbitals_filename(natural_orbital_iteration),
-                filenames.radial_olap_int_filename(natural_orbital_iteration)
+                config.filenames.orbitals_int_filename(natural_orbital_iteration),
+                config.filenames.orbitals_filename(natural_orbital_iteration),
+                config.filenames.radial_olap_int_filename(natural_orbital_iteration)
             ],
             mode = mcscript.call.serial
         )
@@ -151,25 +153,25 @@ def set_up_radial_analytic(task):
         b_ratio = math.sqrt(task["hw_int"]/task["hw"])
         mcscript.call(
             [
-                configuration.shell_filename("radial-gen"),
+                config.environ.shell_filename("radial-gen"),
                 "--overlaps",
                 "{:g}".format(b_ratio),
                 basis_radial_code,
-                filenames.orbitals_int_filename(natural_orbital_iteration),
-                filenames.orbitals_filename(natural_orbital_iteration),
-                filenames.radial_olap_int_filename(natural_orbital_iteration)
+                config.filenames.orbitals_int_filename(natural_orbital_iteration),
+                config.filenames.orbitals_filename(natural_orbital_iteration),
+                config.filenames.radial_olap_int_filename(natural_orbital_iteration)
             ],
             mode = mcscript.call.serial
         )
     if (task["use_coulomb"]):
-        if (task["basis_mode"] in {config.BasisMode.kDirect,k_basis_mode_dilated}):
+        if (task["basis_mode"] in {config.BasisMode.kDirect,config.BasisMode.kDilated}):
             mcscript.call(
                 [
-                    configuration.shell_filename("radial-gen"),
+                    config.environ.shell_filename("radial-gen"),
                     "--identity",
-                    filenames.orbitals_coul_filename(natural_orbital_iteration),
-                    filenames.orbitals_filename(natural_orbital_iteration),
-                    filenames.radial_olap_coul_filename(natural_orbital_iteration)
+                    config.filenames.orbitals_coul_filename(natural_orbital_iteration),
+                    config.filenames.orbitals_filename(natural_orbital_iteration),
+                    config.filenames.radial_olap_coul_filename(natural_orbital_iteration)
                 ],
                 mode = mcscript.call.serial
             )
@@ -180,13 +182,13 @@ def set_up_radial_analytic(task):
                 b_ratio = math.sqrt(task["hw_coul_rescaled"]/task["hw"])
             mcscript.call(
                 [
-                    configuration.shell_filename("radial-gen"),
+                    config.environ.shell_filename("radial-gen"),
                     "--overlaps",
                     "{:g}".format(b_ratio),
                     basis_radial_code,
-                    filenames.orbitals_coul_filename(natural_orbital_iteration),
-                    filenames.orbitals_filename(natural_orbital_iteration),
-                    filenames.radial_olap_coul_filename(natural_orbital_iteration)
+                    config.filenames.orbitals_coul_filename(natural_orbital_iteration),
+                    config.filenames.orbitals_filename(natural_orbital_iteration),
+                    config.filenames.radial_olap_coul_filename(natural_orbital_iteration)
                 ],
                 mode = mcscript.call.serial
             )
@@ -213,30 +215,30 @@ def set_up_radial_natorb(task):
     # compose radial transform
     mcscript.call(
         [
-            configuration.shell_filename("radial-compose"),
-            filenames.radial_xform_filename(natural_orbital_iteration-1),
-            filenames.natorb_xform_filename(natural_orbital_iteration),
-            filenames.radial_xform_filename(natural_orbital_iteration)
+            config.environ.shell_filename("radial-compose"),
+            config.filenames.radial_xform_filename(natural_orbital_iteration-1),
+            config.filenames.natorb_xform_filename(natural_orbital_iteration),
+            config.filenames.radial_xform_filename(natural_orbital_iteration)
         ]
     )
 
     # compose interaction transform
     mcscript.call(
         [
-            configuration.shell_filename("radial-compose"),
-            filenames.radial_olap_int_filename(natural_orbital_iteration-1),
-            filenames.natorb_xform_filename(natural_orbital_iteration),
-            filenames.radial_olap_int_filename(natural_orbital_iteration)
+            config.environ.shell_filename("radial-compose"),
+            config.filenames.radial_olap_int_filename(natural_orbital_iteration-1),
+            config.filenames.natorb_xform_filename(natural_orbital_iteration),
+            config.filenames.radial_olap_int_filename(natural_orbital_iteration)
         ]
     )
 
     # compose Coulomb transform
     mcscript.call(
         [
-            configuration.shell_filename("radial-compose"),
-            filenames.radial_olap_coul_filename(natural_orbital_iteration-1),
-            filenames.natorb_xform_filename(natural_orbital_iteration),
-            filenames.radial_olap_coul_filename(natural_orbital_iteration)
+            config.environ.shell_filename("radial-compose"),
+            config.filenames.radial_olap_coul_filename(natural_orbital_iteration-1),
+            config.filenames.natorb_xform_filename(natural_orbital_iteration),
+            config.filenames.radial_olap_coul_filename(natural_orbital_iteration)
         ]
     )
 
@@ -245,11 +247,11 @@ def set_up_radial_natorb(task):
         for power in [1,2]:
             mcscript.call(
                 [
-                    configuration.shell_filename("radial-xform"),
-                    filenames.orbitals_filename(natural_orbital_iteration),
-                    filenames.radial_xform_filename(natural_orbital_iteration),
-                    filenames.radial_me_filename(0, operator_type, power),
-                    filenames.radial_me_filename(natural_orbital_iteration, operator_type, power)
+                    config.environ.shell_filename("radial-xform"),
+                    config.filenames.orbitals_filename(natural_orbital_iteration),
+                    config.filenames.radial_xform_filename(natural_orbital_iteration),
+                    config.filenames.radial_me_filename(0, operator_type, power),
+                    config.filenames.radial_me_filename(natural_orbital_iteration, operator_type, power)
                 ],
                 mode = mcscript.call.serial
             )

@@ -1,4 +1,4 @@
-from . import utils
+from . import utils, config
 
 def run_mfdn_v14_b06(task):
     """Generate input file and execute MFDn version 14 beta 06.
@@ -12,8 +12,8 @@ def run_mfdn_v14_b06(task):
     """
 
     # validate truncation mode
-    if (task["truncation_mode"] is not k_truncation_mode_ho):
-        raise ValueError("expecting truncation_mode to be {} but found {ho_truncation}".format(k_truncation_mode_ho,**task))
+    if (task["truncation_mode"] is not config.TruncationMode.kHO):
+        raise ValueError("expecting truncation_mode to be {} but found {ho_truncation}".format(config.TruncationMode.kHO,**task))
 
     # accumulate MFDn input lines
     lines = []
@@ -27,7 +27,7 @@ def run_mfdn_v14_b06(task):
     elif (truncation_parameters["many_body_truncation"]=="FCI"):
         Nmax_orb = truncation_parameters["Nmax"]
     Nshell = Nmax_orb+1
-    if (task["basis_mode"] in {config.BasisMode.kDirect,k_basis_mode_dilated} and natural_orbital_iteration in {None,0}):
+    if (task["basis_mode"] in {config.BasisMode.kDirect,config.BasisMode.kDilated} and natural_orbital_iteration in {None,0}):
         hw_for_trans = task["hw"]
     else:
         hw_for_trans = 0  # disable MFDn hard-coded oscillator one-body observables
@@ -120,7 +120,7 @@ def run_mfdn_v14_b06(task):
     # invoke MFDn
     mcscript.call(
         [
-            configuration.mfdn_filename(task["mfdn_executable"])
+            config.environ.mfdn_filename(task["mfdn_executable"])
         ],
         mode = mcscript.call.hybrid,
         check_return=True
@@ -163,7 +163,7 @@ def save_mfdn_v14_output(task):
             [
                 "cp","--verbose",
                 "work/{}".format(obdme_info_filename),
-                filenames.natorb_info_filename(natural_orbital_iteration)
+                config.filenames.natorb_info_filename(natural_orbital_iteration)
             ]
         )
         obdme_filename = glob.glob("work/mfdn.statrobdme.seq{:03d}*".format(task["natorb_base_state"]))
@@ -171,7 +171,7 @@ def save_mfdn_v14_output(task):
             [
                 "cp","--verbose",
                 obdme_filename[0],
-                filenames.natorb_obdme_filename(natural_orbital_iteration)
+                config.filenames.natorb_obdme_filename(natural_orbital_iteration)
             ]
         )
 
@@ -179,35 +179,35 @@ def save_mfdn_v14_output(task):
     print("Saving full output files...")
     # logging
     archive_file_list = [
-        filenames.h2mixer_filename(natural_orbital_iteration),
+        config.filenames.h2mixer_filename(natural_orbital_iteration),
         "tbo_names.dat"
         ]
     # orbital information
     archive_file_list += [
-        filenames.orbitals_int_filename(natural_orbital_iteration),
-        filenames.orbitals_filename(natural_orbital_iteration),
+        config.filenames.orbitals_int_filename(natural_orbital_iteration),
+        config.filenames.orbitals_filename(natural_orbital_iteration),
         ]
     # transformation information
     archive_file_list += [
-        filenames.radial_xform_filename(natural_orbital_iteration),
-        # filenames.radial_me_filename(natural_orbital_iteration, operator_type, power),
-        filenames.radial_olap_int_filename(natural_orbital_iteration),
+        config.filenames.radial_xform_filename(natural_orbital_iteration),
+        # config.filenames.radial_me_filename(natural_orbital_iteration, operator_type, power),
+        config.filenames.radial_olap_int_filename(natural_orbital_iteration),
         ]
     # Coulomb information:
     if task["use_coulomb"]:
         archive_file_list += [
-            filenames.orbitals_coul_filename(natural_orbital_iteration),
-            filenames.radial_olap_coul_filename(natural_orbital_iteration),
+            config.filenames.orbitals_coul_filename(natural_orbital_iteration),
+            config.filenames.radial_olap_coul_filename(natural_orbital_iteration),
         ]
     # natural orbital information
     if natural_orbital_iteration not in {None}:
         archive_file_list += [
-            filenames.natorb_info_filename(natural_orbital_iteration),
-            filenames.natorb_obdme_filename(natural_orbital_iteration),
+            config.filenames.natorb_info_filename(natural_orbital_iteration),
+            config.filenames.natorb_obdme_filename(natural_orbital_iteration),
             ]
     if (natural_orbital_iteration not in {None,0}):
         archive_file_list += [
-            filenames.natorb_xform_filename(natural_orbital_iteration),
+            config.filenames.natorb_xform_filename(natural_orbital_iteration),
             ]
     # MFDn output
     archive_file_list += [

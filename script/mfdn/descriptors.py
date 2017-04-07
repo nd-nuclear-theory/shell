@@ -1,5 +1,7 @@
 import mcscript.exception, mcscript.utils
 
+from . import config
+
 ################################################################
 # task descriptor for h2mixer + mfdn run
 ################################################################
@@ -14,9 +16,9 @@ def task_descriptor_7(task):
     """
 
     if(
-        task["truncation_mode"] is k_truncation_mode_ho
+        task["truncation_mode"] is config.TruncationMode.kHO
         and
-        task["basis_mode"] in {config.BasisMode.kDirect,k_basis_mode_dilated}
+        task["basis_mode"] in {config.BasisMode.kDirect,config.BasisMode.kDilated}
     ):
         # traditional oscillator run
         template_string = (

@@ -1,5 +1,4 @@
-from . import config
-from . import utils
+from . import utils, config
 
 def generate_tbme(task):
     """Generate TBMEs for MFDn run.
@@ -13,8 +12,8 @@ def generate_tbme(task):
     """
 
     # validate basis mode
-    if (task["truncation_mode"] is not k_truncation_mode_ho):
-        raise ValueError("expecting truncation_mode to be {} but found {ho_truncation}".format(k_truncation_mode_ho,**task))
+    if (task["truncation_mode"] is not config.TruncationMode.kHO):
+        raise ValueError("expecting truncation_mode to be {} but found {ho_truncation}".format(config.TruncationMode.kHO,**task))
 
     # extract parameters for convenience
     natural_orbital_iteration = task.get("natorb_iteration")
@@ -91,7 +90,7 @@ def generate_tbme(task):
     target_truncation = task["target_truncation"]
     if (target_truncation is None):
         # automatic derivation
-        if (task["truncation_mode"] is k_truncation_mode_ho):
+        if (task["truncation_mode"] is config.TruncationMode.kHO):
             truncation_parameters = task["truncation_parameters"]
             if (truncation_parameters["many_body_truncation"]=="Nmax"):
                 # important: truncation of orbitals file, one-body
@@ -110,7 +109,7 @@ def generate_tbme(task):
         # given value
         target_weight_max = target_truncation
     lines.append("set-target-indexing {orbitals_filename} {target_weight_max}".format(
-        orbitals_filename=filenames.orbitals_filename(natural_orbital_iteration),
+        orbitals_filename=config.filenames.orbitals_filename(natural_orbital_iteration),
         target_weight_max=target_weight_max,
         **task
     ))
@@ -122,7 +121,7 @@ def generate_tbme(task):
     # radial operator inputs
     for operator_type in ["r","k"]:
         for power in [1,2]:
-            radial_me_filename = filenames.radial_me_filename(natural_orbital_iteration, operator_type, power)
+            radial_me_filename = config.filenames.radial_me_filename(natural_orbital_iteration, operator_type, power)
             lines.append("define-radial-operator {} {} {}".format(operator_type,power,radial_me_filename))
     lines.append("")
 
@@ -134,7 +133,7 @@ def generate_tbme(task):
 
     # sources: VNN
     if ("VNN" in required_sources):
-        VNN_filename = configuration.interaction_filename(
+        VNN_filename = config.environ.interaction_filename(
             "{}-{}-{:g}.bin".format(
                 task["interaction"],
                 mcscript.utils.dashify(task["truncation_int"]),
@@ -148,7 +147,7 @@ def generate_tbme(task):
             lines.append("define-source xform VNN {VNN_filename} {xform_weight_max_int} {radial_olap_int_filename}".format(
                 VNN_filename=VNN_filename,
                 xform_weight_max_int=xform_weight_max_int,
-                radial_olap_int_filename=filenames.radial_olap_int_filename(natural_orbital_iteration),
+                radial_olap_int_filename=config.filenames.radial_olap_int_filename(natural_orbital_iteration),
                 **task
             ))
 
@@ -157,21 +156,21 @@ def generate_tbme(task):
     # Note: This is the "unscaled" Coulomb, still awaiting the scaling
     # factor from dilation.
     if ("VC_unscaled" in required_sources):
-        VC_filename = configuration.interaction_filename(
+        VC_filename = config.environ.interaction_filename(
             "{}-{}-{:g}.bin".format(
                 "VC",
                 mcscript.utils.dashify(task["truncation_coul"]),
                 task["hw_coul"]
             )
         )
-        if (task["basis_mode"] in {config.BasisMode.kDirect,k_basis_mode_dilated} and natural_orbital_iteration in {None,0}):
+        if (task["basis_mode"] in {config.BasisMode.kDirect,config.BasisMode.kDilated} and natural_orbital_iteration in {None,0}):
             lines.append("define-source input VC_unscaled {VC_filename}".format(VC_filename=VC_filename,**task))
         else:
             xform_weight_max_coul = utils.weight_max_string(xform_truncation_coul)
             lines.append("define-source xform VC_unscaled {VC_filename} {xform_weight_max_coul} {radial_olap_coul_filename}".format(
                 VC_filename=VC_filename,
                 xform_weight_max_coul=xform_weight_max_coul,
-                radial_olap_coul_filename=filenames.radial_olap_coul_filename(natural_orbital_iteration),
+                radial_olap_coul_filename=config.filenames.radial_olap_coul_filename(natural_orbital_iteration),
                 **task
             ))
 
@@ -192,7 +191,7 @@ def generate_tbme(task):
     #
     # This is purely for easy diagnostic purposes, since lines will be
     # fed directly to h2mixer as stdin below.
-    mcscript.utils.write_input(filenames.h2mixer_filename(natural_orbital_iteration),input_lines=lines,verbose=False)
+    mcscript.utils.write_input(config.filenames.h2mixer_filename(natural_orbital_iteration),input_lines=lines,verbose=False)
 
     # create work directory if it doesn't exist yet (-p)
     mcscript.call(["mkdir","-p","work"])
@@ -200,7 +199,7 @@ def generate_tbme(task):
     # invoke h2mixer
     mcscript.call(
         [
-            configuration.shell_filename("h2mixer")
+            config.environ.shell_filename("h2mixer")
         ],
         input_lines=lines,
         mode = mcscript.call.serial

@@ -22,8 +22,8 @@
         # basis parameters
         "basis_mode" (BasisMode): enumerated value indicating direct
             oscillator (config.BasisMode.kDirect), dilated oscillator
-            (k_basis_mode_dilated), or generic run mode
-            (k_basis_mode_generic), as explained further where this
+            (config.BasisMode.kDilated), or generic run mode
+            (config.BasisMode.kGeneric), as explained further where this
             enum is defined below.
         "hw" (float): hw of basis
 

@@ -54,7 +54,7 @@ k_basis_mode_generic = BasisMode.kGeneric
 class TruncationMode(enum.Enum):
     """General truncation modes for radial basis
 
-    k_truncation_mode_ho:
+    kHO (alias k_truncation_mode_ho):
         - traditional Nmax truncation; weight is (2*n + l)
         - compatible with MFDn v14+
         - "truncation_parameters" (dict):
@@ -66,7 +66,7 @@ class TruncationMode(enum.Enum):
             - "Nstep" (int): Nstep (2 for single parity, 1 for mixed parity)
 
 
-    k_truncation_mode_triangular:
+    kTriangular (alias k_truncation_mode_triangular):
         - weight is (n_coeff*n + l_coeff*l)
         - compatible with MFDN v15+
         - "truncation_parameters" (dict):
@@ -87,7 +87,7 @@ k_truncation_mode_triangular = TruncationMode.kTriangular
 # configuration
 ################################################################
 
-class Configuration(object):
+class Environment(object):
     """Object to collect MFDn environment configuration parameters into
     common name space.
 
@@ -136,7 +136,7 @@ class Configuration(object):
         return mcscript.utils.search_in_subdirectories(self.data_dir_h2_list,self.interaction_run_list,name)
 
 
-configuration = Configuration()
+environ = Environment()
 
 class FilenameConfiguration(object):
     """Object to collect filename configuration into common namespace.
