@@ -17,7 +17,7 @@ def archive_handler_mfdn_res_only(task):
     archive_filename = os.path.join(
         ##ncsm_config.data_dir_results_archive,
         mcscript.task.archive_dir,
-        "%s-results-%s.tgz" % (mcscript.run.name, mcscript.date_tag())
+        "%s-results-%s.tgz" % (mcscript.parameters.run.name, mcscript.date_tag())
         )
     ## # store toc -- TODO once restructure subdirectories in tar file
     ## mcscript.call(
