@@ -12,6 +12,7 @@
 
 #include "basis/jjjpn_scheme.h"  // for TwoBodySpecies enum typedef
 #include "cppformat/format.h"
+#include "mcutils/eigen.h"  // for debugging output
 #include "mcutils/parsing.h"
 
 namespace relative {
@@ -271,8 +272,8 @@ namespace relative {
     // {<1||A0||1>, <1||A1||1>, <1||A2||1>}
     // = 1/3. * {
     //           {1,1,1},
-    //           {std::sqrt(9./2.),-std::sqrt(9./2.),0},
-    //           {std::sqrt(5./2.),std::sqrt(5./2.),-std::sqrt(10.)}
+    //           {sqrt(9./2.),-sqrt(9./2.),0},
+    //           {sqrt(5./2.),sqrt(5./2.),-sqrt(10.)}
     //         }
     //   * {<1+1|A|1+1>, <1-1|A|1-1>, <10|A|10>}
     //
@@ -282,12 +283,12 @@ namespace relative {
     // transformation matrix
     //
     // indexed by (T,int(two_body_species))
-    Eigen::Matrix3d isospin_coefficient_matrix;
-    isospin_coefficient_matrix
+    static Eigen::Matrix3d kIsospinCoefficientMatrixTzToTForT1;
+    kIsospinCoefficientMatrixTzToTForT1
       << 1, 1, 1,
       std::sqrt(9./2.), -std::sqrt(9./2.), 0,
       std::sqrt(5./2.), std::sqrt(5./2.), -std::sqrt(10.);
-    isospin_coefficient_matrix *= 1/3.;
+    kIsospinCoefficientMatrixTzToTForT1 *= 1/3.;
 
     // read matrix elements by two-body species
     for (basis::TwoBodySpeciesPN two_body_species : {basis::TwoBodySpeciesPN::kPP,basis::TwoBodySpeciesPN::kNN,basis::TwoBodySpeciesPN::kPN})
@@ -310,7 +311,7 @@ namespace relative {
           );
 
         // read matrix elements
-        const std::string source_filename = source_filenames[int(two_body_species)];
+        const std::string& source_filename = source_filenames[int(two_body_species)];
         const basis::OperatorLabelsJT operator_labels_isoscalar(0,0,0,0,basis::SymmetryPhaseMode::kHermitian);
         ReadJPVOperator(
             source_filename,
@@ -339,28 +340,56 @@ namespace relative {
               continue;  // short circuit known vanishing T-changing sectors
             int T = ket_T;
           
-            // process T=0 (Tz=0) sector
-            if ((T==0)&&(Tz==0))
+            if (T==0)
+              // sector with (T'T)=(0,0)
               {
-                // Simple copy to corresponding target sector.  Though we
-                // can write this as an accumulation for consistency.
-                relative_component_matrices[0][sector_index] += input_matrix;
+                // T=0 sectors only relevant in Tz=0 file; they are zeroed out in Tz!=0 files
+                if(Tz==0)
+                  {
+                    // Simple copy to corresponding target sector.  Though we
+                    // can write this as an accumulation for consistency.
+                    relative_component_matrices[0][sector_index] += input_matrix;
+                  }
               }
-          
-            // process T=1 sector
-            if (T==1)
+            else if (T==1)
+              // sector with (T'T)=(1,1)
               {
-                double coefficient = isospin_coefficient_matrix(T,int(two_body_species));
                 for (int T0=0; T0<=2; ++T0)
                   {
                     // look up target sector
                     int target_sector_index = relative_component_sectors[T0].LookUpSectorIndex(input_sector.bra_subspace_index(),input_sector.ket_subspace_index());
                     assert(sector_index!=basis::kNone);
+                    const typename basis::RelativeSectorsLSJT::SectorType& target_sector
+                      = relative_component_sectors[T0].GetSector(target_sector_index);
 
                     // accumulate matrix for sector
                     Eigen::MatrixXd& matrix
                       = relative_component_matrices[T0][target_sector_index];
-                    matrix += coefficient * input_matrix;
+                    double isospin_coefficient = kIsospinCoefficientMatrixTzToTForT1(T0,int(two_body_species));
+                    matrix += isospin_coefficient * input_matrix;
+
+                    // debugging output
+                    // std::cout
+                    //   << fmt::format(
+                    //       "input sector Tz={:+d} {:s}x{:s} -> target sector T0={:d} {:s}x{:s}   coefficient {:.4f}",
+                    //       Tz,
+                    //       input_sector.bra_subspace().LabelStr(),input_sector.ket_subspace().LabelStr(),
+                    //       T0,
+                    //       target_sector.bra_subspace().LabelStr(),target_sector.ket_subspace().LabelStr(),
+                    //       isospin_coefficient
+                    //     )
+                    //   << std::endl;
+                    // std::cout
+                    //   << mcutils::FormatMatrix(input_matrix,".7f","   ")
+                    //   << std::endl;
+                    // std::cout << "  ... accumulating target ... " << std::endl;
+                    // std::cout
+                    //   << mcutils::FormatMatrix(matrix,".7f","   ")
+                    //   << std::endl;
+
+
+
+
                   }
 
           

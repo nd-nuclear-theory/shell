@@ -12,6 +12,7 @@
   3/28/17 (mac):
     - Implement input of non-isoscalar operators.
     - Add verbose option to input functions.
+  4/9/17 (mac): Finish implementing conversion of non-isoscalar operators.
 
 ****************************************************************/
 

@@ -782,13 +782,21 @@ namespace moshinsky {
 
     // define isospin Clebsch-Gordan coefficients
     //
-    // as static arrays over T0
-    static const double kPPCoefficients[] = {+1,+sqrt(1/2.),+sqrt(1/10.)};
-    static const double kNNCoefficients[] = {+1,-sqrt(1/2.),+sqrt(1/10.)};
-    static const double kPNCoefficients11[] = {+1,0,-sqrt(2./5.)};
-    static const double kPNCoefficient10 = 1.;
-    static const double kPNCoefficient01 = -sqrt(1/3.);
-    static const double kPNCoefficient00 = 1.;
+    // Note: There are just the isospin Clebsch-Gordan
+    // coefficients for the Wigner-Eckhart branching of
+    // the isospin reduced matrix elements.  These do not
+    // include the Clebsch/normalization factors in the
+    // expansion of the pn states in terms of T=0/1
+    // states, which are treated below at the level of
+    // individual matrix elements.
+    static Eigen::Matrix3d kIsospinCoefficientMatrixTToTzForT1;
+    kIsospinCoefficientMatrixTToTzForT1
+      << +1, +std::sqrt(1/2.), +std::sqrt(1/10.),
+      +1,-std::sqrt(1/2.),+std::sqrt(1/10.),
+      +1,0,-std::sqrt(2./5.);
+    static const double kIsospinCoefficientTToTzForT10 = 1.;
+    static const double kIsospinCoefficientTToTzForT01 = -sqrt(1/3.);
+    static const double kIsospinCoefficientTToTzForT0 = 1.;
 
     // set up matrix to hold results
     Eigen::MatrixXd matrix = Eigen::MatrixXd::Zero(
@@ -900,33 +908,15 @@ namespace moshinsky {
               // identify isospin Clebsch-Gordan coefficient to apply
               // to this source sector
               double isospin_coefficient;
-              if (two_body_species==basis::TwoBodySpeciesPN::kPP)
-                {
-                  isospin_coefficient = kPPCoefficients[T0];
-                }
-              else if (two_body_species==basis::TwoBodySpeciesPN::kPP)
-                {
-                  isospin_coefficient = kNNCoefficients[T0];
-                }
-              else if (two_body_species==basis::TwoBodySpeciesPN::kPN)
-                {
-                  // Note: There are just the isospin Clebsch-Gordan
-                  // coefficients for the Wigner-Eckhart branching of
-                  // the isospin reduced matrix elements.  These do not
-                  // include the Clebsch/normalization factors in the
-                  // expansion of the pn states in terms of T=0/1
-                  // states, which are treated below at the level of
-                  // individual matrix elements.
-                  if ((Tp==1)&&(T==1))
-                    isospin_coefficient = kPNCoefficients11[T0];
-                  else if ((Tp==0)&&(T==1))
-                    isospin_coefficient = kPNCoefficient01;
-                  else if ((Tp==1)&&(T==0))
-                    isospin_coefficient = kPNCoefficient10;
-                  else if ((Tp==0)&&(T==0))
-                    isospin_coefficient = kPNCoefficient00;
-                }
-
+              if ((Tp==1)&&(T==1))
+                isospin_coefficient = kIsospinCoefficientMatrixTToTzForT1(int(two_body_species),T0);
+              else if ((Tp==0)&&(T==1))
+                isospin_coefficient = kIsospinCoefficientTToTzForT01;
+              else if ((Tp==1)&&(T==0))
+                isospin_coefficient = kIsospinCoefficientTToTzForT10;
+              else if ((Tp==0)&&(T==0))
+                isospin_coefficient = kIsospinCoefficientTToTzForT0;
+              
 
               // accumulate contributions to target sector matrix elements
               for (int bra_index = 0; bra_index < two_body_jjjpn_sector.bra_subspace().size(); ++bra_index)
