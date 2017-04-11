@@ -1,3 +1,8 @@
+import os
+import glob
+
+import mcscript
+
 from . import utils, config
 
 def run_mfdn_v14_b06(task):
@@ -52,7 +57,7 @@ def run_mfdn_v14_b06(task):
     lines.append("{eigenvectors:d} {lanczos:d} {initial_vector:d} {tolerance:e}  # number of eigenvalues/vectors, max number of its, ...)".format(**task))
     lines.append("{:d} {:d}  # rank of input Hamiltonian/interaction".format(2,2))
     lines.append("{hw_for_trans:g} {k_mN_csqr:g}  # h-bar*omega, Nucleon mass (MeV) ".format(
-        hw_for_trans=hw_for_trans,k_mN_csqr=k_mN_csqr,**task
+        hw_for_trans=hw_for_trans,k_mN_csqr=utils.k_mN_csqr,**task
     ))
 
     # tbo: collect tbo names
@@ -148,7 +153,7 @@ def save_mfdn_v14_output(task):
 
     # save quick inspection copies of mfdn.{res,out}
     natural_orbital_iteration = task.get("natorb_iteration")
-    descriptor = task["descriptor"] + utils.natural_orbital_indicator(natural_orbital_iteration)
+    descriptor = task["metadata"]["descriptor"] + utils.natural_orbital_indicator(natural_orbital_iteration)
     print("Saving basic output files...")
     res_filename = "{:s}-mfdn-{:s}.res".format(mcscript.parameters.run.name,descriptor)
     mcscript.call(["cp","--verbose","work/mfdn.res",res_filename])

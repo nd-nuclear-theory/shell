@@ -2,6 +2,8 @@
 
     - 2/18/17 (pjf): Created.
 """
+import math
+
 import mcscript.utils
 from . import utils
 

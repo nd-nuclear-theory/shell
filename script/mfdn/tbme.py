@@ -1,4 +1,8 @@
-from . import utils, config
+import math
+
+import mcscript.utils
+
+from . import utils, config, operators
 
 def generate_tbme(task):
     """Generate TBMEs for MFDn run.
@@ -41,7 +45,7 @@ def generate_tbme(task):
     if (task.get("hamiltonian")):
         targets["tbme-H"] = task["hamiltonian"]
     else:
-        targets["tbme-H"] = mfdn.operators.Hamiltonian(
+        targets["tbme-H"] = operators.Hamiltonian(
             A=A, hw=hw, a_cm=a_cm, bsqr_intr=hw_cm/hw,
             use_coulomb=task["use_coulomb"], bsqr_coul=hw_coul_rescaled/hw_coul
         )
@@ -52,28 +56,28 @@ def generate_tbme(task):
 
     # target: radius squared
     if ("tbme-rrel2" not in targets.keys()):
-        targets["tbme-rrel2"] = mfdn.operators.rrel2(A, hw)
+        targets["tbme-rrel2"] = operators.rrel2(A, hw)
     # target: Ncm
     if ("tbme-Ncm" not in targets.keys()):
-        targets["tbme-Ncm"] = mfdn.operators.Ncm(A, hw/hw_cm)
+        targets["tbme-Ncm"] = operators.Ncm(A, hw/hw_cm)
 
     # optional observable sets
     # Hamiltonian components
     if ("H-components" in task["observable_sets"]):
         # target: Trel (diagnostic)
-        targets["tbme-Trel"] = mfdn.operators.Trel(A, hw)
+        targets["tbme-Trel"] = operators.Trel(A, hw)
         # target: VNN (diagnostic)
-        targets["tbme-VNN"] = mfdn.operators.VNN()
+        targets["tbme-VNN"] = operators.VNN()
         # target: VC (diagnostic)
         if (task["use_coulomb"]):
-            targets["tbme-VC"] = mfdn.operators.VC(hw_coul_rescaled/hw_coul)
+            targets["tbme-VC"] = operators.VC(hw_coul_rescaled/hw_coul)
     # squared angular momenta
     if ("am-sqr" in task["observable_sets"]):
-        targets["tbme-L"] = mfdn.operators.L()
-        targets["tbme-Sp"] = mfdn.operators.Sp()
-        targets["tbme-Sn"] = mfdn.operators.Sn()
-        targets["tbme-S"] = mfdn.operators.S()
-        targets["tbme-J"] = mfdn.operators.J()
+        targets["tbme-L"] = operators.L()
+        targets["tbme-Sp"] = operators.Sp()
+        targets["tbme-Sn"] = operators.Sn()
+        targets["tbme-S"] = operators.S()
+        targets["tbme-J"] = operators.J()
 
     # get set of required sources
     required_sources = set()
@@ -126,7 +130,7 @@ def generate_tbme(task):
     lines.append("")
 
     # sources: h2mixer built-ins
-    builtin_sources = (mfdn.operators.kinematic_operator_set | mfdn.operators.angular_momentum_operator_set)
+    builtin_sources = (operators.kinematic_operator_set | operators.angular_momentum_operator_set)
     for source in sorted(builtin_sources & required_sources):
         lines.append("define-source operator " + source)
     lines.append("")

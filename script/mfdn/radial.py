@@ -1,3 +1,7 @@
+import math
+
+import mcscript
+
 from . import config
 
 ##################################################################
@@ -16,7 +20,7 @@ def set_up_orbitals(task):
 
     # validate truncation mode
     if (task["truncation_mode"] is not config.TruncationMode.kHO):
-        raise ValueError("expecting truncation_mode to be {} but found {ho_truncation}".format(config.TruncationMode.kHO,**task))
+        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(config.TruncationMode.kHO,**task))
 
     natural_orbital_iteration = task.get("natorb_iteration")
 
