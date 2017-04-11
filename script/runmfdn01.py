@@ -13,6 +13,7 @@
 
 import mcscript
 import mfdn
+import mfdn.mfdn_v14
 
 # initialize mcscript
 mcscript.init()
@@ -21,7 +22,7 @@ mcscript.init()
 # build task list
 ##################################################################
 
-mfdn.configuration.interaction_run_list = [
+mfdn.config.environ.interaction_run_list = [
     "run0164-JISP16-ob-9",
     "run0164-JISP16-ob-13",
     "run0164-JISP16-tb-10",
@@ -47,7 +48,7 @@ task = {
     "hw_coul" : 20.,
 
     # basis parameters
-    "basis_mode" : mfdn.k_basis_mode_direct,
+    "basis_mode" : mfdn.config.BasisMode.kDirect,
     "hw" : 20.,
 
     # transformation parameters
@@ -57,7 +58,7 @@ task = {
     "target_truncation" : None,
 
     # traditional oscillator many-body truncation
-    "truncation_mode" : mfdn.k_truncation_mode_ho,
+    "truncation_mode" : mfdn.config.TruncationMode.kHO,
     "truncation_parameters": {
         "Nv" : 0,
         "Nmax" : 2,
@@ -93,14 +94,16 @@ task = {
 # run control
 ################################################################
 
-# add task descriptor field (needed for filenames)
-task["descriptor"] = mfdn.task_descriptor_7(task)
+# add task descriptor metadata field (needed for filenames)
+task["metadata"] = {
+    "descriptor": mfdn.descriptors.task_descriptor_7(task)
+    }
 
-mfdn.set_up_orbitals(task)
-mfdn.set_up_radial(task)
-mfdn.generate_tbme(task)
-mfdn.run_mfdn_v14_b06(task)
-mfdn.save_mfdn_v14_output(task)
+mfdn.radial.set_up_orbitals(task)
+mfdn.radial.set_up_radial(task)
+mfdn.tbme.generate_tbme(task)
+mfdn.mfdn_v14.run_mfdn_v14_b06(task)
+mfdn.mfdn_v14.save_mfdn_v14_output(task)
 
 ##################################################################
 # task control
@@ -108,7 +111,7 @@ mfdn.save_mfdn_v14_output(task)
 
 ## mcscript.task.init(
 ##     tasks,
-##     task_descriptor=mfdn.task_descriptor_7,
+##     task_descriptor=mfdn.descriptors.task_descriptor_7,
 ##     task_pool=task_pool,
 ##     phase_handler_list=[mfdn_h2.task_handler_ho]
 ##     )

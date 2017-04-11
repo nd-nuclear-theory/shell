@@ -11,6 +11,7 @@
 
 import mcscript
 import mfdn
+import mfdn.mfdn_v14
 
 # initialize mcscript
 mcscript.init()
@@ -19,7 +20,7 @@ mcscript.init()
 # build task list
 ##################################################################
 
-mfdn.configuration.interaction_run_list = [
+mfdn.config.environ.interaction_run_list = [
     "run0164-JISP16-ob-9",
     "run0164-JISP16-ob-13",
     "run0164-JISP16-tb-10",
@@ -88,8 +89,8 @@ task_list = [
         "hw_coul" : 20.,
 
         # basis parameters
-        "basis_mode" : mfdn.k_basis_mode_direct,
-        "hw" : hw,
+        "basis_mode" : mfdn.config.BasisMode.kDirect,
+        "hw" : 20.,
 
         # transformation parameters
         "xform_truncation_int" : None,
@@ -98,7 +99,7 @@ task_list = [
         "target_truncation" : None,
 
         # traditional oscillator many-body truncation
-        "truncation_mode" : mfdn.k_truncation_mode_ho,
+        "truncation_mode" : mfdn.config.TruncationMode.kHO,
         "truncation_parameters": {
             "Nv" : 0,
             "Nmax" : Nmax,
@@ -153,11 +154,11 @@ def task_mask (current_task):
 def task_handler_v14_b06(task):
     """ Task handler for basic run with mfdn v14 b06.
     """
-    mfdn.set_up_orbitals(task)
-    mfdn.set_up_radial(task)
-    mfdn.generate_tbme(task)
-    mfdn.run_mfdn_v14_b06(task)
-    mfdn.save_mfdn_v14_output(task)
+    mfdn.radial.set_up_orbitals(task)
+    mfdn.radial.set_up_radial(task)
+    mfdn.tbme.generate_tbme(task)
+    mfdn.mfdn_v14.run_mfdn_v14_b06(task)
+    mfdn.mfdn_v14.save_mfdn_v14_output(task)
 
 ##################################################################
 # task control
@@ -165,7 +166,7 @@ def task_handler_v14_b06(task):
 
 mcscript.task.init(
     task_list,
-    task_descriptor=mfdn.task_descriptor_7,
+    task_descriptor=mfdn.descriptors.task_descriptor_7,
     task_pool=task_pool,
     task_mask=task_mask,
     phase_handler_list=[task_handler_v14_b06],
