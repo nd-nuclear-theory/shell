@@ -43,12 +43,11 @@ namespace relative {
   // operators are represented.
   //
   // Arguments:
-  //   operator_labels (basis::OperatorLabelsJT) : tensorial properties of operator
-  //   relative_space (...) : target space
-  //   relative_component_sectors (..., output) : target sectors
-  //   relative_component_matrices (..., output) : target matrices
-  //   relative::KinematicOperator kinematic_operator : which operator
-  //     to construct
+  //   operator_labels (input) : tensorial properties of operator
+  //   relative_space (input) : target space
+  //   relative_component_sectors (output) : target sectors
+  //   relative_component_matrices (output) : target matrices
+  //   kinematic_operator (input): which operator to construct
 
   void ConstructCoulombOperator(
       const basis::OperatorLabelsJT& operator_labels,
@@ -67,11 +66,11 @@ namespace relative {
   // operators are represented.
   //
   // Arguments:
-  //   operator_labels (basis::OperatorLabelsJT): tensorial properties of operator
-  //   relative_space (...): target space
-  //   relative_component_sectors (..., output): target sectors
-  //   relative_component_matrices (..., output): target matrices
-  //   num_steps: number of integration steps
+  //   operator_labels (input): tensorial properties of operator
+  //   relative_space (input): target space
+  //   relative_component_sectors (output): target sectors
+  //   relative_component_matrices (output): target matrices
+  //   num_steps (input): number of integration steps
 
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////

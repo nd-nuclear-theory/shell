@@ -14,3 +14,6 @@
 [submodule "libraries/mcutils"]
 	path = libraries/mcutils
 	url = ../mcutils.git
+[submodule "config/ndconfig"]
+	path = config/ndconfig
+	url = ../ndconfig
