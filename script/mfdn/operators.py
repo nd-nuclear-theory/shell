@@ -1,6 +1,9 @@
 """operators -- define two-body operators for h2mixer input
 
     - 2/18/17 (pjf): Created.
+    - 5/24/17 (pjf):
+      + Fixed VC scaling.
+      + Added comments explaining scaling.
 """
 import mcscript.utils
 from .utils import *
@@ -66,7 +69,12 @@ def VC_unscaled():
     return mcscript.utils.CoefficientDict(VC_unscaled=1.)
 
 def VC(bsqr_coul=1.0):
-    return VC_unscaled() / math.sqrt(bsqr_coul)
+    """Coulomb interaction operator.
+
+    Arguments:
+        bsqr_coul (float): beta squared (ratio of b^2 to b_coul^2)
+    """
+    return VC_unscaled() * math.sqrt(bsqr_coul)
 
 ################################################################
 # common observables
@@ -92,7 +100,7 @@ def Ncm(A, bsqr, **kwargs):
 
     Arguments:
         A (int): mass number
-        bsqr (float): beta squared
+        bsqr (float): beta squared (ratio of b_cm^2 to b^2)
 
     Returns:
         CoefficientDict containing coefficients for Ncm operator.
@@ -110,7 +118,7 @@ def Ntotal(A, bsqr, **kwargs):
 
     Arguments:
         A (int): mass number
-        bsqr (float): beta squared
+        bsqr (float): beta squared (ratio of b_cm^2 to b^2)
 
     Returns:
         CoefficientDict containing coefficients for N operator.
@@ -125,7 +133,7 @@ def Nintr(A, bsqr, **kwargs):
 
     Arguments:
         A (int): mass number
-        bsqr (float): beta squared
+        bsqr (float): beta squared (ratio of b_cm^2 to b^2)
 
     Returns:
         CoefficientDict containing coefficients for Nintr operator.
@@ -158,9 +166,9 @@ def Hamiltonian(A, hw, a_cm, bsqr_intr=1.0, use_coulomb=True, bsqr_coul=1.0, **k
         A (int): mass number
         hw (float): oscillator basis parameter
         a_cm (float): Lawson term coefficient
-        bsqr_intr (float, default 1.0): beta-squared for Lawson term
+        bsqr_intr (float, default 1.0): beta-squared for Lawson term (ratio of b_cm^2 to b^2)
         use_coulomb (bool, default True): include Coulomb interaction
-        bsqr_coul (float, optional): beta-squared for Coulomb scaling
+        bsqr_coul (float, optional): beta-squared for Coulomb scaling (ratio of b^2 to b_coul^2)
     """
     kinetic_energy = Trel(A, hw)
     lawson_term = a_cm * Ncm(A, bsqr_intr)
