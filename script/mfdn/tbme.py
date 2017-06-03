@@ -4,7 +4,7 @@ import mcscript.utils
 
 from . import utils, config, operators
 
-def generate_tbme(task):
+def generate_tbme(task, postfix=""):
     """Generate TBMEs for MFDn run.
 
     Operation mode may in general be direct oscillator, dilated
@@ -12,6 +12,7 @@ def generate_tbme(task):
 
     Arguments:
         task (dict): as described in module docstring
+        postfix (string, optional): identifier added to input filenames
 
     """
 
@@ -20,7 +21,6 @@ def generate_tbme(task):
         raise ValueError("expecting truncation_mode to be {} but found {ho_truncation}".format(config.TruncationMode.kHO,**task))
 
     # extract parameters for convenience
-    natural_orbital_iteration = task.get("natorb_iteration")
     A = sum(task["nuclide"])
     a_cm = task["a_cm"]
     hw = task["hw"]
@@ -113,7 +113,7 @@ def generate_tbme(task):
         # given value
         target_weight_max = target_truncation
     lines.append("set-target-indexing {orbitals_filename} {target_weight_max}".format(
-        orbitals_filename=config.filenames.orbitals_filename(natural_orbital_iteration),
+        orbitals_filename=config.filenames.orbitals_filename(postfix),
         target_weight_max=target_weight_max,
         **task
     ))
@@ -125,7 +125,7 @@ def generate_tbme(task):
     # radial operator inputs
     for operator_type in ["r","k"]:
         for power in [1,2]:
-            radial_me_filename = config.filenames.radial_me_filename(natural_orbital_iteration, operator_type, power)
+            radial_me_filename = config.filenames.radial_me_filename(postfix, operator_type, power)
             lines.append("define-radial-operator {} {} {}".format(operator_type,power,radial_me_filename))
     lines.append("")
 
@@ -144,14 +144,14 @@ def generate_tbme(task):
                 task["hw_int"]
             )
         )
-        if (task["basis_mode"]==config.BasisMode.kDirect and natural_orbital_iteration in {None,0}):
+        if (task["basis_mode"] == config.BasisMode.kDirect):
             lines.append("define-source input VNN {VNN_filename}".format(VNN_filename=VNN_filename,**task))
         else:
             xform_weight_max_int = utils.weight_max_string(xform_truncation_int)
             lines.append("define-source xform VNN {VNN_filename} {xform_weight_max_int} {radial_olap_int_filename}".format(
                 VNN_filename=VNN_filename,
                 xform_weight_max_int=xform_weight_max_int,
-                radial_olap_int_filename=config.filenames.radial_olap_int_filename(natural_orbital_iteration),
+                radial_olap_int_filename=config.filenames.radial_olap_int_filename(postfix),
                 **task
             ))
 
@@ -167,14 +167,14 @@ def generate_tbme(task):
                 task["hw_coul"]
             )
         )
-        if (task["basis_mode"] in {config.BasisMode.kDirect,config.BasisMode.kDilated} and natural_orbital_iteration in {None,0}):
+        if (task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated}):
             lines.append("define-source input VC_unscaled {VC_filename}".format(VC_filename=VC_filename,**task))
         else:
             xform_weight_max_coul = utils.weight_max_string(xform_truncation_coul)
             lines.append("define-source xform VC_unscaled {VC_filename} {xform_weight_max_coul} {radial_olap_coul_filename}".format(
                 VC_filename=VC_filename,
                 xform_weight_max_coul=xform_weight_max_coul,
-                radial_olap_coul_filename=config.filenames.radial_olap_coul_filename(natural_orbital_iteration),
+                radial_olap_coul_filename=config.filenames.radial_olap_coul_filename(postfix),
                 **task
             ))
 
@@ -195,7 +195,7 @@ def generate_tbme(task):
     #
     # This is purely for easy diagnostic purposes, since lines will be
     # fed directly to h2mixer as stdin below.
-    mcscript.utils.write_input(config.filenames.h2mixer_filename(natural_orbital_iteration),input_lines=lines,verbose=False)
+    mcscript.utils.write_input(config.filenames.h2mixer_filename(postfix),input_lines=lines,verbose=False)
 
     # create work directory if it doesn't exist yet (-p)
     mcscript.call(["mkdir","-p","work"])

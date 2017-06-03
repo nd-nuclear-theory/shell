@@ -81,7 +81,7 @@
         "mfdn_executable" (string): mfdn executable name
 
         # natural orbital parameters
-        "natorb_iteration" (int): 0-based iteration number
+        "natural_orbitals" (bool): enable/disable natural orbitals
         "natorb_base_state" (int): MFDn sequence number of state off which to
             build natural orbitals
 

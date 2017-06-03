@@ -39,14 +39,13 @@ def task_descriptor_7(task):
         fci_indicator = ""
     mixed_parity_indicator = mcscript.utils.ifelse(truncation_parameters["Nstep"]==1,"x","")
     coulomb_flag = int(task["use_coulomb"])
-    natural_orbital_iteration = task.get("natorb_iteration")
-    natural_orbital_str = ("-natorb" if (natural_orbital_iteration is not None) else "")
+    natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"),"-natorb","")
 
     descriptor = template_string.format(
         coulomb_flag=coulomb_flag,
         mixed_parity_indicator=mixed_parity_indicator,
         fci_indicator=fci_indicator,
-        natural_orbital_indicator=natural_orbital_str,
+        natural_orbital_indicator=natural_orbital_indicator,
         **mcscript.utils.dict_union(task,truncation_parameters)
         )
 

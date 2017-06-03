@@ -5,15 +5,14 @@ import mcscript
 
 from . import utils, config
 
-def run_mfdn_v14_b06(task):
+def run_mfdn_v14_b06(task, postfix=""):
     """Generate input file and execute MFDn version 14 beta 06.
 
     Arguments:
         task (dict): as described in module docstring
-
+        postfix (str, optional):
     Raises:
         mcscript.ScriptError: if MFDn output not found
-
     """
 
     # validate truncation mode
@@ -24,7 +23,6 @@ def run_mfdn_v14_b06(task):
     lines = []
 
     # base parameters
-    natural_orbital_iteration = task.get("natorb_iteration")
     truncation_parameters = task["truncation_parameters"]
     twice_Mj = int(2*task["Mj"])
     if (truncation_parameters["many_body_truncation"]=="Nmax"):
@@ -32,7 +30,7 @@ def run_mfdn_v14_b06(task):
     elif (truncation_parameters["many_body_truncation"]=="FCI"):
         Nmax_orb = truncation_parameters["Nmax"]
     Nshell = Nmax_orb+1
-    if (task["basis_mode"] in {config.BasisMode.kDirect,config.BasisMode.kDilated} and natural_orbital_iteration in {None,0}):
+    if (task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated}):
         hw_for_trans = task["hw"]
     else:
         hw_for_trans = 0  # disable MFDn hard-coded oscillator one-body observables
@@ -72,7 +70,7 @@ def run_mfdn_v14_b06(task):
         obs_basename_list += list(task["observables"].keys())
 
     # tbo: log tbo names in separate file to aid future data analysis
-    mcscript.utils.write_input("tbo_names.dat",input_lines=obs_basename_list)
+    mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)
 
     # tbo: write list of operators
     lines.append("tbme-H")  # Hamiltonian basename
@@ -140,7 +138,7 @@ def run_mfdn_v14_b06(task):
     # leave work directory
     os.chdir("..")
 
-def save_mfdn_v14_output(task):
+def save_mfdn_v14_output(task, postfix=""):
     """Generate input file and execute MFDn version 14 beta 06.
 
     Arguments:
@@ -152,23 +150,23 @@ def save_mfdn_v14_output(task):
     """
 
     # save quick inspection copies of mfdn.{res,out}
-    natural_orbital_iteration = task.get("natorb_iteration")
-    descriptor = task["metadata"]["descriptor"] + utils.natural_orbital_indicator(natural_orbital_iteration)
+    natural_orbitals = task.get("natural_orbitals")
+    descriptor = task["metadata"]["descriptor"]
     print("Saving basic output files...")
-    res_filename = "{:s}-mfdn-{:s}.res".format(mcscript.parameters.run.name,descriptor)
+    res_filename = "{:s}-mfdn-{:s}{:s}.res".format(mcscript.parameters.run.name, descriptor, postfix)
     mcscript.call(["cp","--verbose","work/mfdn.res",res_filename])
-    out_filename = "{:s}-mfdn-{:s}.out".format(mcscript.parameters.run.name,descriptor)
+    out_filename = "{:s}-mfdn-{:s}{:s}.out".format(mcscript.parameters.run.name, descriptor, postfix)
     mcscript.call(["cp","--verbose","work/mfdn.out",out_filename])
 
     # save OBDME files for next natural orbital iteration
-    if (natural_orbital_iteration is not None):
+    if natural_orbitals:
         print("Saving OBDME files for natural orbital generation...")
         obdme_info_filename = "mfdn.rppobdme.info"
         mcscript.call(
             [
                 "cp","--verbose",
                 "work/{}".format(obdme_info_filename),
-                config.filenames.natorb_info_filename(natural_orbital_iteration)
+                config.filenames.natorb_info_filename(postfix)
             ]
         )
         obdme_filename = glob.glob("work/mfdn.statrobdme.seq{:03d}*".format(task["natorb_base_state"]))
@@ -176,7 +174,7 @@ def save_mfdn_v14_output(task):
             [
                 "cp","--verbose",
                 obdme_filename[0],
-                config.filenames.natorb_obdme_filename(natural_orbital_iteration)
+                config.filenames.natorb_obdme_filename(postfix)
             ]
         )
 
@@ -184,36 +182,34 @@ def save_mfdn_v14_output(task):
     print("Saving full output files...")
     # logging
     archive_file_list = [
-        config.filenames.h2mixer_filename(natural_orbital_iteration),
+        config.filenames.h2mixer_filename(postfix),
         "tbo_names.dat"
         ]
     # orbital information
     archive_file_list += [
-        config.filenames.orbitals_int_filename(natural_orbital_iteration),
-        config.filenames.orbitals_filename(natural_orbital_iteration),
+        config.filenames.orbitals_int_filename(postfix),
+        config.filenames.orbitals_filename(postfix),
         ]
     # transformation information
     archive_file_list += [
-        config.filenames.radial_xform_filename(natural_orbital_iteration),
-        # config.filenames.radial_me_filename(natural_orbital_iteration, operator_type, power),
-        config.filenames.radial_olap_int_filename(natural_orbital_iteration),
+        config.filenames.radial_xform_filename(postfix),
+        # config.filenames.radial_me_filename(postfix, operator_type, power),
+        config.filenames.radial_olap_int_filename(postfix),
         ]
     # Coulomb information:
     if task["use_coulomb"]:
         archive_file_list += [
-            config.filenames.orbitals_coul_filename(natural_orbital_iteration),
-            config.filenames.radial_olap_coul_filename(natural_orbital_iteration),
+            config.filenames.orbitals_coul_filename(postfix),
+            config.filenames.radial_olap_coul_filename(postfix),
         ]
     # natural orbital information
-    if natural_orbital_iteration not in {None}:
+    if natural_orbitals:
         archive_file_list += [
-            config.filenames.natorb_info_filename(natural_orbital_iteration),
-            config.filenames.natorb_obdme_filename(natural_orbital_iteration),
+            config.filenames.natorb_info_filename(postfix),
+            config.filenames.natorb_obdme_filename(postfix),
             ]
-    if (natural_orbital_iteration not in {None,0}):
-        archive_file_list += [
-            config.filenames.natorb_xform_filename(natural_orbital_iteration),
-            ]
+        # glob for natural orbital xform
+        archive_file_list += glob.glob(config.filenames.natorb_xform_filename(postfix))
     # MFDn output
     archive_file_list += [
         "work/mfdn.dat","work/mfdn.out","work/mfdn.res","work/mfdn_partitioning.generated","work/mfdn_spstates.info"
@@ -224,7 +220,7 @@ def save_mfdn_v14_output(task):
     if (task["save_obdme"]):
         archive_file_list += glob.glob("work/*obdme*")
     # generate archive (outside work directory)
-    archive_filename = "{:s}-mfdn-{:s}.tgz".format(mcscript.parameters.run.name,descriptor)
+    archive_filename = "{:s}-mfdn-{:s}{:s}.tgz".format(mcscript.parameters.run.name, descriptor, postfix)
     mcscript.call(
         [
             "tar", "zcvf", archive_filename,

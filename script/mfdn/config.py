@@ -159,42 +159,39 @@ class FilenameConfiguration(object):
 
     Methods:
 
-        orbitals_int_filename(natural_orbital_iteration): Generate filename for
-            interaction tbme basisvorbitals, given natural orbital iteration.
+        orbitals_int_filename(postfix): Generate filename for interaction tbme
+            basis orbitals, given postfix.
 
-        orbital_coul_filename(natural_orbital_iteration): Generate filename for
-            Coulomb tbme basis orbitals, given natural orbital iteration.
+        orbital_coul_filename(postfix): Generate filename for Coulomb tbme basis
+            orbitals, given postfix.
 
-        orbital_filename(natural_orbital_iteration): Generate filename for target
-            basis orbitals, given natural orbital iteration.
+        orbital_filename(postfix): Generate filename for target basis orbitals,
+            given postfix.
 
-        radial_xform_filename(natural_orbital_iteration): Generate filename for
-            change of basis xform, given natural orbital iteration.
+        radial_xform_filename(postfix): Generate filename for change of basis
+            xform, given postfix.
 
-        radial_me_filename(natural_orbital_iteration, operator_type, power):
-            Generate filename for radial matrix elements, given natural orbital
-            iteration, operator type, and power.
+        radial_me_filename(postfix, operator_type, power): Generate filename for
+            radial matrix elements, given natural orbital iteration, operator
+            type, and power.
 
-        radial_olap_int_filename(natural_orbital_iteration): Generate filename
-            for overlaps from interaction tbme basis, given natural orbital iteration.
+        radial_olap_int_filename(postfix): Generate filename for overlaps from
+            interaction tbme basis, given postfix.
 
-        radial_olap_coul_filename(natural_orbital_iteration): Generate filename
-            for overlaps from Coulomb tbme basis, given natural orbital iteration.
+        radial_olap_coul_filename(postfix): Generate filename for overlaps from
+            Coulomb tbme basis, given postfix.
 
-        h2mixer_filename(natural_orbital_iteration): Generate filename h2mixer
-            input, given natural_orbital_iteration.
+        h2mixer_filename(postfix): Generate filename h2mixer input, given
+            postfix.
 
-        def natorb_info_filename(natural_orbital_iteration): Generate filename for
-            MFDn OBDME info output (from which to build natural orbitals), given
-            natural_orbital_iteration.
+        def natorb_info_filename(postfix): Generate filename for MFDn OBDME info
+            output (from which to build natural orbitals), given postfix.
 
-        def natorb_obdme_filename(natural_orbital_iteration): Generate filename
-            for MFDn static OBDME output (from which to build natural orbitals),
-            given natural_orbital_iteration.
+        def natorb_obdme_filename(postfix): Generate filename for MFDn static
+            OBDME output (from which to build natural orbitals), given postfix.
 
-        def natorb_xform_filename(natural_orbital_iteration): Generate filename
-            for xform from previous natural orbit to current natural orbit, given
-            natural_orbital_iteration.
+        def natorb_xform_filename(postfix): Generate filename for xform from
+            previous natural orbit to current natural orbit, given postfix.
 
     """
 
@@ -211,50 +208,50 @@ class FilenameConfiguration(object):
     natorb_obdme_filename_template = "natorb-obdme{:s}.dat"
     natorb_xform_filename_template = "natorb-xform{:s}.dat"
 
-    def orbitals_int_filename(self, natural_orbital_iteration):
+    def orbitals_int_filename(self, postfix):
         """Construct filename for interaction tbme basis orbitals."""
         # don't make the interaction orbital filename dependent on iteration
         return self.orbitals_int_filename_template.format("")
 
-    def orbitals_coul_filename(self, natural_orbital_iteration):
+    def orbitals_coul_filename(self, postfix):
         """Construct filename for Coulomb tbme basis orbitals."""
         # don't make the Coulomb orbital filename dependent on iteration
         return self.orbitals_coul_filename_template.format("")
 
-    def orbitals_filename(self, natural_orbital_iteration):
+    def orbitals_filename(self, postfix):
         """Construct filename for target basis orbitals."""
-        return self.orbitals_filename_template.format(utils.natural_orbital_indicator(natural_orbital_iteration))
+        return self.orbitals_filename_template.format(postfix)
 
-    def radial_xform_filename(self, natural_orbital_iteration):
+    def radial_xform_filename(self, postfix):
         """Construct filename for change of basis xform."""
-        return self.radial_xform_filename_template.format(utils.natural_orbital_indicator(natural_orbital_iteration))
+        return self.radial_xform_filename_template.format(postfix)
 
-    def radial_me_filename(self, natural_orbital_iteration, operator_type, power):
+    def radial_me_filename(self, postfix, operator_type, power):
         """Construct filename for radial matrix elements."""
-        return self.radial_me_filename_template.format(operator_type,power,utils.natural_orbital_indicator(natural_orbital_iteration))
+        return self.radial_me_filename_template.format(operator_type,power,postfix)
 
-    def radial_olap_int_filename(self, natural_orbital_iteration):
+    def radial_olap_int_filename(self, postfix):
         """Construct filename for overlaps from interaction tbme basis."""
-        return self.radial_olap_int_filename_template.format(utils.natural_orbital_indicator(natural_orbital_iteration))
+        return self.radial_olap_int_filename_template.format(postfix)
 
-    def radial_olap_coul_filename(self, natural_orbital_iteration):
+    def radial_olap_coul_filename(self, postfix):
         """Construct filename for overlaps from Coulomb tbme basis."""
-        return self.radial_olap_coul_filename_template.format(utils.natural_orbital_indicator(natural_orbital_iteration))
+        return self.radial_olap_coul_filename_template.format(postfix)
 
-    def h2mixer_filename(self, natural_orbital_iteration):
+    def h2mixer_filename(self, postfix):
         """Construct filename for h2mixer input."""
-        return self.h2mixer_filename_template.format(utils.natural_orbital_indicator(natural_orbital_iteration))
+        return self.h2mixer_filename_template.format(postfix)
 
-    def natorb_info_filename(self, natural_orbital_iteration):
+    def natorb_info_filename(self, postfix):
         """Construct filename for MFDn OBDME info output."""
-        return self.natorb_info_filename_template.format(utils.natural_orbital_indicator(natural_orbital_iteration))
+        return self.natorb_info_filename_template.format(postfix)
 
-    def natorb_obdme_filename(self, natural_orbital_iteration):
+    def natorb_obdme_filename(self, postfix):
         """Construct filename for MFDn OBDME output."""
-        return self.natorb_obdme_filename_template.format(utils.natural_orbital_indicator(natural_orbital_iteration))
+        return self.natorb_obdme_filename_template.format(postfix)
 
-    def natorb_xform_filename(self, natural_orbital_iteration):
+    def natorb_xform_filename(self, postfix):
         """Construct filename for natural orbital xform."""
-        return self.natorb_xform_filename_template.format(utils.natural_orbital_indicator(natural_orbital_iteration))
+        return self.natorb_xform_filename_template.format(postfix)
 
 filenames = FilenameConfiguration()
