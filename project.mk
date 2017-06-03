@@ -51,7 +51,7 @@ extras :=
 # additional project-specific make settings and rules
 ################################################################
 
-# Gnu Scientific Library
+# gsl
 LDLIBS += -lgsl
 LDLIBS += -lgslcblas
 CPPFLAGS += -DHAVE_INLINE
@@ -59,12 +59,6 @@ CPPFLAGS += -DHAVE_INLINE
 # spline submodule
 CPPFLAGS += -DSPLINE_NO_FANCY_INTEGRATION
 
-# program algorithm choices
+# basis submodule
 #   map vs. hash for space lookup in basis library
 CPPFLAGS += -DBASIS_HASH
-
-# optimization mode
-CPPFLAGS += -O3
-
-# debugging mode
-CXXFLAGS += -g
