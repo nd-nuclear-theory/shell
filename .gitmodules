@@ -17,3 +17,6 @@
 [submodule "config/ndconfig"]
 	path = config/ndconfig
 	url = ../ndconfig
+[submodule "config/ndmakefile"]
+	path = config/ndmakefile
+	url = ../ndmakefile
