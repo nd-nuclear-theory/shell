@@ -24,11 +24,11 @@ def generate_tbme(task, postfix=""):
     A = sum(task["nuclide"])
     a_cm = task["a_cm"]
     hw = task["hw"]
-    hw_cm = task["hw_cm"]
+    hw_cm = task.get("hw_cm")
     if (hw_cm is None):
         hw_cm = hw
     hw_coul = task["hw_coul"]
-    hw_coul_rescaled = task["hw_coul_rescaled"]
+    hw_coul_rescaled = task.get("hw_coul_rescaled")
     if (hw_coul_rescaled is None):
         hw_coul_rescaled = hw
     xform_truncation_int = task.get("xform_truncation_int")
@@ -46,7 +46,7 @@ def generate_tbme(task, postfix=""):
         targets["tbme-H"] = task["hamiltonian"]
     else:
         targets["tbme-H"] = operators.Hamiltonian(
-            A=A, hw=hw, a_cm=a_cm, bsqr_intr=hw_cm/hw,
+            A=A, hw=hw, a_cm=a_cm, bsqr_intr=hw/hw_cm,
             use_coulomb=task["use_coulomb"], bsqr_coul=hw_coul_rescaled/hw_coul
         )
 
