@@ -15,12 +15,15 @@
     define-radial-operator operator_type power radial_filename
       operator_type = r|k
       power = 1|2
-    define_source mode id ...
+    define-source mode id ...
       define-source input id tbme_filename
       define-source operator id
         id = identity|Ursqr|...
       define-source xform id tbme_filename wp wn wpp wnn wpn olap_filename
+    define-target filename
     add-source id coefficient
+
+  Language: C++11
 
   Mark A. Caprio
   University of Notre Dame

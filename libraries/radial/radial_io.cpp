@@ -203,8 +203,9 @@ namespace shell {
       const basis::OrbitalSpaceLJPN& bra_space,
       const basis::OrbitalSpaceLJPN& ket_space,
       const basis::OrbitalSectorsLJPN& sectors,
-      const RadialOperatorType radial_operator_type)
-    : RadialStreamBase(filename,bra_space,ket_space,sectors,radial_operator_type)
+      const RadialOperatorType radial_operator_type,
+      const std::string& format_str)
+    : RadialStreamBase(filename,bra_space,ket_space,sectors,radial_operator_type), format_str_(format_str)
   {
 
     // open stream
@@ -288,7 +289,7 @@ namespace shell {
     auto chopped_matrix = matrix;
     mcutils::ChopMatrix(chopped_matrix, 1e-14);
 
-    stream() << mcutils::FormatMatrix(chopped_matrix, "16.8e") << std::endl;
+    stream() << mcutils::FormatMatrix(chopped_matrix, format_str_) << std::endl;
 
     // Write in one row per line
     // std::string line;

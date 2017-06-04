@@ -166,11 +166,20 @@ class OutRadialStream : public RadialStreamBase {
   OutRadialStream() : stream_ptr_(NULL) {}
 
   explicit OutRadialStream(
+    const std::string& filename,
+    const basis::OrbitalSpaceLJPN& bra_space,
+    const basis::OrbitalSpaceLJPN& ket_space,
+    const basis::OrbitalSectorsLJPN& sectors,
+    const RadialOperatorType radial_operator_type,
+    const std::string& format_str);
+
+  explicit OutRadialStream(
       const std::string& filename,
       const basis::OrbitalSpaceLJPN& bra_space,
       const basis::OrbitalSpaceLJPN& ket_space,
       const basis::OrbitalSectorsLJPN& sectors,
-      const RadialOperatorType radial_operator_type);
+      const RadialOperatorType radial_operator_type)
+    : OutRadialStream(filename, bra_space, ket_space, sectors, radial_operator_type, "16.8e") {}
 
   // destructor
   ~OutRadialStream() {
@@ -184,6 +193,9 @@ class OutRadialStream : public RadialStreamBase {
  private:
   void WriteHeader();
   void WriteNextSector(const Eigen::MatrixXd& matrix);
+
+  // formatting
+  std::string format_str_;
 
   // file stream
   std::ofstream& stream() const {return *stream_ptr_;}  // alias for convenience
