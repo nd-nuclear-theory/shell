@@ -1,14 +1,11 @@
-""" runmfdn01.py
+""" runmfdn06.py
 
     See runmfdn.txt for description.
 
     Mark A. Caprio
     University of Notre Dame
 
-    - 12/14/16 (mac): Created.
-    - 12/29/16 (mac): Complete run.  Add full run list.
-    - 1/29/17 (pjf): Updated for new truncation_mode parameter.
-    - 6/3/17 (pjf): Updated for new scripting.
+    - 6/5/17 (pjf): Copied from runmfdn01; modified for basic natural orbitals.
 
 """
 
@@ -69,7 +66,7 @@ task = {
 
     # diagonalization parameters
     "Mj" : 0,
-    "eigenvectors" : 2,
+    "eigenvectors" : 5,
     "initial_vector" : -2,
     "lanczos" : 200,
     "tolerance" : 1e-6,
@@ -87,7 +84,11 @@ task = {
 
     # version parameters
     "h2_format" : 0,
-    "mfdn_executable" : "mfdn-v14-beta06-newmake/xmfdn-h2-lan"
+    "mfdn_executable" : "mfdn-v14-beta06-newmake/xmfdn-h2-lan",
+
+    # natural orbitals
+    "natural_orbitals": True,
+    "natorb_base_state": 1
 
 }
 
@@ -100,11 +101,7 @@ task["metadata"] = {
     "descriptor": mfdn.descriptors.task_descriptor_7(task)
     }
 
-mfdn.radial.set_up_orbitals_ho(task)
-mfdn.radial.set_up_radial_analytic(task)
-mfdn.tbme.generate_tbme(task)
-mfdn.mfdn_v14.run_mfdn(task)
-mfdn.mfdn_v14.save_mfdn_output(task)
+mfdn.handlers.task_handler_natorb(task=task)
 
 ##################################################################
 # task control
@@ -114,7 +111,7 @@ mfdn.mfdn_v14.save_mfdn_output(task)
 ##     tasks,
 ##     task_descriptor=mfdn.descriptors.task_descriptor_7,
 ##     task_pool=task_pool,
-##     phase_handler_list=[mfdn_h2.task_handler_ho]
+##     phase_handler_list=[mfdn.handlers.task_handler_natorb]
 ##     )
 
 ################################################################

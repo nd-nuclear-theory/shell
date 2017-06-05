@@ -7,6 +7,7 @@
 
     - 12/29/16 (mac): Created.
     - 1/29/17 (pjf): Updated for new truncation_mode parameter.
+    - 6/3/17 (pjf): Updated for new scripting.
 
 """
 
@@ -98,11 +99,11 @@ task["metadata"] = {
     "descriptor": mfdn.descriptors.task_descriptor_7(task)
     }
 
-mfdn.radial.set_up_orbitals(task)
-mfdn.radial.set_up_radial(task)
+mfdn.radial.set_up_orbitals_ho(task)
+mfdn.radial.set_up_radial_analytic(task)
 mfdn.tbme.generate_tbme(task)
-mfdn.mfdn_v14.run_mfdn_v14_b06(task)
-mfdn.mfdn_v14.save_mfdn_v14_output(task)
+mfdn.mfdn_v14.run_mfdn(task)
+mfdn.mfdn_v14.save_mfdn_output(task)
 
 ##################################################################
 # task control

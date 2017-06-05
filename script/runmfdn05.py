@@ -154,11 +154,11 @@ def task_mask (current_task):
 def task_handler_v14_b06(task):
     """ Task handler for basic run with mfdn v14 b06.
     """
-    mfdn.radial.set_up_orbitals(task)
-    mfdn.radial.set_up_radial(task)
+    mfdn.radial.set_up_orbitals_ho(task)
+    mfdn.radial.set_up_radial_analytic(task)
     mfdn.tbme.generate_tbme(task)
-    mfdn.mfdn_v14.run_mfdn_v14_b06(task)
-    mfdn.mfdn_v14.save_mfdn_v14_output(task)
+    mfdn.mfdn_v14.run_mfdn(task)
+    mfdn.mfdn_v14.save_mfdn_output(task)
 
 ##################################################################
 # task control
