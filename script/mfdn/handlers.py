@@ -1,5 +1,62 @@
 import mcscript
 
+from . import (
+    config,
+    radial,
+    tbme,
+    utils,
+    mfdn_v14
+    )
+
+
+################################################################
+# basic oscillator run
+################################################################
+
+def task_handler_oscillator(task, postfix="", mfdn=mfdn_v14):
+    """ Task handler for basic oscillator run.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+        mfdn (module, optional): mfdn module
+    """
+    radial.set_up_orbitals_ho(task, postfix=postfix)
+    radial.set_up_radial_analytic(task, postfix=postfix)
+    tbme.generate_tbme(task, postfix=postfix)
+    mfdn.run_mfdn(task, postfix=postfix)
+    mfdn.save_mfdn_output(task, postfix=postfix)
+
+
+################################################################
+# basic natural orbital run
+################################################################
+def task_handler_natorb(task, mfdn=mfdn_v14):
+    """Task handler for basic oscillator+natural orbital run.
+
+    Arguments:
+        task (dict): as described in module docstring
+        mfdn (module, optional): mfdn module
+    """
+    # sanity checks
+    if not task.get("natural_orbitals"):
+        raise mcscript.ScriptError("natural orbitals not enabled")
+
+    natorb_base_state = task.get("natorb_base_state")
+    if type(natorb_base_state) is not int:
+        raise mcscript.ScriptError("invalid natorb_base_state: {}".format(natorb_base_state))
+
+    # first do base oscillator run
+    task_handler_oscillator(task, postfix=utils.natural_orbital_indicator(0), mfdn=mfdn)
+
+    # set correct basis mode
+    task["basis_mode"] = config.BasisMode.kGeneric
+    radial.set_up_orbitals_natorb(task=task, source_postfix=utils.natural_orbital_indicator(0), target_postfix=utils.natural_orbital_indicator(1))
+    radial.set_up_radial_natorb(task=task, source_postfix=utils.natural_orbital_indicator(0), target_postfix=utils.natural_orbital_indicator(1))
+    tbme.generate_tbme(task=task, postfix=utils.natural_orbital_indicator(1))
+    mfdn.run_mfdn(task=task, postfix=utils.natural_orbital_indicator(1))
+    mfdn.save_mfdn_output(task=task, postfix=utils.natural_orbital_indicator(1))
+
 ################################################################
 # mfdn archiving
 ################################################################

@@ -5,7 +5,7 @@ import mcscript
 
 from . import utils, config
 
-def run_mfdn_v14_b06(task, postfix=""):
+def run_mfdn(task, postfix=""):
     """Generate input file and execute MFDn version 14 beta 06.
 
     Arguments:
@@ -138,7 +138,7 @@ def run_mfdn_v14_b06(task, postfix=""):
     # leave work directory
     os.chdir("..")
 
-def save_mfdn_v14_output(task, postfix=""):
+def save_mfdn_output(task, postfix=""):
     """Generate input file and execute MFDn version 14 beta 06.
 
     Arguments:
