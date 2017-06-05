@@ -183,7 +183,7 @@ def save_mfdn_v14_output(task, postfix=""):
     # logging
     archive_file_list = [
         config.filenames.h2mixer_filename(postfix),
-        "tbo_names.dat"
+        "tbo_names{:s}.dat".format(postfix)
         ]
     # orbital information
     archive_file_list += [
