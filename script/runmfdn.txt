@@ -6,7 +6,7 @@ tbmes given directly at hw
 
     Interaction: run0164-JISP16-tb-10
 
-    Usage: qsubm --here mfdn02
+    Usage: qsubm --here mfdn01
 
     We use tb-10 as the smallest available set of files.
 
@@ -45,7 +45,7 @@ runmfdn04: harmonic oscillator direct run, at higher Nmax
 runmfdn05: Nmax and hw scan demo
 
     4He Nmax-2..20 hw=15..25:5
- 
+
     Interaction: JISP16/N2LOopt500
 
     Usage (for submission on edison):
@@ -64,3 +64,15 @@ runmfdn05: Nmax and hw scan demo
     Then, to generate archive,
 
         qsubm mfdn05 --archive
+
+runmfdn06: harmonic oscillator direct run + natural orbitals, with interaction
+tbmes given directly at hw
+
+    4He Nmax02 hw20 (direct)
+    4He Nmax02 hw20 (natorb)
+
+    Interaction: run0164-JISP16-tb-10
+
+    Usage: qsubm --here mfdn06
+
+    We use tb-10 as the smallest available set of files.

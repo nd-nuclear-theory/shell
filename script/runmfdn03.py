@@ -33,60 +33,60 @@ mfdn.config.environ.interaction_run_list = [
 
 task = {
     # nuclide parameters
-    "nuclide" : (2,2),
+    "nuclide": (2, 2),
 
     # Hamiltonian parameters
-    "interaction" : "JISP16",
-    "use_coulomb" : True,
-    "a_cm" : 20.,
-    "hw_cm" : None,
+    "interaction": "JISP16",
+    "use_coulomb": True,
+    "a_cm": 20.,
+    "hw_cm": None,
 
     # input TBME parameters
-    "truncation_int" : ("ob",13),
-    "hw_int" : 40.,
-    "truncation_coul" : ("ob",13),
-    "hw_coul" : 20.,
+    "truncation_int": ("ob", 13),
+    "hw_int": 40.,
+    "truncation_coul": ("ob", 13),
+    "hw_coul": 20.,
 
     # basis parameters
-    "basis_mode" : mfdn.config.BasisMode.kDilated,
-    "hw" : 20.,
+    "basis_mode": mfdn.config.BasisMode.kDilated,
+    "hw": 20.,
 
     # transformation parameters
-    "xform_truncation_int" : ("ob",13),
-    "xform_truncation_coul" : None,
-    "hw_coul_rescaled" : None,
-    "target_truncation" : None,
+    "xform_truncation_int": ("ob", 13),
+    "xform_truncation_coul": None,
+    "hw_coul_rescaled": None,
+    "target_truncation": None,
 
     # traditional oscillator many-body truncation
-    "truncation_mode" : mfdn.config.TruncationMode.kHO,
+    "truncation_mode": mfdn.config.TruncationMode.kHO,
     "truncation_parameters": {
-        "Nv" : 0,
-        "Nmax" : 2,
-        "many_body_truncation" : "Nmax",
-        "Nstep" : 2,
+        "Nv": 0,
+        "Nmax": 2,
+        "many_body_truncation": "Nmax",
+        "Nstep": 2,
         },
 
     # diagonalization parameters
-    "Mj" : 0,
-    "eigenvectors" : 2,
-    "initial_vector" : -2,
-    "lanczos" : 200,
-    "tolerance" : 1e-6,
-    "partition_filename" : None,
+    "Mj": 0,
+    "eigenvectors": 2,
+    "initial_vector": -2,
+    "lanczos": 200,
+    "tolerance": 1e-6,
+    "partition_filename": None,
 
     # obdme parameters
-    ## "hw_for_trans" : 20,
-    "obdme_multipolarity" : 2,
-    "obdme_reference_state_list" : [(0,0,1)],
-    "save_obdme" : True,
+    ## "hw_for_trans": 20,
+    "obdme_multipolarity": 2,
+    "obdme_reference_state_list": [(0, 0, 1)],
+    "save_obdme": True,
 
     # two-body observables
-    ## "observable_sets" : ["H-components","am-sqr"],
-    "observable_sets" : ["H-components"],
+    ## "observable_sets": ["H-components","am-sqr"],
+    "observable_sets": ["H-components"],
 
     # version parameters
-    "h2_format" : 0,
-    "mfdn_executable" : "mfdn-v14-beta06-newmake/xmfdn-h2-lan"
+    "h2_format": 0,
+    "mfdn_executable": "mfdn-v14-beta06-newmake/xmfdn-h2-lan"
 
 }
 

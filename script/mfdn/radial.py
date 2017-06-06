@@ -9,6 +9,7 @@ from . import config
 # traditional ho run
 ##################################################################
 
+
 def set_up_orbitals_ho(task, postfix=""):
     """Set up source and target orbitals for MFDn run.
 
@@ -16,10 +17,9 @@ def set_up_orbitals_ho(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
-
     # validate truncation mode
     if (task["truncation_mode"] is not config.TruncationMode.kHO):
-        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(config.TruncationMode.kHO,**task))
+        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(config.TruncationMode.kHO, **task))
 
     # generate orbitals -- interaction bases
     mcscript.call(
@@ -42,9 +42,9 @@ def set_up_orbitals_ho(task, postfix=""):
 
     # generate orbitals -- target basis
     truncation_parameters = task["truncation_parameters"]
-    if (truncation_parameters["many_body_truncation"]=="Nmax"):
+    if (truncation_parameters["many_body_truncation"] == "Nmax"):
         Nmax_orb = truncation_parameters["Nmax"] + truncation_parameters["Nv"]
-    elif (truncation_parameters["many_body_truncation"]=="FCI"):
+    elif (truncation_parameters["many_body_truncation"] == "FCI"):
         Nmax_orb = truncation_parameters["Nmax"]
     mcscript.call(
         [
@@ -63,6 +63,7 @@ def set_up_orbitals_ho(task, postfix=""):
         ]
     )
 
+
 def set_up_orbitals_natorb(task, source_postfix, target_postfix):
     """Set up natural orbitals for MFDn run.
 
@@ -74,10 +75,9 @@ def set_up_orbitals_natorb(task, source_postfix, target_postfix):
     Limitation: Currently only supports harmonic oscillator style
     truncation.
     """
-
     # validate truncation mode
     if (task["truncation_mode"] is not config.TruncationMode.kHO):
-        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(config.TruncationMode.kHO,**task))
+        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(config.TruncationMode.kHO, **task))
 
     # validate natural orbitals enabled
     if not task.get("natural_orbitals"):
@@ -112,6 +112,7 @@ def set_up_orbitals_natorb(task, source_postfix, target_postfix):
 #     elif (natural_orbital_iteration > 0):
 #         return set_up_radial_natorb(task)
 
+
 def set_up_radial_analytic(task, postfix=""):
     """Generate radial integrals and overlaps by integration for MFDn run
     in analytic basis.
@@ -123,17 +124,16 @@ def set_up_radial_analytic(task, postfix=""):
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
-
     # validate basis mode
-    if (task["basis_mode"] not in {config.BasisMode.kDirect,config.BasisMode.kDilated}):  # no config.BasisMode.kGeneric yet
+    if (task["basis_mode"] not in {config.BasisMode.kDirect, config.BasisMode.kDilated}):  # no config.BasisMode.kGeneric yet
         raise ValueError("invalid basis mode {basis_mode}".format(**task))
 
     # basis radial code -- expected by radial_utils codes
     basis_radial_code = "oscillator"  # TO GENERALIZE: if not oscillator basis
 
     # generate radial integrals
-    for operator_type in ["r","k"]:
-        for power in [1,2]:
+    for operator_type in ["r", "k"]:
+        for power in [1, 2]:
             mcscript.call(
                 [
                     config.environ.shell_filename("radial-gen"),
@@ -144,7 +144,7 @@ def set_up_radial_analytic(task, postfix=""):
                     config.filenames.orbitals_filename(postfix),
                     config.filenames.radial_me_filename(postfix, operator_type, power)
                 ],
-                mode = mcscript.call.serial
+                mode=mcscript.call.serial
             )
 
     # generate radial overlaps -- generate trivial identities if applicable
@@ -157,7 +157,7 @@ def set_up_radial_analytic(task, postfix=""):
                 config.filenames.orbitals_filename(postfix),
                 config.filenames.radial_olap_int_filename(postfix)
             ],
-            mode = mcscript.call.serial
+            mode=mcscript.call.serial
         )
     else:
         b_ratio = math.sqrt(task["hw_int"]/task["hw"])
@@ -171,10 +171,10 @@ def set_up_radial_analytic(task, postfix=""):
                 config.filenames.orbitals_filename(postfix),
                 config.filenames.radial_olap_int_filename(postfix)
             ],
-            mode = mcscript.call.serial
+            mode=mcscript.call.serial
         )
     if (task["use_coulomb"]):
-        if (task["basis_mode"] in {config.BasisMode.kDirect,config.BasisMode.kDilated}):
+        if (task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated}):
             mcscript.call(
                 [
                     config.environ.shell_filename("radial-gen"),
@@ -183,7 +183,7 @@ def set_up_radial_analytic(task, postfix=""):
                     config.filenames.orbitals_filename(postfix),
                     config.filenames.radial_olap_coul_filename(postfix)
                 ],
-                mode = mcscript.call.serial
+                mode=mcscript.call.serial
             )
         else:
             if task.get("hw_coul_rescaled") is None:
@@ -200,12 +200,12 @@ def set_up_radial_analytic(task, postfix=""):
                     config.filenames.orbitals_filename(postfix),
                     config.filenames.radial_olap_coul_filename(postfix)
                 ],
-                mode = mcscript.call.serial
+                mode=mcscript.call.serial
             )
 
+
 def set_up_radial_natorb(task, source_postfix, target_postfix):
-    """Generate radial integrals and overlaps by transformation for MFDn run
-    in natural orbital basis.
+    """Generate radial integrals and overlaps by transformation for MFDn run in natural orbital basis.
 
     Operation mode must be generic.
 
@@ -214,7 +214,6 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
         source_postfix (str): postfix for old basis
         target_postfix (str): postfix for new basis
     """
-
     # validate natural orbitals enabled
     if not task.get("natural_orbitals"):
         raise mcscript.exception.ScriptError("natural orbitals are not enabled")
@@ -251,8 +250,8 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
     )
 
     # transform radial integrals
-    for operator_type in ["r","k"]:
-        for power in [1,2]:
+    for operator_type in ["r", "k"]:
+        for power in [1, 2]:
             mcscript.call(
                 [
                     config.environ.shell_filename("radial-xform"),
@@ -261,5 +260,5 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
                     config.filenames.radial_me_filename(source_postfix, operator_type, power),
                     config.filenames.radial_me_filename(target_postfix, operator_type, power)
                 ],
-                mode = mcscript.call.serial
+                mode=mcscript.call.serial
             )

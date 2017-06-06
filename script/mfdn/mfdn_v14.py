@@ -5,6 +5,7 @@ import mcscript
 
 from . import utils, config
 
+
 def run_mfdn(task, postfix=""):
     """Generate input file and execute MFDn version 14 beta 06.
 
@@ -14,10 +15,9 @@ def run_mfdn(task, postfix=""):
     Raises:
         mcscript.ScriptError: if MFDn output not found
     """
-
     # validate truncation mode
     if (task["truncation_mode"] is not config.TruncationMode.kHO):
-        raise ValueError("expecting truncation_mode to be {} but found {ho_truncation}".format(config.TruncationMode.kHO,**task))
+        raise ValueError("expecting truncation_mode to be {} but found {ho_truncation}".format(config.TruncationMode.kHO, **task))
 
     # accumulate MFDn input lines
     lines = []
@@ -25,9 +25,9 @@ def run_mfdn(task, postfix=""):
     # base parameters
     truncation_parameters = task["truncation_parameters"]
     twice_Mj = int(2*task["Mj"])
-    if (truncation_parameters["many_body_truncation"]=="Nmax"):
+    if (truncation_parameters["many_body_truncation"] == "Nmax"):
         Nmax_orb = truncation_parameters["Nmax"] + truncation_parameters["Nv"]
-    elif (truncation_parameters["many_body_truncation"]=="FCI"):
+    elif (truncation_parameters["many_body_truncation"] == "FCI"):
         Nmax_orb = truncation_parameters["Nmax"]
     Nshell = Nmax_orb+1
     if (task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated}):
@@ -38,8 +38,8 @@ def run_mfdn(task, postfix=""):
     ndiag = task.get("ndiag")
     if ndiag is None:
         ndiag = 0
-    if (truncation_parameters["Nstep"]==2):
-        Nmin = truncation_parameters["Nmax"]%2
+    if (truncation_parameters["Nstep"] == 2):
+        Nmin = truncation_parameters["Nmax"] % 2
     else:
         Nmin = 1
 
@@ -48,24 +48,24 @@ def run_mfdn(task, postfix=""):
     lines.append("{:d}  # number of classes".format(2))
     lines.append("{nuclide[0]:d}  # protons (class 1 particles)".format(**task))
     lines.append("{nuclide[1]:d}  # protons (class 2 particles)".format(**task))
-    lines.append("1 {Nshell:d}  # min, max # S.P. shells for class 1 particles".format(Nshell=Nshell,**task))
-    lines.append("1 {Nshell:d}  # min, max # S.P. shells for class 2 particles".format(Nshell=Nshell,**task))
-    lines.append("{Nmin:d} {Nmax:d} {Nstep:d}  # N_min, N_max, delta_N".format(Nmin=Nmin,**mcscript.utils.dict_union(task,truncation_parameters)))
+    lines.append("1 {Nshell:d}  # min, max # S.P. shells for class 1 particles".format(Nshell=Nshell, **task))
+    lines.append("1 {Nshell:d}  # min, max # S.P. shells for class 2 particles".format(Nshell=Nshell, **task))
+    lines.append("{Nmin:d} {Nmax:d} {Nstep:d}  # N_min, N_max, delta_N".format(Nmin=Nmin, **mcscript.utils.dict_union(task, truncation_parameters)))
     lines.append("{:d}   # Total 2 M_j".format(twice_Mj))
     lines.append("{eigenvectors:d} {lanczos:d} {initial_vector:d} {tolerance:e}  # number of eigenvalues/vectors, max number of its, ...)".format(**task))
-    lines.append("{:d} {:d}  # rank of input Hamiltonian/interaction".format(2,2))
+    lines.append("{:d} {:d}  # rank of input Hamiltonian/interaction".format(2, 2))
     lines.append("{hw_for_trans:g} {k_mN_csqr:g}  # h-bar*omega, Nucleon mass (MeV) ".format(
-        hw_for_trans=hw_for_trans,k_mN_csqr=utils.k_mN_csqr,**task
+        hw_for_trans=hw_for_trans, k_mN_csqr=utils.k_mN_csqr, **task
     ))
 
     # tbo: collect tbo names
     obs_basename_list = ["tbme-rrel2"]
     if ("H-components" in task["observable_sets"]):
-        obs_basename_list += ["tbme-Trel","tbme-Ncm","tbme-VNN"]
+        obs_basename_list += ["tbme-Trel", "tbme-Ncm", "tbme-VNN"]
         if (task["use_coulomb"]):
             obs_basename_list += ["tbme-VC"]
     if ("am-sqr" in task["observable_sets"]):
-        obs_basename_list += ["tbme-L","tbme-Sp","tbme-Sn","tbme-S","tbme-J"]
+        obs_basename_list += ["tbme-L", "tbme-Sp", "tbme-Sn", "tbme-S", "tbme-J"]
     if ("observables" in task):
         obs_basename_list += list(task["observables"].keys())
 
@@ -82,7 +82,7 @@ def run_mfdn(task, postfix=""):
 
     # obdme: parameters
     lines.append("{enable_obd:d} {twice_multipolarity:d} # static one-body density matrix elements (0: no one-body densities), twice multipolarity".format(
-        enable_obd=1,twice_multipolarity=2*task["obdme_multipolarity"]
+        enable_obd=1, twice_multipolarity=2*task["obdme_multipolarity"]
     ))
     lines.append("{num_reference_states:d} {max_delta_J:d} # number of reference states for transitions (0: no transitions, -1: all2all), max delta2J (?)".format(
         num_reference_states=len(task["obdme_reference_state_list"]),
@@ -92,30 +92,30 @@ def run_mfdn(task, postfix=""):
     # obdme: validate reference state list
     #
     # guard against pathetically common mistakes
-    for (J,g_rel,i) in task["obdme_reference_state_list"]:
+    for (J, g_rel, i) in task["obdme_reference_state_list"]:
         # validate integer/half-integer character of angular momentum
         twice_J = int(2*J)
-        if ((twice_J%2) != (sum(task["nuclide"])%2)):
+        if ((twice_J % 2) != (sum(task["nuclide"]) % 2)):
             raise ValueError("invalid angular momentum for reference state")
         # validate grade (here taken relative to natural grade)
-        if ((g_rel != (truncation_parameters["Nmax"]%2)) and (truncation_parameters["Nstep"] != 1)):
+        if ((g_rel != (truncation_parameters["Nmax"] % 2)) and (truncation_parameters["Nstep"] != 1)):
             raise ValueError("invalid parity for reference state")
 
     # obdme: write reference state list
     for reference_state in task["obdme_reference_state_list"]:
-        lines.append("{:d} {:d} {:d}".format(2*reference_state[0],reference_state[1],reference_state[2]))
+        lines.append("{:d} {:d} {:d}".format(2*reference_state[0], reference_state[1], reference_state[2]))
 
     # ensure terminal line
     lines.append("")
 
     # generate MFDn input file
-    mcscript.utils.write_input("work/mfdn.dat",input_lines=lines)
+    mcscript.utils.write_input("work/mfdn.dat", input_lines=lines)
 
     # import partitioning file
     if (task["partition_filename"] is not None):
         if (not os.path.exists(task["partition_filename"])):
             raise mcscript.ScriptError("partition file not found")
-        mcscript.call(["cp","--verbose",task["partition_filename"],"work/mfdn_partitioning.info"])
+        mcscript.call(["cp", "--verbose", task["partition_filename"], "work/mfdn_partitioning.info"])
 
     # enter work directory
     os.chdir("work")
@@ -125,7 +125,7 @@ def run_mfdn(task, postfix=""):
         [
             config.environ.mfdn_filename(task["mfdn_executable"])
         ],
-        mode = mcscript.call.hybrid,
+        mode=mcscript.call.hybrid,
         check_return=True
     )
 
@@ -138,6 +138,7 @@ def run_mfdn(task, postfix=""):
     # leave work directory
     os.chdir("..")
 
+
 def save_mfdn_output(task, postfix=""):
     """Generate input file and execute MFDn version 14 beta 06.
 
@@ -146,17 +147,15 @@ def save_mfdn_output(task, postfix=""):
 
     Raises:
         mcscript.ScriptError: if MFDn output not found
-
     """
-
     # save quick inspection copies of mfdn.{res,out}
     natural_orbitals = task.get("natural_orbitals")
     descriptor = task["metadata"]["descriptor"]
     print("Saving basic output files...")
     res_filename = "{:s}-mfdn-{:s}{:s}.res".format(mcscript.parameters.run.name, descriptor, postfix)
-    mcscript.call(["cp","--verbose","work/mfdn.res",res_filename])
+    mcscript.call(["cp", "--verbose", "work/mfdn.res", res_filename])
     out_filename = "{:s}-mfdn-{:s}{:s}.out".format(mcscript.parameters.run.name, descriptor, postfix)
-    mcscript.call(["cp","--verbose","work/mfdn.out",out_filename])
+    mcscript.call(["cp", "--verbose", "work/mfdn.out", out_filename])
 
     # save OBDME files for next natural orbital iteration
     if natural_orbitals:
@@ -164,7 +163,7 @@ def save_mfdn_output(task, postfix=""):
         obdme_info_filename = "mfdn.rppobdme.info"
         mcscript.call(
             [
-                "cp","--verbose",
+                "cp", "--verbose",
                 "work/{}".format(obdme_info_filename),
                 config.filenames.natorb_info_filename(postfix)
             ]
@@ -172,7 +171,7 @@ def save_mfdn_output(task, postfix=""):
         obdme_filename = glob.glob("work/mfdn.statrobdme.seq{:03d}*".format(task["natorb_base_state"]))
         mcscript.call(
             [
-                "cp","--verbose",
+                "cp", "--verbose",
                 obdme_filename[0],
                 config.filenames.natorb_obdme_filename(postfix)
             ]
@@ -212,10 +211,11 @@ def save_mfdn_output(task, postfix=""):
         archive_file_list += glob.glob(config.filenames.natorb_xform_filename(postfix))
     # MFDn output
     archive_file_list += [
-        "work/mfdn.dat","work/mfdn.out","work/mfdn.res","work/mfdn_partitioning.generated","work/mfdn_spstates.info"
+        "work/mfdn.dat", "work/mfdn.out", "work/mfdn.res",
+        "work/mfdn_partitioning.generated", "work/mfdn_spstates.info"
     ]
     # renamed versions
-    archive_file_list += [out_filename,res_filename]
+    archive_file_list += [out_filename, res_filename]
     # MFDN obdme
     if (task["save_obdme"]):
         archive_file_list += glob.glob("work/*obdme*")
@@ -235,7 +235,7 @@ def save_mfdn_output(task, postfix=""):
             [
                 "cp",
                 "--verbose",
-                res_filename,out_filename,archive_filename,
+                res_filename, out_filename, archive_filename,
                 "--target-directory={}".format(mcscript.task.results_dir)
             ]
         )

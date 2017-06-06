@@ -1,8 +1,11 @@
-import math
-
 import mcscript.utils
 
-from . import utils, config, operators
+from . import (
+    utils,
+    config,
+    operators,
+)
+
 
 def generate_tbme(task, postfix=""):
     """Generate TBMEs for MFDn run.
@@ -13,12 +16,10 @@ def generate_tbme(task, postfix=""):
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier added to input filenames
-
     """
-
     # validate basis mode
     if (task["truncation_mode"] is not config.TruncationMode.kHO):
-        raise ValueError("expecting truncation_mode to be {} but found {ho_truncation}".format(config.TruncationMode.kHO,**task))
+        raise ValueError("expecting truncation_mode to be {} but found {ho_truncation}".format(config.TruncationMode.kHO, **task))
 
     # extract parameters for convenience
     A = sum(task["nuclide"])
@@ -96,16 +97,16 @@ def generate_tbme(task, postfix=""):
         # automatic derivation
         if (task["truncation_mode"] is config.TruncationMode.kHO):
             truncation_parameters = task["truncation_parameters"]
-            if (truncation_parameters["many_body_truncation"]=="Nmax"):
+            if (truncation_parameters["many_body_truncation"] == "Nmax"):
                 # important: truncation of orbitals file, one-body
                 # truncation of interaction file, and MFDn
                 # single-particle shells (beware 1-based) must agree
                 N1_max = truncation_parameters["Nv"]+truncation_parameters["Nmax"]
                 N2_max = 2*truncation_parameters["Nv"]+truncation_parameters["Nmax"]
-                target_weight_max = utils.weight_max_string((N1_max,N2_max))
-            elif (truncation_parameters["many_body_truncation"]=="FCI"):
+                target_weight_max = utils.weight_max_string((N1_max, N2_max))
+            elif (truncation_parameters["many_body_truncation"] == "FCI"):
                 N1_max = truncation_parameters["Nmax"]
-                target_weight_max = utils.weight_max_string(("ob",N1_max))
+                target_weight_max = utils.weight_max_string(("ob", N1_max))
         else:
             # calculation of required weight_max will require external program for occupation counting
             pass
@@ -119,14 +120,14 @@ def generate_tbme(task, postfix=""):
     ))
     lines.append("set-target-multipolarity 0 0 0")
     lines.append("set-output-format {h2_format}".format(**task))
-    lines.append("set-mass {A}".format(A=A,**task))
+    lines.append("set-mass {A}".format(A=A, **task))
     lines.append("")
 
     # radial operator inputs
-    for operator_type in ["r","k"]:
-        for power in [1,2]:
+    for operator_type in ["r", "k"]:
+        for power in [1, 2]:
             radial_me_filename = config.filenames.radial_me_filename(postfix, operator_type, power)
-            lines.append("define-radial-operator {} {} {}".format(operator_type,power,radial_me_filename))
+            lines.append("define-radial-operator {} {} {}".format(operator_type, power, radial_me_filename))
     lines.append("")
 
     # sources: h2mixer built-ins
@@ -145,7 +146,7 @@ def generate_tbme(task, postfix=""):
             )
         )
         if (task["basis_mode"] == config.BasisMode.kDirect):
-            lines.append("define-source input VNN {VNN_filename}".format(VNN_filename=VNN_filename,**task))
+            lines.append("define-source input VNN {VNN_filename}".format(VNN_filename=VNN_filename, **task))
         else:
             xform_weight_max_int = utils.weight_max_string(xform_truncation_int)
             lines.append("define-source xform VNN {VNN_filename} {xform_weight_max_int} {radial_olap_int_filename}".format(
@@ -168,7 +169,7 @@ def generate_tbme(task, postfix=""):
             )
         )
         if (task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated}):
-            lines.append("define-source input VC_unscaled {VC_filename}".format(VC_filename=VC_filename,**task))
+            lines.append("define-source input VC_unscaled {VC_filename}".format(VC_filename=VC_filename, **task))
         else:
             xform_weight_max_coul = utils.weight_max_string(xform_truncation_coul)
             lines.append("define-source xform VC_unscaled {VC_filename} {xform_weight_max_coul} {radial_olap_coul_filename}".format(
@@ -179,7 +180,6 @@ def generate_tbme(task, postfix=""):
             ))
 
     lines.append("")
-
 
     # targets: generate h2mixer input
     for (basename, operator) in targets.items():
@@ -195,10 +195,10 @@ def generate_tbme(task, postfix=""):
     #
     # This is purely for easy diagnostic purposes, since lines will be
     # fed directly to h2mixer as stdin below.
-    mcscript.utils.write_input(config.filenames.h2mixer_filename(postfix),input_lines=lines,verbose=False)
+    mcscript.utils.write_input(config.filenames.h2mixer_filename(postfix), input_lines=lines, verbose=False)
 
     # create work directory if it doesn't exist yet (-p)
-    mcscript.call(["mkdir","-p","work"])
+    mcscript.call(["mkdir", "-p", "work"])
 
     # invoke h2mixer
     mcscript.call(
@@ -206,5 +206,5 @@ def generate_tbme(task, postfix=""):
             config.environ.shell_filename("h2mixer")
         ],
         input_lines=lines,
-        mode = mcscript.call.serial
+        mode=mcscript.call.serial
     )

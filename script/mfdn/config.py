@@ -1,9 +1,8 @@
-import enum
 import os
+import enum
 
 import mcscript.utils
 
-from . import utils
 
 ################################################################
 # radial basis modes
@@ -13,15 +12,14 @@ from . import utils
 class BasisMode(enum.Enum):
     """General modes of operation for radial basis
 
-    kDirect (alias k_basis_mode_direct):
+    kDirect:
       - no0 basis is oscillator basis (hw)
       - source basis for VNN is oscillator basis of same
         oscillator length (hw_int=hw); therefore no transformation
         needed on VNN TBMEs
       - Coulomb TBMEs need only scaling for dilation (hw_c -> hw)
       - MFDn can use built-in oscillator OBMEs for observables
-
-    kDilated (alias k_basis_mode_dilated):
+    kDilated:
       - no0 basis is oscillator basis (hw)
       - source basis for VNN is oscillator basis of different
         oscillator length; therefore transformation
@@ -29,22 +27,19 @@ class BasisMode(enum.Enum):
       - Coulomb TBMEs need only scaling for dilation (hw_c -> hw)
       - MFDn can use built-in oscillator OBMEs for observables
 
-    kGeneric (alias k_basis_mode_generic):
+    kGeneric:
       - no0 basis is not assumed to be oscillator basis
         (still has nominal hw to define a length parameter)
       - transformation needed on VNN TBMEs (hw_int HO -> hw generic)
       - Coulomb TBMEs may be rescaled (hw_c -> hw_cp) but then need
         transformation (hw_cp HO -> hw generic)
       - MFDn *cannot* use built-in oscillator OBMEs for observables
-
     """
+
     kDirect = 0
     kDilated = 1
     kGeneric = 2
 
-k_basis_mode_direct = BasisMode.kDirect
-k_basis_mode_dilated = BasisMode.kDilated
-k_basis_mode_generic = BasisMode.kGeneric
 
 ################################################################
 # truncation modes
@@ -54,7 +49,7 @@ k_basis_mode_generic = BasisMode.kGeneric
 class TruncationMode(enum.Enum):
     """General truncation modes for radial basis
 
-    kHO (alias k_truncation_mode_ho):
+    kHO:
         - traditional Nmax truncation; weight is (2*n + l)
         - compatible with MFDn v14+
         - "truncation_parameters" (dict):
@@ -66,7 +61,7 @@ class TruncationMode(enum.Enum):
             - "Nstep" (int): Nstep (2 for single parity, 1 for mixed parity)
 
 
-    kTriangular (alias k_truncation_mode_triangular):
+    kTriangular:
         - weight is (n_coeff*n + l_coeff*l)
         - compatible with MFDN v15+
         - "truncation_parameters" (dict):
@@ -79,17 +74,13 @@ class TruncationMode(enum.Enum):
     kHO = 0
     kTriangular = 1
 
-k_truncation_mode_ho = TruncationMode.kHO
-k_truncation_mode_triangular = TruncationMode.kTriangular
-
 
 ################################################################
 # configuration
 ################################################################
 
 class Environment(object):
-    """Object to collect MFDn environment configuration parameters into
-    common name space.
+    """Object to collect MFDn environment configuration parameters into common name space.
 
     Data members:
 
@@ -114,6 +105,7 @@ class Environment(object):
             for interaction h2 file, given root name.
 
     """
+
     def __init__(self):
 
         # environment
@@ -122,21 +114,21 @@ class Environment(object):
         self.data_dir_h2_list = os.environ.get("SHELL_DATA_DIR_H2").split(":")
         self.interaction_run_list = []
 
-    def shell_filename(self,name):
+    def shell_filename(self, name):
         """Construct filename for shell package executable."""
-        return os.path.join(self.install_dir,"bin",name)
+        return os.path.join(self.install_dir, "bin", name)
 
-    def mfdn_filename(self,name):
+    def mfdn_filename(self, name):
         """Construct filename for MFDn executable."""
-        return os.path.join(self.mfdn_dir,name)
+        return os.path.join(self.mfdn_dir, name)
 
-    def interaction_filename(self,name):
+    def interaction_filename(self, name):
         """Construct filename for interaction h2 file."""
-        ##return os.path.join(self.data_dir_h2,name)
-        return mcscript.utils.search_in_subdirectories(self.data_dir_h2_list,self.interaction_run_list,name)
+        return mcscript.utils.search_in_subdirectories(self.data_dir_h2_list, self.interaction_run_list, name)
 
 
 environ = Environment()
+
 
 class FilenameConfiguration(object):
     """Object to collect filename configuration into common namespace.
@@ -192,7 +184,6 @@ class FilenameConfiguration(object):
 
         def natorb_xform_filename(postfix): Generate filename for xform from
             previous natural orbit to current natural orbit, given postfix.
-
     """
 
     # orbital filename templates
@@ -200,7 +191,7 @@ class FilenameConfiguration(object):
     orbitals_coul_filename_template = "orbitals-coul{:s}.dat"
     orbitals_filename_template = "orbitals{:s}.dat"
     radial_xform_filename_template = "radial-xform{:s}.dat"
-    radial_me_filename_template = "radial-me-{}{}{:s}.dat" # "{}{}" will be replaced by {"r1","r2","k1","k2"}
+    radial_me_filename_template = "radial-me-{}{}{:s}.dat"  # "{}{}" will be replaced by {"r1","r2","k1","k2"}
     radial_olap_int_filename_template = "radial-olap-int{:s}.dat"
     radial_olap_coul_filename_template = "radial-olap-coul{:s}.dat"
     h2mixer_filename_template = "h2mixer{:s}.in"
@@ -228,7 +219,7 @@ class FilenameConfiguration(object):
 
     def radial_me_filename(self, postfix, operator_type, power):
         """Construct filename for radial matrix elements."""
-        return self.radial_me_filename_template.format(operator_type,power,postfix)
+        return self.radial_me_filename_template.format(operator_type, power, postfix)
 
     def radial_olap_int_filename(self, postfix):
         """Construct filename for overlaps from interaction tbme basis."""
@@ -253,5 +244,6 @@ class FilenameConfiguration(object):
     def natorb_xform_filename(self, postfix):
         """Construct filename for natural orbital xform."""
         return self.natorb_xform_filename_template.format(postfix)
+
 
 filenames = FilenameConfiguration()

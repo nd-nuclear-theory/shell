@@ -10,12 +10,14 @@ import math
 import mcscript.utils
 from . import utils
 
+
 ################################################################
 # identity operator
 ################################################################
 
 def identity():
     return mcscript.utils.CoefficientDict(identity=1.)
+
 
 ################################################################
 # radial kinematic operators
@@ -36,6 +38,7 @@ def Uksqr():
 
 def Vk1k2():
     return mcscript.utils.CoefficientDict(Vk1k2=1.)
+
 
 ################################################################
 # angular momentum operators
@@ -60,6 +63,7 @@ def S():
 def J():
     return mcscript.utils.CoefficientDict(J=1.)
 
+
 ################################################################
 # interactions
 ################################################################
@@ -77,6 +81,7 @@ def VC(bsqr_coul=1.0):
         bsqr_coul (float): beta squared (ratio of b^2 to b_coul^2)
     """
     return VC_unscaled() * math.sqrt(bsqr_coul)
+
 
 ################################################################
 # common observables
@@ -156,6 +161,7 @@ def Trel(A, hw, **kwargs):
     out += ((A-1)/(2*A)*hw) * Uksqr()
     out += (-1/A*hw) * Vk1k2()
     return out
+
 
 ################################################################
 # standard Hamiltonian
