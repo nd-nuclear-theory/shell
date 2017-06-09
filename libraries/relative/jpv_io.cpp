@@ -42,7 +42,7 @@ namespace relative {
       << "Reading relative operator file (JPV format)..." << std::endl
       << "  Filename: " << source_filename << std::endl;
     std::ifstream is(source_filename);
-    OpenCheck(bool(is),source_filename);
+    StreamCheck(bool(is),source_filename,"Failed to open relative operator file");
 
     // set up references for convenience
     const basis::RelativeSectorsLSJT& sectors = relative_component_sectors[0];
