@@ -118,16 +118,15 @@ namespace shell {
   // code assumes int and float are both 4-byte
 
   const int kIntegerSize = 4;
-  void WriteI4 (std::ofstream& os, int i)
-  
+  void WriteInt(std::ofstream& os, int i)
   {
     os.write(reinterpret_cast<const char*> (&i),sizeof(int));
   }
-  void ReadI4 (std::ifstream& is, int &i)
+  void ReadInt(std::ifstream& is, int &i)
   {
     is.read(reinterpret_cast<char*> (&i),sizeof(int));
   }
-  void VerifyI4 (std::ifstream& is, const int i0)
+  void VerifyInt(std::ifstream& is, const int i0)
   {
     int i;
     is.read(reinterpret_cast<char*> (&i),sizeof(int));
@@ -140,12 +139,11 @@ namespace shell {
   }
 
   const int kFloatSize = 4;
-  void WriteFloat (std::ofstream& os, float x)
+  void WriteFloat(std::ofstream& os, float x)
   {
     os.write(reinterpret_cast<const char*> (&x),sizeof(float));
   }
-
-  void ReadFloat (std::ifstream& is, float &x)
+  void ReadFloat(std::ifstream& is, float &x)
   {
     is.read(reinterpret_cast<char*> (&x),sizeof(float));
   }
@@ -259,9 +257,9 @@ namespace shell {
       {
         int num_fields = 1;
         int bytes = num_fields * kIntegerSize;
-        VerifyI4(stream(),bytes);
-        ReadI4(stream(),h2_format_);
-        VerifyI4(stream(),bytes);
+        VerifyInt(stream(),bytes);
+        ReadInt(stream(),h2_format_);
+        VerifyInt(stream(),bytes);
       }
 
     StreamCheck(bool(stream()),filename_,"Failure while reading H2 file version code");
@@ -279,9 +277,9 @@ namespace shell {
       {
         int num_fields = 1;
         int bytes = num_fields * kIntegerSize;
-        WriteI4(stream(),bytes);
-        WriteI4(stream(),h2_format());
-        WriteI4(stream(),bytes);
+        WriteInt(stream(),bytes);
+        WriteInt(stream(),h2_format());
+        WriteInt(stream(),bytes);
       }
     
     StreamCheck(bool(stream()),filename_,"Failure while writing H2 file version code");
@@ -343,13 +341,13 @@ namespace shell {
       {
         int num_fields = 5;
         int bytes = num_fields * kIntegerSize;
-        VerifyI4(stream(),bytes);
-        ReadI4(stream(),num_types);
-        ReadI4(stream(),N1max);
-        ReadI4(stream(),N2max);
-        ReadI4(stream(),size_pp_nn);
-        ReadI4(stream(),size_pn);
-        VerifyI4(stream(),bytes);
+        VerifyInt(stream(),bytes);
+        ReadInt(stream(),num_types);
+        ReadInt(stream(),N1max);
+        ReadInt(stream(),N2max);
+        ReadInt(stream(),size_pp_nn);
+        ReadInt(stream(),size_pn);
+        VerifyInt(stream(),bytes);
       }
 
     // set up indexing
@@ -399,13 +397,13 @@ namespace shell {
       {
         int num_fields = 5;
         int bytes = num_fields * kIntegerSize;
-        WriteI4(stream(),bytes);
-        WriteI4(stream(),num_types);
-        WriteI4(stream(),N1max);
-        WriteI4(stream(),N2max);
-        WriteI4(stream(),size_pp_nn);
-        WriteI4(stream(),size_pn);
-        WriteI4(stream(),bytes);
+        WriteInt(stream(),bytes);
+        WriteInt(stream(),num_types);
+        WriteInt(stream(),N1max);
+        WriteInt(stream(),N2max);
+        WriteInt(stream(),size_pp_nn);
+        WriteInt(stream(),size_pn);
+        WriteInt(stream(),bytes);
       }
   };
 
@@ -453,10 +451,10 @@ namespace shell {
         // dump orbitals
 
         // header: dimensions
-        WriteI4(stream(),2*kIntegerSize);
+        WriteInt(stream(),2*kIntegerSize);
         for (int subspace_index=0; subspace_index < orbital_space().size(); ++subspace_index)
-          WriteI4(stream(),orbital_space().GetSubspace(subspace_index).size());
-        WriteI4(stream(),2*kIntegerSize);
+          WriteInt(stream(),orbital_space().GetSubspace(subspace_index).size());
+        WriteInt(stream(),2*kIntegerSize);
 
         // orbital listing body
         for (int subspace_index=0; subspace_index < orbital_space().size(); ++subspace_index)
@@ -464,59 +462,59 @@ namespace shell {
             const std::vector<basis::OrbitalPNInfo> orbitals = orbital_space().GetSubspace(subspace_index).OrbitalInfo();
             const int num_orbitals = orbitals.size();
 
-            WriteI4(stream(),num_orbitals*kIntegerSize);
+            WriteInt(stream(),num_orbitals*kIntegerSize);
             for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-              WriteI4(stream(),orbitals[orbital_index].n);
-            WriteI4(stream(),num_orbitals*kIntegerSize);
-            WriteI4(stream(),num_orbitals*kIntegerSize);
+              WriteInt(stream(),orbitals[orbital_index].n);
+            WriteInt(stream(),num_orbitals*kIntegerSize);
+            WriteInt(stream(),num_orbitals*kIntegerSize);
             for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-              WriteI4(stream(),orbitals[orbital_index].l);
-            WriteI4(stream(),num_orbitals*kIntegerSize);
-            WriteI4(stream(),num_orbitals*kIntegerSize);
+              WriteInt(stream(),orbitals[orbital_index].l);
+            WriteInt(stream(),num_orbitals*kIntegerSize);
+            WriteInt(stream(),num_orbitals*kIntegerSize);
             for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-              WriteI4(stream(),TwiceValue(orbitals[orbital_index].j));
-            WriteI4(stream(),num_orbitals*kIntegerSize);
-            WriteI4(stream(),num_orbitals*kFloatSize);
+              WriteInt(stream(),TwiceValue(orbitals[orbital_index].j));
+            WriteInt(stream(),num_orbitals*kIntegerSize);
+            WriteInt(stream(),num_orbitals*kFloatSize);
             for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
               WriteFloat(stream(),orbitals[orbital_index].weight);
-            WriteI4(stream(),num_orbitals*kFloatSize);
+            WriteInt(stream(),num_orbitals*kFloatSize);
           }         
         
         // two-body indexing
 
         // header line 1: operator properties
-        WriteI4(stream(),3*kIntegerSize);
-        WriteI4(stream(),sectors().J0());
-        WriteI4(stream(),sectors().g0());
-        WriteI4(stream(),sectors().Tz0());
-        WriteI4(stream(),3*kIntegerSize);
+        WriteInt(stream(),3*kIntegerSize);
+        WriteInt(stream(),sectors().J0());
+        WriteInt(stream(),sectors().g0());
+        WriteInt(stream(),sectors().Tz0());
+        WriteInt(stream(),3*kIntegerSize);
         
         // header line 2: 1-body basis limit
-        WriteI4(stream(),2*kFloatSize);
+        WriteInt(stream(),2*kFloatSize);
         WriteFloat(stream(),space().weight_max().one_body[0]);
         WriteFloat(stream(),space().weight_max().one_body[1]);
-        WriteI4(stream(),2*kFloatSize);
+        WriteInt(stream(),2*kFloatSize);
 
         // header line 3: 2-body basis limit
-        WriteI4(stream(),3*kFloatSize);
+        WriteInt(stream(),3*kFloatSize);
         WriteFloat(stream(),space().weight_max().two_body[0]);
         WriteFloat(stream(),space().weight_max().two_body[1]);
         WriteFloat(stream(),space().weight_max().two_body[2]);
-        WriteI4(stream(),3*kFloatSize);
+        WriteInt(stream(),3*kFloatSize);
 
         // header line 4: 2-body basis a.m. limit
-        WriteI4(stream(),3*kIntegerSize);
-        WriteI4(stream(),2*Jmax_by_type()[0]);
-        WriteI4(stream(),2*Jmax_by_type()[1]);
-        WriteI4(stream(),2*Jmax_by_type()[2]);
-        WriteI4(stream(),3*kIntegerSize);
+        WriteInt(stream(),3*kIntegerSize);
+        WriteInt(stream(),2*Jmax_by_type()[0]);
+        WriteInt(stream(),2*Jmax_by_type()[1]);
+        WriteInt(stream(),2*Jmax_by_type()[2]);
+        WriteInt(stream(),3*kIntegerSize);
 
         // header line 5: matrix size
-        WriteI4(stream(),3*kIntegerSize);
-        WriteI4(stream(),size_by_type()[0]);
-        WriteI4(stream(),size_by_type()[1]);
-        WriteI4(stream(),size_by_type()[2]);
-        WriteI4(stream(),3*kIntegerSize);
+        WriteInt(stream(),3*kIntegerSize);
+        WriteInt(stream(),size_by_type()[0]);
+        WriteInt(stream(),size_by_type()[1]);
+        WriteInt(stream(),size_by_type()[2]);
+        WriteInt(stream(),3*kIntegerSize);
       }
   };
 
@@ -570,7 +568,7 @@ namespace shell {
     if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
       {
         int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        VerifyI4(stream(),entries*kIntegerSize);
+        VerifyInt(stream(),entries*kIntegerSize);
       }
 
     // iterate over matrix elements
@@ -630,7 +628,7 @@ namespace shell {
     if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
       {
         int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        VerifyI4(stream(),entries*kIntegerSize);
+        VerifyInt(stream(),entries*kIntegerSize);
       }
   }
 
@@ -662,7 +660,7 @@ namespace shell {
     if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
       {
         int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        WriteI4(stream(),entries*kIntegerSize);
+        WriteInt(stream(),entries*kIntegerSize);
       }
 
     // iterate over matrix elements
@@ -711,7 +709,7 @@ namespace shell {
     if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
       {
         int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        WriteI4(stream(),entries*kIntegerSize);
+        WriteInt(stream(),entries*kIntegerSize);
       }
   }
 
@@ -733,7 +731,7 @@ namespace shell {
     if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
       {
         int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        WriteI4(stream(),entries*kIntegerSize);
+        WriteInt(stream(),entries*kIntegerSize);
       }
 
     // iterate over matrix elements
@@ -784,7 +782,7 @@ namespace shell {
     if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
       {
         int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        WriteI4(stream(),entries*kIntegerSize);
+        WriteInt(stream(),entries*kIntegerSize);
       }
   }
 
