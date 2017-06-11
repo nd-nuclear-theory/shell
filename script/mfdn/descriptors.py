@@ -1,3 +1,12 @@
+"""descriptors.py -- task descriptors for MFDn runs.
+
+Patrick Fasano
+University of Notre Dame
+
+- 3/22/17 (pjf): Created, split from __init__.py.
+- 4/7/17 (pjf): Reference new config submodule.
+- 6/3/17 (pjf): Switch natorb_iteration -> natural_orbitals.
+"""
 import mcscript.exception
 import mcscript.utils
 

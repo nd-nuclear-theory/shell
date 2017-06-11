@@ -1,3 +1,14 @@
+"""config.py -- define configuration options for MFDn scripting
+
+Patrick Fasano
+University of Notre Dame
+
+- 3/22/17 (pjf): Created, split from __init__.py.
+- 4/7/17 (pjf): Rename Configuration -> Environment.
+- 6/3/17 (pjf): Remove dependence of filenames on natural orbital iteration.
+- 6/5/17 (pjf): Clean up formatting.
+"""
+
 import os
 import enum
 
