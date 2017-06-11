@@ -103,7 +103,7 @@ def run_mfdn(task, postfix=""):
 
     # obdme: write reference state list
     for reference_state in task["obdme_reference_state_list"]:
-        lines.append("{:d} {:d} {:d}".format(2*reference_state[0], reference_state[1], reference_state[2]))
+        lines.append("{:d} {:d} {:d}".format(int(2*reference_state[0]), reference_state[1], reference_state[2]))
 
     # ensure terminal line
     lines.append("")
