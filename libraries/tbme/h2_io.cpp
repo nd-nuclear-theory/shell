@@ -15,7 +15,7 @@
 #include <string>
 
 #include "cppformat/format.h"
-
+#include "mcutils/io.h"
 #include "mcutils/parsing.h"
 
 namespace shell {
@@ -118,35 +118,7 @@ namespace shell {
   // code assumes int and float are both 4-byte
 
   const int kIntegerSize = 4;
-  void WriteInt(std::ofstream& os, int i)
-  {
-    os.write(reinterpret_cast<const char*> (&i),sizeof(int));
-  }
-  void ReadInt(std::ifstream& is, int &i)
-  {
-    is.read(reinterpret_cast<char*> (&i),sizeof(int));
-  }
-  void VerifyInt(std::ifstream& is, const int i0)
-  {
-    int i;
-    is.read(reinterpret_cast<char*> (&i),sizeof(int));
-    if ( i != i0 )
-      {
-	// flag mismatch
-	std::cerr << "H2 file I/O: Encountered input value " << i << " when expecting " << i0 << std::endl;
-	exit(EXIT_FAILURE);
-      }
-  }
-
   const int kFloatSize = 4;
-  void WriteFloat(std::ofstream& os, float x)
-  {
-    os.write(reinterpret_cast<const char*> (&x),sizeof(float));
-  }
-  void ReadFloat(std::ifstream& is, float &x)
-  {
-    is.read(reinterpret_cast<char*> (&x),sizeof(float));
-  }
 
   const std::array<const char*,3> kH2ModeDescription({"text","binary","matrix"});
   const std::array<const char*,3> kH2ModeExtension({".dat",".bin",".mat"});
@@ -257,9 +229,9 @@ namespace shell {
       {
         int num_fields = 1;
         int bytes = num_fields * kIntegerSize;
-        VerifyInt(stream(),bytes);
-        ReadInt(stream(),h2_format_);
-        VerifyInt(stream(),bytes);
+        mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
+        mcutils::ReadBinary<int>(stream(),h2_format_);
+        mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
       }
 
     StreamCheck(bool(stream()),filename_,"Failure while reading H2 file version code");
@@ -277,9 +249,9 @@ namespace shell {
       {
         int num_fields = 1;
         int bytes = num_fields * kIntegerSize;
-        WriteInt(stream(),bytes);
-        WriteInt(stream(),h2_format());
-        WriteInt(stream(),bytes);
+        mcutils::WriteBinary<int>(stream(),bytes);
+        mcutils::WriteBinary<int>(stream(),h2_format());
+        mcutils::WriteBinary<int>(stream(),bytes);
       }
     
     StreamCheck(bool(stream()),filename_,"Failure while writing H2 file version code");
@@ -341,13 +313,13 @@ namespace shell {
       {
         int num_fields = 5;
         int bytes = num_fields * kIntegerSize;
-        VerifyInt(stream(),bytes);
-        ReadInt(stream(),num_types);
-        ReadInt(stream(),N1max);
-        ReadInt(stream(),N2max);
-        ReadInt(stream(),size_pp_nn);
-        ReadInt(stream(),size_pn);
-        VerifyInt(stream(),bytes);
+        mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
+        mcutils::ReadBinary<int>(stream(),num_types);
+        mcutils::ReadBinary<int>(stream(),N1max);
+        mcutils::ReadBinary<int>(stream(),N2max);
+        mcutils::ReadBinary<int>(stream(),size_pp_nn);
+        mcutils::ReadBinary<int>(stream(),size_pn);
+        mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
       }
 
     // set up indexing
@@ -397,13 +369,13 @@ namespace shell {
       {
         int num_fields = 5;
         int bytes = num_fields * kIntegerSize;
-        WriteInt(stream(),bytes);
-        WriteInt(stream(),num_types);
-        WriteInt(stream(),N1max);
-        WriteInt(stream(),N2max);
-        WriteInt(stream(),size_pp_nn);
-        WriteInt(stream(),size_pn);
-        WriteInt(stream(),bytes);
+        mcutils::WriteBinary<int>(stream(),bytes);
+        mcutils::WriteBinary<int>(stream(),num_types);
+        mcutils::WriteBinary<int>(stream(),N1max);
+        mcutils::WriteBinary<int>(stream(),N2max);
+        mcutils::WriteBinary<int>(stream(),size_pp_nn);
+        mcutils::WriteBinary<int>(stream(),size_pn);
+        mcutils::WriteBinary<int>(stream(),bytes);
       }
   };
 
@@ -451,10 +423,10 @@ namespace shell {
         // dump orbitals
 
         // header: dimensions
-        WriteInt(stream(),2*kIntegerSize);
+        mcutils::WriteBinary<int>(stream(),2*kIntegerSize);
         for (int subspace_index=0; subspace_index < orbital_space().size(); ++subspace_index)
-          WriteInt(stream(),orbital_space().GetSubspace(subspace_index).size());
-        WriteInt(stream(),2*kIntegerSize);
+          mcutils::WriteBinary<int>(stream(),orbital_space().GetSubspace(subspace_index).size());
+        mcutils::WriteBinary<int>(stream(),2*kIntegerSize);
 
         // orbital listing body
         for (int subspace_index=0; subspace_index < orbital_space().size(); ++subspace_index)
@@ -462,59 +434,59 @@ namespace shell {
             const std::vector<basis::OrbitalPNInfo> orbitals = orbital_space().GetSubspace(subspace_index).OrbitalInfo();
             const int num_orbitals = orbitals.size();
 
-            WriteInt(stream(),num_orbitals*kIntegerSize);
+            mcutils::WriteBinary<int>(stream(),num_orbitals*kIntegerSize);
             for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-              WriteInt(stream(),orbitals[orbital_index].n);
-            WriteInt(stream(),num_orbitals*kIntegerSize);
-            WriteInt(stream(),num_orbitals*kIntegerSize);
+              mcutils::WriteBinary<int>(stream(),orbitals[orbital_index].n);
+            mcutils::WriteBinary<int>(stream(),num_orbitals*kIntegerSize);
+            mcutils::WriteBinary<int>(stream(),num_orbitals*kIntegerSize);
             for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-              WriteInt(stream(),orbitals[orbital_index].l);
-            WriteInt(stream(),num_orbitals*kIntegerSize);
-            WriteInt(stream(),num_orbitals*kIntegerSize);
+              mcutils::WriteBinary<int>(stream(),orbitals[orbital_index].l);
+            mcutils::WriteBinary<int>(stream(),num_orbitals*kIntegerSize);
+            mcutils::WriteBinary<int>(stream(),num_orbitals*kIntegerSize);
             for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-              WriteInt(stream(),TwiceValue(orbitals[orbital_index].j));
-            WriteInt(stream(),num_orbitals*kIntegerSize);
-            WriteInt(stream(),num_orbitals*kFloatSize);
+              mcutils::WriteBinary<int>(stream(),TwiceValue(orbitals[orbital_index].j));
+            mcutils::WriteBinary<int>(stream(),num_orbitals*kIntegerSize);
+            mcutils::WriteBinary<int>(stream(),num_orbitals*kFloatSize);
             for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-              WriteFloat(stream(),orbitals[orbital_index].weight);
-            WriteInt(stream(),num_orbitals*kFloatSize);
+              mcutils::WriteBinary<float>(stream(),orbitals[orbital_index].weight);
+            mcutils::WriteBinary<int>(stream(),num_orbitals*kFloatSize);
           }         
         
         // two-body indexing
 
         // header line 1: operator properties
-        WriteInt(stream(),3*kIntegerSize);
-        WriteInt(stream(),sectors().J0());
-        WriteInt(stream(),sectors().g0());
-        WriteInt(stream(),sectors().Tz0());
-        WriteInt(stream(),3*kIntegerSize);
+        mcutils::WriteBinary<int>(stream(),3*kIntegerSize);
+        mcutils::WriteBinary<int>(stream(),sectors().J0());
+        mcutils::WriteBinary<int>(stream(),sectors().g0());
+        mcutils::WriteBinary<int>(stream(),sectors().Tz0());
+        mcutils::WriteBinary<int>(stream(),3*kIntegerSize);
         
         // header line 2: 1-body basis limit
-        WriteInt(stream(),2*kFloatSize);
-        WriteFloat(stream(),space().weight_max().one_body[0]);
-        WriteFloat(stream(),space().weight_max().one_body[1]);
-        WriteInt(stream(),2*kFloatSize);
+        mcutils::WriteBinary<int>(stream(),2*kFloatSize);
+        mcutils::WriteBinary<float>(stream(),space().weight_max().one_body[0]);
+        mcutils::WriteBinary<float>(stream(),space().weight_max().one_body[1]);
+        mcutils::WriteBinary<int>(stream(),2*kFloatSize);
 
         // header line 3: 2-body basis limit
-        WriteInt(stream(),3*kFloatSize);
-        WriteFloat(stream(),space().weight_max().two_body[0]);
-        WriteFloat(stream(),space().weight_max().two_body[1]);
-        WriteFloat(stream(),space().weight_max().two_body[2]);
-        WriteInt(stream(),3*kFloatSize);
+        mcutils::WriteBinary<int>(stream(),3*kFloatSize);
+        mcutils::WriteBinary<float>(stream(),space().weight_max().two_body[0]);
+        mcutils::WriteBinary<float>(stream(),space().weight_max().two_body[1]);
+        mcutils::WriteBinary<float>(stream(),space().weight_max().two_body[2]);
+        mcutils::WriteBinary<int>(stream(),3*kFloatSize);
 
         // header line 4: 2-body basis a.m. limit
-        WriteInt(stream(),3*kIntegerSize);
-        WriteInt(stream(),2*Jmax_by_type()[0]);
-        WriteInt(stream(),2*Jmax_by_type()[1]);
-        WriteInt(stream(),2*Jmax_by_type()[2]);
-        WriteInt(stream(),3*kIntegerSize);
+        mcutils::WriteBinary<int>(stream(),3*kIntegerSize);
+        mcutils::WriteBinary<int>(stream(),2*Jmax_by_type()[0]);
+        mcutils::WriteBinary<int>(stream(),2*Jmax_by_type()[1]);
+        mcutils::WriteBinary<int>(stream(),2*Jmax_by_type()[2]);
+        mcutils::WriteBinary<int>(stream(),3*kIntegerSize);
 
         // header line 5: matrix size
-        WriteInt(stream(),3*kIntegerSize);
-        WriteInt(stream(),size_by_type()[0]);
-        WriteInt(stream(),size_by_type()[1]);
-        WriteInt(stream(),size_by_type()[2]);
-        WriteInt(stream(),3*kIntegerSize);
+        mcutils::WriteBinary<int>(stream(),3*kIntegerSize);
+        mcutils::WriteBinary<int>(stream(),size_by_type()[0]);
+        mcutils::WriteBinary<int>(stream(),size_by_type()[1]);
+        mcutils::WriteBinary<int>(stream(),size_by_type()[2]);
+        mcutils::WriteBinary<int>(stream(),3*kIntegerSize);
       }
   };
 
@@ -568,7 +540,10 @@ namespace shell {
     if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
       {
         int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        VerifyInt(stream(),entries*kIntegerSize);
+        mcutils::VerifyBinary<int>(
+            stream(),entries*kIntegerSize,
+            "Encountered unexpected value in H2 file","record delimiter"
+          );
       }
 
     // iterate over matrix elements
@@ -617,7 +592,7 @@ namespace shell {
             }
           else if (h2_mode()==H2Mode::kBinary)
             {
-              ReadFloat(stream(),input_matrix_element);
+              mcutils::ReadBinary<float>(stream(),input_matrix_element);
             }
 
           if (store)
@@ -628,7 +603,10 @@ namespace shell {
     if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
       {
         int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        VerifyInt(stream(),entries*kIntegerSize);
+        mcutils::VerifyBinary<int>(
+            stream(),entries*kIntegerSize,
+            "Encountered unexpected value in H2 file","record delimiter"
+          );
       }
   }
 
@@ -660,7 +638,7 @@ namespace shell {
     if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
       {
         int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        WriteInt(stream(),entries*kIntegerSize);
+        mcutils::WriteBinary<int>(stream(),entries*kIntegerSize);
       }
 
     // iterate over matrix elements
@@ -701,7 +679,7 @@ namespace shell {
             }
           else if (h2_mode()==H2Mode::kBinary)
             {
-              WriteFloat(stream(),output_matrix_element);
+              mcutils::WriteBinary<float>(stream(),output_matrix_element);
             }
         }
 			
@@ -709,7 +687,7 @@ namespace shell {
     if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
       {
         int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        WriteInt(stream(),entries*kIntegerSize);
+        mcutils::WriteBinary<int>(stream(),entries*kIntegerSize);
       }
   }
 
@@ -731,7 +709,7 @@ namespace shell {
     if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
       {
         int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        WriteInt(stream(),entries*kIntegerSize);
+        mcutils::WriteBinary<int>(stream(),entries*kIntegerSize);
       }
 
     // iterate over matrix elements
@@ -774,7 +752,7 @@ namespace shell {
             }
           else if (h2_mode()==H2Mode::kBinary)
             {
-              WriteFloat(stream(),output_matrix_element);
+              mcutils::WriteBinary<float>(stream(),output_matrix_element);
             }
         }
 			
@@ -782,7 +760,7 @@ namespace shell {
     if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
       {
         int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        WriteInt(stream(),entries*kIntegerSize);
+        mcutils::WriteBinary<int>(stream(),entries*kIntegerSize);
       }
   }
 
