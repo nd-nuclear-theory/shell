@@ -76,3 +76,14 @@ tbmes given directly at hw
     Usage: qsubm --here mfdn06
 
     We use tb-10 as the smallest available set of files.
+
+runmfdn07: harmonic oscillator direct run with MFDn v15
+
+    4He Nmax02 hw20 (direct)
+
+    Interaction: run0164-JISP16-tb-10
+
+    Usage: qsubm --here mfdn01
+
+    We use tb-10 as the smallest available set of files.
+
