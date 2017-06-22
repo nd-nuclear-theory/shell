@@ -44,7 +44,7 @@ def task_descriptor_7(task):
         raise mcscript.exception.ScriptError("mode not supported by task descriptor")
 
     truncation_parameters = task["truncation_parameters"]
-    if (truncation_parameters["many_body_truncation"] == "fci"):
+    if (truncation_parameters["many_body_truncation"] == "FCI"):
         fci_indicator = "-fci"
     else:
         fci_indicator = ""
@@ -88,7 +88,7 @@ def task_descriptor_7b(task):
 
     truncation_parameters = task["truncation_parameters"]
     Ncut = "{:s}{:02d}".format(*task.get("xform_truncation_int", truncation_parameters["Nmax"]))
-    if (truncation_parameters["many_body_truncation"] == "fci"):
+    if (truncation_parameters["many_body_truncation"] == "FCI"):
         fci_indicator = "-fci"
     else:
         fci_indicator = ""
