@@ -13,7 +13,7 @@ def run_mfdn(task, postfix=""):
         task (dict): as described in module docstring
         postfix (str, optional):
     Raises:
-        mcscript.ScriptError: if MFDn output not found
+        mcscript.exception.ScriptError: if MFDn output not found
     """
     # validate truncation mode
     # if (task["truncation_mode"] is not k_truncation_mode_ho):
@@ -81,7 +81,7 @@ def run_mfdn(task, postfix=""):
     # tbo: count number of observables
     num_obs = len(obs_basename_list)
     if (num_obs > 32):
-        raise mcscript.ScriptError("Too many observables for MFDn v15")
+        raise mcscript.exception.ScriptError("Too many observables for MFDn v15")
 
     inputlist["numTBops"] = num_obs
     obslist["TBMEoperators"] = obs_basename_list
@@ -120,7 +120,7 @@ def run_mfdn(task, postfix=""):
     # import partitioning file
     if (task["partition_filename"] is not None):
         if (not os.path.exists(task["partition_filename"])):
-            raise mcscript.ScriptError("partition file not found")
+            raise mcscript.exception.ScriptError("partition file not found")
         mcscript.call(["cp", "--verbose", task["partition_filename"], "work/mfdn_partitioning.info"])
 
     # enter work directory
@@ -137,9 +137,9 @@ def run_mfdn(task, postfix=""):
 
     # test for basic indications of success
     if (not os.path.exists("mfdn.out")):
-        raise mcscript.ScriptError("mfdn.out not found")
+        raise mcscript.exception.ScriptError("mfdn.out not found")
     if (not os.path.exists("mfdn.res")):
-        raise mcscript.ScriptError("mfdn.res not found")
+        raise mcscript.exception.ScriptError("mfdn.res not found")
 
     # leave work directory
     os.chdir("..")
@@ -152,7 +152,7 @@ def save_mfdn_output(task, postfix=""):
         task (dict): as described in module docstring
 
     Raises:
-        mcscript.ScriptError: if MFDn output not found
+        mcscript.exception.ScriptError: if MFDn output not found
     """
     # save quick inspection copies of mfdn.{res,out}
     natural_orbitals = task.get("natural_orbitals")

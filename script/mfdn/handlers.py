@@ -42,11 +42,11 @@ def task_handler_natorb(task, mfdn=mfdn_v14):
     """
     # sanity checks
     if not task.get("natural_orbitals"):
-        raise mcscript.ScriptError("natural orbitals not enabled")
+        raise mcscript.exception.ScriptError("natural orbitals not enabled")
 
     natorb_base_state = task.get("natorb_base_state")
     if type(natorb_base_state) is not int:
-        raise mcscript.ScriptError("invalid natorb_base_state: {}".format(natorb_base_state))
+        raise mcscript.exception.ScriptError("invalid natorb_base_state: {}".format(natorb_base_state))
 
     # first do base oscillator run
     task_handler_oscillator(task, postfix=utils.natural_orbital_indicator(0), mfdn=mfdn)
