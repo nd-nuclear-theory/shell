@@ -86,4 +86,3 @@ runmfdn07: harmonic oscillator direct run with MFDn v15
     Usage: qsubm --here mfdn01
 
     We use tb-10 as the smallest available set of files.
-
