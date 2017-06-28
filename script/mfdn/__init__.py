@@ -571,7 +571,7 @@ def set_up_radial_analytic(task):
                     filenames.orbitals_filename(natural_orbital_iteration),
                     filenames.radial_me_filename(natural_orbital_iteration, operator_type, power)
                 ],
-                mode = mcscript.call.serial
+                mode = mcscript.CallMode.kSerial
             )
 
     # generate radial overlaps -- generate trivial identities if applicable
@@ -584,7 +584,7 @@ def set_up_radial_analytic(task):
                 filenames.orbitals_filename(natural_orbital_iteration),
                 filenames.radial_olap_int_filename(natural_orbital_iteration)
             ],
-            mode = mcscript.call.serial
+            mode = mcscript.CallMode.kSerial
         )
     else:
         b_ratio = math.sqrt(task["hw_int"]/task["hw"])
@@ -598,7 +598,7 @@ def set_up_radial_analytic(task):
                 filenames.orbitals_filename(natural_orbital_iteration),
                 filenames.radial_olap_int_filename(natural_orbital_iteration)
             ],
-            mode = mcscript.call.serial
+            mode = mcscript.CallMode.kSerial
         )
     if (task["use_coulomb"]):
         if (task["basis_mode"] in {k_basis_mode_direct,k_basis_mode_dilated}):
@@ -610,7 +610,7 @@ def set_up_radial_analytic(task):
                     filenames.orbitals_filename(natural_orbital_iteration),
                     filenames.radial_olap_coul_filename(natural_orbital_iteration)
                 ],
-                mode = mcscript.call.serial
+                mode = mcscript.CallMode.kSerial
             )
         else:
             if task.get("hw_coul_rescaled") is None:
@@ -627,7 +627,7 @@ def set_up_radial_analytic(task):
                     filenames.orbitals_filename(natural_orbital_iteration),
                     filenames.radial_olap_coul_filename(natural_orbital_iteration)
                 ],
-                mode = mcscript.call.serial
+                mode = mcscript.CallMode.kSerial
             )
 
 def set_up_radial_natorb(task):
@@ -690,7 +690,7 @@ def set_up_radial_natorb(task):
                     filenames.radial_me_filename(0, operator_type, power),
                     filenames.radial_me_filename(natural_orbital_iteration, operator_type, power)
                 ],
-                mode = mcscript.call.serial
+                mode = mcscript.CallMode.kSerial
             )
 
 def generate_tbme(task):
@@ -895,7 +895,7 @@ def generate_tbme(task):
             configuration.shell_filename("h2mixer")
         ],
         input_lines=lines,
-        mode = mcscript.call.serial
+        mode = mcscript.CallMode.kSerial
     )
 
 def run_mfdn_v14_b06(task):
@@ -1020,7 +1020,7 @@ def run_mfdn_v14_b06(task):
         [
             configuration.mfdn_filename(task["mfdn_executable"])
         ],
-        mode = mcscript.call.hybrid,
+        mode = mcscript.CallMode.kHybrid,
         check_return=True
     )
 
