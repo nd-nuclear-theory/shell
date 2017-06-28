@@ -9,7 +9,13 @@
 FC := mpiifort
 FFLAGS := -qopenmp
 FFLAGS += -O3
+FFLAGS += -cpp
+
+F90FLAGS := $(FFLAGS)
 
 # C
 CC := mpiicc
 CFLAGS := $(FFLAGS)
+
+# linking
+LDLIBS = -mkl
