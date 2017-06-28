@@ -131,7 +131,7 @@ def run_mfdn(task, postfix=""):
         [
             config.environ.mfdn_filename(task["mfdn_executable"])
         ],
-        mode=mcscript.call.hybrid,
+        mode=mcscript.CallMode.kHybrid,
         check_return=True
     )
 

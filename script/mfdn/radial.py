@@ -144,7 +144,7 @@ def set_up_radial_analytic(task, postfix=""):
                     config.filenames.orbitals_filename(postfix),
                     config.filenames.radial_me_filename(postfix, operator_type, power)
                 ],
-                mode=mcscript.call.serial
+                mode=mcscript.CallMode.kSerial
             )
 
     # generate radial overlaps -- generate trivial identities if applicable
@@ -157,7 +157,7 @@ def set_up_radial_analytic(task, postfix=""):
                 config.filenames.orbitals_filename(postfix),
                 config.filenames.radial_olap_int_filename(postfix)
             ],
-            mode=mcscript.call.serial
+            mode=mcscript.CallMode.kSerial
         )
     else:
         b_ratio = math.sqrt(task["hw_int"]/task["hw"])
@@ -171,7 +171,7 @@ def set_up_radial_analytic(task, postfix=""):
                 config.filenames.orbitals_filename(postfix),
                 config.filenames.radial_olap_int_filename(postfix)
             ],
-            mode=mcscript.call.serial
+            mode=mcscript.CallMode.kSerial
         )
     if (task["use_coulomb"]):
         if (task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated}):
@@ -183,7 +183,7 @@ def set_up_radial_analytic(task, postfix=""):
                     config.filenames.orbitals_filename(postfix),
                     config.filenames.radial_olap_coul_filename(postfix)
                 ],
-                mode=mcscript.call.serial
+                mode=mcscript.CallMode.kSerial
             )
         else:
             if task.get("hw_coul_rescaled") is None:
@@ -200,7 +200,7 @@ def set_up_radial_analytic(task, postfix=""):
                     config.filenames.orbitals_filename(postfix),
                     config.filenames.radial_olap_coul_filename(postfix)
                 ],
-                mode=mcscript.call.serial
+                mode=mcscript.CallMode.kSerial
             )
 
 
@@ -246,7 +246,7 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
             config.filenames.natorb_xform_filename(target_postfix),
             config.filenames.radial_olap_coul_filename(target_postfix)
         ],
-        mode=mcscript.call.serial
+        mode=mcscript.CallMode.kSerial
     )
 
     # transform radial integrals
@@ -260,5 +260,5 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
                     config.filenames.radial_me_filename(source_postfix, operator_type, power),
                     config.filenames.radial_me_filename(target_postfix, operator_type, power)
                 ],
-                mode=mcscript.call.serial
+                mode=mcscript.CallMode.kSerial
             )

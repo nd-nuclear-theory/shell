@@ -206,5 +206,5 @@ def generate_tbme(task, postfix=""):
             config.environ.shell_filename("h2mixer")
         ],
         input_lines=lines,
-        mode=mcscript.call.serial
+        mode=mcscript.CallMode.kSerial
     )
