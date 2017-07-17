@@ -87,6 +87,11 @@ format 15099
   4He Nmax02 hw20 (direct)
   TODO
 
+Example 09: large run of kinematic operators
+format 0
+
+   Manually edit h2mixer.in to eliminate non-kinematic output operators.
+
 ----------------------------------------------------------------
 
 To inspect matrices:
