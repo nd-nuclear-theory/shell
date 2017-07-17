@@ -237,6 +237,7 @@ void PopulateOperator(
       relative::ConstructCoulombOperator(
           operator_parameters,
           relative_space,relative_component_sectors,relative_component_matrices,
+          basis::TwoBodySpeciesPN::kPP,
           num_steps
         );
     }
