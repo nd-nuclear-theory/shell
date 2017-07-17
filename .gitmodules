@@ -20,3 +20,6 @@
 [submodule "config/ndmakefile"]
 	path = config/ndmakefile
 	url = ../ndmakefile
+[submodule "libraries/eigen3"]
+	path = libraries/eigen3
+	url = ../eigen3
