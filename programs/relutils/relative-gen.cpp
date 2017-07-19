@@ -31,8 +31,11 @@
 
     rsqr
       Relative r^2 operator (~intrinsic r^2 operator).
+      [TODO: merge with ksqr?  provide pp|nn variants?]
 
-    coulomb
+    qrel r|k pp|nn|pn [TODO]
+
+    coulomb pp|nn|pn [TODO]
       Coulomb potential.
 
     symmunit T0 Np Lp Sp Jp Tp N L S J T

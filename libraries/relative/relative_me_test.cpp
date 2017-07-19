@@ -24,7 +24,7 @@ void TestQuadrupole()
   operator_labels.T0_max=2;
 
   // set basis parameters
-  int Nmax=20;
+  int Nmax=6;
   int Jmax = Nmax+1;
 
   // set up relative space
@@ -50,7 +50,7 @@ void TestQuadrupole()
           relative::KinematicOperator::kRSqr,
           basis::TwoBodySpeciesPN::kPP
         );
-      std::string filename = fmt::format("quadrupole_test_Nmax{}_{}.dat",Nmax,basis::kTwoBodySpeciesPNCodeChar[int(operator_species)]);
+      std::string filename = fmt::format("quadrupole_test_Nmax{}_{}_rel.dat",Nmax,basis::kTwoBodySpeciesPNCodeChar[int(operator_species)]);
       basis::WriteRelativeOperatorLSJT(
           filename,
           relative_space,
