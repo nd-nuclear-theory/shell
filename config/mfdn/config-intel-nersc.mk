@@ -4,9 +4,6 @@ include config/config-intel.mk
 FC := ftn
 CC := cc
 
-# use MKL
-LDLIBS := -mkl=cluster -lifcoremt
-
 
 # keep binaries separate by target architecture
 ## install_prefix := install/$(CRAY_CPU_TARGET)
