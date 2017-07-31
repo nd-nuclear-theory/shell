@@ -1,18 +1,16 @@
-""" runmfdn04.py
+""" runmfdn07.py
 
     See runmfdn.txt for description.
 
     Mark A. Caprio
     University of Notre Dame
 
-    - 12/29/16 (mac): Created.
-    - 1/29/17 (pjf): Updated for new truncation_mode parameter.
-    - 6/3/17 (pjf): Updated for new scripting.
+    - 6/8/17 (pjf): Created, copied from runmfd01; switch to MFDn v15.
 """
 
 import mcscript
 import mfdn
-import mfdn.mfdn_v14
+import mfdn.mfdn_v15
 
 # initialize mcscript
 mcscript.init()
@@ -41,9 +39,9 @@ task = {
     "hw_cm": None,
 
     # input TBME parameters
-    "truncation_int": ("tb", 20),
+    "truncation_int": ("tb", 10),
     "hw_int": 20.,
-    "truncation_coul": ("tb", 20),
+    "truncation_coul": ("tb", 10),
     "hw_coul": 20.,
 
     # basis parameters
@@ -60,7 +58,7 @@ task = {
     "truncation_mode": mfdn.config.TruncationMode.kHO,
     "truncation_parameters": {
         "Nv": 0,
-        "Nmax": 12,
+        "Nmax": 2,
         "many_body_truncation": "Nmax",
         "Nstep": 2,
         },
@@ -84,9 +82,9 @@ task = {
     "observable_sets": ["H-components"],
 
     # version parameters
-    "h2_format": 0,
-    "mfdn_executable": "mfdn-v14-beta06-newmake/xmfdn-h2-lan",
-    "mfdn_driver": mfdn.mfdn_v14,
+    "h2_format": 15099,
+    "mfdn_executable": "mfdn-v15-beta00/xmfdn-h2-lan",
+    "mfdn_driver": mfdn.mfdn_v15,
 
 }
 
@@ -102,8 +100,9 @@ task["metadata"] = {
 mfdn.radial.set_up_orbitals_ho(task)
 mfdn.radial.set_up_radial_analytic(task)
 mfdn.tbme.generate_tbme(task)
-mfdn.mfdn_v14.run_mfdn(task)
-mfdn.mfdn_v14.save_mfdn_output(task)
+mfdn.mfdn_v15.run_mfdn(task)
+mfdn.mfdn_v15.save_mfdn_output(task)
+# mfdn.handlers.task_handler_oscillator(task)
 
 ##################################################################
 # task control

@@ -1,12 +1,15 @@
-"""operators -- define two-body operators for h2mixer input
+"""operators.py -- define two-body operators for h2mixer input
 
     - 2/18/17 (pjf): Created.
     - 5/24/17 (pjf):
       + Fixed VC scaling.
       + Added comments explaining scaling.
 """
+import math
+
 import mcscript.utils
-from .utils import *
+from . import utils
+
 
 ################################################################
 # identity operator
@@ -14,6 +17,7 @@ from .utils import *
 
 def identity():
     return mcscript.utils.CoefficientDict(identity=1.)
+
 
 ################################################################
 # radial kinematic operators
@@ -34,6 +38,7 @@ def Uksqr():
 
 def Vk1k2():
     return mcscript.utils.CoefficientDict(Vk1k2=1.)
+
 
 ################################################################
 # angular momentum operators
@@ -58,6 +63,7 @@ def S():
 def J():
     return mcscript.utils.CoefficientDict(J=1.)
 
+
 ################################################################
 # interactions
 ################################################################
@@ -76,6 +82,7 @@ def VC(bsqr_coul=1.0):
     """
     return VC_unscaled() * math.sqrt(bsqr_coul)
 
+
 ################################################################
 # common observables
 ################################################################
@@ -91,8 +98,8 @@ def rrel2(A, hw, **kwargs):
         CoefficientDict containing coefficients for rrel2 operator.
     """
     out = mcscript.utils.CoefficientDict()
-    out += ((A-1)*(oscillator_length(hw)/A)**2) * Ursqr()
-    out += (-2*(oscillator_length(hw)/A)**2) * Vr1r2()
+    out += ((A-1)*(utils.oscillator_length(hw)/A)**2) * Ursqr()
+    out += (-2*(utils.oscillator_length(hw)/A)**2) * Vr1r2()
     return out
 
 def Ncm(A, bsqr, **kwargs):
@@ -154,6 +161,7 @@ def Trel(A, hw, **kwargs):
     out += ((A-1)/(2*A)*hw) * Uksqr()
     out += (-1/A*hw) * Vk1k2()
     return out
+
 
 ################################################################
 # standard Hamiltonian
