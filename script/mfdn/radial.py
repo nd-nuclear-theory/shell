@@ -1,3 +1,16 @@
+"""handlers.py -- task handlers for MFDn runs.
+
+Patrick Fasano
+University of Notre Dame
+
+- 03/22/17 (pjf): Created, split from __init__.py.
+- 04/06/17 (pjf): Correctly reference config submodule (mfdn.config).
+- 04/07/17 (pjf): Update for mcscript namespace changes.
+- 04/11/17 (pjf): Fix broken imports.
+- 06/03/17 (pjf): Remove explicit references to natural orbitals from bulk of
+    scripting.
+- 06/07/17 (pjf): Clean up style.
+"""
 import math
 
 import mcscript

@@ -1,3 +1,23 @@
+"""mfdn_v14.py -- driver module for MFDn v14.
+
+Patrick Fasano
+University of Notre Dame
+
+- 03/22/17 (pjf): Created, split from __init__.py.
+- 04/06/17 (pjf): Correctly reference config submodule (mfdn.config).
+- 04/07/17 (pjf):
+  + Update for mcscript namespace changes.
+  + Fix format call for ndiag.
+- 04/11/17 (pjf): Fix broken imports.
+- 06/03/17 (pjf): Remove explicit references to natural orbitals from bulk of
+    scripting.
+- 06/05/17 (pjf):
+  + Add postfix to tbo_names.dat.
+  + Make function names generic so that drivers are swappable.
+- 06/07/17 (pjf): Clean up style.
+- 06/10/17 (pjf): Make sure reference state 2J is an int.
+- 06/22/17 (pjf): Update references to mcscript.exception.ScriptError.
+"""
 import os
 import glob
 

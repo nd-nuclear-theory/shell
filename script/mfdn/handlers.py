@@ -1,3 +1,14 @@
+"""handlers.py -- task handlers for MFDn runs.
+
+Patrick Fasano
+University of Notre Dame
+
+- 03/22/17 (pjf): Created, split from __init__.py.
+- 04/07/17 (pjf): Update for mcscript namespace changes.
+- 06/05/17 (pjf): Added basic handlers for oscillator and natural orbital runs.
+- 06/07/17 (pjf): Clean up style.
+- 06/22/17 (pjf): Update references to mcscript.exception.ScriptError.
+"""
 import os
 import glob
 import mcscript

@@ -1,3 +1,11 @@
+"""mfdn_v15.py -- driver module for MFDn v15.
+
+Patrick Fasano
+University of Notre Dame
+
+- 06/08/17 (pjf): Initial version of MFDn v15 scripting, built from mfdn_v14.py.
+- 06/22/17 (pjf): Update references to mcscript.exception.ScriptError.
+"""
 import os
 import glob
 
