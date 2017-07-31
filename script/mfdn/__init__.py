@@ -79,6 +79,7 @@
         # version parameters
         "h2_format" (int): h2 file format to use (values include: 0, 15099)
         "mfdn_executable" (string): mfdn executable name
+        "mfdn_driver" (module): mfdn driver module
 
         # natural orbital parameters
         "natural_orbitals" (bool): enable/disable natural orbitals
@@ -117,6 +118,7 @@
       + Add ndiag parameter to task dictionary.
     - 2/20/17 (pjf): Rename mfdn.py -> mfdn/__init__.py
     - 3/17/17 (pjf): Split mfdn/__init__.py into submodules.
+    - 7/31/17 (pjf): Add mfdn_driver field.
 """
 
 __ALL__ = ['descriptors', 'handlers', 'radial', 'operators', 'tbme', 'utils', 'config']

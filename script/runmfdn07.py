@@ -83,7 +83,8 @@ task = {
 
     # version parameters
     "h2_format": 15099,
-    "mfdn_executable": "mfdn-v15-beta00/xmfdn-h2-lan"
+    "mfdn_executable": "mfdn-v15-beta00/xmfdn-h2-lan",
+    "mfdn_driver": mfdn.mfdn_v15,
 
 }
 
@@ -101,7 +102,7 @@ mfdn.radial.set_up_radial_analytic(task)
 mfdn.tbme.generate_tbme(task)
 mfdn.mfdn_v15.run_mfdn(task)
 mfdn.mfdn_v15.save_mfdn_output(task)
-# mfdn.handlers.task_handler_oscillator(task, mfdn=mfdn.mfdn_v15)
+# mfdn.handlers.task_handler_oscillator(task)
 
 ##################################################################
 # task control
