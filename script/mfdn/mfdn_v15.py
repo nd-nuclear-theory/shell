@@ -5,6 +5,7 @@ University of Notre Dame
 
 - 06/08/17 (pjf): Initial version of MFDn v15 scripting, built from mfdn_v14.py.
 - 06/22/17 (pjf): Update references to mcscript.exception.ScriptError.
+- 07/31/17 (pjf): Create work directory if nonexistent when running mfdn.
 """
 import os
 import glob
@@ -117,6 +118,9 @@ def run_mfdn(task, postfix=""):
     for (J, g_rel, i) in task["obdme_reference_state_list"]:
         obslist["ref2J"].append(int(2*J))
         obslist["refseq"].append(i)
+
+    # create work directory if it doesn't exist yet (-p)
+    mcscript.call(["mkdir", "-p", "work"])
 
     # generate MFDn input file
     mcscript.utils.write_namelist(

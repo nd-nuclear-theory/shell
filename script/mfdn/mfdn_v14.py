@@ -17,6 +17,7 @@ University of Notre Dame
 - 06/07/17 (pjf): Clean up style.
 - 06/10/17 (pjf): Make sure reference state 2J is an int.
 - 06/22/17 (pjf): Update references to mcscript.exception.ScriptError.
+- 07/31/17 (pjf): Create work directory if nonexistent when running mfdn.
 """
 import os
 import glob
@@ -127,6 +128,9 @@ def run_mfdn(task, postfix=""):
 
     # ensure terminal line
     lines.append("")
+
+    # create work directory if it doesn't exist yet (-p)
+    mcscript.call(["mkdir", "-p", "work"])
 
     # generate MFDn input file
     mcscript.utils.write_input("work/mfdn.dat", input_lines=lines)
