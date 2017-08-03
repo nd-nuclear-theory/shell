@@ -12,6 +12,7 @@ University of Notre Dame
 import os
 import enum
 
+import mcscript.parameters
 import mcscript.utils
 
 
@@ -95,7 +96,6 @@ class Environment(object):
 
     Data members:
 
-        install_dir (str): installation directory for shell project ("SHELL_INSTALL_DIR")
         mfdn_dir (str): base directory for finding MFDn executables ("SHELL_MFDN_DIR")
             EX: base directory "${HOME}/projects/mfdn" may contain "mfdn-v14-beta06-newmake/xmfdn-h2-lan"
             and "beta00/xmfdn-h2-lan"
@@ -120,14 +120,13 @@ class Environment(object):
     def __init__(self):
 
         # environment
-        self.install_dir = os.environ.get("SHELL_INSTALL_DIR")
         self.mfdn_dir = os.environ.get("SHELL_MFDN_DIR")
         self.data_dir_h2_list = os.environ.get("SHELL_DATA_DIR_H2").split(":")
         self.interaction_run_list = []
 
     def shell_filename(self, name):
         """Construct filename for shell package executable."""
-        return os.path.join(self.install_dir, "bin", name)
+        return os.path.join(mcscript.parameters.run.install_dir, "bin", name)
 
     def mfdn_filename(self, name):
         """Construct filename for MFDn executable."""
