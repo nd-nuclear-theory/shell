@@ -97,27 +97,29 @@ def run_mfdn(task, postfix=""):
 
     # obdme: parameters
     inputlist["obdme"] = True
-    inputlist["nrefstates"] = len(task["obdme_reference_state_list"])
     obslist["max2K"] = int(2*task["obdme_multipolarity"])
 
-    # obdme: validate reference state list
-    #
-    # guard against pathetically common mistakes
-    for (J, g_rel, i) in task["obdme_reference_state_list"]:
-        # validate integer/half-integer character of angular momentum
-        twice_J = int(2*J)
-        if ((twice_J % 2) != (sum(task["nuclide"]) % 2)):
-            raise ValueError("invalid angular momentum for reference state")
-        # validate grade (here taken relative to natural grade)
-        # if ((g_rel != (truncation_parameters["Nmax"] % 2)) and (truncation_parameters["Nstep"] != 1)):
-        #     raise ValueError("invalid parity for reference state")
+    # construct transition observable input if reference states given
+    if task.get("obdme_reference_state_list") is not None:
+        # obdme: validate reference state list
+        #
+        # guard against pathetically common mistakes
+        for (J, g_rel, i) in task["obdme_reference_state_list"]:
+            # validate integer/half-integer character of angular momentum
+            twice_J = int(2*J)
+            if ((twice_J % 2) != (sum(task["nuclide"]) % 2)):
+                raise ValueError("invalid angular momentum for reference state")
+            # validate grade (here taken relative to natural grade)
+            # if ((g_rel != (truncation_parameters["Nmax"] % 2)) and (truncation_parameters["Nstep"] != 1)):
+            #     raise ValueError("invalid parity for reference state")
 
-    # obdme: construct input
-    obslist["ref2J"] = []
-    obslist["refseq"] = []
-    for (J, g_rel, i) in task["obdme_reference_state_list"]:
-        obslist["ref2J"].append(int(2*J))
-        obslist["refseq"].append(i)
+        # obdme: construct input
+        inputlist["nrefstates"] = len(task["obdme_reference_state_list"])
+        obslist["ref2J"] = []
+        obslist["refseq"] = []
+        for (J, g_rel, i) in task["obdme_reference_state_list"]:
+            obslist["ref2J"].append(int(2*J))
+            obslist["refseq"].append(i)
 
     # create work directory if it doesn't exist yet (-p)
     mcscript.call(["mkdir", "-p", "work"])
