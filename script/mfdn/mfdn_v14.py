@@ -18,6 +18,9 @@ University of Notre Dame
 - 06/10/17 (pjf): Make sure reference state 2J is an int.
 - 06/22/17 (pjf): Update references to mcscript.exception.ScriptError.
 - 07/31/17 (pjf): Create work directory if nonexistent when running mfdn.
+- 08/11/17 (pjf):
+  + Use new TruncationModes.
+  + Fix FCI truncation.
 """
 import os
 import glob
@@ -36,9 +39,13 @@ def run_mfdn(task, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
-    # validate truncation mode
-    if (task["truncation_mode"] is not config.TruncationMode.kHO):
-        raise ValueError("expecting truncation_mode to be {} but found {ho_truncation}".format(config.TruncationMode.kHO, **task))
+    # validate truncation modes
+    allowed_sp_truncations = (config.SingleParticleTruncationMode.kNmax,)
+    allowed_mb_truncations = (config.ManyBodyTruncationMode.kNmax, config.ManyBodyTruncationMode.kFCI)
+    if task["sp_truncation_mode"] not in allowed_sp_truncations:
+        raise ValueError("expecting sp_truncation_mode to be one of {} but found {sp_truncation_mode}".format(allowed_sp_truncations, **task))
+    if task["mb_truncation_mode"] not in allowed_mb_truncations:
+        raise ValueError("expecting mb_truncation_mode to be one of {} but found {mb_truncation_mode}".format(allowed_mb_truncations, **task))
 
     # accumulate MFDn input lines
     lines = []
@@ -46,10 +53,12 @@ def run_mfdn(task, postfix=""):
     # base parameters
     truncation_parameters = task["truncation_parameters"]
     twice_Mj = int(2*task["Mj"])
-    if (truncation_parameters["many_body_truncation"] == "Nmax"):
+    if task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kNmax:
         Nmax_orb = truncation_parameters["Nmax"] + truncation_parameters["Nv"]
-    elif (truncation_parameters["many_body_truncation"] == "FCI"):
+        Nmax = truncation_parameters["Nmax"]
+    elif task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kFCI:
         Nmax_orb = truncation_parameters["Nmax"]
+        Nmax = sum(task["nuclide"]) * Nmax_orb
     Nshell = Nmax_orb+1
     if (task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated}):
         hw_for_trans = task["hw"]
@@ -59,7 +68,8 @@ def run_mfdn(task, postfix=""):
     ndiag = task.get("ndiag")
     if ndiag is None:
         ndiag = 0
-    if (truncation_parameters["Nstep"] == 2):
+    Nstep = truncation_parameters["Nstep"]
+    if (Nstep == 2):
         Nmin = truncation_parameters["Nmax"] % 2
     else:
         Nmin = 1
@@ -71,7 +81,7 @@ def run_mfdn(task, postfix=""):
     lines.append("{nuclide[1]:d}  # protons (class 2 particles)".format(**task))
     lines.append("1 {Nshell:d}  # min, max # S.P. shells for class 1 particles".format(Nshell=Nshell, **task))
     lines.append("1 {Nshell:d}  # min, max # S.P. shells for class 2 particles".format(Nshell=Nshell, **task))
-    lines.append("{Nmin:d} {Nmax:d} {Nstep:d}  # N_min, N_max, delta_N".format(Nmin=Nmin, **mcscript.utils.dict_union(task, truncation_parameters)))
+    lines.append("{Nmin:d} {Nmax:d} {Nstep:d}  # N_min, N_max, delta_N".format(Nmin=Nmin, Nmax=Nmax, Nstep=Nstep))
     lines.append("{:d}   # Total 2 M_j".format(twice_Mj))
     lines.append("{eigenvectors:d} {lanczos:d} {initial_vector:d} {tolerance:e}  # number of eigenvalues/vectors, max number of its, ...)".format(**task))
     lines.append("{:d} {:d}  # rank of input Hamiltonian/interaction".format(2, 2))

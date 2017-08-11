@@ -10,6 +10,7 @@ University of Notre Dame
 - 06/03/17 (pjf): Remove explicit references to natural orbitals from bulk of
     scripting.
 - 06/07/17 (pjf): Clean up style.
+- 08/11/17 (pjf): Use new TruncationModes.
 """
 import math
 
@@ -31,8 +32,8 @@ def set_up_orbitals_ho(task, postfix=""):
         postfix (string, optional): identifier to add to generated files
     """
     # validate truncation mode
-    if (task["truncation_mode"] is not config.TruncationMode.kHO):
-        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(config.TruncationMode.kHO, **task))
+    if task["sp_truncation_mode"] is not config.SingleParticleTruncationMode.kNmax:
+        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(config.SingleParticleTruncationMode.kNmax, **task))
 
     # generate orbitals -- interaction bases
     mcscript.call(
@@ -55,9 +56,9 @@ def set_up_orbitals_ho(task, postfix=""):
 
     # generate orbitals -- target basis
     truncation_parameters = task["truncation_parameters"]
-    if (truncation_parameters["many_body_truncation"] == "Nmax"):
+    if task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kNmax:
         Nmax_orb = truncation_parameters["Nmax"] + truncation_parameters["Nv"]
-    elif (truncation_parameters["many_body_truncation"] == "FCI"):
+    elif task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kFCI:
         Nmax_orb = truncation_parameters["Nmax"]
     mcscript.call(
         [
@@ -89,8 +90,8 @@ def set_up_orbitals_natorb(task, source_postfix, target_postfix):
     truncation.
     """
     # validate truncation mode
-    if (task["truncation_mode"] is not config.TruncationMode.kHO):
-        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(config.TruncationMode.kHO, **task))
+    if task["sp_truncation_mode"] is not config.SingleParticleTruncationMode.kNmax:
+        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(config.SingleParticleTruncationMode.kNmax, **task))
 
     # validate natural orbitals enabled
     if not task.get("natural_orbitals"):

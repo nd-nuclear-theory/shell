@@ -5,8 +5,11 @@
     Mark A. Caprio
     University of Notre Dame
 
-    - 1/18/17 (mac): Created.
-
+    - 01/18/17 (mac): Created.
+    - 01/29/17 (pjf): Updated for new truncation_mode parameter.
+    - 06/03/17 (pjf): Updated for new scripting.
+    - 07/31/17 (pjf): Set MFDn driver module in task dictionary.
+    - 08/11/17 (pjf): Update for split single-particle and many-body truncation modes.
 """
 
 import mcscript
@@ -99,11 +102,11 @@ task_list = [
         "target_truncation": None,
 
         # traditional oscillator many-body truncation
-        "truncation_mode": mfdn.config.TruncationMode.kHO,
+        "sp_truncation_mode": mfdn.config.SingleParticleTruncationMode.kNmax,
+        "mb_truncation_mode": mfdn.config.ManyBodyTruncationMode.kNmax,
         "truncation_parameters": {
             "Nv": 0,
             "Nmax": Nmax,
-            "many_body_truncation": "Nmax",
             "Nstep": 2,
             },
 

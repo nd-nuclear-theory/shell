@@ -10,6 +10,7 @@ University of Notre Dame
   + Remove explicit references to natural orbitals from bulk of scripting.
   + Fix VC scaling.
 - 06/07/17 (pjf): Clean up style.
+- 08/11/17 (pjf): Use new TruncationModes.
 """
 import mcscript.utils
 
@@ -31,8 +32,8 @@ def generate_tbme(task, postfix=""):
         postfix (string, optional): identifier added to input filenames
     """
     # validate basis mode
-    if (task["truncation_mode"] is not config.TruncationMode.kHO):
-        raise ValueError("expecting truncation_mode to be {} but found {ho_truncation}".format(config.TruncationMode.kHO, **task))
+    if task["sp_truncation_mode"] is not config.SingleParticleTruncationMode.kNmax:
+        raise ValueError("expecting truncation_mode to be {} but found {sp_truncation_mode}".format(config.SingleParticleTruncationMode.kNmax, **task))
 
     # extract parameters for convenience
     A = sum(task["nuclide"])
@@ -108,16 +109,16 @@ def generate_tbme(task, postfix=""):
     target_truncation = task["target_truncation"]
     if (target_truncation is None):
         # automatic derivation
-        if (task["truncation_mode"] is config.TruncationMode.kHO):
+        if task["sp_truncation_mode"] is config.SingleParticleTruncationMode.kNmax:
             truncation_parameters = task["truncation_parameters"]
-            if (truncation_parameters["many_body_truncation"] == "Nmax"):
+            if task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kNmax:
                 # important: truncation of orbitals file, one-body
                 # truncation of interaction file, and MFDn
                 # single-particle shells (beware 1-based) must agree
                 N1_max = truncation_parameters["Nv"]+truncation_parameters["Nmax"]
                 N2_max = 2*truncation_parameters["Nv"]+truncation_parameters["Nmax"]
                 target_weight_max = utils.weight_max_string((N1_max, N2_max))
-            elif (truncation_parameters["many_body_truncation"] == "FCI"):
+            elif task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kFCI:
                 N1_max = truncation_parameters["Nmax"]
                 target_weight_max = utils.weight_max_string(("ob", N1_max))
         else:

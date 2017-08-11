@@ -6,6 +6,9 @@ University of Notre Dame
 - 06/08/17 (pjf): Initial version of MFDn v15 scripting, built from mfdn_v14.py.
 - 06/22/17 (pjf): Update references to mcscript.exception.ScriptError.
 - 07/31/17 (pjf): Create work directory if nonexistent when running mfdn.
+- 08/11/17 (pjf):
+  + Use new TruncationModes.
+  + Fix FCI truncation.
 """
 import os
 import glob
@@ -24,10 +27,6 @@ def run_mfdn(task, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
-    # validate truncation mode
-    # if (task["truncation_mode"] is not k_truncation_mode_ho):
-    #     raise ValueError("expecting truncation_mode to be {} but found {ho_truncation}".format(k_truncation_mode_ho,**task))
-
     # inputlist namelist dictionary
     inputlist = {}
 
@@ -39,12 +38,14 @@ def run_mfdn(task, postfix=""):
 
     # truncation mode
     truncation_parameters = task["truncation_parameters"]
-    if (task["truncation_mode"] is config.TruncationMode.kHO):
+    if task["sp_truncation_mode"] is config.SingleParticleTruncationMode.kNmax:
         # single-particle basis truncation: N = 2n+l
-        if (truncation_parameters["many_body_truncation"] == "Nmax"):
+        if task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kNmax:
             Nmax_orb = truncation_parameters["Nmax"] + truncation_parameters["Nv"]
-        elif (truncation_parameters["many_body_truncation"] == "FCI"):
+        elif task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kFCI:
             Nmax_orb = truncation_parameters["Nmax"]
+        else:
+            raise mcscript.exception.ScriptError("truncation mode {} not supported".format(task["mb_truncation_mode"]))
         inputlist["Nshell"] = int(Nmax_orb+1)
 
         # many-body truncation: Nmin, Nmax, deltaN
@@ -52,15 +53,17 @@ def run_mfdn(task, postfix=""):
             inputlist["Nmin"] = truncation_parameters["Nmax"] % 2
         else:
             inputlist["Nmin"] = 1
-        inputlist["Nmax"] = int(truncation_parameters["Nmax"])
+        if task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kNmax:
+            inputlist["Nmax"] = int(truncation_parameters["Nmax"])
+        elif task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kFCI:
+            inputlist["Nmax"] = int(sum(task["nuclide"])*truncation_parameters["Nmax"])
         inputlist["deltaN"] = int(truncation_parameters["Nstep"])
     else:
         # TODO
-        raise mcscript.exception.ScriptError("truncation mode {} not supported".format(task["truncation_mode"]))
+        raise mcscript.exception.ScriptError("truncation mode {} not supported".format(task["sp_truncation_mode"]))
 
     if (task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated}):
         inputlist["hbomeg"] = float(task["hw"])
-    ## ndiag = int(os.environ.get("MFDN_NDIAG",0))  # allows override for spares, not so elegant
 
     # diagonalization parameters
     inputlist["neivals"] = int(task["eigenvectors"])

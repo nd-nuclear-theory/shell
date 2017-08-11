@@ -5,7 +5,9 @@
     Mark A. Caprio
     University of Notre Dame
 
-    - 6/8/17 (pjf): Created, copied from runmfd01; switch to MFDn v15.
+    - 06/08/17 (pjf): Created, copied from runmfd01; switch to MFDn v15.
+    - 07/31/17 (pjf): Set MFDn driver module in task dictionary.
+    - 08/11/17 (pjf): Update for split single-particle and many-body truncation modes.
 """
 
 import mcscript
@@ -55,11 +57,11 @@ task = {
     "target_truncation": None,
 
     # traditional oscillator many-body truncation
-    "truncation_mode": mfdn.config.TruncationMode.kHO,
+    "sp_truncation_mode": mfdn.config.SingleParticleTruncationMode.kNmax,
+    "mb_truncation_mode": mfdn.config.ManyBodyTruncationMode.kNmax,
     "truncation_parameters": {
         "Nv": 0,
         "Nmax": 2,
-        "many_body_truncation": "Nmax",
         "Nstep": 2,
         },
 

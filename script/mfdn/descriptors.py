@@ -7,6 +7,7 @@ University of Notre Dame
 - 04/07/17 (pjf): Reference new config submodule.
 - 06/03/17 (pjf): Switch natorb_iteration -> natural_orbitals.
 - 06/13/17 (pjf): Add task_descriptor_7b (includes Ncut).
+- 08/11/17 (pjf): Use new TruncationModes.
 """
 import mcscript.exception
 import mcscript.utils
@@ -27,7 +28,7 @@ def task_descriptor_7(task):
         - Add tolerance.
     """
     if (
-        task["truncation_mode"] is config.TruncationMode.kHO
+        task["sp_truncation_mode"] is config.SingleParticleTruncationMode.kNmax
         and
         task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated}
     ):
@@ -44,7 +45,7 @@ def task_descriptor_7(task):
         raise mcscript.exception.ScriptError("mode not supported by task descriptor")
 
     truncation_parameters = task["truncation_parameters"]
-    if (truncation_parameters["many_body_truncation"] == "FCI"):
+    if task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kFCI:
         fci_indicator = "-fci"
     else:
         fci_indicator = ""
@@ -69,7 +70,7 @@ def task_descriptor_7b(task):
         - Add Ncut field
     """
     if (
-        task["truncation_mode"] is config.TruncationMode.kHO
+        task["sp_truncation_mode"] is config.SingleParticleTruncationMode.kNmax
         and
         task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated}
     ):
@@ -88,7 +89,7 @@ def task_descriptor_7b(task):
 
     truncation_parameters = task["truncation_parameters"]
     Ncut = "{:s}{:02d}".format(*task.get("xform_truncation_int", truncation_parameters["Nmax"]))
-    if (truncation_parameters["many_body_truncation"] == "FCI"):
+    if task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kFCI:
         fci_indicator = "-fci"
     else:
         fci_indicator = ""

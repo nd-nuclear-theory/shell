@@ -45,11 +45,15 @@
         "scaled_basis" (tuple): deduced basis used in task descriptor, etc.
 
         # truncation parameters
-        "truncation_mode" (TruncationMode): enumerated value indicating oscillator-like
-            truncation or triangular truncation; see docstring of TruncationMode for
-            information.
+        "sp_truncation_mode" (config.SingleParticleTruncationMode): enumerated value
+            indicating single-particle basis truncation; see docstring of
+            SingleParticleTruncationMode for information.
+        "mb_truncation_mode" (config.ManyBodyTruncationMode): enumerated value
+            indicating many-body basis truncation; see docstring of
+            ManyBodyTruncationMode for information.
         "truncation_parameters" (dict): truncation parameters, specific to each enumerated
-            truncation type; see docstring of TruncationMode for full documentation
+            truncation type; see docstrings of SingleParticleTruncationMode and
+            ManyBodyTruncationMode for full documentation
 
         # diagonalization parameters
         "Mj" (float): M-scheme angular momentum projection value (as true value,
@@ -119,6 +123,10 @@
     - 2/20/17 (pjf): Rename mfdn.py -> mfdn/__init__.py
     - 3/17/17 (pjf): Split mfdn/__init__.py into submodules.
     - 7/31/17 (pjf): Add mfdn_driver field.
+    - 8/11/17 (pjf):
+      + Replace TruncationMode with SingleParticleTruncationMode and ManyBodyTruncationMode.
+      + Replace truncation_mode key with sp_truncation_mode and mb_truncation_mode.
+      + Fix FCI truncation.
 """
 
 __ALL__ = ['descriptors', 'handlers', 'radial', 'operators', 'tbme', 'utils', 'config']

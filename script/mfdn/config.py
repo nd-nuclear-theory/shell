@@ -7,6 +7,8 @@ University of Notre Dame
 - 4/7/17 (pjf): Rename Configuration -> Environment.
 - 6/3/17 (pjf): Remove dependence of filenames on natural orbital iteration.
 - 6/5/17 (pjf): Clean up formatting.
+- 8/11/17 (pjf): Split TruncationMode into SingleParticleTruncationMode and
+  ManyBodyTruncationMode.
 """
 
 import os
@@ -58,33 +60,62 @@ class BasisMode(enum.Enum):
 ################################################################
 
 @enum.unique
-class TruncationMode(enum.Enum):
-    """General truncation modes for radial basis
+class SingleParticleTruncationMode(enum.Enum):
+    """General truncation modes for single-particle basis
 
-    kHO:
+    kNmax:
         - traditional Nmax truncation; weight is (2*n + l)
         - compatible with MFDn v14+
-        - "truncation_parameters" (dict):
-            - "many_body_truncation" (str): many-body truncation rank ("FCI" for one-body, or
-                "Nmax" for A-body)
+        - "truncation_parameters" (dict) must contain:
             - "Nv" (int): N of valence shell (for use in truncation)
-            - "Nmax" (int): many-body oscillator cutoff (interpreted as one-body Nmax_orb for "FCI"
-                 truncation, or many-body excitation cutoff Nmax for "Nmax" truncation)
+            - "Nmax" (int): single-particle excitation oscillator cutoff
+                (interpreted as one-body Nmax_orb for "FCI" truncation, or
+                many-body excitation cutoff Nmax for "Nmax" truncation)
             - "Nstep" (int): Nstep (2 for single parity, 1 for mixed parity)
 
 
     kTriangular:
         - weight is (n_coeff*n + l_coeff*l)
-        - compatible with MFDN v15+
-        - "truncation_parameters" (dict):
+        - compatible with MFDn v15+
+        - "truncation_parameters" (dict) must contain:
             - "n_coeff": coefficient in front of n
             - "l_coeff": coefficient in front of l
-            - "WTmax": maximum weight
+            - "sp_weight_max": maximum weight for single-particle orbitals
 
     """
 
-    kHO = 0
-    kTriangular = 1
+    kNmax = 1
+    kTriangular = 2
+
+
+@enum.unique
+class ManyBodyTruncationMode(enum.Enum):
+    """General truncation modes for many-body basis
+
+    kNmax:
+        - traditional Nmax truncation; weight is (2*n + l)
+        - compatible with MFDn v14+
+        - must be used with SingleParticleTruncationMode.kNmax
+        - "truncation_parameters" (dict) must contain:
+            - "Nv" (int): N of valence shell (for use in truncation)
+            - "Nmax" (int): many-body excitation cutoff
+            - "Nstep" (int): Nstep (2 for single parity, 1 for mixed parity)
+
+
+    kWeightMax:
+        - compatible with MFDn v15+
+        - "truncation_parameters" (dict) must contain:
+            - "mb_weight_max": maximum weight for many-body states
+
+
+    kFCI:
+        - compatible with MFDn v14+
+        - many-body basis constrained only by single-particle basis
+    """
+
+    kNmax = 1
+    kWeightMax = 2
+    kFCI = 3
 
 
 ################################################################
