@@ -25,6 +25,7 @@
   + 11/2/16 (pjf): Added RadialOperatorType::kO.
   + 11/3/16 (mac): Provide InRadialStream::SetToIndexing and hide direct
      indexing accessors (copies are easily invalidated).
+  + 08/11/17 (pjf): Add verbose_mode option to OutRadialStream.
 
 ****************************************************************/
 
@@ -171,7 +172,8 @@ class OutRadialStream : public RadialStreamBase {
     const basis::OrbitalSpaceLJPN& ket_space,
     const basis::OrbitalSectorsLJPN& sectors,
     const RadialOperatorType radial_operator_type,
-    const std::string& format_str);
+    const std::string& format_str,
+    bool verbose_mode = false);
 
   explicit OutRadialStream(
       const std::string& filename,
@@ -180,6 +182,15 @@ class OutRadialStream : public RadialStreamBase {
       const basis::OrbitalSectorsLJPN& sectors,
       const RadialOperatorType radial_operator_type)
     : OutRadialStream(filename, bra_space, ket_space, sectors, radial_operator_type, "16.8e") {}
+
+  explicit OutRadialStream(
+      const std::string& filename,
+      const basis::OrbitalSpaceLJPN& bra_space,
+      const basis::OrbitalSpaceLJPN& ket_space,
+      const basis::OrbitalSectorsLJPN& sectors,
+      const RadialOperatorType radial_operator_type,
+      bool verbose_mode)
+    : OutRadialStream(filename, bra_space, ket_space, sectors, radial_operator_type, "16.8e", verbose_mode) {}
 
   // destructor
   ~OutRadialStream() {
@@ -196,6 +207,7 @@ class OutRadialStream : public RadialStreamBase {
 
   // formatting
   std::string format_str_;
+  bool verbose_mode_;
 
   // file stream
   std::ofstream& stream() const {return *stream_ptr_;}  // alias for convenience

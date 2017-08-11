@@ -12,7 +12,7 @@
   @author Patrick J. Fasano
   University of Notre Dame
 
-  + 1/16/16 (pjf): Created, based on radial-xform.cpp.
+  + 1/16/17 (pjf): Created, based on radial-xform.cpp.
 
 ******************************************************************************/
 

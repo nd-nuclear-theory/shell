@@ -204,8 +204,9 @@ namespace shell {
       const basis::OrbitalSpaceLJPN& ket_space,
       const basis::OrbitalSectorsLJPN& sectors,
       const RadialOperatorType radial_operator_type,
-      const std::string& format_str)
-    : RadialStreamBase(filename,bra_space,ket_space,sectors,radial_operator_type), format_str_(format_str)
+      const std::string& format_str,
+      bool verbose_mode)
+    : RadialStreamBase(filename,bra_space,ket_space,sectors,radial_operator_type), format_str_(format_str), verbose_mode_(verbose_mode)
   {
 
     // open stream
@@ -257,6 +258,9 @@ namespace shell {
     stream() << std::endl; ++line_count_;
 
     // bra orbital definitions
+    if (verbose_mode_) {
+      stream() << "# bra space orbitals" << std::endl; ++line_count_;
+    }
     for (auto&& state : bra_orbitals) {
       stream() << state << std::endl; ++line_count_;
     }
@@ -265,6 +269,9 @@ namespace shell {
     stream() << std::endl; ++line_count_;
 
     // ket orbital definitions
+    if (verbose_mode_) {
+      stream() << "# ket space orbitals" << std::endl; ++line_count_;
+    }
     for (auto&& state : ket_orbitals) {
       stream() << state << std::endl; ++line_count_;
     }
@@ -288,6 +295,21 @@ namespace shell {
     // chop away very small values
     auto chopped_matrix = matrix;
     mcutils::ChopMatrix(chopped_matrix, 1e-14);
+
+    // write labels if in verbose mode
+    if (verbose_mode_) {
+      stream() << "# bra subspace labels: "
+               << "l = " << sector.bra_subspace().l() << " "
+               << "2j = " << sector.bra_subspace().j().TwiceValue()
+               << std::endl;
+      ++line_count_;
+
+      stream() << "# ket subspace labels: "
+               << "l = " << sector.ket_subspace().l() << " "
+               << "2j = " << sector.ket_subspace().j().TwiceValue()
+               << std::endl;
+      ++line_count_;
+    }
 
     stream() << mcutils::FormatMatrix(chopped_matrix, format_str_) << std::endl;
 
