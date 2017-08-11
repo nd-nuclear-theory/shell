@@ -98,7 +98,7 @@ namespace shell {
   KinematicMatrixJJJPN(
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
+      const basis::OperatorBlocks<double>& radial_matrices,
       KinematicOperatorType kinematic_operator_type,
       shell::RadialOperatorType radial_operator_type,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,

@@ -95,7 +95,7 @@ int main(int argc, char **argv)
   basis::RelativeSpaceLSJT relative_space(Nmax,Jmax);
   basis::OperatorLabelsJT operator_labels(0,0,0,0,basis::SymmetryPhaseMode::kHermitian);
   std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
-  std::array<basis::MatrixVector,3> relative_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_component_matrices;
   basis::ConstructZeroOperatorRelativeLSJT(
       basis::RelativeOperatorParametersLSJT(operator_labels,Nmax,Jmax),
       relative_space,relative_component_sectors,relative_component_matrices

@@ -134,7 +134,7 @@ void ReadRelative(
     basis::RelativeSpaceLSJT& relative_space,
     basis::OperatorLabelsJT& operator_labels,
     std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-    std::array<basis::MatrixVector,3>& relative_component_matrices
+    std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices
   )
 // Set up and read relative operator.
 //
@@ -224,7 +224,7 @@ int main(int argc, char **argv)
   basis::RelativeSpaceLSJT relative_space;
   basis::OperatorLabelsJT operator_labels;
   std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
-  std::array<basis::MatrixVector,3> relative_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_component_matrices;
   ReadRelative(
       parameters.relative_filename,
       relative_space,
@@ -244,7 +244,7 @@ int main(int argc, char **argv)
   // define space and operator containers
   basis::RelativeCMSpaceLSJTN relative_cm_lsjtn_space(N2max);
   std::array<basis::RelativeCMSectorsLSJTN,3> relative_cm_lsjtn_component_sectors;
-  std::array<basis::MatrixVector,3> relative_cm_lsjtn_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_cm_lsjtn_component_matrices;
 
   // do transformation
   Timer relative_cm_lsjtn_timer;
@@ -280,7 +280,7 @@ int main(int argc, char **argv)
       // define space and operator containers
       basis::RelativeCMSpaceLSJT relative_cm_lsjt_space(N2max);
       std::array<basis::RelativeCMSectorsLSJT,3> relative_cm_lsjt_component_sectors;
-      std::array<basis::MatrixVector,3> relative_cm_lsjt_component_matrices;
+      std::array<basis::OperatorBlocks<double>,3> relative_cm_lsjt_component_matrices;
 
       // construct gathered operator
       Timer relative_cm_lsjt_timer;
@@ -330,7 +330,7 @@ int main(int argc, char **argv)
   // define space and operator containers
   basis::TwoBodySpaceLSJTN two_body_lsjtn_space(parameters.truncation_rank,parameters.truncation_cutoff);
   std::array<basis::TwoBodySectorsLSJTN,3> two_body_lsjtn_component_sectors;
-  std::array<basis::MatrixVector,3> two_body_lsjtn_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> two_body_lsjtn_component_matrices;
 
   // do transformation
   Timer two_body_lsjtn_timer;
@@ -365,7 +365,7 @@ int main(int argc, char **argv)
       // define space and operator containers
       basis::TwoBodySpaceLSJT two_body_lsjt_space(parameters.truncation_rank,parameters.truncation_cutoff);
       std::array<basis::TwoBodySectorsLSJT,3> two_body_lsjt_component_sectors;
-      std::array<basis::MatrixVector,3> two_body_lsjt_component_matrices;
+      std::array<basis::OperatorBlocks<double>,3> two_body_lsjt_component_matrices;
 
       // construct gathered operator
       Timer two_body_lsjt_timer;
@@ -416,7 +416,7 @@ int main(int argc, char **argv)
   // define space and operator containers
   basis::TwoBodySpaceJJJTN two_body_jjjtn_space(parameters.truncation_rank,parameters.truncation_cutoff);
   std::array<basis::TwoBodySectorsJJJTN,3> two_body_jjjtn_component_sectors;
-  std::array<basis::MatrixVector,3> two_body_jjjtn_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> two_body_jjjtn_component_matrices;
   
   // do recoupling
   Timer two_body_jjjtn_timer;
@@ -438,7 +438,7 @@ int main(int argc, char **argv)
   // define space and operator containers
   basis::TwoBodySpaceJJJT two_body_jjjt_space(parameters.truncation_rank,parameters.truncation_cutoff);
   std::array<basis::TwoBodySectorsJJJT,3> two_body_jjjt_component_sectors;
-  std::array<basis::MatrixVector,3> two_body_jjjt_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> two_body_jjjt_component_matrices;
 
   // construct gathered operator
   Timer two_body_jjjt_timer;
@@ -508,7 +508,7 @@ int main(int argc, char **argv)
           basis::WeightMax(parameters.truncation_rank,parameters.truncation_cutoff)
         );
       basis::TwoBodySectorsJJJPN two_body_jjjpn_sectors;
-      basis::MatrixVector two_body_jjjpn_matrices;
+      basis::OperatorBlocks<double> two_body_jjjpn_matrices;
 
       // do branching
       Timer two_body_jjjpn_timer;

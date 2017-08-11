@@ -38,7 +38,7 @@ void TestRelativeCM()
   basis::SymmetryPhaseMode symmetry_phase_mode = basis::SymmetryPhaseMode::kHermitian;
 
   basis::RelativeSectorsLSJT relative_sectors(relative_space,J0,T0,g0);
-  basis::MatrixVector relative_matrices;
+  basis::OperatorBlocks<double> relative_matrices;
   basis::SetOperatorToIdentity(relative_sectors,relative_matrices);
 
   // inspect relative identity operator (sanity check)
@@ -60,7 +60,7 @@ void TestRelativeCM()
   std::cout << "  relative-cm" << std::endl;
   basis::RelativeCMSpaceLSJTN relative_cm_space(Nmax);
   basis::RelativeCMSectorsLSJTN relative_cm_sectors(relative_cm_space,J0,T0,g0);
-  basis::MatrixVector relative_cm_matrices;
+  basis::OperatorBlocks<double> relative_cm_matrices;
   relative_cm_matrices.resize(relative_cm_sectors.size());
 
   for (int sector_index=0; sector_index<relative_cm_sectors.size(); ++sector_index)
@@ -176,7 +176,7 @@ void TestTransformSimple(
   // define space and operator containers
   basis::RelativeSpaceLSJT relative_space(Nmax_relative,Jmax_relative);
   std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
-  std::array<basis::MatrixVector,3> relative_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_component_matrices;
 
   // do construction
   if (operator_code=='I')
@@ -200,7 +200,7 @@ void TestTransformSimple(
   // define space and operator containers
   basis::RelativeCMSpaceLSJTN relative_cm_lsjtn_space(Nmax);
   std::array<basis::RelativeCMSectorsLSJTN,3> relative_cm_lsjtn_component_sectors;
-  std::array<basis::MatrixVector,3> relative_cm_lsjtn_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_cm_lsjtn_component_matrices;
 
   // do transformation
   moshinsky::TransformOperatorRelativeLSJTToRelativeCMLSJTN(
@@ -218,7 +218,7 @@ void TestTransformSimple(
   // define space and operator containers
   basis::TwoBodySpaceLSJTN two_body_lsjtn_space(basis::Rank::kTwoBody,Nmax);
   std::array<basis::TwoBodySectorsLSJTN,3> two_body_lsjtn_component_sectors;
-  std::array<basis::MatrixVector,3> two_body_lsjtn_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> two_body_lsjtn_component_matrices;
 
   // do transformation
   Timer two_body_lsjtn_timer;
@@ -273,7 +273,7 @@ void TestTransformSimple(
   // define space and operator containers
   basis::TwoBodySpaceLSJT two_body_lsjt_space(basis::Rank::kTwoBody,Nmax);
   std::array<basis::TwoBodySectorsLSJT,3> two_body_lsjt_component_sectors;
-  std::array<basis::MatrixVector,3> two_body_lsjt_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> two_body_lsjt_component_matrices;
 
   // construct gathered operator
   basis::GatherOperatorTwoBodyLSJTNToTwoBodyLSJT(
@@ -308,7 +308,7 @@ void TestTransformSimple(
   // define space and operator containers
   basis::TwoBodySpaceJJJTN two_body_jjjtn_space(basis::Rank::kTwoBody,Nmax);
   std::array<basis::TwoBodySectorsJJJTN,3> two_body_jjjtn_component_sectors;
-  std::array<basis::MatrixVector,3> two_body_jjjtn_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> two_body_jjjtn_component_matrices;
 
   // do recoupling
   Timer two_body_jjjtn_timer;
@@ -362,7 +362,7 @@ void TestTransformSimple(
   // define space and operator containers
   basis::TwoBodySpaceJJJT two_body_jjjt_space(basis::Rank::kTwoBody,Nmax);
   std::array<basis::TwoBodySectorsJJJT,3> two_body_jjjt_component_sectors;
-  std::array<basis::MatrixVector,3> two_body_jjjt_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> two_body_jjjt_component_matrices;
 
   // construct gathered operator
   basis::GatherOperatorTwoBodyJJJTNToTwoBodyJJJT(
@@ -401,7 +401,7 @@ void TestTransformSimple(
       basis::WeightMax(basis::Rank::kTwoBody,Nmax)
     );
   basis::TwoBodySectorsJJJPN two_body_jjjpn_sectors;
-  basis::MatrixVector two_body_jjjpn_matrices;
+  basis::OperatorBlocks<double> two_body_jjjpn_matrices;
 
   // do branching
   Timer two_body_jjjpn_timer;
@@ -477,7 +477,7 @@ void TestTransformTiming(
   // define space and operator containers
   basis::RelativeSpaceLSJT relative_space(Nmax_relative,Jmax_relative);
   std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
-  std::array<basis::MatrixVector,3> relative_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_component_matrices;
 
   // do construction
   Timer relative_lsjt_timer;
@@ -498,7 +498,7 @@ void TestTransformTiming(
   // define space and operator containers
   basis::RelativeCMSpaceLSJTN relative_cm_lsjtn_space(N2max);
   std::array<basis::RelativeCMSectorsLSJTN,3> relative_cm_lsjtn_component_sectors;
-  std::array<basis::MatrixVector,3> relative_cm_lsjtn_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_cm_lsjtn_component_matrices;
 
   // do transformation
   Timer relative_cm_lsjtn_timer;
@@ -520,7 +520,7 @@ void TestTransformTiming(
   // define space and operator containers
   basis::TwoBodySpaceLSJTN two_body_lsjtn_space(truncation_rank,truncation_cutoff);
   std::array<basis::TwoBodySectorsLSJTN,3> two_body_lsjtn_component_sectors;
-  std::array<basis::MatrixVector,3> two_body_lsjtn_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> two_body_lsjtn_component_matrices;
 
   // do transformation
   Timer two_body_lsjtn_timer;
@@ -542,7 +542,7 @@ void TestTransformTiming(
   // define space and operator containers
   basis::TwoBodySpaceJJJTN two_body_jjjtn_space(truncation_rank,truncation_cutoff);
   std::array<basis::TwoBodySectorsJJJTN,3> two_body_jjjtn_component_sectors;
-  std::array<basis::MatrixVector,3> two_body_jjjtn_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> two_body_jjjtn_component_matrices;
 
   // do recoupling
   Timer two_body_jjjtn_timer;
@@ -564,7 +564,7 @@ void TestTransformTiming(
   // define space and operator containers
   basis::TwoBodySpaceJJJT two_body_jjjt_space(truncation_rank,truncation_cutoff);
   std::array<basis::TwoBodySectorsJJJT,3> two_body_jjjt_component_sectors;
-  std::array<basis::MatrixVector,3> two_body_jjjt_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> two_body_jjjt_component_matrices;
 
   // construct gathered operator
   Timer two_body_jjjt_timer;

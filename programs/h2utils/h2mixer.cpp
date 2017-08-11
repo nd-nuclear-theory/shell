@@ -95,7 +95,7 @@ struct RadialOperatorData
   basis::OrbitalSpaceLJPN bra_orbital_space;
   basis::OrbitalSpaceLJPN ket_orbital_space;
   basis::OrbitalSectorsLJPN sectors;
-  basis::MatrixVector matrices;
+  basis::OperatorBlocks<double> matrices;
 };
 
 typedef std::map<RadialOperatorLabels,RadialOperatorData> RadialOperatorMap;

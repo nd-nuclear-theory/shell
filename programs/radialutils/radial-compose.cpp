@@ -149,7 +149,7 @@ int main(int argc, const char *argv[]) {
   basis::OrbitalSectorsLJPN out_sectors(out_bra_space, out_ket_space, 0, 0);
 
   // Eigen initialization
-  basis::MatrixVector olap1_matrices, olap2_matrices, output_matrices;
+  basis::OperatorBlocks<double> olap1_matrices, olap2_matrices, output_matrices;
   olaps1.Read(olap1_matrices);
   olaps1.Close();
   olaps2.Read(olap2_matrices);

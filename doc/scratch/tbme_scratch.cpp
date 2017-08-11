@@ -2,7 +2,7 @@
   KinematicUTSqrMatrixJJJPN(
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
+      const basis::OperatorBlocks<double>& radial_matrices,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       int A
     );
@@ -33,7 +33,7 @@
   KinematicVT1T2MatrixJJJPN(
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
+      const basis::OperatorBlocks<double>& radial_matrices,
       bool momentum_space,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       int A

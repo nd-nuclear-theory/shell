@@ -48,7 +48,7 @@ namespace shell {
   }
 
 
-  void InRadialStream::Read(basis::MatrixVector& matrices) {
+  void InRadialStream::Read(basis::OperatorBlocks<double>& matrices) {
     for (int sector_index=0; sector_index < sectors_.size(); ++sector_index) {
       matrices.push_back(ReadNextSector());
     }
@@ -222,8 +222,8 @@ namespace shell {
     stream().close();
   }
 
-  void OutRadialStream::Write(const basis::MatrixVector& matrices) {
-    // check if this seems like a reasonable MatrixVector
+  void OutRadialStream::Write(const basis::OperatorBlocks<double>& matrices) {
+    // check if this seems like a reasonable OperatorBlocks<double>
     assert(matrices.size() == sectors_.size());
 
     // loop over sectors and write

@@ -32,7 +32,7 @@ Eigen::MatrixXd GenerateDummyMatrix(int rows, int columns) {
   return dummy;
 }
 
-basis::MatrixVector TestRadialOut(const std::string& filename, bool verbose = false) {
+basis::OperatorBlocks<double> TestRadialOut(const std::string& filename, bool verbose = false) {
   std::cout << "Radial matrix elements -- write test" << std::endl;
 
   // set up bra space
@@ -58,7 +58,7 @@ basis::MatrixVector TestRadialOut(const std::string& filename, bool verbose = fa
   shell::OutRadialStream os(filename, bra_space, ket_space, sectors, shell::RadialOperatorType::kR);
 
   // generate matrices
-  basis::MatrixVector matrices;
+  basis::OperatorBlocks<double> matrices;
   for (int sector_index=0; sector_index < sectors.size(); ++sector_index) {
     // get sector
     const basis::OrbitalSectorsLJPN::SectorType sector = sectors.GetSector(sector_index);
@@ -79,7 +79,7 @@ basis::MatrixVector TestRadialOut(const std::string& filename, bool verbose = fa
   return matrices;
 }
 
-basis::MatrixVector TestRadialIn(const std::string& filename) {
+basis::OperatorBlocks<double> TestRadialIn(const std::string& filename) {
   std::cout << "Radial matrix elements -- read test" << std::endl;
 
   // set up input stream
@@ -113,7 +113,7 @@ basis::MatrixVector TestRadialIn(const std::string& filename) {
   std::cout << "Sectors" << std::endl;
   std::cout << sectors.DebugStr();
 
-  basis::MatrixVector input_matrices;
+  basis::OperatorBlocks<double> input_matrices;
   is.Read(input_matrices);
 
   return input_matrices;
@@ -121,8 +121,8 @@ basis::MatrixVector TestRadialIn(const std::string& filename) {
 
 int main(int argc, char **argv) {
   std::string filename("test/radial_out_test.dat");
-  basis::MatrixVector matrices_out = TestRadialOut(filename, false);
-  basis::MatrixVector matrices_in = TestRadialIn(filename);
+  basis::OperatorBlocks<double> matrices_out = TestRadialOut(filename, false);
+  basis::OperatorBlocks<double> matrices_in = TestRadialIn(filename);
   bool status = (matrices_out == matrices_in);
 
   // termination

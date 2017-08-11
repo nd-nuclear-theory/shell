@@ -174,7 +174,7 @@ int main(int argc, const char *argv[]) {
   basis::OrbitalSectorsLJPN out_sectors(out_ket_space, out_ket_space, in_sectors.l0max(), in_sectors.Tz0());
 
   // Eigen initialization
-  basis::MatrixVector olap_matrices, input_matrices, output_matrices;
+  basis::OperatorBlocks<double> olap_matrices, input_matrices, output_matrices;
   is.Read(input_matrices);
   olaps.Read(olap_matrices);
 

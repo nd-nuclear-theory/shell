@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
   }
 
   // Eigen initialization
-  basis::MatrixVector matrices;
+  basis::OperatorBlocks<double> matrices;
   is.Read(matrices);
 
   // main loop

@@ -51,7 +51,7 @@ void TestMatrixRead(const std::string& data_filename, const std::string& info_fi
   shell::InOBDMEReader reader(info_filename, orbital_space);
 
   std::cout << "  reading multipole 0" << std::endl;
-  basis::MatrixVector matrices;
+  basis::OperatorBlocks<double> matrices;
   reader.ReadMultipole(data_filename, 0, matrices);
 
   for (auto& matrix : matrices) {

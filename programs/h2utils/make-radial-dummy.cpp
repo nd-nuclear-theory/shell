@@ -40,7 +40,7 @@ void MakeRadialOut(
   shell::OutRadialStream os(filename,bra_subspace,ket_subspace,sectors,operator_type);
   
   // generate matrices
-  basis::MatrixVector matrices;
+  basis::OperatorBlocks<double> matrices;
   basis::SetOperatorToIdentity(sectors,matrices);
 
   // write to file

@@ -34,7 +34,7 @@ void TestQuadrupole()
     {
       // populate operator containers
       std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
-      std::array<basis::MatrixVector,3> relative_component_matrices;
+      std::array<basis::OperatorBlocks<double>,3> relative_component_matrices;
       basis::ConstructZeroOperatorRelativeLSJT(
           operator_labels,
           relative_space,
@@ -83,7 +83,7 @@ void TestCoulombSpline()
 
   // populate operator containers
   std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
-  std::array<basis::MatrixVector,3> relative_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_component_matrices;
   basis::ConstructZeroOperatorRelativeLSJT(
       operator_labels,
       relative_space,

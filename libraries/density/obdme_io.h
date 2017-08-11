@@ -56,7 +56,7 @@ class InOBDMEReader {
   // Get sectors associated with a particular multipole order
   void SetToIndexing(int order, basis::OrbitalSectorsLJPN& sectors);
   // extract a single multiple order from a data file
-  void ReadMultipole(const std::string& data_filename, int order, basis::MatrixVector& matrices);
+  void ReadMultipole(const std::string& data_filename, int order, basis::OperatorBlocks<double>& matrices);
 
   // info file data structure
   struct InfoLine {

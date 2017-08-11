@@ -453,7 +453,7 @@ void ReadJPVOperator(
     const basis::RelativeSpaceLSJT& relative_space,
     const basis::OperatorLabelsJT& operator_labels,
     const std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-    std::array<basis::MatrixVector,3>& relative_component_matrices,
+    std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
     bool verbose = false
   );
 // Read a single isoscalar Hamiltonian-like relative operator in JPV
@@ -492,7 +492,7 @@ void ReadJPVOperatorPN(
     const basis::RelativeSpaceLSJT& relative_space,
     const basis::RelativeOperatorParametersLSJT& operator_parameters,
     const std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-    std::array<basis::MatrixVector,3>& relative_component_matrices,
+    std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
     bool verbose = false
   );
 // Read a generic (non-isoscalar) Hamiltonian-like relative operator in JPV

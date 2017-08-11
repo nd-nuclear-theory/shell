@@ -26,7 +26,7 @@ namespace shell {
       const basis::OrbitalSpaceLJPN& radial_source_orbital_space,
       const basis::OrbitalSpaceLJPN& radial_target_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
+      const basis::OperatorBlocks<double>& radial_matrices,
       // orbital labels
       const basis::OrbitalStatePN& a, const basis::OrbitalStatePN& ap
     )
@@ -57,7 +57,7 @@ namespace shell {
       const basis::OrbitalSpaceLJPN& radial_source_orbital_space,
       const basis::OrbitalSpaceLJPN& radial_target_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
+      const basis::OperatorBlocks<double>& radial_matrices,
       // two-body labels
       const basis::OrbitalStatePN& a1, const basis::OrbitalStatePN& a2,
       const basis::OrbitalStatePN& a1p, const basis::OrbitalStatePN& a2p
@@ -99,7 +99,7 @@ namespace shell {
       const basis::OrbitalSpaceLJPN& radial_source_orbital_space,
       const basis::OrbitalSpaceLJPN& radial_target_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
+      const basis::OperatorBlocks<double>& radial_matrices,
       // two-body labels
       const basis::TwoBodyStateJJJPN& bra, const basis::TwoBodyStateJJJPN& ket
     )
@@ -146,7 +146,7 @@ namespace shell {
       const basis::OrbitalSpaceLJPN& radial_source_orbital_space,
       const basis::OrbitalSpaceLJPN& radial_target_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
+      const basis::OperatorBlocks<double>& radial_matrices,
       // two-body indexing
       const basis::TwoBodySubspaceJJJPN& bra_subspace,
       const basis::TwoBodySubspaceJJJPN& ket_subspace
@@ -210,7 +210,7 @@ namespace shell {
       const basis::OrbitalSpaceLJPN& radial_source_orbital_space,
       const basis::OrbitalSpaceLJPN& radial_target_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
+      const basis::OperatorBlocks<double>& radial_matrices,
       // two-body indexing
       const typename basis::TwoBodySectorsJJJPN::SectorType& source_sector,
       const typename basis::TwoBodySectorsJJJPN::SectorType& target_sector,

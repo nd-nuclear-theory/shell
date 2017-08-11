@@ -38,7 +38,7 @@ void MakeRadialOut(
   shell::OutRadialStream os(filename,bra_subspace,ket_subspace,sectors,operator_type);
   
   // generate matrices
-  basis::MatrixVector matrices;
+  basis::OperatorBlocks<double> matrices;
   basis::SetOperatorToZero(sectors,matrices);
   for (int sector_index=0; sector_index<matrices.size(); ++sector_index)
     {

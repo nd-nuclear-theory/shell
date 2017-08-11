@@ -234,7 +234,7 @@ void InOBDMEReader::ReadInfo1500() {
   }
 }
 
-void InOBDMEReader::ReadMultipole(const std::string& data_filename, int order, basis::MatrixVector& matrices) {
+void InOBDMEReader::ReadMultipole(const std::string& data_filename, int order, basis::OperatorBlocks<double>& matrices) {
   int data_line_count = 0;
   double temp_matrix_element = 0;
 

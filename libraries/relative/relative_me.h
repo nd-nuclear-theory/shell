@@ -36,7 +36,7 @@ namespace relative {
       const basis::OperatorLabelsJT& operator_labels,
       const basis::RelativeSpaceLSJT& relative_space,
       std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-      std::array<basis::MatrixVector,3>& relative_component_matrices,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       relative::KinematicOperator kinematic_operator
     );
   // Construct simple "kinematic" (r^2 and k^2) operators in relative
@@ -61,7 +61,7 @@ namespace relative {
       const basis::OperatorLabelsJT& operator_labels,
       const basis::RelativeSpaceLSJT& relative_space,
       std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-      std::array<basis::MatrixVector,3>& relative_component_matrices,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       relative::KinematicOperator kinematic_operator,
       basis::TwoBodySpeciesPN operator_species
     );
@@ -80,7 +80,7 @@ namespace relative {
       const basis::OperatorLabelsJT& operator_labels,
       const basis::RelativeSpaceLSJT& relative_space,
       std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-      std::array<basis::MatrixVector,3>& relative_component_matrices,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       basis::TwoBodySpeciesPN operator_species,
       int num_steps
     );

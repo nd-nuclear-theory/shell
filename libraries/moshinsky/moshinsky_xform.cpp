@@ -40,7 +40,7 @@ namespace moshinsky {
   RelativeCMMatrixLSJTN(
       const basis::RelativeSpaceLSJT& relative_space,
       const basis::RelativeSectorsLSJT& relative_sectors,
-      const basis::MatrixVector& relative_matrices,
+      const basis::OperatorBlocks<double>& relative_matrices,
       const typename basis::RelativeCMSectorsLSJTN::SectorType& relative_cm_sector,
       int J0, int T0, int g0,
       basis::SymmetryPhaseMode symmetry_phase_mode
@@ -228,10 +228,10 @@ namespace moshinsky {
       const basis::OperatorLabelsJT& operator_labels,
       const basis::RelativeSpaceLSJT& relative_space,
       const std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-      const std::array<basis::MatrixVector,3>& relative_component_matrices,
+      const std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       const basis::RelativeCMSpaceLSJTN& relative_cm_lsjtn_space,
       std::array<basis::RelativeCMSectorsLSJTN,3>& relative_cm_lsjtn_component_sectors,
-      std::array<basis::MatrixVector,3>& relative_cm_lsjtn_component_matrices
+      std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_matrices
     )
   {
     for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
@@ -350,10 +350,10 @@ namespace moshinsky {
       const basis::OperatorLabelsJT& operator_labels,
       const basis::RelativeCMSpaceLSJTN& relative_cm_lsjtn_space,
       const std::array<basis::RelativeCMSectorsLSJTN,3>& relative_cm_lsjtn_component_sectors,
-      const std::array<basis::MatrixVector,3>& relative_cm_lsjtn_component_matrices,
+      const std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_matrices,
       const basis::TwoBodySpaceLSJTN& two_body_lsjtn_space,
       std::array<basis::TwoBodySectorsLSJTN,3>& two_body_lsjtn_component_sectors,
-      std::array<basis::MatrixVector,3>& two_body_lsjtn_component_matrices
+      std::array<basis::OperatorBlocks<double>,3>& two_body_lsjtn_component_matrices
     )
   {
     for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
@@ -559,7 +559,7 @@ namespace moshinsky {
     TwoBodyMatrixJJJTN(
         const basis::TwoBodySpaceLSJTN& two_body_lsjtn_space,
         const basis::TwoBodySectorsLSJTN& two_body_lsjtn_sectors,
-        const basis::MatrixVector& two_body_lsjtn_matrices,
+        const basis::OperatorBlocks<double>& two_body_lsjtn_matrices,
         const basis::TwoBodySectorsJJJTN::SectorType& two_body_jjjtn_sector,
         int J0, int T0, int g0,
         basis::SymmetryPhaseMode symmetry_phase_mode
@@ -725,10 +725,10 @@ namespace moshinsky {
       const basis::OperatorLabelsJT& operator_labels,
       const basis::TwoBodySpaceLSJTN& two_body_lsjtn_space,
       const std::array<basis::TwoBodySectorsLSJTN,3>& two_body_lsjtn_component_sectors,
-      const std::array<basis::MatrixVector,3>& two_body_lsjtn_component_matrices,
+      const std::array<basis::OperatorBlocks<double>,3>& two_body_lsjtn_component_matrices,
       const basis::TwoBodySpaceJJJTN& two_body_jjjtn_space,
       std::array<basis::TwoBodySectorsJJJTN,3>& two_body_jjjtn_component_sectors,
-      std::array<basis::MatrixVector,3>& two_body_jjjtn_component_matrices
+      std::array<basis::OperatorBlocks<double>,3>& two_body_jjjtn_component_matrices
     )
   {
     for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
@@ -750,7 +750,7 @@ namespace moshinsky {
 
             // make references to isospin component of source operator
             const basis::TwoBodySectorsLSJTN& two_body_lsjtn_sectors = two_body_lsjtn_component_sectors[T0];
-            const basis::MatrixVector& two_body_lsjtn_matrices = two_body_lsjtn_component_matrices[T0];
+            const basis::OperatorBlocks<double>& two_body_lsjtn_matrices = two_body_lsjtn_component_matrices[T0];
          
             // transform
             Eigen::MatrixXd& matrix = two_body_jjjtn_component_matrices[T0][sector_index];
@@ -775,7 +775,7 @@ namespace moshinsky {
         const basis::OperatorLabelsJT& operator_labels,
         const basis::TwoBodySpaceJJJT& two_body_jjjt_space,
         const std::array<basis::TwoBodySectorsJJJT,3>& two_body_jjjt_component_sectors,
-        const std::array<basis::MatrixVector,3>& two_body_jjjt_component_matrices,
+        const std::array<basis::OperatorBlocks<double>,3>& two_body_jjjt_component_matrices,
         const basis::TwoBodySectorsJJJPN::SectorType& two_body_jjjpn_sector
       )
   {
@@ -1092,10 +1092,10 @@ namespace moshinsky {
       const basis::OperatorLabelsJT& operator_labels,
       const basis::TwoBodySpaceJJJT& two_body_jjjt_space,
       const std::array<basis::TwoBodySectorsJJJT,3>& two_body_jjjt_component_sectors,
-      const std::array<basis::MatrixVector,3>& two_body_jjjt_component_matrices,
+      const std::array<basis::OperatorBlocks<double>,3>& two_body_jjjt_component_matrices,
       const basis::TwoBodySpaceJJJPN& two_body_jjjpn_space,
       basis::TwoBodySectorsJJJPN& two_body_jjjpn_sectors,
-      basis::MatrixVector& two_body_jjjpn_matrices
+      basis::OperatorBlocks<double>& two_body_jjjpn_matrices
     )
   {
     // enumerate target sectors

@@ -97,7 +97,7 @@ namespace shell {
       // radial matrix element data
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
+      const basis::OperatorBlocks<double>& radial_matrices,
       // one-body labels
       const basis::OrbitalStatePN& b, const basis::OrbitalStatePN& a
     )
@@ -132,7 +132,7 @@ namespace shell {
       // radial matrix element data
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
+      const basis::OperatorBlocks<double>& radial_matrices,
       // two-body labels
       const basis::OrbitalStatePN& c, const basis::OrbitalStatePN& d,
       const basis::OrbitalStatePN& a, const basis::OrbitalStatePN& b
@@ -175,7 +175,7 @@ namespace shell {
       // radial matrix element data
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
+      const basis::OperatorBlocks<double>& radial_matrices,
       // two-body labels
       const basis::TwoBodyStateJJJPN& bra, const basis::TwoBodyStateJJJPN& ket
     )
@@ -226,7 +226,7 @@ namespace shell {
       // radial matrix element data
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
+      const basis::OperatorBlocks<double>& radial_matrices,
       // one-body labels
       const basis::OrbitalStatePN& b, const basis::OrbitalStatePN& a
     )
@@ -276,7 +276,7 @@ namespace shell {
       // radial matrix element data
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
+      const basis::OperatorBlocks<double>& radial_matrices,
       // mode
       bool momentum_space,
       // two-body labels
@@ -332,7 +332,7 @@ namespace shell {
       // two-body labels
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
+      const basis::OperatorBlocks<double>& radial_matrices,
       // mode
       bool momentum_space,
       // two-body labels
@@ -401,7 +401,7 @@ namespace shell {
   KinematicMatrixJJJPN(
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::MatrixVector& radial_matrices,
+      const basis::OperatorBlocks<double>& radial_matrices,
       KinematicOperatorType kinematic_operator_type,
       shell::RadialOperatorType radial_operator_type,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,

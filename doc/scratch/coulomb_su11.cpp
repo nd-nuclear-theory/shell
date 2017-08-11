@@ -23,7 +23,7 @@ namespace relative {
       const basis::OperatorLabelsJT& operator_labels,
       const basis::RelativeSpaceLSJT& relative_space,
       std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-      std::array<basis::MatrixVector,3>& relative_component_matrices,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       int nmax_extended
     );
   // Construct coulomb operator in relative LSJT basis.
@@ -60,7 +60,7 @@ namespace relative {
       const basis::OperatorLabelsJT& operator_labels,
       const basis::RelativeSpaceLSJT& relative_space,
       std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-      std::array<basis::MatrixVector,3>& relative_component_matrices,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       int nmax_extended
     )
   {
@@ -75,7 +75,7 @@ namespace relative {
       {
         // select T0 component
         const basis::RelativeSectorsLSJT& sectors = relative_component_sectors[T0];
-        basis::MatrixVector& matrices = relative_component_matrices[T0];
+        basis::OperatorBlocks<double>& matrices = relative_component_matrices[T0];
 
         // iterate over sectors
         for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
@@ -190,7 +190,7 @@ void TestCoulombSU11()
 
   // populate operator containers
   std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
-  std::array<basis::MatrixVector,3> relative_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_component_matrices;
   basis::ConstructIdentityOperatorRelativeLSJT(
       operator_labels,
       relative_space,

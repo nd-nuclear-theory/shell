@@ -70,7 +70,7 @@ namespace moshinsky {
     RelativeCMMatrixLSJTN(
         const basis::RelativeSpaceLSJT& relative_space,
         const basis::RelativeSectorsLSJT& relative_sectors,
-        const basis::MatrixVector& relative_matrices,
+        const basis::OperatorBlocks<double>& relative_matrices,
         const typename basis::RelativeCMSectorsLSJTN::SectorType& relative_cm_sector,
         int J0, int T0, int g0,
         basis::SymmetryPhaseMode symmetry_phase_mode
@@ -110,7 +110,7 @@ namespace moshinsky {
   //     on which relative operator is defined
   //   relative_sectors (basis::RelativeSectorsLSJT) : source sectors 
   //     on which relative operator is defined
-  //   relative_matrices (basis::MatrixVector) : source matrix elements 
+  //   relative_matrices (basis::OperatorBlocks<double>) : source matrix elements 
   //     defining relative operator
   //   relative_cm_sector (basis::RelativeCMSectorsLSJTN::SectorType) : target sector
   //     for relative-cm operator
@@ -125,10 +125,10 @@ namespace moshinsky {
       const basis::OperatorLabelsJT& operator_labels,
       const basis::RelativeSpaceLSJT& relative_space,
       const std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-      const std::array<basis::MatrixVector,3>& relative_component_matrices,
+      const std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       const basis::RelativeCMSpaceLSJTN& relative_cm_lsjtn_space,
       std::array<basis::RelativeCMSectorsLSJTN,3>& relative_cm_lsjtn_component_sectors,
-      std::array<basis::MatrixVector,3>& relative_cm_lsjtn_component_matrices
+      std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_matrices
     );
   // Construct relative-cm representation of operator in LSJTN basis,
   // from relative representation.
@@ -204,10 +204,10 @@ namespace moshinsky {
       const basis::OperatorLabelsJT& operator_labels,
       const basis::RelativeCMSpaceLSJTN& relative_cm_lsjtn_space,
       const std::array<basis::RelativeCMSectorsLSJTN,3>& relative_cm_lsjtn_component_sectors,
-      const std::array<basis::MatrixVector,3>& relative_cm_lsjtn_component_matrices,
+      const std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_matrices,
       const basis::TwoBodySpaceLSJTN& two_body_lsjtn_space,
       std::array<basis::TwoBodySectorsLSJTN,3>& two_body_lsjtn_component_sectors,
-      std::array<basis::MatrixVector,3>& two_body_lsjtn_component_matrices
+      std::array<basis::OperatorBlocks<double>,3>& two_body_lsjtn_component_matrices
     );
   // Construct two-body representation of operator in LSJTN basis,
   // from relative-cm representation.
@@ -275,7 +275,7 @@ namespace moshinsky {
     TwoBodyMatrixJJJTN(
         const basis::TwoBodySpaceLSJTN& two_body_lsjtn_space,
         const basis::TwoBodySectorsLSJTN& two_body_lsjtn_sectors,
-        const basis::MatrixVector& two_body_lsjtn_matrices,
+        const basis::OperatorBlocks<double>& two_body_lsjtn_matrices,
         const basis::TwoBodySectorsJJJTN::SectorType& two_body_jjjtn_sector,
         int J0, int T0, int g0,
         basis::SymmetryPhaseMode symmetry_phase_mode
@@ -294,7 +294,7 @@ namespace moshinsky {
   //     source space
   //   two_body_lsjtn_sectors (basis::TwoBodySectorsLSJTN) :
   //     all source sectors in given isospin component
-  //   two_body_lsjtn_matrices (basis::MatrixVector) :
+  //   two_body_lsjtn_matrices (basis::OperatorBlocks<double>) :
   //     all source matrices in given isospin component
   //   two_body_jjjtn_sector (basis::TwoBodySectorJJJTN::SectorType) :
   //     target sector information
@@ -307,10 +307,10 @@ namespace moshinsky {
       const basis::OperatorLabelsJT& operator_labels,
       const basis::TwoBodySpaceLSJTN& two_body_lsjtn_space,
       const std::array<basis::TwoBodySectorsLSJTN,3>& two_body_lsjtn_component_sectors,
-      const std::array<basis::MatrixVector,3>& two_body_lsjtn_component_matrices,
+      const std::array<basis::OperatorBlocks<double>,3>& two_body_lsjtn_component_matrices,
       const basis::TwoBodySpaceJJJTN& two_body_jjjtn_space,
       std::array<basis::TwoBodySectorsJJJTN,3>& two_body_jjjtn_component_sectors,
-      std::array<basis::MatrixVector,3>& two_body_jjjtn_component_matrices
+      std::array<basis::OperatorBlocks<double>,3>& two_body_jjjtn_component_matrices
     );
   // Recouple operator to two-body jjJT scheme representation (in
   // TwoBodyJJJTN basis), from two-body LSJT representation (in
@@ -338,7 +338,7 @@ namespace moshinsky {
         const basis::OperatorLabelsJT& operator_labels,
         const basis::TwoBodySpaceJJJT& two_body_jjjt_space,
         const std::array<basis::TwoBodySectorsJJJT,3>& two_body_jjjt_component_sectors,
-        const std::array<basis::MatrixVector,3>& two_body_jjjt_component_matrices,
+        const std::array<basis::OperatorBlocks<double>,3>& two_body_jjjt_component_matrices,
         const basis::TwoBodySectorsJJJPN::SectorType& two_body_jjjpn_sector
       );
   // Obtain two-body JJJPN sector by isospin branching, from isospin
@@ -371,10 +371,10 @@ namespace moshinsky {
       const basis::OperatorLabelsJT& operator_labels,
       const basis::TwoBodySpaceJJJT& two_body_jjjt_space,
       const std::array<basis::TwoBodySectorsJJJT,3>& two_body_jjjt_component_sectors,
-      const std::array<basis::MatrixVector,3>& two_body_jjjt_component_matrices,
+      const std::array<basis::OperatorBlocks<double>,3>& two_body_jjjt_component_matrices,
       const basis::TwoBodySpaceJJJPN& two_body_jjjpn_space,
       basis::TwoBodySectorsJJJPN& two_body_jjjpn_sectors,
-      basis::MatrixVector& two_body_jjjpn_matrices
+      basis::OperatorBlocks<double>& two_body_jjjpn_matrices
     );
   // Branch operator to two-body jjJpn scheme representation (in
   // TwoBodyJJJPN basis), from two-body JJJT representation (in

@@ -245,7 +245,7 @@ void CalculateMatrixElements(
     double bra_scale_ratio, double ket_scale_ratio,
     int order,
     const basis::OrbitalSectorsLJPN& sectors,
-    basis::MatrixVector& matrices
+    basis::OperatorBlocks<double>& matrices
   ) {
   for (int sector_index=0; sector_index < sectors.size(); ++sector_index) {
     // get sector
@@ -311,7 +311,7 @@ int main(int argc, char **argv) {
 
   // Eigen initialization
   Eigen::initParallel();
-  basis::MatrixVector matrices;
+  basis::OperatorBlocks<double> matrices;
 
   // main control logic
   spline::Basis bra_basis_type, ket_basis_type;

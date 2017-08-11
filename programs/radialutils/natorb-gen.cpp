@@ -204,7 +204,7 @@ int main(int argc, const char *argv[]) {
   input_orbital_s.close();
 
   // Get OBDMEs
-  basis::MatrixVector density_matrices;
+  basis::OperatorBlocks<double> density_matrices;
   shell::InOBDMEReader obdme_reader(run_parameters.robdme_info, input_space);
   obdme_reader.ReadMultipole(run_parameters.robdme_stat, 0, density_matrices);
 
@@ -213,7 +213,7 @@ int main(int argc, const char *argv[]) {
   obdme_reader.SetToIndexing(0, sectors);
 
   // Here we loop through the density matrices and diagonalize each sector.
-  basis::MatrixVector xform_matrices;
+  basis::OperatorBlocks<double> xform_matrices;
   std::vector<basis::OrbitalPNInfo> output_orbitals;
   for (int sector_index = 0; sector_index < sectors.size(); ++sector_index) {
     // get next sector

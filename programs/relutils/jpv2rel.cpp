@@ -121,7 +121,7 @@ int main(int argc, char **argv)
   basis::OperatorLabelsJT operator_labels(0,0,0,parameters.T0_max,basis::SymmetryPhaseMode::kHermitian);
   basis::RelativeOperatorParametersLSJT operator_parameters(operator_labels,parameters.Nmax,parameters.Jmax);
   std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
-  std::array<basis::MatrixVector,3> relative_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_component_matrices;
   basis::ConstructZeroOperatorRelativeLSJT(
       operator_parameters,
       relative_space,relative_component_sectors,relative_component_matrices

@@ -22,7 +22,7 @@ namespace relative {
       const basis::RelativeSpaceLSJT& relative_space,
       const basis::OperatorLabelsJT& operator_labels,
       const std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-      std::array<basis::MatrixVector,3>& relative_component_matrices,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       bool verbose
     )
   {
@@ -46,7 +46,7 @@ namespace relative {
 
     // set up references for convenience
     const basis::RelativeSectorsLSJT& sectors = relative_component_sectors[0];
-    basis::MatrixVector& matrices = relative_component_matrices[0];
+    basis::OperatorBlocks<double>& matrices = relative_component_matrices[0];
 
     // read source file
     std::string line;
@@ -247,7 +247,7 @@ namespace relative {
       const basis::RelativeSpaceLSJT& relative_space,
       const basis::RelativeOperatorParametersLSJT& operator_parameters,
       const std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-      std::array<basis::MatrixVector,3>& relative_component_matrices,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       bool verbose
     )
   {
@@ -304,7 +304,7 @@ namespace relative {
         // be populated
 
         std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors_input;
-        std::array<basis::MatrixVector,3> relative_component_matrices_input;
+        std::array<basis::OperatorBlocks<double>,3> relative_component_matrices_input;
         basis::ConstructZeroOperatorRelativeLSJT(
             basis::RelativeOperatorParametersLSJT(operator_parameters,operator_parameters.Nmax,operator_parameters.Jmax),
             relative_space,relative_component_sectors_input,relative_component_matrices_input

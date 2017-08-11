@@ -182,7 +182,7 @@ void PopulateOperator(
     const Parameters& parameters,
     basis::RelativeSpaceLSJT& relative_space,
     std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-    std::array<basis::MatrixVector,3>& relative_component_matrices
+    std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices
   )
 // Define operator.
 //
@@ -311,7 +311,7 @@ void PopulateOperator(
 
       // select T0 component
       const basis::RelativeSectorsLSJT& relative_sectors = relative_component_sectors[unit_tensor_labels.T0];
-      basis::MatrixVector& relative_matrices = relative_component_matrices[unit_tensor_labels.T0];
+      basis::OperatorBlocks<double>& relative_matrices = relative_component_matrices[unit_tensor_labels.T0];
 
       // look up sector
       int relative_sector_index
@@ -345,7 +345,7 @@ int main(int argc, char **argv)
   // set up operator
   basis::RelativeSpaceLSJT relative_space;
   std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
-  std::array<basis::MatrixVector,3> relative_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_component_matrices;
   PopulateOperator(
       parameters,
       relative_space,

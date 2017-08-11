@@ -12,7 +12,7 @@
   + 10/28/16 (pjf): Updated interface
    - RadialOperator is a simple enum class.
    - Don't store matrices internally to streams.
-   - Read() takes an empty MatrixVector&.
+   - Read() takes an empty OperatorBlocks<double>&.
    - Constructors read/write headers but not data.
    - OutRadialStream takes an OrbitalSectorsLJPN at construction.
   + 10/29/16 (mac):
@@ -142,7 +142,7 @@ class InRadialStream : public RadialStreamBase {
   // If the internal bra and ket orbital spaces are equal, it is
   // safe to use the same target variable to hold both.
 
-  void Read(basis::MatrixVector& matrices);
+  void Read(basis::OperatorBlocks<double>& matrices);
   void Close();
 
  private:
@@ -198,7 +198,7 @@ class OutRadialStream : public RadialStreamBase {
   }
 
   // I/O
-  void Write(const basis::MatrixVector& matrices);
+  void Write(const basis::OperatorBlocks<double>& matrices);
   void Close();
 
  private:

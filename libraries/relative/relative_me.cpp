@@ -37,7 +37,7 @@ namespace relative {
       const basis::OperatorLabelsJT& operator_labels,
       const basis::RelativeSpaceLSJT& relative_space,
       std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-      std::array<basis::MatrixVector,3>& relative_component_matrices,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       relative::KinematicOperator kinematic_operator
     )
   {
@@ -56,7 +56,7 @@ namespace relative {
 
     // select T0=0 component
     const basis::RelativeSectorsLSJT& sectors = relative_component_sectors[0];
-    basis::MatrixVector& matrices = relative_component_matrices[0];
+    basis::OperatorBlocks<double>& matrices = relative_component_matrices[0];
 
     // iterate over sectors
     for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
@@ -107,7 +107,7 @@ namespace relative {
       const basis::OperatorLabelsJT& operator_labels,
       const basis::RelativeSpaceLSJT& relative_space,
       std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-      std::array<basis::MatrixVector,3>& relative_component_matrices,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       relative::KinematicOperator kinematic_operator,
       basis::TwoBodySpeciesPN operator_species
     )
@@ -133,7 +133,7 @@ namespace relative {
 
         // select T0 component
         const basis::RelativeSectorsLSJT& sectors = relative_component_sectors[T0];
-        basis::MatrixVector& matrices = relative_component_matrices[T0];
+        basis::OperatorBlocks<double>& matrices = relative_component_matrices[T0];
 
         // determine isospin factor
         double isospin_factor = kOperatorIsospinFactors[int(operator_species)][T0];
@@ -356,7 +356,7 @@ namespace relative {
       const basis::OperatorLabelsJT& operator_labels,
       const basis::RelativeSpaceLSJT& relative_space,
       std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-      std::array<basis::MatrixVector,3>& relative_component_matrices,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       basis::TwoBodySpeciesPN operator_species,
       int num_steps
     )
@@ -372,7 +372,7 @@ namespace relative {
       {
         // select T0 component
         const basis::RelativeSectorsLSJT& sectors = relative_component_sectors[T0];
-        basis::MatrixVector& matrices = relative_component_matrices[T0];
+        basis::OperatorBlocks<double>& matrices = relative_component_matrices[T0];
 
         // iterate over sectors
         for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
