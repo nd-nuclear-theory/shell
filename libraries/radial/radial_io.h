@@ -181,7 +181,7 @@ class OutRadialStream : public RadialStreamBase {
       const basis::OrbitalSpaceLJPN& ket_space,
       const basis::OrbitalSectorsLJPN& sectors,
       const RadialOperatorType radial_operator_type)
-    : OutRadialStream(filename, bra_space, ket_space, sectors, radial_operator_type, "16.8e") {}
+    : OutRadialStream(filename, bra_space, ket_space, sectors, radial_operator_type, "16.8e", false) {}
 
   explicit OutRadialStream(
       const std::string& filename,
