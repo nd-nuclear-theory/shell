@@ -12,10 +12,79 @@ University of Notre Dame
 """
 import os
 import glob
+import collections
 
 import mcscript
 
 from . import config
+
+
+def set_up_Nmax_truncation(task, inputlist):
+    """Generate Nmax truncation inputs for MFDn v15.
+
+    Arguments:
+        task(dict): as described in module docstring
+        inputlist (dict): MFDn v15 inputlist
+    """
+    # sanity check
+    if task["sp_truncation_mode"] is not config.SingleParticleTruncationMode.kNmax:
+        raise ValueError("expecting sp_truncation_mode to be {} but found {sp_truncation_mode}".format(config.SingleParticleTruncationMode.kNmax, **task))
+    if task["mb_truncation_mode"] is not config.ManyBodyTruncationMode.kNmax:
+        raise ValueError("expecting mb_truncation_mode to be {} but found {mb_truncation_mode}".format(config.ManyBodyTruncationMode.kNmax, **task))
+
+    truncation_parameters = task["truncation_parameters"]
+
+    # many-body truncation: Nmin, Nmax, deltaN
+    if (truncation_parameters["Nstep"] == 2):
+        inputlist["Nmin"] = truncation_parameters["Nmax"] % 2
+    else:
+        inputlist["Nmin"] = 1
+    inputlist["Nmax"] = int(truncation_parameters["Nmax"])
+    inputlist["deltaN"] = int(truncation_parameters["Nstep"])
+
+
+def set_up_WeightMax_truncation(task, inputlist):
+    """Generate weight max truncation inputs for MFDn v15.
+
+    Arguments:
+        task(dict): as described in module docstring
+        inputlist (dict): MFDn v15 inputlist
+    """
+    # sanity check
+    if task["mb_truncation_mode"] is not config.ManyBodyTruncationMode.kWeightMax:
+        raise ValueError("expecting sp_truncation_mode to be {} but found {sp_truncation_mode}".format(config.ManyBodyTruncationMode.kWeightMax, **task))
+
+    truncation_parameters = task["truncation_parameters"]
+
+    inputlist["WTmax"] = truncation_parameters["mb_weight_max"]
+
+
+def set_up_FCI_truncation(task, inputlist):
+    """Generate FCI truncation inputs for MFDn v15.
+
+    Arguments:
+        task(dict): as described in module docstring
+        inputlist (dict): MFDn v15 inputlist
+    """
+    # sanity check
+    if task["mb_truncation_mode"] is not config.ManyBodyTruncationMode.kFCI:
+        raise ValueError("expecting sp_truncation_mode to be {} but found {sp_truncation_mode}".format(config.ManyBodyTruncationMode.kFCI, **task))
+
+    truncation_parameters = task["truncation_parameters"]
+
+    # maximum weight of an orbital is either Nmax or sp_weight_max
+    max_sp_weight = max(truncation_parameters.get("Nmax", -1), truncation_parameters.get("sp_weight_max", -1))
+    if max_sp_weight < 0:
+        raise mcscript.exception.ScriptError("invalid maximum orbital weight")
+
+    inputlist["WTmax"] = int(sum(task["nuclide"])*max_sp_weight)
+
+
+truncation_setup_functions = {
+    config.ManyBodyTruncationMode.kNmax: set_up_Nmax_truncation,
+    config.ManyBodyTruncationMode.kWeightMax: set_up_WeightMax_truncation,
+    config.ManyBodyTruncationMode.kFCI: set_up_FCI_truncation
+}
 
 
 def run_mfdn(task, postfix=""):
@@ -27,8 +96,11 @@ def run_mfdn(task, postfix=""):
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
+    # create work directory if it doesn't exist yet (-p)
+    mcscript.call(["mkdir", "-p", "work"])
+
     # inputlist namelist dictionary
-    inputlist = {}
+    inputlist = collections.OrderedDict()
 
     # nucleus
     inputlist["Nprotons"], inputlist["Nneutrons"] = task["nuclide"]
@@ -36,31 +108,16 @@ def run_mfdn(task, postfix=""):
     # Mj
     inputlist["TwoMj"] = int(2*task["Mj"])
 
-    # truncation mode
-    truncation_parameters = task["truncation_parameters"]
-    if task["sp_truncation_mode"] is config.SingleParticleTruncationMode.kNmax:
-        # single-particle basis truncation: N = 2n+l
-        if task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kNmax:
-            Nmax_orb = truncation_parameters["Nmax"] + truncation_parameters["Nv"]
-        elif task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kFCI:
-            Nmax_orb = truncation_parameters["Nmax"]
-        else:
-            raise mcscript.exception.ScriptError("truncation mode {} not supported".format(task["mb_truncation_mode"]))
-        inputlist["Nshell"] = int(Nmax_orb+1)
+    # single-particle orbitals
+    inputlist["orbitalfile"] = config.filenames.orbitals_filename(postfix)
+    mcscript.call([
+        "cp", "--verbose",
+        config.filenames.orbitals_filename(postfix),
+        os.path.join("work", config.filenames.orbitals_filename(postfix))
+    ])
 
-        # many-body truncation: Nmin, Nmax, deltaN
-        if (truncation_parameters["Nstep"] == 2):
-            inputlist["Nmin"] = truncation_parameters["Nmax"] % 2
-        else:
-            inputlist["Nmin"] = 1
-        if task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kNmax:
-            inputlist["Nmax"] = int(truncation_parameters["Nmax"])
-        elif task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kFCI:
-            inputlist["Nmax"] = int(sum(task["nuclide"])*truncation_parameters["Nmax"])
-        inputlist["deltaN"] = int(truncation_parameters["Nstep"])
-    else:
-        # TODO
-        raise mcscript.exception.ScriptError("truncation mode {} not supported".format(task["sp_truncation_mode"]))
+    # truncation mode
+    truncation_setup_functions[task["mb_truncation_mode"]](task, inputlist)
 
     if (task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated}):
         inputlist["hbomeg"] = float(task["hw"])
@@ -124,12 +181,9 @@ def run_mfdn(task, postfix=""):
             obslist["ref2J"].append(int(2*J))
             obslist["refseq"].append(i)
 
-    # create work directory if it doesn't exist yet (-p)
-    mcscript.call(["mkdir", "-p", "work"])
-
     # generate MFDn input file
     mcscript.utils.write_namelist(
-        "work/mfdn.input", input_dict={"inputlist": inputlist, "obslist": obslist}
+        os.path.join("work", "mfdn.input"), input_dict={"inputlist": inputlist, "obslist": obslist}
     )
 
     # mcscript.utils.write_input("work/mfdn.dat",input_lines=lines)
@@ -235,8 +289,10 @@ def save_mfdn_output(task, postfix=""):
     # MFDn output
     archive_file_list += [
         "work/mfdn.input", "work/mfdn.out", "work/mfdn.res",
-        "work/mfdn_partitioning.generated", "work/mfdn_sp_orbitals.info"
+        "work/mfdn_partitioning.generated"
     ]
+    if os.path.isfile("work/mfdn_sp_orbitals.info"):
+        archive_file_list += ["work/mfdn_sp_orbitals.info"]
     # renamed versions
     archive_file_list += [out_filename, res_filename]
     # MFDN obdme
