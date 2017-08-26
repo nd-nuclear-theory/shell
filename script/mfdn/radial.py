@@ -11,6 +11,12 @@ University of Notre Dame
     scripting.
 - 06/07/17 (pjf): Clean up style.
 - 08/11/17 (pjf): Use new TruncationModes.
+- 08/26/17 (pjf): Add general truncation support:
+  + Split out set_up_interaction_orbitals().
+  + Rename set_up_orbitals_ho() -> set_up_orbitals_Nmax().
+  + Rename set_up_orbitals_natorb() -> set_up_natural_orbitals().
+  + Add set_up_orbitals_triangular().
+  + Add set_up_orbitals() dispatch function.
 """
 import math
 
@@ -19,22 +25,14 @@ import mcscript.exception
 
 from . import config
 
-##################################################################
-# traditional ho run
-##################################################################
 
-
-def set_up_orbitals_ho(task, postfix=""):
-    """Set up source and target orbitals for MFDn run.
+def set_up_interaction_orbitals(task, postfix=""):
+    """Set up interaction orbitals for MFDn run.
 
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
     """
-    # validate truncation mode
-    if task["sp_truncation_mode"] is not config.SingleParticleTruncationMode.kNmax:
-        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(config.SingleParticleTruncationMode.kNmax, **task))
-
     # generate orbitals -- interaction bases
     mcscript.call(
         [
@@ -44,7 +42,7 @@ def set_up_orbitals_ho(task, postfix=""):
             "{:s}".format(config.filenames.orbitals_int_filename(postfix))
         ]
     )
-    if (task["use_coulomb"]):
+    if task["use_coulomb"]:
         mcscript.call(
             [
                 config.environ.shell_filename("orbital-gen"),
@@ -53,6 +51,18 @@ def set_up_orbitals_ho(task, postfix=""):
                 "{:s}".format(config.filenames.orbitals_coul_filename(postfix))
             ]
         )
+
+
+def set_up_orbitals_Nmax(task, postfix=""):
+    """Set up Nmax-truncated target orbitals for MFDn run.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    # validate truncation mode
+    if task["sp_truncation_mode"] is not config.SingleParticleTruncationMode.kNmax:
+        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(config.SingleParticleTruncationMode.kNmax, **task))
 
     # generate orbitals -- target basis
     truncation_parameters = task["truncation_parameters"]
@@ -78,7 +88,59 @@ def set_up_orbitals_ho(task, postfix=""):
     )
 
 
-def set_up_orbitals_natorb(task, source_postfix, target_postfix):
+def set_up_orbitals_triangular(task, postfix=""):
+    """Set up triangular-truncated (an+bl) target orbitals for MFDn run.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    # validate truncation mode
+    if task["sp_truncation_mode"] is not config.SingleParticleTruncationMode.kTriangular:
+        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(config.SingleParticleTruncationMode.kTriangular, **task))
+
+    # generate orbitals -- target basis
+    truncation_parameters = task["truncation_parameters"]
+    mcscript.call(
+        [
+            config.environ.shell_filename("orbital-gen"),
+            "--triangular",
+            "{sp_weight_max:f}".format(**truncation_parameters),
+            "{n_coeff:f}".format(**truncation_parameters),
+            "{l_coeff:f}".format(**truncation_parameters),
+            "{:s}".format(config.filenames.orbitals_filename(postfix))
+        ]
+    )
+    mcscript.call(
+        [
+            config.environ.shell_filename("radial-gen"),
+            "--identity",
+            config.filenames.orbitals_filename(postfix),
+            config.filenames.radial_xform_filename(postfix)
+        ]
+    )
+
+
+def set_up_orbitals(task, postfix=""):
+    """Set up target orbitals for MFDn run.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    target_orbital_set_up_functions = {
+        config.SingleParticleTruncationMode.kNmax: set_up_orbitals_Nmax,
+        config.SingleParticleTruncationMode.kTriangular: set_up_orbitals_triangular,
+    }
+
+    # validate truncation mode
+    if task["sp_truncation_mode"] not in target_orbital_set_up_functions.keys():
+        raise ValueError("truncation mode {truncation_mode} not supported".format(**task))
+
+    return target_orbital_set_up_functions[task["sp_truncation_mode"]](task, postfix)
+
+
+def set_up_natural_orbitals(task, source_postfix, target_postfix):
     """Set up natural orbitals for MFDn run.
 
     Arguments:
@@ -107,24 +169,6 @@ def set_up_orbitals_natorb(task, source_postfix, target_postfix):
             config.filenames.orbitals_filename(target_postfix)
         ]
     )
-
-# def set_up_radial(task):
-#     """Generate radial integrals and overlaps for MFDn run.
-#
-#     Operation mode may in general be direct oscillator, dilated
-#     oscillator, or generic.
-#
-#     Arguments:
-#         task (dict): as described in module_docstring
-#
-#     """
-#
-#     # get natural orbital iteration; None should be treated the same as 0
-#     natural_orbital_iteration = task.get("natorb_iteration")
-#     if (natural_orbital_iteration in {None,0}):
-#         return set_up_radial_analytic(task)
-#     elif (natural_orbital_iteration > 0):
-#         return set_up_radial_natorb(task)
 
 
 def set_up_radial_analytic(task, postfix=""):

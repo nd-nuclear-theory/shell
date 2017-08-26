@@ -102,7 +102,8 @@ task["metadata"] = {
     "descriptor": mfdn.descriptors.task_descriptor_7(task)
     }
 
-mfdn.radial.set_up_orbitals_ho(task)
+mfdn.radial.set_up_interaction_orbitals(task)
+mfdn.radial.set_up_orbitals(task)
 mfdn.radial.set_up_radial_analytic(task)
 mfdn.tbme.generate_tbme(task)
 mfdn.mfdn_v14.run_mfdn(task)
