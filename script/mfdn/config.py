@@ -8,7 +8,8 @@ University of Notre Dame
 - 6/3/17 (pjf): Remove dependence of filenames on natural orbital iteration.
 - 6/5/17 (pjf): Clean up formatting.
 - 8/11/17 (pjf): Split TruncationMode into SingleParticleTruncationMode and
-  ManyBodyTruncationMode.
+    ManyBodyTruncationMode.
+- 08/26/17 (pjf): Add parity flag for WeightMax many-body truncation mode.
 """
 
 import os
@@ -78,9 +79,9 @@ class SingleParticleTruncationMode(enum.Enum):
         - weight is (n_coeff*n + l_coeff*l)
         - compatible with MFDn v15+
         - "truncation_parameters" (dict) must contain:
-            - "n_coeff": coefficient in front of n
-            - "l_coeff": coefficient in front of l
-            - "sp_weight_max": maximum weight for single-particle orbitals
+            - "n_coeff" (float): coefficient in front of n
+            - "l_coeff" (float): coefficient in front of l
+            - "sp_weight_max" (float): maximum weight for single-particle orbitals
 
     """
 
@@ -105,12 +106,15 @@ class ManyBodyTruncationMode(enum.Enum):
     kWeightMax:
         - compatible with MFDn v15+
         - "truncation_parameters" (dict) must contain:
-            - "mb_weight_max": maximum weight for many-body states
+            - "mb_weight_max" (float): maximum weight for many-body states
+            - "parity" (int): absolute parity for run (+1, 0, or -1)
 
 
     kFCI:
         - compatible with MFDn v14+
         - many-body basis constrained only by single-particle basis
+        - "truncation_parameters" (dict) must contain:
+            - "parity" (int): absolute parity for run (+1, 0, or -1)
     """
 
     kNmax = 1
