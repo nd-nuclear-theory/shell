@@ -139,8 +139,8 @@ def task_descriptor_8(task):
     truncation_parameters = task["truncation_parameters"]
     if task["mb_truncation_mode"] is config.ManyBodyTruncationMode.kFCI:
         mb_truncation = "-FCI"
-    elif task["mb_truncation"] is config.ManyBodyTruncationMode.kWeightMax:
-        mb_truncation = "-WTmax{mb_weight_max:06.3f}".format(**task)
+    elif task["mb_truncation_mode"] is config.ManyBodyTruncationMode.kWeightMax:
+        mb_truncation = "-WTmax{mb_weight_max:06.3f}".format(**truncation_parameters)
     mixed_parity_indicator = mcscript.utils.ifelse(truncation_parameters["parity"] == 0, "x", "")
     coulomb_flag = int(task["use_coulomb"])
     natural_orbital_indicator = mcscript.utils.ifelse(task.get("natural_orbitals"), "-natorb", "")
