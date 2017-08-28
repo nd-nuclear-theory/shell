@@ -83,6 +83,26 @@ runmfdn07: harmonic oscillator direct run with MFDn v15
 
     Interaction: run0164-JISP16-tb-10
 
-    Usage: qsubm --here mfdn01
+    Usage: qsubm --here mfdn07
+
+    We use tb-10 as the smallest available set of files.
+
+runmfdn08: harmonic oscillator direct run with MFDn v15 b01
+
+    4He Nmax02 hw20 (direct)
+
+    Interaction: run0164-JISP16-tb-10
+
+    Usage: qsubm --here mfdn08
+
+    We use tb-10 as the smallest available set of files.
+
+runmfdn09: general truncation direct run with MFDn v15
+
+    4He weight=n+l<2.1 hw20 (direct)
+
+    Interaction: run0164-JISP16-tb-10
+
+    Usage: qsubm --here mfdn09
 
     We use tb-10 as the smallest available set of files.

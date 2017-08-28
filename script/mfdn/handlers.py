@@ -37,7 +37,8 @@ def task_handler_oscillator(task, postfix=""):
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
         mfdn_driver = mfdn_v14
-    radial.set_up_orbitals_ho(task, postfix=postfix)
+    radial.set_up_interaction_orbitals(task, postfix=postfix)
+    radial.set_up_orbitals(task, postfix=postfix)
     radial.set_up_radial_analytic(task, postfix=postfix)
     tbme.generate_tbme(task, postfix=postfix)
     mfdn_driver.run_mfdn(task, postfix=postfix)
@@ -70,7 +71,7 @@ def task_handler_natorb(task):
 
     # set correct basis mode
     task["basis_mode"] = config.BasisMode.kGeneric
-    radial.set_up_orbitals_natorb(task=task, source_postfix=utils.natural_orbital_indicator(0), target_postfix=utils.natural_orbital_indicator(1))
+    radial.set_up_natural_orbitals(task=task, source_postfix=utils.natural_orbital_indicator(0), target_postfix=utils.natural_orbital_indicator(1))
     radial.set_up_radial_natorb(task=task, source_postfix=utils.natural_orbital_indicator(0), target_postfix=utils.natural_orbital_indicator(1))
     tbme.generate_tbme(task=task, postfix=utils.natural_orbital_indicator(1))
     mfdn_driver.run_mfdn(task=task, postfix=utils.natural_orbital_indicator(1))

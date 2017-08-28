@@ -9,6 +9,10 @@ University of Notre Dame
 - 08/11/17 (pjf):
   + Use new TruncationModes.
   + Fix FCI truncation.
+- 08/25/17 (pjf): Implement general truncation:
+  + Always use orbital file, even for Nmax runs.
+  + Break out different many-body truncations into their own functions.
+- 08/26/17 (pjf): Add parity constraints for general truncations.
 """
 import os
 import glob
@@ -57,6 +61,7 @@ def set_up_WeightMax_truncation(task, inputlist):
     truncation_parameters = task["truncation_parameters"]
 
     inputlist["WTmax"] = truncation_parameters["mb_weight_max"]
+    inputlist["parity"] = truncation_parameters["parity"]
 
 
 def set_up_FCI_truncation(task, inputlist):
@@ -73,11 +78,15 @@ def set_up_FCI_truncation(task, inputlist):
     truncation_parameters = task["truncation_parameters"]
 
     # maximum weight of an orbital is either Nmax or sp_weight_max
-    max_sp_weight = max(truncation_parameters.get("Nmax", -1), truncation_parameters.get("sp_weight_max", -1))
-    if max_sp_weight < 0:
-        raise mcscript.exception.ScriptError("invalid maximum orbital weight")
+    if task["sp_truncation_mode"] is config.SingleParticleTruncationMode.kNmax:
+        max_sp_weight = truncation_parameters["Nmax"]
+        parity = (-1)**(truncation_parameters["Nmax"] % truncation_parameters["Nstep"])
+    else:
+        max_sp_weight = truncation_parameters["sp_weight_max"]
+        parity = truncation_parameters.get("parity", 0)
 
-    inputlist["WTmax"] = int(sum(task["nuclide"])*max_sp_weight)
+    inputlist["WTmax"] = sum(task["nuclide"])*max_sp_weight
+    inputlist["parity"] = int(parity)
 
 
 truncation_setup_functions = {

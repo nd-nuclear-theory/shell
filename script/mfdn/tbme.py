@@ -1,4 +1,4 @@
-"""handlers.py -- task handlers for MFDn runs.
+"""tbme.py -- task handlers for MFDn runs.
 
 Patrick Fasano
 University of Notre Dame
@@ -11,7 +11,10 @@ University of Notre Dame
   + Fix VC scaling.
 - 06/07/17 (pjf): Clean up style.
 - 08/11/17 (pjf): Use new TruncationModes.
+- 08/26/17 (pjf): Add support for general truncation schemes.
 """
+import collections
+
 import mcscript.utils
 
 from . import (
@@ -24,17 +27,10 @@ from . import (
 def generate_tbme(task, postfix=""):
     """Generate TBMEs for MFDn run.
 
-    Operation mode may in general be direct oscillator, dilated
-    oscillator, or generic (TODO).
-
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier added to input filenames
     """
-    # validate basis mode
-    if task["sp_truncation_mode"] is not config.SingleParticleTruncationMode.kNmax:
-        raise ValueError("expecting truncation_mode to be {} but found {sp_truncation_mode}".format(config.SingleParticleTruncationMode.kNmax, **task))
-
     # extract parameters for convenience
     A = sum(task["nuclide"])
     a_cm = task["a_cm"]
@@ -54,7 +50,7 @@ def generate_tbme(task, postfix=""):
         xform_truncation_coul = task["truncation_coul"]
 
     # accumulate h2mixer targets
-    targets = {}
+    targets = collections.OrderedDict()
 
     # target: Hamiltonian
     if (task.get("hamiltonian")):
@@ -106,12 +102,12 @@ def generate_tbme(task, postfix=""):
     lines.append("")
 
     # global mode definitions
-    target_truncation = task["target_truncation"]
-    if (target_truncation is None):
+    target_truncation = task.get("target_truncation")
+    if target_truncation is None:
         # automatic derivation
+        truncation_parameters = task["truncation_parameters"]
         if task["sp_truncation_mode"] is config.SingleParticleTruncationMode.kNmax:
-            truncation_parameters = task["truncation_parameters"]
-            if task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kNmax:
+            if task["mb_truncation_mode"] is config.ManyBodyTruncationMode.kNmax:
                 # important: truncation of orbitals file, one-body
                 # truncation of interaction file, and MFDn
                 # single-particle shells (beware 1-based) must agree
@@ -122,11 +118,16 @@ def generate_tbme(task, postfix=""):
                 N1_max = truncation_parameters["Nmax"]
                 target_weight_max = utils.weight_max_string(("ob", N1_max))
         else:
-            # calculation of required weight_max will require external program for occupation counting
-            pass
+            if task["mb_truncation_mode"] is config.ManyBodyTruncationMode.kFCI:
+                w1_max = truncation_parameters["sp_weight_max"]
+                target_weight_max = utils.weight_max_string(("ob", w1_max))
+            else:
+                w1_max = truncation_parameters["sp_weight_max"]
+                w2_max = truncation_parameters["mb_weight_max"]  # TODO this is probably too large
+                target_weight_max = utils.weight_max_string((w1_max, w2_max))
     else:
         # given value
-        target_weight_max = target_truncation
+        target_weight_max = utils.weight_max_string(target_truncation)
     lines.append("set-target-indexing {orbitals_filename} {target_weight_max}".format(
         orbitals_filename=config.filenames.orbitals_filename(postfix),
         target_weight_max=target_weight_max,
@@ -159,7 +160,7 @@ def generate_tbme(task, postfix=""):
                 task["hw_int"]
             )
         )
-        if (task["basis_mode"] == config.BasisMode.kDirect):
+        if task["basis_mode"] is config.BasisMode.kDirect and task["sp_truncation_mode"] is config.SingleParticleTruncationMode.kNmax:
             lines.append("define-source input VNN {VNN_filename}".format(VNN_filename=VNN_filename, **task))
         else:
             xform_weight_max_int = utils.weight_max_string(xform_truncation_int)
@@ -182,7 +183,7 @@ def generate_tbme(task, postfix=""):
                 task["hw_coul"]
             )
         )
-        if (task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated}):
+        if task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated} and task["sp_truncation_mode"] is config.SingleParticleTruncationMode.kNmax:
             lines.append("define-source input VC_unscaled {VC_filename}".format(VC_filename=VC_filename, **task))
         else:
             xform_weight_max_coul = utils.weight_max_string(xform_truncation_coul)
@@ -197,7 +198,7 @@ def generate_tbme(task, postfix=""):
 
     # targets: generate h2mixer input
     for (basename, operator) in targets.items():
-        lines.append("define-target work/"+basename+".bin")
+        lines.append("define-target work/"+basename+".dat")
         for (source, coefficient) in operator.items():
             lines.append("  add-source {:s} {:e}".format(source, coefficient))
         lines.append("")
