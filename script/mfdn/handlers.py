@@ -43,6 +43,7 @@ def task_handler_oscillator(task, postfix=""):
     tbme.generate_tbme(task, postfix=postfix)
     mfdn_driver.run_mfdn(task, postfix=postfix)
     mfdn_driver.save_mfdn_output(task, postfix=postfix)
+    mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
 
 
 ################################################################
@@ -76,6 +77,7 @@ def task_handler_natorb(task):
     tbme.generate_tbme(task=task, postfix=utils.natural_orbital_indicator(1))
     mfdn_driver.run_mfdn(task=task, postfix=utils.natural_orbital_indicator(1))
     mfdn_driver.save_mfdn_output(task=task, postfix=utils.natural_orbital_indicator(1))
+    mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
 
 
 ################################################################

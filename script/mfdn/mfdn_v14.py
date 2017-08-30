@@ -35,7 +35,8 @@ def run_mfdn(task, postfix=""):
 
     Arguments:
         task (dict): as described in module docstring
-        postfix (str, optional):
+        postfix (string, optional): identifier to add to generated files
+
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
     """
@@ -178,6 +179,7 @@ def save_mfdn_output(task, postfix=""):
 
     Arguments:
         task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
 
     Raises:
         mcscript.exception.ScriptError: if MFDn output not found
@@ -274,6 +276,14 @@ def save_mfdn_output(task, postfix=""):
             ]
         )
 
+
+def cleanup_mfdn_workdir(task, postfix=""):
+    """Remove temporary MFDn work files.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
     # cleanup of wave function files
     scratch_file_list = glob.glob("work/*")
     mcscript.call(["rm", "-vf"] + scratch_file_list)
