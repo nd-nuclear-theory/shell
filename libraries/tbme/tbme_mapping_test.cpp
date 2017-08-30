@@ -128,12 +128,12 @@ void TestMappingRenumber()
   // const basis::TwoBodySpaceJJJPN target_space(source_orbital_space,basis::WeightMax(basis::Rank::kTwoBody,target_Nmax));
 
   // set up mapping
-  // const shell::TwoBodyMapping two_body_mapping(
-  //     source_orbital_space,source_space,
-  //     target_orbital_space,target_space
-  //   );
-  // 
-  // std::cout << two_body_mapping.DebugStr() << std::endl;
+  const shell::TwoBodyMapping two_body_mapping(
+      source_orbital_space,source_space,
+      target_orbital_space,target_space
+    );
+
+  std::cout << two_body_mapping.DebugStr() << std::endl;
 
 }
 

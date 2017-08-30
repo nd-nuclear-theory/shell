@@ -160,7 +160,7 @@ def generate_tbme(task, postfix=""):
                 task["hw_int"]
             )
         )
-        if task["basis_mode"] is config.BasisMode.kDirect and task["sp_truncation_mode"] is config.SingleParticleTruncationMode.kNmax:
+        if task["basis_mode"] is config.BasisMode.kDirect:
             lines.append("define-source input VNN {VNN_filename}".format(VNN_filename=VNN_filename, **task))
         else:
             xform_weight_max_int = utils.weight_max_string(xform_truncation_int)
@@ -183,7 +183,7 @@ def generate_tbme(task, postfix=""):
                 task["hw_coul"]
             )
         )
-        if task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated} and task["sp_truncation_mode"] is config.SingleParticleTruncationMode.kNmax:
+        if task["basis_mode"] in (config.BasisMode.kDirect, config.BasisMode.kDilated):
             lines.append("define-source input VC_unscaled {VC_filename}".format(VC_filename=VC_filename, **task))
         else:
             xform_weight_max_coul = utils.weight_max_string(xform_truncation_coul)

@@ -3,7 +3,7 @@
 
   Defines mapping of JJJPN-scheme two-body matrix state indexings and
   remapping copy function for two-body matrices.
-                                  
+
   Mark A. Caprio
   University of Notre Dame
 
@@ -31,7 +31,7 @@ namespace shell {
   // Container for mapping two-body state indices from one set of
   // JJJPN-scheme subspaces to another:
   //
-  //   (source subspace index, source state index) -> target state index
+  //   (source subspace index, source state index) -> (target state index, relative phase)
   //
   // We do not keep track of the target subspace index, since this is
   // generally already known in situations where we are using this
@@ -67,7 +67,7 @@ namespace shell {
     std::vector<std::vector<int>> orbital_mapping;
     // Nested vectors providing mapping of orbital indices from
     // (source_subspace_index, state_index) to target_state_index.
-    // 
+    //
     // Precondition: It is assumed that both p and n subspaces will be
     // present.
 
@@ -83,16 +83,17 @@ namespace shell {
     // need to look up the indices of the subspaces.  Nonetheless, the
     // subspace mapping can be informative diagnostic information.
 
-    std::vector<std::vector<int>> state_mapping;
+    std::vector<std::vector<std::tuple<int,int>>> state_mapping;
     // Nested vectors providing mapping of two-body state indices from
-    // (source_subspace_index, state_index) to target_state_index.
-    
+    // (source_subspace_index, state_index) to
+    // (target_state_index, relative_phase).
+
     // informational flags for mapping properties
 
     bool domain_subspaces_covered, domain_states_covered,
       range_subspaces_covered, range_states_covered;
     // Whether or not all source and target two-body states are used.
-    
+
     // debugging
 
     std::string DebugStr() const;

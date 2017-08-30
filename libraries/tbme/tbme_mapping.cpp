@@ -9,6 +9,8 @@
 #include "tbme/tbme_mapping.h"
 
 #include <sstream>
+#include <utility>
+#include <tuple>
 
 #include "cppformat/format.h" // for debugging
 
@@ -129,19 +131,42 @@ namespace shell {
           )
           {
             // remap state labels to use target orbital indexing
-            //
-            // "Missing" target orbitals will be indexed by basis::kNone.
             const basis::TwoBodyStateJJJPN source_state(source_subspace,source_state_index);
+            const basis::OrbitalStatePN source_orbital1 = source_state.GetOrbital1();
+            const basis::OrbitalStatePN source_orbital2 = source_state.GetOrbital2();
+            int target_orbital1_index =
+              orbital_mapping[static_cast<int>(source_orbital1.orbital_species())][source_orbital1.index()];
+            int target_orbital2_index =
+              orbital_mapping[static_cast<int>(source_orbital2.orbital_species())][source_orbital2.index()];
+
+            // canonicalize orbital indices for new space
+            int relative_phase = 1;
+            if (
+              (source_orbital1.orbital_species() == source_orbital2.orbital_species())
+              &&
+              (target_orbital1_index > target_orbital2_index)
+            )
+            {
+              std::swap(target_orbital1_index, target_orbital2_index);
+              // see Suhonen (8.30)
+              // TODO is this phase correct for non-scalar operators?
+              int grel = static_cast<int>(source_orbital1.j() + source_orbital2.j()) + source_state.J();
+              relative_phase = std::pow(-1, grel + 1);
+            }
+
+            // construct labels in target subspace
             const typename basis::TwoBodyStateJJJPN::StateLabelsType target_state_labels(
-                orbital_mapping[int(source_state.GetOrbital1().orbital_species())][source_state.index1()],
-                orbital_mapping[int(source_state.GetOrbital2().orbital_species())][source_state.index2()]
+              target_orbital1_index, target_orbital2_index
               );
 
             // look up corresponding target state index
-            int target_state_index = target_subspace.LookUpStateIndex(
-                source_subspace.GetStateLabels(source_state_index)
-              );
-            state_mapping[source_subspace_index][source_state_index] = target_state_index;
+            //
+            // "Missing" target orbitals will be indexed by basis::kNone.
+            int target_state_index = target_subspace.LookUpStateIndex(target_state_labels);
+            if (target_state_index==basis::kNone)
+              relative_phase = 0;
+            state_mapping[source_subspace_index][source_state_index]
+              = std::tuple<int,int>(target_state_index, relative_phase);
 
             // do diagnostic record keeping
             if (target_state_index==basis::kNone)
@@ -211,10 +236,12 @@ namespace shell {
             ++source_state_index
           )
           {
-            int target_state_index = state_mapping[source_subspace_index][source_state_index];
+            int target_state_index, relative_phase;
+            std::tie(target_state_index, relative_phase)
+              = state_mapping[source_subspace_index][source_state_index];
             os << fmt::format(
-                "  subspace {:3} source {:3} target {:3}",
-                source_subspace_index,source_state_index,target_state_index
+                "  subspace {:3} source {:3} target {:3} relative phase {:3}",
+                source_subspace_index,source_state_index,target_state_index,relative_phase
               )
                << std::endl;
           }
@@ -254,18 +281,20 @@ RemappedMatrixJJJPN(
     for (int source_ket_index=0; source_ket_index<source_sector.ket_subspace().size(); ++source_ket_index)
           {
             // look up target matrix entry indices
-            int remapped_bra_index
+            int remapped_bra_index, bra_relative_phase;
+            std::tie(remapped_bra_index, bra_relative_phase)
               = two_body_mapping.state_mapping[source_sector.bra_subspace_index()][source_bra_index];
             if (remapped_bra_index == basis::kNone)
               continue;
-            int remapped_ket_index
+            int remapped_ket_index, ket_relative_phase;
+            std::tie(remapped_ket_index, ket_relative_phase)
               = two_body_mapping.state_mapping[source_sector.ket_subspace_index()][source_ket_index];
             if (remapped_ket_index == basis::kNone)
               continue;
 
             // copy entry
             target_matrix(remapped_bra_index,remapped_ket_index)
-              = source_matrix(source_bra_index,source_ket_index);
+              = (bra_relative_phase*ket_relative_phase) * source_matrix(source_bra_index,source_ket_index);
           }
 
   return target_matrix;
