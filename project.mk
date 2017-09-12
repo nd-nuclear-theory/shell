@@ -6,6 +6,8 @@
 
 project_name := shell
 
+install_prefix := $(install_prefix)/shell
+
 ################################################################
 # modules -- list of directories in which to search
 # for module.mk include files

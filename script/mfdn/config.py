@@ -161,7 +161,7 @@ class Environment(object):
 
     def shell_filename(self, name):
         """Construct filename for shell package executable."""
-        return os.path.join(mcscript.parameters.run.install_dir, "bin", name)
+        return os.path.join(mcscript.parameters.run.install_dir, "shell", "bin", name)
 
     def mfdn_filename(self, name):
         """Construct filename for MFDn executable."""
