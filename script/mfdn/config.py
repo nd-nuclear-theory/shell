@@ -10,6 +10,7 @@ University of Notre Dame
 - 8/11/17 (pjf): Split TruncationMode into SingleParticleTruncationMode and
     ManyBodyTruncationMode.
 - 08/26/17 (pjf): Add parity flag for WeightMax many-body truncation mode.
+- 9/12/17 (mac): Put mfdn executable filename under common mcscript install directory.
 """
 
 import os
@@ -131,9 +132,6 @@ class Environment(object):
 
     Data members:
 
-        mfdn_dir (str): base directory for finding MFDn executables ("SHELL_MFDN_DIR")
-            EX: base directory "${HOME}/projects/mfdn" may contain "mfdn-v14-beta06-newmake/xmfdn-h2-lan"
-            and "beta00/xmfdn-h2-lan"
         data_dir_h2_list (str): base directories for interaction tbme files ("SHELL_DATA_DIR_H2")
             Environment variable is interpreted as a PATH-style colon-delimited list.
         interaction_run_list (list of str): subdirectories for interaction tbme files
@@ -147,6 +145,9 @@ class Environment(object):
         mfdn_filename(name): Generate full qualified filename for
             MFDn executable, given root name.
 
+            EX: Giving name "mfdn_executable" as "v14-beta06/xmfdn-h2-lan" will result in
+            executable name "<install base>/mfdn/v14-beta06/xmfdn-h2-lan"
+
         interaction_filename(name): Generate full qualified filename
             for interaction h2 file, given root name.
 
@@ -155,7 +156,6 @@ class Environment(object):
     def __init__(self):
 
         # environment
-        self.mfdn_dir = os.environ.get("SHELL_MFDN_DIR")
         self.data_dir_h2_list = os.environ.get("SHELL_DATA_DIR_H2").split(":")
         self.interaction_run_list = []
 
@@ -165,7 +165,7 @@ class Environment(object):
 
     def mfdn_filename(self, name):
         """Construct filename for MFDn executable."""
-        return os.path.join(self.mfdn_dir, name)
+        return os.path.join(mcscript.parameters.run.install_dir, "mfdn", name)
 
     def interaction_filename(self, name):
         """Construct filename for interaction h2 file."""
