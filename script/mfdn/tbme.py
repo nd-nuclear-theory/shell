@@ -12,6 +12,7 @@ University of Notre Dame
 - 06/07/17 (pjf): Clean up style.
 - 08/11/17 (pjf): Use new TruncationModes.
 - 08/26/17 (pjf): Add support for general truncation schemes.
+- 09/12/17 (pjf): Update for config -> modes + environ split.
 """
 import collections
 
@@ -19,7 +20,8 @@ import mcscript.utils
 
 from . import (
     utils,
-    config,
+    modes,
+    environ,
     operators,
 )
 
@@ -106,19 +108,19 @@ def generate_tbme(task, postfix=""):
     if target_truncation is None:
         # automatic derivation
         truncation_parameters = task["truncation_parameters"]
-        if task["sp_truncation_mode"] is config.SingleParticleTruncationMode.kNmax:
-            if task["mb_truncation_mode"] is config.ManyBodyTruncationMode.kNmax:
+        if task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax:
+            if task["mb_truncation_mode"] is modes.ManyBodyTruncationMode.kNmax:
                 # important: truncation of orbitals file, one-body
                 # truncation of interaction file, and MFDn
                 # single-particle shells (beware 1-based) must agree
                 N1_max = truncation_parameters["Nv"]+truncation_parameters["Nmax"]
                 N2_max = 2*truncation_parameters["Nv"]+truncation_parameters["Nmax"]
                 target_weight_max = utils.weight_max_string((N1_max, N2_max))
-            elif task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kFCI:
+            elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
                 N1_max = truncation_parameters["Nmax"]
                 target_weight_max = utils.weight_max_string(("ob", N1_max))
         else:
-            if task["mb_truncation_mode"] is config.ManyBodyTruncationMode.kFCI:
+            if task["mb_truncation_mode"] is modes.ManyBodyTruncationMode.kFCI:
                 w1_max = truncation_parameters["sp_weight_max"]
                 target_weight_max = utils.weight_max_string(("ob", w1_max))
             else:
@@ -129,7 +131,7 @@ def generate_tbme(task, postfix=""):
         # given value
         target_weight_max = utils.weight_max_string(target_truncation)
     lines.append("set-target-indexing {orbitals_filename} {target_weight_max}".format(
-        orbitals_filename=config.filenames.orbitals_filename(postfix),
+        orbitals_filename=environ.filenames.orbitals_filename(postfix),
         target_weight_max=target_weight_max,
         **task
     ))
@@ -141,7 +143,7 @@ def generate_tbme(task, postfix=""):
     # radial operator inputs
     for operator_type in ["r", "k"]:
         for power in [1, 2]:
-            radial_me_filename = config.filenames.radial_me_filename(postfix, operator_type, power)
+            radial_me_filename = environ.filenames.radial_me_filename(postfix, operator_type, power)
             lines.append("define-radial-operator {} {} {}".format(operator_type, power, radial_me_filename))
     lines.append("")
 
@@ -153,21 +155,21 @@ def generate_tbme(task, postfix=""):
 
     # sources: VNN
     if ("VNN" in required_sources):
-        VNN_filename = config.environ.interaction_filename(
+        VNN_filename = environ.environ.interaction_filename(
             "{}-{}-{:g}.bin".format(
                 task["interaction"],
                 mcscript.utils.dashify(task["truncation_int"]),
                 task["hw_int"]
             )
         )
-        if task["basis_mode"] is config.BasisMode.kDirect:
+        if task["basis_mode"] is modes.BasisMode.kDirect:
             lines.append("define-source input VNN {VNN_filename}".format(VNN_filename=VNN_filename, **task))
         else:
             xform_weight_max_int = utils.weight_max_string(xform_truncation_int)
             lines.append("define-source xform VNN {VNN_filename} {xform_weight_max_int} {radial_olap_int_filename}".format(
                 VNN_filename=VNN_filename,
                 xform_weight_max_int=xform_weight_max_int,
-                radial_olap_int_filename=config.filenames.radial_olap_int_filename(postfix),
+                radial_olap_int_filename=environ.filenames.radial_olap_int_filename(postfix),
                 **task
             ))
 
@@ -176,21 +178,21 @@ def generate_tbme(task, postfix=""):
     # Note: This is the "unscaled" Coulomb, still awaiting the scaling
     # factor from dilation.
     if ("VC_unscaled" in required_sources):
-        VC_filename = config.environ.interaction_filename(
+        VC_filename = environ.environ.interaction_filename(
             "{}-{}-{:g}.bin".format(
                 "VC",
                 mcscript.utils.dashify(task["truncation_coul"]),
                 task["hw_coul"]
             )
         )
-        if task["basis_mode"] in (config.BasisMode.kDirect, config.BasisMode.kDilated):
+        if task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated):
             lines.append("define-source input VC_unscaled {VC_filename}".format(VC_filename=VC_filename, **task))
         else:
             xform_weight_max_coul = utils.weight_max_string(xform_truncation_coul)
             lines.append("define-source xform VC_unscaled {VC_filename} {xform_weight_max_coul} {radial_olap_coul_filename}".format(
                 VC_filename=VC_filename,
                 xform_weight_max_coul=xform_weight_max_coul,
-                radial_olap_coul_filename=config.filenames.radial_olap_coul_filename(postfix),
+                radial_olap_coul_filename=environ.filenames.radial_olap_coul_filename(postfix),
                 **task
             ))
 
@@ -210,7 +212,7 @@ def generate_tbme(task, postfix=""):
     #
     # This is purely for easy diagnostic purposes, since lines will be
     # fed directly to h2mixer as stdin below.
-    mcscript.utils.write_input(config.filenames.h2mixer_filename(postfix), input_lines=lines, verbose=False)
+    mcscript.utils.write_input(environ.filenames.h2mixer_filename(postfix), input_lines=lines, verbose=False)
 
     # create work directory if it doesn't exist yet (-p)
     mcscript.call(["mkdir", "-p", "work"])
@@ -218,7 +220,7 @@ def generate_tbme(task, postfix=""):
     # invoke h2mixer
     mcscript.call(
         [
-            config.environ.shell_filename("h2mixer")
+            environ.environ.shell_filename("h2mixer")
         ],
         input_lines=lines,
         mode=mcscript.CallMode.kSerial

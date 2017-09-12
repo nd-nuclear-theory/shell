@@ -21,9 +21,9 @@
 
         # basis parameters
         "basis_mode" (BasisMode): enumerated value indicating direct
-            oscillator (config.BasisMode.kDirect), dilated oscillator
-            (config.BasisMode.kDilated), or generic run mode
-            (config.BasisMode.kGeneric), as explained further where this
+            oscillator (modes.BasisMode.kDirect), dilated oscillator
+            (modes.BasisMode.kDilated), or generic run mode
+            (modes.BasisMode.kGeneric), as explained further where this
             enum is defined below.
         "hw" (float): hw of basis
 
@@ -45,10 +45,10 @@
         "scaled_basis" (tuple): deduced basis used in task descriptor, etc.
 
         # truncation parameters
-        "sp_truncation_mode" (config.SingleParticleTruncationMode): enumerated value
+        "sp_truncation_mode" (modes.SingleParticleTruncationMode): enumerated value
             indicating single-particle basis truncation; see docstring of
             SingleParticleTruncationMode for information.
-        "mb_truncation_mode" (config.ManyBodyTruncationMode): enumerated value
+        "mb_truncation_mode" (modes.ManyBodyTruncationMode): enumerated value
             indicating many-body basis truncation; see docstring of
             ManyBodyTruncationMode for information.
         "truncation_parameters" (dict): truncation parameters, specific to each enumerated
@@ -130,7 +130,7 @@
 """
 
 __ALL__ = ['descriptors', 'handlers', 'radial', 'operators', 'tbme', 'utils', 'config']
-from . import descriptors, handlers, radial, operators, tbme, utils, config
+from . import descriptors, handlers, radial, operators, tbme, utils, modes
 
 if (__name__ == "__MAIN__"):
     pass

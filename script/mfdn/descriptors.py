@@ -9,11 +9,12 @@ University of Notre Dame
 - 06/13/17 (pjf): Add task_descriptor_7b (includes Ncut).
 - 08/11/17 (pjf): Use new TruncationModes.
 - 08/26/17 (pjf): Add task_descriptor_8 for general truncation.
+- 09/12/17 (pjf): Update for config -> modes + environ split.
 """
 import mcscript.exception
 import mcscript.utils
 
-from . import config
+from . import modes
 
 
 ################################################################
@@ -29,9 +30,9 @@ def task_descriptor_7(task):
         - Add tolerance.
     """
     if (
-        task["sp_truncation_mode"] is config.SingleParticleTruncationMode.kNmax
+        task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax
         and
-        task["basis_mode"] in (config.BasisMode.kDirect, config.BasisMode.kDilated)
+        task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated)
     ):
         # traditional oscillator run
         template_string = (
@@ -46,7 +47,7 @@ def task_descriptor_7(task):
         raise mcscript.exception.ScriptError("mode not supported by task descriptor")
 
     truncation_parameters = task["truncation_parameters"]
-    if task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kFCI:
+    if task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
         fci_indicator = "-fci"
     else:
         fci_indicator = ""
@@ -71,9 +72,9 @@ def task_descriptor_7b(task):
         - Add Ncut field
     """
     if (
-        task["sp_truncation_mode"] is config.SingleParticleTruncationMode.kNmax
+        task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax
         and
-        task["basis_mode"] in (config.BasisMode.kDirect, config.BasisMode.kDilated)
+        task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated)
     ):
         # traditional oscillator run
         template_string = (
@@ -90,7 +91,7 @@ def task_descriptor_7b(task):
 
     truncation_parameters = task["truncation_parameters"]
     Ncut = "{:s}{:02d}".format(*task.get("xform_truncation_int", truncation_parameters["Nmax"]))
-    if task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kFCI:
+    if task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
         fci_indicator = "-fci"
     else:
         fci_indicator = ""
@@ -117,11 +118,11 @@ def task_descriptor_8(task):
         - No FCI support.
     """
     if (
-            task["basis_mode"] in (config.BasisMode.kDirect, config.BasisMode.kDilated)
+            task["basis_mode"] in (modes.BasisMode.kDirect, modes.BasisMode.kDilated)
             and
-            task["sp_truncation_mode"] is config.SingleParticleTruncationMode.kTriangular
+            task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kTriangular
             and
-            task["mb_truncation_mode"] in (config.ManyBodyTruncationMode.kWeightMax, config.ManyBodyTruncationMode.kFCI)
+            task["mb_truncation_mode"] in (modes.ManyBodyTruncationMode.kWeightMax, modes.ManyBodyTruncationMode.kFCI)
     ):
         # oscillator basis
         template_string = (
@@ -137,9 +138,9 @@ def task_descriptor_8(task):
         raise mcscript.exception.ScriptError("mode not supported by task descriptor")
 
     truncation_parameters = task["truncation_parameters"]
-    if task["mb_truncation_mode"] is config.ManyBodyTruncationMode.kFCI:
+    if task["mb_truncation_mode"] is modes.ManyBodyTruncationMode.kFCI:
         mb_truncation = "-FCI"
-    elif task["mb_truncation_mode"] is config.ManyBodyTruncationMode.kWeightMax:
+    elif task["mb_truncation_mode"] is modes.ManyBodyTruncationMode.kWeightMax:
         mb_truncation = "-WTmax{mb_weight_max:06.3f}".format(**truncation_parameters)
     mixed_parity_indicator = mcscript.utils.ifelse(truncation_parameters["parity"] == 0, "x", "")
     coulomb_flag = int(task["use_coulomb"])

@@ -13,6 +13,7 @@ University of Notre Dame
   + Always use orbital file, even for Nmax runs.
   + Break out different many-body truncations into their own functions.
 - 08/26/17 (pjf): Add parity constraints for general truncations.
+- 09/12/17 (pjf): Update for config -> modes + environ split.
 """
 import os
 import glob
@@ -20,7 +21,7 @@ import collections
 
 import mcscript
 
-from . import config
+from . import modes, environ
 
 
 def set_up_Nmax_truncation(task, inputlist):
@@ -31,10 +32,10 @@ def set_up_Nmax_truncation(task, inputlist):
         inputlist (dict): MFDn v15 inputlist
     """
     # sanity check
-    if task["sp_truncation_mode"] is not config.SingleParticleTruncationMode.kNmax:
-        raise ValueError("expecting sp_truncation_mode to be {} but found {sp_truncation_mode}".format(config.SingleParticleTruncationMode.kNmax, **task))
-    if task["mb_truncation_mode"] is not config.ManyBodyTruncationMode.kNmax:
-        raise ValueError("expecting mb_truncation_mode to be {} but found {mb_truncation_mode}".format(config.ManyBodyTruncationMode.kNmax, **task))
+    if task["sp_truncation_mode"] is not modes.SingleParticleTruncationMode.kNmax:
+        raise ValueError("expecting sp_truncation_mode to be {} but found {sp_truncation_mode}".format(modes.SingleParticleTruncationMode.kNmax, **task))
+    if task["mb_truncation_mode"] is not modes.ManyBodyTruncationMode.kNmax:
+        raise ValueError("expecting mb_truncation_mode to be {} but found {mb_truncation_mode}".format(modes.ManyBodyTruncationMode.kNmax, **task))
 
     truncation_parameters = task["truncation_parameters"]
 
@@ -55,8 +56,8 @@ def set_up_WeightMax_truncation(task, inputlist):
         inputlist (dict): MFDn v15 inputlist
     """
     # sanity check
-    if task["mb_truncation_mode"] is not config.ManyBodyTruncationMode.kWeightMax:
-        raise ValueError("expecting sp_truncation_mode to be {} but found {sp_truncation_mode}".format(config.ManyBodyTruncationMode.kWeightMax, **task))
+    if task["mb_truncation_mode"] is not modes.ManyBodyTruncationMode.kWeightMax:
+        raise ValueError("expecting sp_truncation_mode to be {} but found {sp_truncation_mode}".format(modes.ManyBodyTruncationMode.kWeightMax, **task))
 
     truncation_parameters = task["truncation_parameters"]
 
@@ -72,13 +73,13 @@ def set_up_FCI_truncation(task, inputlist):
         inputlist (dict): MFDn v15 inputlist
     """
     # sanity check
-    if task["mb_truncation_mode"] is not config.ManyBodyTruncationMode.kFCI:
-        raise ValueError("expecting sp_truncation_mode to be {} but found {sp_truncation_mode}".format(config.ManyBodyTruncationMode.kFCI, **task))
+    if task["mb_truncation_mode"] is not modes.ManyBodyTruncationMode.kFCI:
+        raise ValueError("expecting sp_truncation_mode to be {} but found {sp_truncation_mode}".format(modes.ManyBodyTruncationMode.kFCI, **task))
 
     truncation_parameters = task["truncation_parameters"]
 
     # maximum weight of an orbital is either Nmax or sp_weight_max
-    if task["sp_truncation_mode"] is config.SingleParticleTruncationMode.kNmax:
+    if task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax:
         max_sp_weight = truncation_parameters["Nmax"]
         parity = (-1)**(truncation_parameters["Nmax"] % truncation_parameters["Nstep"])
     else:
@@ -90,9 +91,9 @@ def set_up_FCI_truncation(task, inputlist):
 
 
 truncation_setup_functions = {
-    config.ManyBodyTruncationMode.kNmax: set_up_Nmax_truncation,
-    config.ManyBodyTruncationMode.kWeightMax: set_up_WeightMax_truncation,
-    config.ManyBodyTruncationMode.kFCI: set_up_FCI_truncation
+    modes.ManyBodyTruncationMode.kNmax: set_up_Nmax_truncation,
+    modes.ManyBodyTruncationMode.kWeightMax: set_up_WeightMax_truncation,
+    modes.ManyBodyTruncationMode.kFCI: set_up_FCI_truncation
 }
 
 
@@ -119,17 +120,17 @@ def run_mfdn(task, postfix=""):
     inputlist["TwoMj"] = int(2*task["Mj"])
 
     # single-particle orbitals
-    inputlist["orbitalfile"] = config.filenames.orbitals_filename(postfix)
+    inputlist["orbitalfile"] = environ.filenames.orbitals_filename(postfix)
     mcscript.call([
         "cp", "--verbose",
-        config.filenames.orbitals_filename(postfix),
-        os.path.join("work", config.filenames.orbitals_filename(postfix))
+        environ.filenames.orbitals_filename(postfix),
+        os.path.join("work", environ.filenames.orbitals_filename(postfix))
     ])
 
     # truncation mode
     truncation_setup_functions[task["mb_truncation_mode"]](task, inputlist)
 
-    if (task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated}):
+    if (task["basis_mode"] in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):
         inputlist["hbomeg"] = float(task["hw"])
 
     # diagonalization parameters
@@ -210,7 +211,7 @@ def run_mfdn(task, postfix=""):
     # invoke MFDn
     mcscript.call(
         [
-            config.environ.mfdn_filename(task["mfdn_executable"])
+            environ.environ.mfdn_filename(task["mfdn_executable"])
         ],
         mode=mcscript.CallMode.kHybrid,
         check_return=True
@@ -253,7 +254,7 @@ def save_mfdn_output(task, postfix=""):
             [
                 "cp", "--verbose",
                 "work/{}".format(obdme_info_filename),
-                config.filenames.natorb_info_filename(postfix)
+                environ.filenames.natorb_info_filename(postfix)
             ]
         )
         obdme_filename = glob.glob("work/mfdn.statrobdme.seq{:03d}*".format(task["natorb_base_state"]))
@@ -261,7 +262,7 @@ def save_mfdn_output(task, postfix=""):
             [
                 "cp", "--verbose",
                 obdme_filename[0],
-                config.filenames.natorb_obdme_filename(postfix)
+                environ.filenames.natorb_obdme_filename(postfix)
             ]
         )
 
@@ -269,34 +270,34 @@ def save_mfdn_output(task, postfix=""):
     print("Saving full output files...")
     # logging
     archive_file_list = [
-        config.filenames.h2mixer_filename(postfix),
+        environ.filenames.h2mixer_filename(postfix),
         "tbo_names{:s}.dat".format(postfix)
         ]
     # orbital information
     archive_file_list += [
-        config.filenames.orbitals_int_filename(postfix),
-        config.filenames.orbitals_filename(postfix),
+        environ.filenames.orbitals_int_filename(postfix),
+        environ.filenames.orbitals_filename(postfix),
         ]
     # transformation information
     archive_file_list += [
-        config.filenames.radial_xform_filename(postfix),
-        # config.filenames.radial_me_filename(postfix, operator_type, power),
-        config.filenames.radial_olap_int_filename(postfix),
+        environ.filenames.radial_xform_filename(postfix),
+        # environ.filenames.radial_me_filename(postfix, operator_type, power),
+        environ.filenames.radial_olap_int_filename(postfix),
         ]
     # Coulomb information:
     if task["use_coulomb"]:
         archive_file_list += [
-            config.filenames.orbitals_coul_filename(postfix),
-            config.filenames.radial_olap_coul_filename(postfix),
+            environ.filenames.orbitals_coul_filename(postfix),
+            environ.filenames.radial_olap_coul_filename(postfix),
         ]
     # natural orbital information
     if natural_orbitals:
         archive_file_list += [
-            config.filenames.natorb_info_filename(postfix),
-            config.filenames.natorb_obdme_filename(postfix),
+            environ.filenames.natorb_info_filename(postfix),
+            environ.filenames.natorb_obdme_filename(postfix),
             ]
         # glob for natural orbital xform
-        archive_file_list += glob.glob(config.filenames.natorb_xform_filename(postfix))
+        archive_file_list += glob.glob(environ.filenames.natorb_xform_filename(postfix))
     # MFDn output
     archive_file_list += [
         "work/mfdn.input", "work/mfdn.out", "work/mfdn.res",

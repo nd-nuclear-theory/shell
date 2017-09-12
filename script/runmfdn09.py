@@ -19,7 +19,7 @@ mcscript.init()
 # build task list
 ##################################################################
 
-mfdn.config.environ.interaction_run_list = [
+mfdn.environ.environ.interaction_run_list = [
     "run0164-JISP16-ob-9",
     "run0164-JISP16-ob-13",
     "run0164-JISP16-tb-10",
@@ -45,7 +45,7 @@ task = {
     "hw_coul": 20.,
 
     # basis parameters
-    "basis_mode": mfdn.config.BasisMode.kDirect,
+    "basis_mode": mfdn.modes.BasisMode.kDirect,
     "hw": 20.,
 
     # transformation parameters
@@ -55,8 +55,8 @@ task = {
     "target_truncation": None,
 
     # traditional oscillator many-body truncation
-    "sp_truncation_mode": mfdn.config.SingleParticleTruncationMode.kTriangular,
-    "mb_truncation_mode": mfdn.config.ManyBodyTruncationMode.kWeightMax,
+    "sp_truncation_mode": mfdn.modes.SingleParticleTruncationMode.kTriangular,
+    "mb_truncation_mode": mfdn.modes.ManyBodyTruncationMode.kWeightMax,
     "truncation_parameters": {
         "sp_weight_max": 2.1,
         "mb_weight_max": 2.1,

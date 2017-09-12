@@ -17,13 +17,14 @@ University of Notre Dame
   + Rename set_up_orbitals_natorb() -> set_up_natural_orbitals().
   + Add set_up_orbitals_triangular().
   + Add set_up_orbitals() dispatch function.
+- 09/12/17 (pjf): Update for config -> modes + environ split.
 """
 import math
 
 import mcscript
 import mcscript.exception
 
-from . import config
+from . import modes, environ
 
 
 def set_up_interaction_orbitals(task, postfix=""):
@@ -36,19 +37,19 @@ def set_up_interaction_orbitals(task, postfix=""):
     # generate orbitals -- interaction bases
     mcscript.call(
         [
-            config.environ.shell_filename("orbital-gen"),
+            environ.environ.shell_filename("orbital-gen"),
             "--oscillator",
             "{truncation_int[1]:d}".format(**task),
-            "{:s}".format(config.filenames.orbitals_int_filename(postfix))
+            "{:s}".format(environ.filenames.orbitals_int_filename(postfix))
         ]
     )
     if task["use_coulomb"]:
         mcscript.call(
             [
-                config.environ.shell_filename("orbital-gen"),
+                environ.environ.shell_filename("orbital-gen"),
                 "--oscillator",
                 "{truncation_coul[1]:d}".format(**task),
-                "{:s}".format(config.filenames.orbitals_coul_filename(postfix))
+                "{:s}".format(environ.filenames.orbitals_coul_filename(postfix))
             ]
         )
 
@@ -61,29 +62,29 @@ def set_up_orbitals_Nmax(task, postfix=""):
         postfix (string, optional): identifier to add to generated files
     """
     # validate truncation mode
-    if task["sp_truncation_mode"] is not config.SingleParticleTruncationMode.kNmax:
-        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(config.SingleParticleTruncationMode.kNmax, **task))
+    if task["sp_truncation_mode"] is not modes.SingleParticleTruncationMode.kNmax:
+        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(modes.SingleParticleTruncationMode.kNmax, **task))
 
     # generate orbitals -- target basis
     truncation_parameters = task["truncation_parameters"]
-    if task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kNmax:
+    if task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kNmax:
         Nmax_orb = truncation_parameters["Nmax"] + truncation_parameters["Nv"]
-    elif task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kFCI:
+    elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
         Nmax_orb = truncation_parameters["Nmax"]
     mcscript.call(
         [
-            config.environ.shell_filename("orbital-gen"),
+            environ.environ.shell_filename("orbital-gen"),
             "--oscillator",
             "{Nmax_orb:d}".format(Nmax_orb=Nmax_orb),
-            "{:s}".format(config.filenames.orbitals_filename(postfix))
+            "{:s}".format(environ.filenames.orbitals_filename(postfix))
         ]
     )
     mcscript.call(
         [
-            config.environ.shell_filename("radial-gen"),
+            environ.environ.shell_filename("radial-gen"),
             "--identity",
-            config.filenames.orbitals_filename(postfix),
-            config.filenames.radial_xform_filename(postfix)
+            environ.filenames.orbitals_filename(postfix),
+            environ.filenames.radial_xform_filename(postfix)
         ]
     )
 
@@ -96,27 +97,27 @@ def set_up_orbitals_triangular(task, postfix=""):
         postfix (string, optional): identifier to add to generated files
     """
     # validate truncation mode
-    if task["sp_truncation_mode"] is not config.SingleParticleTruncationMode.kTriangular:
-        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(config.SingleParticleTruncationMode.kTriangular, **task))
+    if task["sp_truncation_mode"] is not modes.SingleParticleTruncationMode.kTriangular:
+        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(modes.SingleParticleTruncationMode.kTriangular, **task))
 
     # generate orbitals -- target basis
     truncation_parameters = task["truncation_parameters"]
     mcscript.call(
         [
-            config.environ.shell_filename("orbital-gen"),
+            environ.environ.shell_filename("orbital-gen"),
             "--triangular",
             "{sp_weight_max:f}".format(**truncation_parameters),
             "{n_coeff:f}".format(**truncation_parameters),
             "{l_coeff:f}".format(**truncation_parameters),
-            "{:s}".format(config.filenames.orbitals_filename(postfix))
+            "{:s}".format(environ.filenames.orbitals_filename(postfix))
         ]
     )
     mcscript.call(
         [
-            config.environ.shell_filename("radial-gen"),
+            environ.environ.shell_filename("radial-gen"),
             "--identity",
-            config.filenames.orbitals_filename(postfix),
-            config.filenames.radial_xform_filename(postfix)
+            environ.filenames.orbitals_filename(postfix),
+            environ.filenames.radial_xform_filename(postfix)
         ]
     )
 
@@ -129,8 +130,8 @@ def set_up_orbitals(task, postfix=""):
         postfix (string, optional): identifier to add to generated files
     """
     target_orbital_set_up_functions = {
-        config.SingleParticleTruncationMode.kNmax: set_up_orbitals_Nmax,
-        config.SingleParticleTruncationMode.kTriangular: set_up_orbitals_triangular,
+        modes.SingleParticleTruncationMode.kNmax: set_up_orbitals_Nmax,
+        modes.SingleParticleTruncationMode.kTriangular: set_up_orbitals_triangular,
     }
 
     # validate truncation mode
@@ -152,8 +153,8 @@ def set_up_natural_orbitals(task, source_postfix, target_postfix):
     truncation.
     """
     # validate truncation mode
-    if task["sp_truncation_mode"] is not config.SingleParticleTruncationMode.kNmax:
-        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(config.SingleParticleTruncationMode.kNmax, **task))
+    if task["sp_truncation_mode"] is not modes.SingleParticleTruncationMode.kNmax:
+        raise ValueError("expecting truncation_mode to be {} but found {truncation_mode}".format(modes.SingleParticleTruncationMode.kNmax, **task))
 
     # validate natural orbitals enabled
     if not task.get("natural_orbitals"):
@@ -161,12 +162,12 @@ def set_up_natural_orbitals(task, source_postfix, target_postfix):
 
     mcscript.call(
         [
-            config.environ.shell_filename("natorb-gen"),
-            config.filenames.orbitals_filename(source_postfix),
-            config.filenames.natorb_info_filename(source_postfix),
-            config.filenames.natorb_obdme_filename(source_postfix),
-            config.filenames.natorb_xform_filename(target_postfix),
-            config.filenames.orbitals_filename(target_postfix)
+            environ.environ.shell_filename("natorb-gen"),
+            environ.filenames.orbitals_filename(source_postfix),
+            environ.filenames.natorb_info_filename(source_postfix),
+            environ.filenames.natorb_obdme_filename(source_postfix),
+            environ.filenames.natorb_xform_filename(target_postfix),
+            environ.filenames.orbitals_filename(target_postfix)
         ]
     )
 
@@ -183,7 +184,7 @@ def set_up_radial_analytic(task, postfix=""):
         postfix (string, optional): identifier to add to generated files
     """
     # validate basis mode
-    if (task["basis_mode"] not in {config.BasisMode.kDirect, config.BasisMode.kDilated}):  # no config.BasisMode.kGeneric yet
+    if (task["basis_mode"] not in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):  # no modes.BasisMode.kGeneric yet
         raise ValueError("invalid basis mode {basis_mode}".format(**task))
 
     # basis radial code -- expected by radial_utils codes
@@ -194,26 +195,26 @@ def set_up_radial_analytic(task, postfix=""):
         for power in [1, 2]:
             mcscript.call(
                 [
-                    config.environ.shell_filename("radial-gen"),
+                    environ.environ.shell_filename("radial-gen"),
                     "--kinematic",
                     "{:s}".format(operator_type),
                     "{:d}".format(power),
                     basis_radial_code,
-                    config.filenames.orbitals_filename(postfix),
-                    config.filenames.radial_me_filename(postfix, operator_type, power)
+                    environ.filenames.orbitals_filename(postfix),
+                    environ.filenames.radial_me_filename(postfix, operator_type, power)
                 ],
                 mode=mcscript.CallMode.kSerial
             )
 
     # generate radial overlaps -- generate trivial identities if applicable
-    if (task["basis_mode"] in {config.BasisMode.kDirect}):
+    if (task["basis_mode"] in {modes.BasisMode.kDirect}):
         mcscript.call(
             [
-                config.environ.shell_filename("radial-gen"),
+                environ.environ.shell_filename("radial-gen"),
                 "--identity",
-                config.filenames.orbitals_int_filename(postfix),
-                config.filenames.orbitals_filename(postfix),
-                config.filenames.radial_olap_int_filename(postfix)
+                environ.filenames.orbitals_int_filename(postfix),
+                environ.filenames.orbitals_filename(postfix),
+                environ.filenames.radial_olap_int_filename(postfix)
             ],
             mode=mcscript.CallMode.kSerial
         )
@@ -221,25 +222,25 @@ def set_up_radial_analytic(task, postfix=""):
         b_ratio = math.sqrt(task["hw_int"]/task["hw"])
         mcscript.call(
             [
-                config.environ.shell_filename("radial-gen"),
+                environ.environ.shell_filename("radial-gen"),
                 "--overlaps",
                 "{:g}".format(b_ratio),
                 basis_radial_code,
-                config.filenames.orbitals_int_filename(postfix),
-                config.filenames.orbitals_filename(postfix),
-                config.filenames.radial_olap_int_filename(postfix)
+                environ.filenames.orbitals_int_filename(postfix),
+                environ.filenames.orbitals_filename(postfix),
+                environ.filenames.radial_olap_int_filename(postfix)
             ],
             mode=mcscript.CallMode.kSerial
         )
     if (task["use_coulomb"]):
-        if (task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated}):
+        if (task["basis_mode"] in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):
             mcscript.call(
                 [
-                    config.environ.shell_filename("radial-gen"),
+                    environ.environ.shell_filename("radial-gen"),
                     "--identity",
-                    config.filenames.orbitals_coul_filename(postfix),
-                    config.filenames.orbitals_filename(postfix),
-                    config.filenames.radial_olap_coul_filename(postfix)
+                    environ.filenames.orbitals_coul_filename(postfix),
+                    environ.filenames.orbitals_filename(postfix),
+                    environ.filenames.radial_olap_coul_filename(postfix)
                 ],
                 mode=mcscript.CallMode.kSerial
             )
@@ -250,13 +251,13 @@ def set_up_radial_analytic(task, postfix=""):
                 b_ratio = math.sqrt(task["hw_coul_rescaled"]/task["hw"])
             mcscript.call(
                 [
-                    config.environ.shell_filename("radial-gen"),
+                    environ.environ.shell_filename("radial-gen"),
                     "--overlaps",
                     "{:g}".format(b_ratio),
                     basis_radial_code,
-                    config.filenames.orbitals_coul_filename(postfix),
-                    config.filenames.orbitals_filename(postfix),
-                    config.filenames.radial_olap_coul_filename(postfix)
+                    environ.filenames.orbitals_coul_filename(postfix),
+                    environ.filenames.orbitals_filename(postfix),
+                    environ.filenames.radial_olap_coul_filename(postfix)
                 ],
                 mode=mcscript.CallMode.kSerial
             )
@@ -279,30 +280,30 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
     # compose radial transform
     mcscript.call(
         [
-            config.environ.shell_filename("radial-compose"),
-            config.filenames.radial_xform_filename(source_postfix),
-            config.filenames.natorb_xform_filename(target_postfix),
-            config.filenames.radial_xform_filename(target_postfix)
+            environ.environ.shell_filename("radial-compose"),
+            environ.filenames.radial_xform_filename(source_postfix),
+            environ.filenames.natorb_xform_filename(target_postfix),
+            environ.filenames.radial_xform_filename(target_postfix)
         ]
     )
 
     # compose interaction transform
     mcscript.call(
         [
-            config.environ.shell_filename("radial-compose"),
-            config.filenames.radial_olap_int_filename(source_postfix),
-            config.filenames.natorb_xform_filename(target_postfix),
-            config.filenames.radial_olap_int_filename(target_postfix)
+            environ.environ.shell_filename("radial-compose"),
+            environ.filenames.radial_olap_int_filename(source_postfix),
+            environ.filenames.natorb_xform_filename(target_postfix),
+            environ.filenames.radial_olap_int_filename(target_postfix)
         ]
     )
 
     # compose Coulomb transform
     mcscript.call(
         [
-            config.environ.shell_filename("radial-compose"),
-            config.filenames.radial_olap_coul_filename(source_postfix),
-            config.filenames.natorb_xform_filename(target_postfix),
-            config.filenames.radial_olap_coul_filename(target_postfix)
+            environ.environ.shell_filename("radial-compose"),
+            environ.filenames.radial_olap_coul_filename(source_postfix),
+            environ.filenames.natorb_xform_filename(target_postfix),
+            environ.filenames.radial_olap_coul_filename(target_postfix)
         ],
         mode=mcscript.CallMode.kSerial
     )
@@ -312,11 +313,11 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
         for power in [1, 2]:
             mcscript.call(
                 [
-                    config.environ.shell_filename("radial-xform"),
-                    config.filenames.orbitals_filename(target_postfix),
-                    config.filenames.natorb_xform_filename(target_postfix),
-                    config.filenames.radial_me_filename(source_postfix, operator_type, power),
-                    config.filenames.radial_me_filename(target_postfix, operator_type, power)
+                    environ.environ.shell_filename("radial-xform"),
+                    environ.filenames.orbitals_filename(target_postfix),
+                    environ.filenames.natorb_xform_filename(target_postfix),
+                    environ.filenames.radial_me_filename(source_postfix, operator_type, power),
+                    environ.filenames.radial_me_filename(target_postfix, operator_type, power)
                 ],
                 mode=mcscript.CallMode.kSerial
             )

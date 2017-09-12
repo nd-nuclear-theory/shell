@@ -21,13 +21,14 @@ University of Notre Dame
 - 08/11/17 (pjf):
   + Use new TruncationModes.
   + Fix FCI truncation.
+- 09/12/17 (pjf): Update for config -> modes + environ split.
 """
 import os
 import glob
 
 import mcscript
 
-from . import utils, config
+from . import utils, modes, environ
 
 
 def run_mfdn(task, postfix=""):
@@ -41,8 +42,8 @@ def run_mfdn(task, postfix=""):
         mcscript.exception.ScriptError: if MFDn output not found
     """
     # validate truncation modes
-    allowed_sp_truncations = (config.SingleParticleTruncationMode.kNmax,)
-    allowed_mb_truncations = (config.ManyBodyTruncationMode.kNmax, config.ManyBodyTruncationMode.kFCI)
+    allowed_sp_truncations = (modes.SingleParticleTruncationMode.kNmax,)
+    allowed_mb_truncations = (modes.ManyBodyTruncationMode.kNmax, modes.ManyBodyTruncationMode.kFCI)
     if task["sp_truncation_mode"] not in allowed_sp_truncations:
         raise ValueError("expecting sp_truncation_mode to be one of {} but found {sp_truncation_mode}".format(allowed_sp_truncations, **task))
     if task["mb_truncation_mode"] not in allowed_mb_truncations:
@@ -54,14 +55,14 @@ def run_mfdn(task, postfix=""):
     # base parameters
     truncation_parameters = task["truncation_parameters"]
     twice_Mj = int(2*task["Mj"])
-    if task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kNmax:
+    if task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kNmax:
         Nmax_orb = truncation_parameters["Nmax"] + truncation_parameters["Nv"]
         Nmax = truncation_parameters["Nmax"]
-    elif task["mb_truncation_mode"] == config.ManyBodyTruncationMode.kFCI:
+    elif task["mb_truncation_mode"] == modes.ManyBodyTruncationMode.kFCI:
         Nmax_orb = truncation_parameters["Nmax"]
         Nmax = sum(task["nuclide"]) * Nmax_orb
     Nshell = Nmax_orb+1
-    if (task["basis_mode"] in {config.BasisMode.kDirect, config.BasisMode.kDilated}):
+    if (task["basis_mode"] in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):
         hw_for_trans = task["hw"]
     else:
         hw_for_trans = 0  # disable MFDn hard-coded oscillator one-body observables
@@ -158,7 +159,7 @@ def run_mfdn(task, postfix=""):
     # invoke MFDn
     mcscript.call(
         [
-            config.environ.mfdn_filename(task["mfdn_executable"])
+            environ.environ.mfdn_filename(task["mfdn_executable"])
         ],
         mode=mcscript.CallMode.kHybrid,
         check_return=True
@@ -201,7 +202,7 @@ def save_mfdn_output(task, postfix=""):
             [
                 "cp", "--verbose",
                 "work/{}".format(obdme_info_filename),
-                config.filenames.natorb_info_filename(postfix)
+                environ.filenames.natorb_info_filename(postfix)
             ]
         )
         obdme_filename = glob.glob("work/mfdn.statrobdme.seq{:03d}*".format(task["natorb_base_state"]))
@@ -209,7 +210,7 @@ def save_mfdn_output(task, postfix=""):
             [
                 "cp", "--verbose",
                 obdme_filename[0],
-                config.filenames.natorb_obdme_filename(postfix)
+                environ.filenames.natorb_obdme_filename(postfix)
             ]
         )
 
@@ -217,34 +218,34 @@ def save_mfdn_output(task, postfix=""):
     print("Saving full output files...")
     # logging
     archive_file_list = [
-        config.filenames.h2mixer_filename(postfix),
+        environ.filenames.h2mixer_filename(postfix),
         "tbo_names{:s}.dat".format(postfix)
         ]
     # orbital information
     archive_file_list += [
-        config.filenames.orbitals_int_filename(postfix),
-        config.filenames.orbitals_filename(postfix),
+        environ.filenames.orbitals_int_filename(postfix),
+        environ.filenames.orbitals_filename(postfix),
         ]
     # transformation information
     archive_file_list += [
-        config.filenames.radial_xform_filename(postfix),
-        # config.filenames.radial_me_filename(postfix, operator_type, power),
-        config.filenames.radial_olap_int_filename(postfix),
+        environ.filenames.radial_xform_filename(postfix),
+        # environ.filenames.radial_me_filename(postfix, operator_type, power),
+        environ.filenames.radial_olap_int_filename(postfix),
         ]
     # Coulomb information:
     if task["use_coulomb"]:
         archive_file_list += [
-            config.filenames.orbitals_coul_filename(postfix),
-            config.filenames.radial_olap_coul_filename(postfix),
+            environ.filenames.orbitals_coul_filename(postfix),
+            environ.filenames.radial_olap_coul_filename(postfix),
         ]
     # natural orbital information
     if natural_orbitals:
         archive_file_list += [
-            config.filenames.natorb_info_filename(postfix),
-            config.filenames.natorb_obdme_filename(postfix),
+            environ.filenames.natorb_info_filename(postfix),
+            environ.filenames.natorb_obdme_filename(postfix),
             ]
         # glob for natural orbital xform
-        archive_file_list += glob.glob(config.filenames.natorb_xform_filename(postfix))
+        archive_file_list += glob.glob(environ.filenames.natorb_xform_filename(postfix))
     # MFDn output
     archive_file_list += [
         "work/mfdn.dat", "work/mfdn.out", "work/mfdn.res",

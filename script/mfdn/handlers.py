@@ -9,13 +9,14 @@ University of Notre Dame
 - 06/07/17 (pjf): Clean up style.
 - 06/22/17 (pjf): Update references to mcscript.exception.ScriptError.
 - 07/31/17 (pjf): Move mfdn driver from handler argument to task dictionary.
+- 09/12/17 (pjf): Update for config -> modes + environ split.
 """
 import os
 import glob
 import mcscript
 
 from . import (
-    config,
+    modes,
     radial,
     tbme,
     utils,
@@ -71,7 +72,7 @@ def task_handler_natorb(task):
     task_handler_oscillator(task, postfix=utils.natural_orbital_indicator(0))
 
     # set correct basis mode
-    task["basis_mode"] = config.BasisMode.kGeneric
+    task["basis_mode"] = modes.BasisMode.kGeneric
     radial.set_up_natural_orbitals(task=task, source_postfix=utils.natural_orbital_indicator(0), target_postfix=utils.natural_orbital_indicator(1))
     radial.set_up_radial_natorb(task=task, source_postfix=utils.natural_orbital_indicator(0), target_postfix=utils.natural_orbital_indicator(1))
     tbme.generate_tbme(task=task, postfix=utils.natural_orbital_indicator(1))
