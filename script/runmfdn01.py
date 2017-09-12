@@ -88,7 +88,7 @@ task = {
 
     # version parameters
     "h2_format": 0,
-    "mfdn_executable": "mfdn-v14-beta06-newmake/xmfdn-h2-lan",
+    "mfdn_executable": "v14-beta06/xmfdn-h2-lan",
     "mfdn_driver": mfdn.mfdn_v14,
 
 }

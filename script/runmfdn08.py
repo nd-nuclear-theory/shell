@@ -103,7 +103,7 @@ tasks = [{
 
     # version parameters
     "h2_format": 15099,
-    "mfdn_executable": "mfdn-v15-beta01/xmfdn-h2-lan",
+    "mfdn_executable": "v15-beta01/xmfdn-h2-lan",
     "mfdn_driver": mfdn.mfdn_v15,
 
     }
