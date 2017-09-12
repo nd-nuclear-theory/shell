@@ -107,6 +107,9 @@ RemappedMatrixJJJPN(
       const shell::TwoBodyMapping& two_body_mapping,
       const Eigen::MatrixXd& source_matrix
   );
+// Copy matrix elements from source block to target block, with
+// remapping of state indexing.
+
 
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////

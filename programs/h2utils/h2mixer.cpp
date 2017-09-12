@@ -752,7 +752,7 @@ void GenerateInputSources(
 
       // remap input matrix to target indexing
       Eigen::MatrixXd matrix
-        = RemappedMatrixJJJPN(
+        = shell::RemappedMatrixJJJPN(
             input_sector,
             target_sector,
             input_channel.two_body_mapping,
@@ -896,7 +896,7 @@ void GenerateXformSources(
       //
       // This is the "truncation cut" on the two-body transformation.
       Eigen::MatrixXd pre_xform_matrix
-        = RemappedMatrixJJJPN(
+        = shell::RemappedMatrixJJJPN(
             input_sector,
             pre_xform_sector,
             xform_channel.pre_xform_two_body_mapping,
