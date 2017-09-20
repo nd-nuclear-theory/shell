@@ -35,7 +35,7 @@ mfdn.environ.environ.interaction_run_list = [
 
 task = {
     # nuclide parameters
-    "nuclide": (2, 2),
+    "nuclide": (2, 4),
 
     # Hamiltonian parameters
     "interaction": "JISP16",
@@ -63,7 +63,7 @@ task = {
     "sp_truncation_mode": mfdn.modes.SingleParticleTruncationMode.kNmax,
     "mb_truncation_mode": mfdn.modes.ManyBodyTruncationMode.kNmax,
     "truncation_parameters": {
-        "Nv": 0,
+        "Nv": 1,
         "Nmax": 2,
         "Nstep": 2,
         },
@@ -85,6 +85,10 @@ task = {
     # two-body observables
     ## "observable_sets": ["H-components","am-sqr"],
     "observable_sets": ["H-components"],
+    "observables": {
+        "tbme-T": mfdn.operators.T(),
+        "tbme-Tz": mfdn.operators.Tz()
+        },
 
     # version parameters
     "h2_format": 0,
@@ -117,7 +121,7 @@ mfdn.mfdn_v14.save_mfdn_output(task)
 ##     tasks,
 ##     task_descriptor=mfdn.descriptors.task_descriptor_7,
 ##     task_pool=task_pool,
-##     phase_handler_list=[mfdn_h2.task_handler_ho]
+##     phase_handler_list=[mfdn.handlers.task_handler_oscillator]
 ##     )
 
 ################################################################
