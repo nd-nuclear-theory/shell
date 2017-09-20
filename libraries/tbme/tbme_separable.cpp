@@ -790,7 +790,7 @@ namespace shell {
         matrix_element += static_cast<double>(a.Tz());
       }
     } else if (operator_type == IsospinOperatorType::kRaising) {
-      if ((jb == ja) && (lb == la) && (Tza + 1 == Tzb)) {
+      if ((jb == ja) && (lb == la) && (Tzb == Tza + 1)) {
         matrix_element += basis::MatrixElementLJPN(
             overlap_orbital_space, overlap_orbital_space,
             overlap_sectors, overlap_matrices,
@@ -798,7 +798,7 @@ namespace shell {
           );
       }
     } else if (operator_type == IsospinOperatorType::kLowering) {
-      if ((jb == ja) && (lb == la) && (Tza - 1 == Tzb)) {
+      if ((jb == ja) && (lb == la) && (Tzb == Tza - 1)) {
         matrix_element += basis::MatrixElementLJPN(
             overlap_orbital_space, overlap_orbital_space,
             overlap_sectors, overlap_matrices,
@@ -1063,26 +1063,28 @@ namespace shell {
             );
           matrix_element_tb
             += IsospinDotTBME(
-              IsospinOperatorType::kLowering, IsospinOperatorType::kRaising,
-              overlap_orbital_space, overlap_sectors, overlap_matrices,
-              bra, ket
-            );
-            std::cout
-              << std::endl
-              << fmt::format(
-                  "IsospinMatrixJJJPN {} {} J {} => {}",
-                  bra.LabelStr(),ket.LabelStr(),J,
-                  matrix_element_tb
-                )
-              << std::endl;
+                IsospinOperatorType::kLowering, IsospinOperatorType::kRaising,
+                overlap_orbital_space, overlap_sectors, overlap_matrices,
+                bra, ket
+              );
+          std::cout
+            << std::endl
+            << fmt::format(
+                "IsospinMatrixJJJPN {} {} J {} => {}",
+                bra.LabelStr(),ket.LabelStr(),J,
+                matrix_element_tb
+              )
+            << std::endl;
         }
         double matrix_element = 1./(A-1)*matrix_element_ob + matrix_element_tb;
 
         // convert to NAS if needed
-        if (bra.index1()==bra.index2())
-          matrix_element *= 1/(sqrt(2.));
-        if (ket.index1()==ket.index2())
-          matrix_element *= 1/(sqrt(2.));
+        if (bra.two_body_species()!=basis::TwoBodySpeciesPN::kPN)
+          if (bra.index1()==bra.index2())
+            matrix_element *= 1/(sqrt(2.));
+        if (ket.two_body_species()!=basis::TwoBodySpeciesPN::kPN)
+          if (ket.index1()==ket.index2())
+            matrix_element *= 1/(sqrt(2.));
 
         // store matrix element
         matrix(bra_index,ket_index) = matrix_element;
