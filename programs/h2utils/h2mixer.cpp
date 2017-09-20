@@ -65,8 +65,8 @@
 // radial operator containers
 ////////////////////////////////////////////////////////////////
 
-typedef std::tuple<shell::RadialOperatorType,int> RadialOperatorLabels;
-// Label for radial operator as (type,power) of r or k.
+typedef std::tuple<shell::RadialOperatorType,int,int> RadialOperatorLabels;
+// Label for radial operator as (type,power,Tz0) of r, k, or o.
 
 struct RadialOperatorData
 // Indexing and matrix elements for a radial operator or radial overlaps.
@@ -167,6 +167,14 @@ std::map<std::string,AngularMomentumOperatorDefinition> kAngularMomentumOperator
         // {"Jp",AngularMomentumOperatorDefinition(shell::AngularMomentumOperatorFamily::kTotal,shell::AngularMomentumOperatorSpecies::kP)},
         // {"Jn",AngularMomentumOperatorDefinition(shell::AngularMomentumOperatorFamily::kTotal,shell::AngularMomentumOperatorSpecies::kN)},
         {"J",AngularMomentumOperatorDefinition(shell::AngularMomentumOperatorFamily::kTotal,shell::AngularMomentumOperatorSpecies::kTotal)}
+      }
+  );
+
+typedef std::tuple<shell::IsospinOperatorType> IsospinOperatorDefinition;
+std::map<std::string,IsospinOperatorDefinition> kIsospinOperatorDefinitions(
+      {
+        {"T",IsospinOperatorDefinition(shell::IsospinOperatorType::kSquared)},
+        {"Tz",IsospinOperatorDefinition(shell::IsospinOperatorType::kTz)},
       }
   );
 
@@ -318,7 +326,7 @@ void ReadParameters(
             run_parameters.truncation_rank = basis::Rank::kTwoBody;
           else
             ParsingError(line_count,line,"unrecognized truncation rank code");
-          
+
           // store corresponding max weights
           run_parameters.weight_max
             = basis::WeightMax(run_parameters.truncation_rank,run_parameters.truncation_cutoff);
@@ -344,14 +352,29 @@ void ReadParameters(
           int power;
           line_stream >> type_code >> power >> filename;
           ParsingCheck(line_stream,line_count,line);
-          
+
           // cast operator type code to enum
           if (!((type_code=="r")||(type_code=="k")))
             ParsingError(line_count,line,"Unrecognized radial operator type code");
+          int Tz0 = 0;
           shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType(type_code[0]);
 
           // store radial operator information to map
-          RadialOperatorLabels labels(radial_operator_type,power);
+          RadialOperatorLabels labels(radial_operator_type,power,Tz0);
+          radial_operators.insert({labels,RadialOperatorData(labels,filename)});
+        }
+      else if (keyword=="define-pn-overlaps")
+        {
+          std::string filename;
+          line_stream >> filename;
+          ParsingCheck(line_stream,line_count,line);
+
+          shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kO;
+          int power = 0;
+          int Tz0 = 1;
+
+          // store radial operator information to map
+          RadialOperatorLabels labels(radial_operator_type,power,Tz0);
           radial_operators.insert({labels,RadialOperatorData(labels,filename)});
         }
       else if (keyword=="define-source")
@@ -377,9 +400,10 @@ void ReadParameters(
                       kIdentityOperatorIdSet.count(id)
                       || kKinematicOperatorDefinitions.count(id)
                       || kAngularMomentumOperatorDefinitions.count(id)
+                      || kIsospinOperatorDefinitions.count(id)
                     ))
                 ParsingError(line_count,line,"Unrecognized operator ID");
-          
+
               operator_channels.emplace_back(id);
             }
           else if (sub_keyword=="xform")
@@ -442,6 +466,7 @@ void InitializeRadialOperators(RadialOperatorMap& radial_operators)
       RadialOperatorData& radial_operator_data = labels_data.second;
       shell::RadialOperatorType radial_operator_type = std::get<0>(radial_operator_data.labels);
       int radial_operator_power = std::get<1>(radial_operator_data.labels);
+      int radial_operator_Tz0 = std::get<2>(radial_operator_data.labels);
       std::cout
         << fmt::format(
             "Reading radial matrix elements for operator {}^{} from {}...",
@@ -459,11 +484,11 @@ void InitializeRadialOperators(RadialOperatorMap& radial_operators)
         );
       assert(radial_operator_type==radial_operator_stream.radial_operator_type());
       assert(radial_operator_power==radial_operator_data.sectors.l0max());
-      assert(radial_operator_data.sectors.Tz0()==0);
+      assert(radial_operator_Tz0==radial_operator_data.sectors.Tz0());
 
       // read matrices
       radial_operator_stream.Read(radial_operator_data.matrices);
-      
+
       // close file
       radial_operator_stream.Close();
 
@@ -609,8 +634,9 @@ void InitializeXformChannels(
       // set up radial operator data
       shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kO;
       int radial_operator_power = 0;
-      radial_operator_data = 
-        RadialOperatorData(RadialOperatorLabels(radial_operator_type,radial_operator_power),xform_channel.olap_filename);
+      int radial_operator_Tz0 = 0;
+      radial_operator_data =
+        RadialOperatorData(RadialOperatorLabels(radial_operator_type,radial_operator_power,radial_operator_Tz0),xform_channel.olap_filename);
 
       // open radial operator file
       shell::InRadialStream radial_operator_stream(radial_operator_data.filename);
@@ -625,7 +651,7 @@ void InitializeXformChannels(
 
       // read matrices
       radial_operator_stream.Read(radial_operator_data.matrices);
-      
+
       // close file
       radial_operator_stream.Close();
 
@@ -664,7 +690,7 @@ void InitializeXformChannels(
         }
 
       std::cout << std::endl;
-        
+
 
     }
 }
@@ -706,7 +732,7 @@ void GenerateInputSources(
   // iterate over channels
   for (auto& input_channel : input_channels)
     {
-            
+
       // locate corresponding input sector
       int input_bra_subspace_index
         = input_channel.stream_ptr->space().LookUpSubspaceIndex(target_sector.bra_subspace().labels());
@@ -777,10 +803,10 @@ void GenerateOperatorSources(
   // iterate over channels
   for (auto& operator_channel : operator_channels)
     {
-            
+
       // read matrix for sector
       Eigen::MatrixXd operator_matrix;
-      
+
       if (operator_channel.id=="identity")
         // identity
         {
@@ -797,9 +823,10 @@ void GenerateOperatorSources(
           shell::KinematicOperatorType kinematic_operator_type;
           shell::RadialOperatorType radial_operator_type;
           int radial_operator_power;
+          int Tz0 = 0;
           std::tie(kinematic_operator_type,radial_operator_type,radial_operator_power)
             = kKinematicOperatorDefinitions.at(operator_channel.id);
-          RadialOperatorLabels radial_operator_labels = RadialOperatorLabels(radial_operator_type,radial_operator_power);
+          RadialOperatorLabels radial_operator_labels = RadialOperatorLabels(radial_operator_type,radial_operator_power,Tz0);
           const RadialOperatorData& radial_operator_data = radial_operators[radial_operator_labels];
 
           // std::cout
@@ -826,6 +853,23 @@ void GenerateOperatorSources(
               target_sector,run_parameters.A
             );
         }
+      else if (kIsospinOperatorDefinitions.count(operator_channel.id))
+        // isospin square or projection
+        {
+          shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kO;
+          shell::IsospinOperatorType operator_type;
+          int radial_operator_power = 0;
+          int Tz0 = 1;
+          std::tie(operator_type)
+            = kIsospinOperatorDefinitions.at(operator_channel.id);
+          RadialOperatorLabels pn_overlap_labels = RadialOperatorLabels(radial_operator_type,radial_operator_power,Tz0);
+          const RadialOperatorData& pn_overlap_data = radial_operators[pn_overlap_labels];
+          operator_matrix = shell::IsospinMatrixJJJPN(
+              pn_overlap_data.ket_orbital_space, pn_overlap_data.sectors, pn_overlap_data.matrices,
+              operator_type,
+              target_sector, run_parameters.A
+            );
+        }
 
       // save result
       // std::cout << fmt::format("Saving {}...",operator_channel.id) << std::endl;
@@ -844,7 +888,7 @@ void GenerateXformSources(
   // iterate over channels
   for (auto& xform_channel : xform_channels)
     {
-            
+
       // locate corresponding input sector
       int input_bra_subspace_index
         = xform_channel.stream_ptr->space().LookUpSubspaceIndex(target_sector.bra_subspace().labels());
@@ -937,7 +981,7 @@ void GenerateTargets(
         {
           const std::string& source_id = id_coefficient.first;
           double coefficient = id_coefficient.second;
-          
+
           auto pos = source_matrices.find(source_id);
           // std::cout << fmt::format(
           //     "target {} source {} coefficient {} found {}",
@@ -1031,7 +1075,7 @@ int main(int argc, char **argv)
   ReadParameters(run_parameters,radial_operators,input_channels,operator_channels,xform_channels,target_channels);
 
   // set up parallelization
-  
+
   // for now, disable Eigen internal parallelization (but we will want it later for the matmul)
   std::cout
     << fmt::format("Parallelization: max_threads {}, num_procs {}",
@@ -1072,7 +1116,7 @@ int main(int argc, char **argv)
       // alias sector
       const auto& target_sector = target_indexing.sectors.GetSector(sector_index);
 
-      
+
       // generate sources
       std::map<std::string,Eigen::MatrixXd> source_matrices;  // map id->matrix
       GenerateInputSources(input_channels,source_matrices,target_sector);

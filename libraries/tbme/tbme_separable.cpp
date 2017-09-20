@@ -378,8 +378,8 @@ namespace shell {
       );
     if (two_body_species!=basis::TwoBodySpeciesPN::kPN)
       {
-	int phase = -ParitySign(J-a.j()-b.j());
-	matrix_element += phase * KinematicVectorDotTBMEProduct(
+        int phase = -ParitySign(J-a.j()-b.j());
+        matrix_element += phase * KinematicVectorDotTBMEProduct(
             radial_orbital_space,radial_sectors,radial_matrices,
             momentum_space,
             c,d,b,a,J
@@ -426,21 +426,21 @@ namespace shell {
 #pragma omp parallel for collapse(2) if (0)  // disabled until have chance to profile
     for (int bra_index = 0; bra_index < subspace_size; ++bra_index)
       for (int ket_index = 0; ket_index < subspace_size; ++ket_index)
-	{
+        {
 
           // diagonal sector: restrict to upper triangle
           // if (sector.IsDiagonal())
           if (!(bra_index<=ket_index))
             continue;
 
-	  // construct states
-	  basis::TwoBodyStateJJJPN bra(subspace,bra_index);
-	  basis::TwoBodyStateJJJPN ket(subspace,ket_index);
+          // construct states
+          basis::TwoBodyStateJJJPN bra(subspace,bra_index);
+          basis::TwoBodyStateJJJPN ket(subspace,ket_index);
 
-	  // calculate matrix element (pn or AS)
-	  double matrix_element;
+          // calculate matrix element (pn or AS)
+          double matrix_element;
           if (kinematic_operator_type==KinematicOperatorType::kUTSqr)
-	    matrix_element = 1./(A-1)*KinematicScalarTBME(
+            matrix_element = 1./(A-1)*KinematicScalarTBME(
                 radial_orbital_space,radial_sectors,radial_matrices,
                 bra,ket
               );
@@ -460,9 +460,9 @@ namespace shell {
                 matrix_element *= 1/(sqrt(2.));
             }
 
-	  // store matrix element
-	  matrix(bra_index,ket_index) = matrix_element;
-	}
+          // store matrix element
+          matrix(bra_index,ket_index) = matrix_element;
+        }
 
     return matrix;
 
@@ -493,18 +493,18 @@ namespace shell {
 
     if ( b == a )
       {
-	if (operator_family == shell::AngularMomentumOperatorFamily::kOrbital)
-	  {
-	    matrix_element += la*(la+1);
-	  }
-	else if (operator_family == shell::AngularMomentumOperatorFamily::kSpin)
-	  {
-	    matrix_element += 3./4.;
-	  }
-	else if (operator_family == shell::AngularMomentumOperatorFamily::kTotal)
-	  {
- 	    matrix_element += double(ja)*(double(ja)+1);
-	  }
+        if (operator_family == shell::AngularMomentumOperatorFamily::kOrbital)
+          {
+            matrix_element += la*(la+1);
+          }
+        else if (operator_family == shell::AngularMomentumOperatorFamily::kSpin)
+          {
+            matrix_element += 3./4.;
+          }
+        else if (operator_family == shell::AngularMomentumOperatorFamily::kTotal)
+          {
+             matrix_element += double(ja)*(double(ja)+1);
+          }
       }
 
     return matrix_element;
@@ -533,22 +533,22 @@ namespace shell {
 
     if ( (nb == na) && (lb == la) )
       {
-  	if (
+          if (
             (operator_family == shell::AngularMomentumOperatorFamily::kOrbital)
             || (operator_family == shell::AngularMomentumOperatorFamily::kTotal)
           )
-  	  {
-  	    int phase = ParitySign(la+ja+HalfInt(3,2));
-  	    matrix_element += Hat(jb)*Hat(ja)*sqrt(la*(la+1)*(2*la+1))*phase*am::Wigner6J(la,la,1,ja,jb,HalfInt(1,2));
-  	  }
-  	if (
+            {
+              int phase = ParitySign(la+ja+HalfInt(3,2));
+              matrix_element += Hat(jb)*Hat(ja)*sqrt(la*(la+1)*(2*la+1))*phase*am::Wigner6J(la,la,1,ja,jb,HalfInt(1,2));
+            }
+          if (
             (operator_family == shell::AngularMomentumOperatorFamily::kSpin)
             || (operator_family == shell::AngularMomentumOperatorFamily::kTotal)
           )
-  	  {
-  	    int phase = ParitySign(la+jb+HalfInt(3,2));
-  	    matrix_element += sqrt(3./2.)*Hat(jb)*Hat(ja)*phase*am::Wigner6J(HalfInt(1,2),HalfInt(1,2),1,ja,jb,la);
-  	  }
+            {
+              int phase = ParitySign(la+jb+HalfInt(3,2));
+              matrix_element += sqrt(3./2.)*Hat(jb)*Hat(ja)*phase*am::Wigner6J(HalfInt(1,2),HalfInt(1,2),1,ja,jb,la);
+            }
       }
 
     return matrix_element;
@@ -584,33 +584,33 @@ namespace shell {
     double matrix_element = 0.;
 
     if (
-	((two_body_species == basis::TwoBodySpeciesPN::kPP) && (operator_species == shell::AngularMomentumOperatorSpecies::kP))
-	|| ((two_body_species == basis::TwoBodySpeciesPN::kNN) && (operator_species == shell::AngularMomentumOperatorSpecies::kN))
+        ((two_body_species == basis::TwoBodySpeciesPN::kPP) && (operator_species == shell::AngularMomentumOperatorSpecies::kP))
+        || ((two_body_species == basis::TwoBodySpeciesPN::kNN) && (operator_species == shell::AngularMomentumOperatorSpecies::kN))
         || ((two_body_species != basis::TwoBodySpeciesPN::kPN) && (operator_species == shell::AngularMomentumOperatorSpecies::kTotal))
-	)
+        )
       {
-	// like-nucleon case
-	//
-	// short circuited to only apply if operator is for same species or is total operator
+        // like-nucleon case
+        //
+        // short circuited to only apply if operator is for same species or is total operator
         if (d == b)
-	  matrix_element += AngularMomentumScalarOBME(operator_family,c,a);
+          matrix_element += AngularMomentumScalarOBME(operator_family,c,a);
         if (c == a)
-	  matrix_element += AngularMomentumScalarOBME(operator_family,d,b);
+          matrix_element += AngularMomentumScalarOBME(operator_family,d,b);
         int phase = - ParitySign(J - a.j() - b.j());
         if (d == a)
-	  matrix_element += phase * AngularMomentumScalarOBME(operator_family,c,b);
+          matrix_element += phase * AngularMomentumScalarOBME(operator_family,c,b);
         if (c == b)
-	  matrix_element += phase * AngularMomentumScalarOBME(operator_family,d,a);
+          matrix_element += phase * AngularMomentumScalarOBME(operator_family,d,a);
       }
     else if (two_body_species == basis::TwoBodySpeciesPN::kPN)
       {
-	// proton-neutron case
+        // proton-neutron case
         if ((d == b) && (operator_species != shell::AngularMomentumOperatorSpecies::kN))
-	  // term only contributes to proton or total operators, not neutron operator
-	  matrix_element += AngularMomentumScalarOBME(operator_family,c,a);
+          // term only contributes to proton or total operators, not neutron operator
+          matrix_element += AngularMomentumScalarOBME(operator_family,c,a);
         if ((c == a) && (operator_species != shell::AngularMomentumOperatorSpecies::kP))
-	  // term only contributes to neutron or total operators, not proton operator
-	  matrix_element += AngularMomentumScalarOBME(operator_family,d,b);
+          // term only contributes to neutron or total operators, not proton operator
+          matrix_element += AngularMomentumScalarOBME(operator_family,d,b);
       }
 
     return matrix_element;
@@ -671,23 +671,23 @@ namespace shell {
     double matrix_element = 0.;
 
     if (
-	((two_body_species == basis::TwoBodySpeciesPN::kPP) && (operator_species == shell::AngularMomentumOperatorSpecies::kP))
-	|| ((two_body_species == basis::TwoBodySpeciesPN::kNN) && (operator_species == shell::AngularMomentumOperatorSpecies::kN))
+        ((two_body_species == basis::TwoBodySpeciesPN::kPP) && (operator_species == shell::AngularMomentumOperatorSpecies::kP))
+        || ((two_body_species == basis::TwoBodySpeciesPN::kNN) && (operator_species == shell::AngularMomentumOperatorSpecies::kN))
         || ((two_body_species != basis::TwoBodySpeciesPN::kPN) && (operator_species == shell::AngularMomentumOperatorSpecies::kTotal))
-	)
+        )
       {
-	// like nucleon case
-	matrix_element += AngularMomentumVectorDotTBMEProduct(operator_family,J,c,d,a,b);
-	int phase = - ParitySign(J - a.j() - b.j());
-	matrix_element += phase * AngularMomentumVectorDotTBMEProduct(operator_family,J,c,d,b,a);
+        // like nucleon case
+        matrix_element += AngularMomentumVectorDotTBMEProduct(operator_family,J,c,d,a,b);
+        int phase = - ParitySign(J - a.j() - b.j());
+        matrix_element += phase * AngularMomentumVectorDotTBMEProduct(operator_family,J,c,d,b,a);
       }
     else if (
         (two_body_species == basis::TwoBodySpeciesPN::kPN)
         && (operator_species == shell::AngularMomentumOperatorSpecies::kTotal)
       )
       {
-	// proton-neutron case
-	matrix_element += AngularMomentumVectorDotTBMEProduct(operator_family,J,c,d,a,b);
+        // proton-neutron case
+        matrix_element += AngularMomentumVectorDotTBMEProduct(operator_family,J,c,d,a,b);
       }
 
     return matrix_element;
@@ -719,23 +719,23 @@ namespace shell {
 #pragma omp parallel for collapse(2) if (0)  // disabled until have chance to profile
     for (int bra_index = 0; bra_index < subspace_size; ++bra_index)
       for (int ket_index = 0; ket_index < subspace_size; ++ket_index)
-	{
+        {
 
           // diagonal sector: restrict to upper triangle
           // if (sector.IsDiagonal())
           if (!(bra_index<=ket_index))
             continue;
 
-	  // construct states
-	  basis::TwoBodyStateJJJPN bra(subspace,bra_index);
-	  basis::TwoBodyStateJJJPN ket(subspace,ket_index);
+          // construct states
+          basis::TwoBodyStateJJJPN bra(subspace,bra_index);
+          basis::TwoBodyStateJJJPN ket(subspace,ket_index);
 
-	  // calculate matrix element (pn or AS)
-	  double matrix_element_t2
-	    = AngularMomentumScalarTBME(operator_family,operator_species,two_body_species,J,bra,ket);
-	  double matrix_element_t1t2
-	    = AngularMomentumVectorDotTBME(operator_family,operator_species,two_body_species,J,bra,ket);
-	  double matrix_element = 1./(A-1)*matrix_element_t2 + 2*matrix_element_t1t2;
+          // calculate matrix element (pn or AS)
+          double matrix_element_t2
+            = AngularMomentumScalarTBME(operator_family,operator_species,two_body_species,J,bra,ket);
+          double matrix_element_t1t2
+            = AngularMomentumVectorDotTBME(operator_family,operator_species,two_body_species,J,bra,ket);
+          double matrix_element = 1./(A-1)*matrix_element_t2 + 2*matrix_element_t1t2;
 
           // convert to NAS if needed
           if (two_body_species!=basis::TwoBodySpeciesPN::kPN)
@@ -746,10 +746,349 @@ namespace shell {
                 matrix_element *= 1/(sqrt(2.));
             }
 
-	  // store matrix element
-	  matrix(bra_index,ket_index) = matrix_element;
-	  // matrix(ket_index,bra_index) = matrix_element;  // lower triangle
-	}
+          // store matrix element
+          matrix(bra_index,ket_index) = matrix_element;
+          // matrix(ket_index,bra_index) = matrix_element;  // lower triangle
+        }
+
+    return matrix;
+  }
+
+
+  ////////////////////////////////////////////////////////////////
+  // isospin operators
+  ////////////////////////////////////////////////////////////////
+
+  double IsospinOBME(
+      IsospinOperatorType operator_type,
+      const basis::OrbitalSpaceLJPN& overlap_orbital_space,
+      const basis::OrbitalSectorsLJPN& overlap_sectors,
+      const basis::OperatorBlocks<double>& overlap_matrices,
+      const basis::OrbitalStatePN& b, const basis::OrbitalStatePN& a
+    )
+  // Give <b|T|a> for a scalar isospin operator, i.e., T = tz, t+, or t-.
+  //
+  // See pjf "isospin" notes.
+  {
+    int na = a.n();
+    int nb = b.n();
+    int la = a.l();
+    int lb = b.l();
+    HalfInt ja = a.j();
+    HalfInt jb = b.j();
+    HalfInt Tza = a.Tz();
+    HalfInt Tzb = b.Tz();
+
+    double matrix_element = 0.;
+
+    if (operator_type == IsospinOperatorType::kSquared) {
+      if ( b == a ) {
+        matrix_element += 3./4.;
+      }
+    } else if (operator_type == IsospinOperatorType::kTz) {
+      if ( b == a ) {
+        matrix_element += static_cast<double>(a.Tz());
+      }
+    } else if (operator_type == IsospinOperatorType::kRaising) {
+      if ((jb == ja) && (lb == la) && (Tza + 1 == Tzb)) {
+        matrix_element += basis::MatrixElementLJPN(
+            overlap_orbital_space, overlap_orbital_space,
+            overlap_sectors, overlap_matrices,
+            b, a
+          );
+      }
+    } else if (operator_type == IsospinOperatorType::kLowering) {
+      if ((jb == ja) && (lb == la) && (Tza - 1 == Tzb)) {
+        matrix_element += basis::MatrixElementLJPN(
+            overlap_orbital_space, overlap_orbital_space,
+            overlap_sectors, overlap_matrices,
+            b, a
+          );
+      }
+    }
+    return matrix_element;
+  }
+
+  double IsospinScalarTBMESum(
+      IsospinOperatorType operator_type,
+      // radial matrix element data
+      const basis::OrbitalSpaceLJPN& overlap_orbital_space,
+      const basis::OrbitalSectorsLJPN& overlap_sectors,
+      const basis::OperatorBlocks<double>& overlap_matrices,
+      // two-body labels
+      const basis::OrbitalStatePN& c, const basis::OrbitalStatePN& d,
+      const basis::OrbitalStatePN& a, const basis::OrbitalStatePN& b
+    )
+  // Evaluate the unsymmetrized matrix element (cd;J|T^2|ab;J) of
+  // the "upgraded" two-body operator obtained from a scalar one-body
+  // operator T = t^2, tz, t+, or t-.
+  //
+  // See csbasis (52), which is written for an unsymmetrized pn state but
+  // applies to any unsymmetrized product state.
+  {
+    // short circuit check equality of (l,j) on each one-body factor
+    //
+    // Note: This is redundant to (but preempts) the (l,j) equality
+    // check in IsospinOBME.
+    bool triangle_allowed = (
+        ((c.l() == a.l()) && (c.j() == a.j()))
+        && ((d.l() == b.l()) && (d.j() == b.j()))
+      );
+    if (!triangle_allowed)
+      return 0.;
+
+    // evaluate matrix element
+    double matrix_element = 0.;
+    if (d == b)
+      matrix_element += IsospinOBME(
+          operator_type,
+          overlap_orbital_space, overlap_sectors, overlap_matrices,
+          c, a
+        );
+    if (c == a)
+      matrix_element += IsospinOBME(
+          operator_type,
+          overlap_orbital_space, overlap_sectors, overlap_matrices,
+          d, b
+        );
+
+    return matrix_element;
+  }
+
+  double IsospinScalarTBME(
+      IsospinOperatorType operator_type,
+      // overlap matrix element data
+      const basis::OrbitalSpaceLJPN& overlap_orbital_space,
+      const basis::OrbitalSectorsLJPN& overlap_sectors,
+      const basis::OperatorBlocks<double>& overlap_matrices,
+      // two-body labels
+      const basis::TwoBodyStateJJJPN& bra, const basis::TwoBodyStateJJJPN& ket
+    )
+  // Evaluate <cd|V_(T^2)|ab>_AS for the "upgraded" two-body operator obtained
+  // from a scalar one-body isospin operator, using <b|T^2|a>.
+  //
+  // Computes <cd|V|ab>_AS for pp/nn/pn states.
+  //
+  // After csbasis (52) and (54).  See pjf "isospin" notes.
+  //
+  {
+    // extract orbitals
+    const basis::OrbitalStatePN& a = ket.GetOrbital1();
+    const basis::OrbitalStatePN& b = ket.GetOrbital2();
+    const basis::OrbitalStatePN& c = bra.GetOrbital1();
+    const basis::OrbitalStatePN& d = bra.GetOrbital2();
+
+    // extract sector parameters
+    assert(bra.J() == ket.J());
+    int J = ket.J();
+
+    // evaluate matrix element
+    double matrix_element = 0.;
+    matrix_element += IsospinScalarTBMESum(
+        operator_type,
+        overlap_orbital_space, overlap_sectors, overlap_matrices,
+        c, d, a, b
+      );
+    int phase = - ParitySign(J-a.j()-b.j());
+    matrix_element += phase * IsospinScalarTBMESum(
+        operator_type,
+        overlap_orbital_space, overlap_sectors, overlap_matrices,
+        c, d, b, a
+      );
+
+    return matrix_element;
+  }
+
+  double IsospinDotTBMEProduct(
+      IsospinOperatorType operator_type_1, IsospinOperatorType operator_type_2,
+      // overlap matrix element data
+      const basis::OrbitalSpaceLJPN& overlap_orbital_space,
+      const basis::OrbitalSectorsLJPN& overlap_sectors,
+      const basis::OperatorBlocks<double>& overlap_matrices,
+      // two-body labels
+      const basis::OrbitalStatePN& c, const basis::OrbitalStatePN& d,
+      const basis::OrbitalStatePN& a, const basis::OrbitalStatePN& b,
+      int J
+    )
+    // Evaluate the unsymmetrized matrix element (cd|T1*T2|ab) of a
+    // product of one-body isospin operators using <b||T||a>.
+    //
+    // After csbasis (57).  See pjf "isospin" notes.
+  {
+
+    // short circuit check on triangularity of each one-body factor
+    //
+    // Note: This is redundant to (but preempts) the triangularity
+    // checks in KinematicVectorOBRME.
+
+    bool triangle_allowed = (
+        ((c.l() == a.l()) && (c.j() == a.j()))
+        && ((d.l() == b.l()) && (d.j() == b.j()))
+      );
+    if (!triangle_allowed)
+      return 0.;
+
+    // evaluate matrix element
+    int racah_phase = ParitySign(d.j()+a.j()+J);
+    double matrix_element = racah_phase * am::Wigner6J(c.j(),d.j(),J,b.j(),a.j(),0)
+      * IsospinOBME(operator_type_1, overlap_orbital_space, overlap_sectors, overlap_matrices, c, a)
+      * IsospinOBME(operator_type_2, overlap_orbital_space, overlap_sectors, overlap_matrices, d, b);
+
+    std::cout
+      << std::endl
+      << fmt::format(
+          "IsospinDotTBMEProduct {} {} {} {} J {} => {}",
+          c.LabelStr(),d.LabelStr(),a.LabelStr(),b.LabelStr(),J,
+          matrix_element
+        )
+      << std::endl;
+
+    return matrix_element;
+  }
+
+  double IsospinDotTBME(
+      IsospinOperatorType operator_type_1, IsospinOperatorType operator_type_2,
+      // overlap matrix element data
+      const basis::OrbitalSpaceLJPN& overlap_orbital_space,
+      const basis::OrbitalSectorsLJPN& overlap_sectors,
+      const basis::OperatorBlocks<double>& overlap_matrices,
+      // two-body labels
+      const basis::TwoBodyStateJJJPN& bra, const basis::TwoBodyStateJJJPN& ket
+    )
+  // Evaluate the matrix element <cd|T1.T2|ab> of a dot product of
+  // one-body vector angular momentum operators (i.e., T = l, s, or
+  // j), using the unsymmetrized matrix element (cd|T1.T2|ab).
+  //
+  // Computes <cd|T1.T2|ab>_AS for pp/nn states, or (cd|T1.T2|ab)_pn
+  // for pn states.
+  //
+  // Note: For the V_(T1.T2) two-body term, a proton operator only has
+  // nonvanishing pp sectors, and a neutron operator only has
+  // nonvanishing nn sectors.
+  //
+  // After csbasis (55) and (56).  See mac "spin operator" notes page 2.
+  {
+    // extract orbitals
+    const basis::OrbitalStatePN& a = ket.GetOrbital1();
+    const basis::OrbitalStatePN& b = ket.GetOrbital2();
+    const basis::OrbitalStatePN& c = bra.GetOrbital1();
+    const basis::OrbitalStatePN& d = bra.GetOrbital2();
+
+    // extract sector parameters
+    assert(bra.J() == ket.J());
+    int J = ket.J();
+
+    double matrix_element = 0.;
+
+    matrix_element
+      += IsospinDotTBMEProduct(
+          operator_type_1, operator_type_2,
+          overlap_orbital_space, overlap_sectors, overlap_matrices,
+          c, d, a, b,
+          J
+        );
+    int phase = - ParitySign(J - a.j() - b.j());
+    matrix_element += phase
+      * IsospinDotTBMEProduct(
+          operator_type_1, operator_type_2,
+          overlap_orbital_space, overlap_sectors, overlap_matrices,
+          c, d, b, a,
+          J
+        );;
+
+    return matrix_element;
+  }
+
+  Eigen::MatrixXd
+  IsospinMatrixJJJPN(
+      // overlap matrix element data
+      const basis::OrbitalSpaceLJPN& overlap_orbital_space,
+      const basis::OrbitalSectorsLJPN& overlap_sectors,
+      const basis::OperatorBlocks<double>& overlap_matrices,
+      IsospinOperatorType operator_type,
+      const basis::TwoBodySectorsJJJPN::SectorType& sector,
+      int A
+    )
+  {
+    // set up aliases
+    const basis::TwoBodySubspaceJJJPN& ket_subspace = sector.ket_subspace();
+    const basis::TwoBodySubspaceJJJPN& bra_subspace = sector.bra_subspace();
+
+    // generate matrix for sector
+    Eigen::MatrixXd matrix = Eigen::MatrixXd::Zero(bra_subspace.size(), ket_subspace.size());
+
+    // recover sector properties
+    assert(bra_subspace.J() == ket_subspace.J());
+    const int J = ket_subspace.J();
+    assert(bra_subspace.g() == ket_subspace.g());
+    const int g = ket_subspace.g();
+
+    // for upper-triangular pairs of states in sector
+    const int bra_subspace_size = bra_subspace.size();
+    const int ket_subspace_size = ket_subspace.size();
+    #pragma omp parallel for collapse(2) if (0)  // disabled until have chance to profile
+    for (int bra_index = 0; bra_index < bra_subspace_size; ++bra_index) {
+      for (int ket_index = 0; ket_index < ket_subspace_size; ++ket_index) {
+        // diagonal sector: restrict to upper triangle
+        if (sector.IsDiagonal() && !(bra_index <= ket_index))
+          continue;
+
+        // construct states
+        basis::TwoBodyStateJJJPN bra(bra_subspace,bra_index);
+        basis::TwoBodyStateJJJPN ket(ket_subspace,ket_index);
+
+        // initalize one-body and two-body pieces
+        double matrix_element_ob = 0;
+        double matrix_element_tb = 0;
+
+        // calculate matrix element
+        matrix_element_ob
+          += IsospinScalarTBME(
+              operator_type,
+              overlap_orbital_space, overlap_sectors, overlap_matrices,
+              bra, ket
+            );
+        if (operator_type == IsospinOperatorType::kSquared) {
+          matrix_element_tb
+            += 2*IsospinDotTBME(
+              IsospinOperatorType::kTz, IsospinOperatorType::kTz,
+              overlap_orbital_space, overlap_sectors, overlap_matrices,
+              bra, ket
+            );
+          matrix_element_tb
+            += IsospinDotTBME(
+              IsospinOperatorType::kRaising, IsospinOperatorType::kLowering,
+              overlap_orbital_space, overlap_sectors, overlap_matrices,
+              bra, ket
+            );
+          matrix_element_tb
+            += IsospinDotTBME(
+              IsospinOperatorType::kLowering, IsospinOperatorType::kRaising,
+              overlap_orbital_space, overlap_sectors, overlap_matrices,
+              bra, ket
+            );
+            std::cout
+              << std::endl
+              << fmt::format(
+                  "IsospinMatrixJJJPN {} {} J {} => {}",
+                  bra.LabelStr(),ket.LabelStr(),J,
+                  matrix_element_tb
+                )
+              << std::endl;
+        }
+        double matrix_element = 1./(A-1)*matrix_element_ob + matrix_element_tb;
+
+        // convert to NAS if needed
+        if (bra.index1()==bra.index2())
+          matrix_element *= 1/(sqrt(2.));
+        if (ket.index1()==ket.index2())
+          matrix_element *= 1/(sqrt(2.));
+
+        // store matrix element
+        matrix(bra_index,ket_index) = matrix_element;
+        // matrix(ket_index,bra_index) = matrix_element;  // lower triangle
+      }
+    }
 
     return matrix;
   }

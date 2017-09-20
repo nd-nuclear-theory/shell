@@ -10,7 +10,7 @@
   equivalently, and more simply, the branched ME (with M'=M).
 
   Symmetrization convention: The full square matrix is populated on
-  diagonal sectors. 
+  diagonal sectors.
 
   Mark A. Caprio
   University of Notre Dame
@@ -47,7 +47,7 @@ namespace shell {
   // two-body identity operator
   ////////////////////////////////////////////////////////////////
 
-  Eigen::MatrixXd 
+  Eigen::MatrixXd
   IdentityOperatorMatrixJJJPN(
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       int A
@@ -72,7 +72,7 @@ namespace shell {
   // loop timing test
   ////////////////////////////////////////////////////////////////
 
-  Eigen::MatrixXd 
+  Eigen::MatrixXd
   TimingTestMatrixJJJPN(
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       bool loop,
@@ -94,7 +94,7 @@ namespace shell {
 
   enum class KinematicOperatorType {kUTSqr,kVT1T2};
 
-  Eigen::MatrixXd 
+  Eigen::MatrixXd
   KinematicMatrixJJJPN(
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
@@ -161,10 +161,10 @@ namespace shell {
   enum class AngularMomentumOperatorFamily {kOrbital,kSpin,kTotal};
   enum class AngularMomentumOperatorSpecies {kP,kN,kTotal};
 
-  Eigen::MatrixXd 
+  Eigen::MatrixXd
   AngularMomentumMatrixJJJPN(
-      shell::AngularMomentumOperatorFamily operator_family, 
-      shell::AngularMomentumOperatorSpecies operator_species, 
+      shell::AngularMomentumOperatorFamily operator_family,
+      shell::AngularMomentumOperatorSpecies operator_species,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       int A
     );
@@ -189,6 +189,42 @@ namespace shell {
   // Returns:
   //   (Eigen::MatrixXd) : the matrix for this sector
 
+  ////////////////////////////////////////////////////////////////
+  // isospin operators
+  ////////////////////////////////////////////////////////////////
+
+  enum class IsospinOperatorType {kSquared, kTz, kRaising, kLowering};
+
+  Eigen::MatrixXd
+  IsospinMatrixJJJPN(
+      // overlap matrix element data
+      const basis::OrbitalSpaceLJPN& overlap_orbital_space,
+      const basis::OrbitalSectorsLJPN& overlap_sectors,
+      const basis::OperatorBlocks<double>& overlap_matrices,
+      IsospinOperatorType operator_type,
+      const basis::TwoBodySectorsJJJPN::SectorType& sector,
+      int A
+    );
+  // Populate matrix with two-body matrix elements for an isospin
+  // operator, on a given JJJPN sector.
+  //
+  // Precondition: It is assumed that the sector is valid for a scalar
+  // (and positive parity).
+  //
+  // Only the upper triangle of the returned matrix is populated if
+  // the sector is diagonal.
+  //
+  // Arguments:
+  //   overlap_orbital_space, overlap_sectors, overlap_matrices (...):
+  //      definition of pn-overlap matrix elements
+  //   operator_type (shell::IsospinOperatorType): isospin operator to
+  //     calculate
+  //   sector (basis::TwoBodySectorsJJJPN::SectorType) : the sector to
+  //     populate
+  //   A (int): atomic mass number
+  //
+  // Returns:
+  //   (Eigen::MatrixXd) : the matrix for this sector
 
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////

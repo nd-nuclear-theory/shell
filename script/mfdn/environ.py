@@ -134,6 +134,7 @@ class FilenameConfiguration(object):
     orbitals_filename_template = "orbitals{:s}.dat"
     radial_xform_filename_template = "radial-xform{:s}.dat"
     radial_me_filename_template = "radial-me-{}{}{:s}.dat"  # "{}{}" will be replaced by {"r1","r2","k1","k2"}
+    radial_pn_olap_filename_template = "radial-pn-olap{:s}.dat"
     radial_olap_int_filename_template = "radial-olap-int{:s}.dat"
     radial_olap_coul_filename_template = "radial-olap-coul{:s}.dat"
     h2mixer_filename_template = "h2mixer{:s}.in"
@@ -162,6 +163,10 @@ class FilenameConfiguration(object):
     def radial_me_filename(self, postfix, operator_type, power):
         """Construct filename for radial matrix elements."""
         return self.radial_me_filename_template.format(operator_type, power, postfix)
+
+    def radial_pn_olap_filename(self, postfix):
+        """Construct filename for overlaps from interaction tbme basis."""
+        return self.radial_pn_olap_filename_template.format(postfix)
 
     def radial_olap_int_filename(self, postfix):
         """Construct filename for overlaps from interaction tbme basis."""

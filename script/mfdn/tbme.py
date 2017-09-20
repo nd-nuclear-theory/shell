@@ -147,8 +147,13 @@ def generate_tbme(task, postfix=""):
             lines.append("define-radial-operator {} {} {}".format(operator_type, power, radial_me_filename))
     lines.append("")
 
+    # pn overlap input
+    pn_olap_me_filename = environ.filenames.radial_pn_olap_filename(postfix)
+    lines.append("define-pn-overlaps {}".format(pn_olap_me_filename))
+    lines.append("")
+
     # sources: h2mixer built-ins
-    builtin_sources = (operators.kinematic_operator_set | operators.angular_momentum_operator_set)
+    builtin_sources = (operators.kinematic_operator_set | operators.angular_momentum_operator_set | operators.isospin_operator_set)
     for source in sorted(builtin_sources & required_sources):
         lines.append("define-source operator " + source)
     lines.append("")

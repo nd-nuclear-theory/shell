@@ -206,6 +206,17 @@ def set_up_radial_analytic(task, postfix=""):
                 mode=mcscript.CallMode.kSerial
             )
 
+    # generate pn overlaps -- currently only trivial identity
+    mcscript.call(
+        [
+            environ.environ.shell_filename("radial-gen"),
+            "--pn-overlaps",
+            environ.filenames.orbitals_filename(postfix),
+            environ.filenames.radial_pn_olap_filename(postfix)
+        ],
+        mode=mcscript.CallMode.kSerial
+    )
+
     # generate radial overlaps -- generate trivial identities if applicable
     if (task["basis_mode"] in {modes.BasisMode.kDirect}):
         mcscript.call(
@@ -223,7 +234,7 @@ def set_up_radial_analytic(task, postfix=""):
         mcscript.call(
             [
                 environ.environ.shell_filename("radial-gen"),
-                "--overlaps",
+                "--xform",
                 "{:g}".format(b_ratio),
                 basis_radial_code,
                 environ.filenames.orbitals_int_filename(postfix),
@@ -252,7 +263,7 @@ def set_up_radial_analytic(task, postfix=""):
             mcscript.call(
                 [
                     environ.environ.shell_filename("radial-gen"),
-                    "--overlaps",
+                    "--xform",
                     "{:g}".format(b_ratio),
                     basis_radial_code,
                     environ.filenames.orbitals_coul_filename(postfix),
@@ -321,3 +332,15 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
                 ],
                 mode=mcscript.CallMode.kSerial
             )
+
+    # transform pn overlaps
+    mcscript.call(
+        [
+            environ.environ.shell_filename("radial-xform"),
+            environ.filenames.orbitals_filename(target_postfix),
+            environ.filenames.natorb_xform_filename(target_postfix),
+            environ.filenames.radial_pn_olap_filename(source_postfix),
+            environ.filenames.radial_pn_olap_filename(target_postfix)
+        ],
+        mode=mcscript.CallMode.kSerial
+    )
