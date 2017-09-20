@@ -6,7 +6,8 @@
   Syntax:
     + radial-gen --kinematic operator_type order analytic_basis_type orbital_file output_filename
       - operator_type={r,k}
-    + radial-gen --overlaps scale_ratio analytic_basis_type bra_orbital_file [ket_orbital_file] output_filename
+    + radial-gen --xform scale_ratio analytic_basis_type bra_orbital_file [ket_orbital_file] output_filename
+    + radial-gen --pn-overlaps orbital_file output_filename
     + radial-gen --identity bra_orbital_file [ket_orbital_file] output_filename
 
   @note Currently only computes radial matrix elements between harmonic oscillator
@@ -56,7 +57,7 @@ enum class AnalyticBasisType : int {
   kOscillator = 0, kLaguerre = 1
 };
 
-enum class OperationMode {kKinematic, kOverlaps, kIdentity};
+enum class OperationMode {kKinematic, kXform, kPNOverlaps, kIdentity};
 
 // Stores simple parameters for run
 struct RunParameters {
@@ -68,6 +69,7 @@ struct RunParameters {
   OperationMode mode;
   shell::RadialOperatorType radial_operator;
   int order;
+  int Tz0;
   float scale_ratio;
   AnalyticBasisType basis_type;
 };
@@ -77,7 +79,10 @@ void PrintUsage(char **argv) {
             << " --kinematic {r|k} order analytic_basis_type orbital_file output_filename"
             << std::endl;
   std::cout << "       " << argv[0]
-            << " --overlaps scale_ratio analytic_basis_type bra_orbital_file [ket_orbital_file] output_filename"
+            << " --xform scale_ratio analytic_basis_type bra_orbital_file [ket_orbital_file] output_filename"
+            << std::endl;
+  std::cout << "       " << argv[0]
+            << " --pn-overlaps orbital_file output_filename"
             << std::endl;
   std::cout << "       " << argv[0]
             << " --identity bra_orbital_file [ket_orbital_file] output_filename"
@@ -99,13 +104,21 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters) {
     std::istringstream parameter_stream(argv[arg++]);
     if (parameter_stream.str() == "--kinematic") {
       run_parameters.mode = OperationMode::kKinematic;
-    } else if (parameter_stream.str() == "--overlaps") {
-      run_parameters.mode = OperationMode::kOverlaps;
+      run_parameters.Tz0 = 0;
+    } else if (parameter_stream.str() == "--xform") {
+      run_parameters.mode = OperationMode::kXform;
       run_parameters.order = 0;
+      run_parameters.Tz0 = 0;
+      run_parameters.radial_operator = shell::RadialOperatorType::kO;
+    } else if (parameter_stream.str() == "--pn-overlaps") {
+      run_parameters.mode = OperationMode::kPNOverlaps;
+      run_parameters.order = 0;
+      run_parameters.Tz0 = 1;
       run_parameters.radial_operator = shell::RadialOperatorType::kO;
     } else if (parameter_stream.str() == "--identity") {
       run_parameters.mode = OperationMode::kIdentity;
       run_parameters.order = 0;
+      run_parameters.Tz0 = 0;
       run_parameters.radial_operator = shell::RadialOperatorType::kO;
     } else {
       PrintUsage(argv);
@@ -147,15 +160,15 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters) {
       }
 
       if (run_parameters.order == 0) {
-        std::cout << "WARN: Order is zero. Do you mean overlaps?" << std::endl;
+        std::cout << "WARN: Order is zero. Do you mean xform?" << std::endl;
         run_parameters.order = 0;
       }
     }
 
     // reference scale is 1.0 for kinematic operators
     run_parameters.scale_ratio = 1.0;
-  } else if (run_parameters.mode == OperationMode::kOverlaps) {
-    // order for overlaps is 0 (i.e. r^0)
+  } else if (run_parameters.mode == OperationMode::kXform) {
+    // order for xform is 0 (i.e. r^0)
     run_parameters.radial_operator = shell::RadialOperatorType::kO;
     run_parameters.order = 0;
 
@@ -172,7 +185,7 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters) {
   }
 
   // basis type
-  if (run_parameters.mode == OperationMode::kKinematic || run_parameters.mode == OperationMode::kOverlaps)
+  if (run_parameters.mode == OperationMode::kKinematic || run_parameters.mode == OperationMode::kXform)
   {
     std::istringstream parameter_stream(argv[arg++]);
     if (parameter_stream.str() == "oscillator") {
@@ -205,7 +218,7 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters) {
   }
 
   // ket orbital file -- only parse an argument if there were 6 arguments
-  if ((run_parameters.mode == OperationMode::kOverlaps && (argc-1) == 6) ||
+  if ((run_parameters.mode == OperationMode::kXform && (argc-1) == 6) ||
       (run_parameters.mode == OperationMode::kIdentity && (argc-1) == 4))
   {
     std::istringstream parameter_stream(argv[arg++]);
@@ -303,12 +316,6 @@ int main(int argc, char **argv) {
   std::vector<basis::OrbitalPNInfo> ket_input_orbitals =
     basis::ParseOrbitalPNStream(ket_orbital_stream, true);
 
-  // Construct indexing
-  basis::OrbitalSpaceLJPN bra_space(bra_input_orbitals);
-  basis::OrbitalSpaceLJPN ket_space(ket_input_orbitals);
-  basis::OrbitalSectorsLJPN sectors(bra_space, ket_space, run_parameters.order, 0);
-  /** @note currently has hard-coded Tz0=0 */
-
   // Eigen initialization
   Eigen::initParallel();
   basis::OperatorBlocks<double> matrices;
@@ -316,48 +323,45 @@ int main(int argc, char **argv) {
   // main control logic
   spline::Basis bra_basis_type, ket_basis_type;
   double bra_scale_ratio, ket_scale_ratio;
-  int order;
-  if (run_parameters.mode == OperationMode::kKinematic)
-    {
-      bra_scale_ratio = ket_scale_ratio = 1.;
-      order = run_parameters.order;
-      if (run_parameters.radial_operator == shell::RadialOperatorType::kR)
-        {
-          if (run_parameters.basis_type == AnalyticBasisType::kOscillator)
-            bra_basis_type = ket_basis_type = spline::Basis::HC;
-          else if (run_parameters.basis_type == AnalyticBasisType::kLaguerre)
-            bra_basis_type = ket_basis_type = spline::Basis::LC;
-        }
-      else if (run_parameters.radial_operator == shell::RadialOperatorType::kK)
-        {
-          if (run_parameters.basis_type == AnalyticBasisType::kOscillator)
-            bra_basis_type = ket_basis_type = spline::Basis::HM;
-          else if (run_parameters.basis_type == AnalyticBasisType::kLaguerre)
-            bra_basis_type = ket_basis_type = spline::Basis::LM;
-        }
-    }
-  else if (run_parameters.mode == OperationMode::kOverlaps)
-    {
-      bra_scale_ratio = 1.;
-      ket_scale_ratio = run_parameters.scale_ratio;
-      bra_basis_type = spline::Basis::HC;
-      order = 0;
+  if (run_parameters.mode == OperationMode::kKinematic) {
+    bra_scale_ratio = ket_scale_ratio = 1.;
+    if (run_parameters.radial_operator == shell::RadialOperatorType::kR) {
       if (run_parameters.basis_type == AnalyticBasisType::kOscillator)
-        ket_basis_type = spline::Basis::HC;
+        bra_basis_type = ket_basis_type = spline::Basis::HC;
       else if (run_parameters.basis_type == AnalyticBasisType::kLaguerre)
-        ket_basis_type = spline::Basis::LC;
+        bra_basis_type = ket_basis_type = spline::Basis::LC;
+    } else if (run_parameters.radial_operator == shell::RadialOperatorType::kK) {
+      if (run_parameters.basis_type == AnalyticBasisType::kOscillator)
+        bra_basis_type = ket_basis_type = spline::Basis::HM;
+      else if (run_parameters.basis_type == AnalyticBasisType::kLaguerre)
+        bra_basis_type = ket_basis_type = spline::Basis::LM;
     }
+  } else if (run_parameters.mode == OperationMode::kXform) {
+    bra_scale_ratio = 1.;
+    ket_scale_ratio = run_parameters.scale_ratio;
+    bra_basis_type = spline::Basis::HC;
+    if (run_parameters.basis_type == AnalyticBasisType::kOscillator)
+      ket_basis_type = spline::Basis::HC;
+    else if (run_parameters.basis_type == AnalyticBasisType::kLaguerre)
+      ket_basis_type = spline::Basis::LC;
+  }
 
-  if (run_parameters.mode == OperationMode::kKinematic || run_parameters.mode == OperationMode::kOverlaps)
+  // Construct indexing
+  basis::OrbitalSpaceLJPN bra_space(bra_input_orbitals);
+  basis::OrbitalSpaceLJPN ket_space(ket_input_orbitals);
+  basis::OrbitalSectorsLJPN sectors(bra_space, ket_space, run_parameters.order, run_parameters.Tz0);
+  /** @note currently has hard-coded Tz0=0 */
+
+  if (run_parameters.mode == OperationMode::kKinematic || run_parameters.mode == OperationMode::kXform)
   {
     CalculateMatrixElements(
         bra_basis_type, ket_basis_type,
         bra_scale_ratio, ket_scale_ratio,
-        order,
+        run_parameters.order,
         sectors, matrices
       );
   }
-  else if (run_parameters.mode == OperationMode::kIdentity)
+  else if (run_parameters.mode == OperationMode::kIdentity || run_parameters.mode == OperationMode::kPNOverlaps)
   {
     for (int sector_index = 0; sector_index < sectors.size(); ++sector_index) {
       const basis::OrbitalSectorsLJPN::SectorType sector = sectors.GetSector(sector_index);

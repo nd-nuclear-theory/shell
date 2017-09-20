@@ -298,15 +298,17 @@ namespace shell {
 
     // write labels if in verbose mode
     if (verbose_mode_) {
-      stream() << "# bra subspace labels: "
-               << "l = " << sector.bra_subspace().l() << " "
-               << "2j = " << sector.bra_subspace().j().TwiceValue()
+      stream() << "# bra subspace labels:"
+               << " l = " << sector.bra_subspace().l()
+               << " 2j = " << sector.bra_subspace().j().TwiceValue()
+               << " 2Tz = " << sector.bra_subspace().Tz().TwiceValue()
                << std::endl;
       ++line_count_;
 
-      stream() << "# ket subspace labels: "
-               << "l = " << sector.ket_subspace().l() << " "
-               << "2j = " << sector.ket_subspace().j().TwiceValue()
+      stream() << "# ket subspace labels:"
+               << " l = " << sector.ket_subspace().l()
+               << " 2j = " << sector.ket_subspace().j().TwiceValue()
+               << " 2Tz = " << sector.ket_subspace().Tz().TwiceValue()
                << std::endl;
       ++line_count_;
     }

@@ -14,6 +14,7 @@
 
   + 11/7/16 (pjf): Created, based on radial-scale.cpp.
   + 11/22/16 (pjf): Implemented similarity transforms.
+  + 09/19/17 (pjf): Improved transformation to accept more types of transformations.
 
 ******************************************************************************/
 
@@ -117,10 +118,10 @@ int main(int argc, const char *argv[]) {
   basis::OrbitalSpaceLJPN space(input_orbitals);
 
   // get indexing
-  basis::OrbitalSpaceLJPN in_bra_space, in_ket_space;
-  basis::OrbitalSectorsLJPN in_sectors;
-  shell::RadialOperatorType in_operator_type = is.radial_operator_type();
-  is.SetToIndexing(in_bra_space, in_ket_space, in_sectors);
+  basis::OrbitalSpaceLJPN source_bra_space, source_ket_space;
+  basis::OrbitalSectorsLJPN source_sectors;
+  shell::RadialOperatorType source_operator_type = is.radial_operator_type();
+  is.SetToIndexing(source_bra_space, source_ket_space, source_sectors);
 
   basis::OrbitalSpaceLJPN olap_bra_space, olap_ket_space;
   basis::OrbitalSectorsLJPN olap_sectors;
@@ -128,50 +129,35 @@ int main(int argc, const char *argv[]) {
   olaps.SetToIndexing(olap_bra_space, olap_ket_space, olap_sectors);
 
   // check that operator is transformable (bra and ket spaces are the same)
-  if (in_bra_space.OrbitalInfo() != in_ket_space.OrbitalInfo()) {
+  if (source_bra_space.OrbitalInfo() != source_ket_space.OrbitalInfo()) {
     std::cerr << "ERROR: Bra and ket spaces of this operator are not the same. "
               << "Cannot transform." << std::endl;
-    ////////////// CHECKS TURNED OFF FOR NATURAL ORBITAL TESTING! //////////////
-    // std::exit(EXIT_FAILURE);
+    std::exit(EXIT_FAILURE);
   }
 
   // check that operator matches provided orbital file
-  if (space.OrbitalInfo() != in_ket_space.OrbitalInfo()) {
+  if (space.OrbitalInfo() != source_ket_space.OrbitalInfo()) {
     std::cerr << "ERROR: Operator space does not match orbitals provided." << std::endl;
-    ////////////// CHECKS TURNED OFF FOR NATURAL ORBITAL TESTING! //////////////
-    // std::exit(EXIT_FAILURE);
+    std::exit(EXIT_FAILURE);
   }
 
   // check that overlaps are valid
-  if ((olap_type != shell::RadialOperatorType::kO) ||
-      (in_ket_space.OrbitalInfo() != olap_bra_space.OrbitalInfo()))
+  if ((olap_type != shell::RadialOperatorType::kO)
+      || (source_ket_space.OrbitalInfo() != olap_bra_space.OrbitalInfo())
+      || (olap_sectors.Tz0() != 0)
+    )
   {
     std::cerr << "ERROR: Invalid olap for this input." << std::endl;
-    ////////////// CHECKS TURNED OFF FOR NATURAL ORBITAL TESTING! //////////////
-    // std::exit(EXIT_FAILURE);
-  }
-
-  // check that we know how to handle this type of transformation
-  /// @note Only similarity transforms are currently supported.
-  if (olap_bra_space.OrbitalInfo() != olap_ket_space.OrbitalInfo()) {
-    std::cerr << "ERROR: Overlap bra and ket spaces differ. Only similarity "
-              << "transforms are currently supported." << std::endl;
-    ////////////// CHECKS TURNED OFF FOR NATURAL ORBITAL TESTING! //////////////
-    // std::exit(EXIT_FAILURE);
-  }
-
-  // check that overlaps match provided orbital file
-  if (space.OrbitalInfo() != olap_ket_space.OrbitalInfo()) {
-    std::cerr << "ERROR: Overlaps space does not match orbitals provided." << std::endl;
-    ////////////// CHECKS TURNED OFF FOR NATURAL ORBITAL TESTING! //////////////
-    // std::exit(EXIT_FAILURE);
+    std::exit(EXIT_FAILURE);
   }
 
   // construct new indexing
-  const shell::RadialOperatorType& out_operator_type = in_operator_type;
-  const basis::OrbitalSpaceLJPN& out_bra_space = olap_ket_space;
-  const basis::OrbitalSpaceLJPN& out_ket_space = olap_ket_space;
-  basis::OrbitalSectorsLJPN out_sectors(out_ket_space, out_ket_space, in_sectors.l0max(), in_sectors.Tz0());
+  const shell::RadialOperatorType& target_operator_type = source_operator_type;
+  const basis::OrbitalSpaceLJPN& target_space = olap_ket_space;
+  basis::OrbitalSectorsLJPN target_sectors(
+      target_space, target_space,
+      source_sectors.l0max(), source_sectors.Tz0()
+    );
 
   // Eigen initialization
   basis::OperatorBlocks<double> olap_matrices, input_matrices, output_matrices;
@@ -179,32 +165,70 @@ int main(int argc, const char *argv[]) {
   olaps.Read(olap_matrices);
 
   // main loop
-  for (int sector_index=0; sector_index < in_sectors.size(); ++sector_index) {
-    const auto& operator_sector = in_sectors.GetSector(sector_index);
-    int bra_subspace_index = operator_sector.bra_subspace_index();
-    int ket_subspace_index = operator_sector.ket_subspace_index();
+  for (int target_sector_index=0; target_sector_index < target_sectors.size(); ++target_sector_index) {
+    const auto& target_sector = target_sectors.GetSector(target_sector_index);
 
-    // Sanity check on olap sector
-    // This is only true in general for similarity transforms.
-    ////////////// CHECKS TURNED OFF FOR NATURAL ORBITAL TESTING! //////////////
-    // assert(olap_sectors.ContainsSector(bra_subspace_index, bra_subspace_index));
-    // assert(olap_sectors.ContainsSector(ket_subspace_index, ket_subspace_index));
+    // get subspace indices and labels for target sector
+    int target_bra_subspace_index = target_sector.bra_subspace_index();
+    const auto& target_bra_subspace_labels = target_sector.bra_subspace().labels();
+    int target_ket_subspace_index = target_sector.ket_subspace_index();
+    const auto& target_ket_subspace_labels = target_sector.ket_subspace().labels();
+
+    // Get subspace indices in source space
+    int source_bra_subspace_index
+      = source_bra_space.LookUpSubspaceIndex(target_bra_subspace_labels);
+    if (source_bra_subspace_index == basis::kNone) {
+      std::cerr << "ERROR: required subspace missing from input space:" << std::endl;
+      std::cerr << target_sector.bra_subspace().LabelStr() << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+    int source_ket_subspace_index
+      = source_ket_space.LookUpSubspaceIndex(target_ket_subspace_labels);
+    if (source_ket_subspace_index == basis::kNone) {
+      std::cerr << "ERROR: required subspace missing from input space:" << std::endl;
+      std::cerr << target_sector.ket_subspace().LabelStr() << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
+    // Get source operator sector index
+    int source_sector_index =
+      source_sectors.LookUpSectorIndex(source_bra_subspace_index, source_ket_subspace_index);
+    if (source_sector_index == basis::kNone) {
+      std::cerr << "ERROR: required input sector missing:" << std::endl;
+      std::cerr << "  bra subspace: " << target_sector.bra_subspace().LabelStr() << std::endl;
+      std::cerr << "  ket subspace: " << target_sector.ket_subspace().LabelStr() << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
 
     // Get olap sector index
-    int left_olap_sector_index  = olap_sectors.LookUpSectorIndex(bra_subspace_index, bra_subspace_index);
-    int right_olap_sector_index = olap_sectors.LookUpSectorIndex(ket_subspace_index, ket_subspace_index);
+    int left_olap_sector_index
+      = olap_sectors.LookUpSectorIndex(source_bra_subspace_index, target_bra_subspace_index);
+    if (left_olap_sector_index == basis::kNone) {
+      std::cerr << "ERROR: required overlap sector missing:" << std::endl;
+      std::cerr << "  subspace: " << target_sector.bra_subspace().LabelStr() << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+    int right_olap_sector_index
+      = olap_sectors.LookUpSectorIndex(source_ket_subspace_index, target_ket_subspace_index);
+    if (right_olap_sector_index == basis::kNone) {
+      std::cerr << "ERROR: required overlap sector missing:" << std::endl;
+      std::cerr << "  subspace: " << target_sector.ket_subspace().LabelStr() << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
 
     // do matrix multipication and add to the output sectors
     output_matrices.push_back(
-      olap_matrices[left_olap_sector_index].transpose() * input_matrices[sector_index] * olap_matrices[right_olap_sector_index]
+      olap_matrices[left_olap_sector_index].transpose()
+      * input_matrices[source_sector_index]
+      * olap_matrices[right_olap_sector_index]
     );
   }
 
   // write out to file
   std::cout << "INFO: Writing to file " << run_parameters.output_filename << std::endl;
   shell::OutRadialStream os(run_parameters.output_filename,
-                            out_ket_space, out_ket_space, out_sectors,
-                            in_operator_type);
+                            target_space, target_space, target_sectors,
+                            target_operator_type);
   os.Write(output_matrices);
 
   is.Close();
