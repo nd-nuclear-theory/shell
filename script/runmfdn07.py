@@ -82,6 +82,7 @@ task = {
     # two-body observables
     ## "observable_sets": ["H-components","am-sqr"],
     "observable_sets": ["H-components"],
+    "observables": [],
 
     # version parameters
     "h2_format": 15099,
@@ -115,7 +116,7 @@ mfdn.mfdn_v15.save_mfdn_output(task)
 ##     tasks,
 ##     task_descriptor=mfdn.descriptors.task_descriptor_7,
 ##     task_pool=task_pool,
-##     phase_handler_list=[mfdn_h2.task_handler_ho]
+##     phase_handler_list=[mfdn.handlers.task_handler_oscillator]
 ##     )
 
 ################################################################

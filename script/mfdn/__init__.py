@@ -73,11 +73,12 @@
         "save_obdme" (bool): whether or not to save obdme files in archive
 
         # two-body observables
-        "observables" (dict of {"basename": CoefficientDict}): additional observable definitions
+        "observables" (list of ("basename", CoefficientDict) tuples): additional observable definitions
             (see mfdn.operators)
         "observable_sets" (list of str): codes for predefined observable sets to include
             "H-components": Hamiltonian terms
             "am-sqr": squared angular momenta
+            "isospin": isospin observables
             "R20K20": center-of-mass diagnostic observables (TODO)
 
         # version parameters

@@ -35,7 +35,7 @@ mfdn.environ.environ.interaction_run_list = [
 
 task = {
     # nuclide parameters
-    "nuclide": (2, 4),
+    "nuclide": (2, 2),
 
     # Hamiltonian parameters
     "interaction": "JISP16",
@@ -83,12 +83,9 @@ task = {
     "save_obdme": True,
 
     # two-body observables
-    ## "observable_sets": ["H-components","am-sqr"],
+    ## "observable_sets": ["H-components","am-sqr","isospin"],
     "observable_sets": ["H-components"],
-    "observables": {
-        "tbme-T": mfdn.operators.T(),
-        "tbme-Tz": mfdn.operators.Tz()
-        },
+    "observables": [],
 
     # version parameters
     "h2_format": 0,

@@ -154,20 +154,6 @@ def task_mask(current_task):
     return allow
 
 
-################################################################
-# run control
-################################################################
-
-def task_handler_v14_b06(task):
-    """Task handler for basic run with mfdn v14 b06."""
-    mfdn.radial.set_up_interaction_orbitals(task)
-    mfdn.radial.set_up_orbitals(task)
-    mfdn.radial.set_up_radial_analytic(task)
-    mfdn.tbme.generate_tbme(task)
-    mfdn.mfdn_v14.run_mfdn(task)
-    mfdn.mfdn_v14.save_mfdn_output(task)
-
-
 ##################################################################
 # task control
 ##################################################################
@@ -177,7 +163,7 @@ mcscript.task.init(
     task_descriptor=mfdn.descriptors.task_descriptor_7,
     task_pool=task_pool,
     task_mask=task_mask,
-    phase_handler_list=[task_handler_v14_b06],
+    phase_handler_list=[mfdn.handlers.task_handler_oscillator],
     # Note: change to mcscript.task.archive_handler_hsi for tape backup
     archive_phase_handler_list=[mcscript.task.archive_handler_generic]
     )

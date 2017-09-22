@@ -65,7 +65,8 @@ def generate_tbme(task, postfix=""):
 
     # accumulate observables
     if (task.get("observables")):
-        targets.update(task.get("observables"))
+        for (basename, operator) in task["observables"]:
+            targets[basename] = operator
 
     # target: radius squared
     if ("tbme-rrel2" not in targets.keys()):
@@ -91,6 +92,8 @@ def generate_tbme(task, postfix=""):
         targets["tbme-Sn"] = operators.Sn()
         targets["tbme-S"] = operators.S()
         targets["tbme-J"] = operators.J()
+    if ("isospin" in task["observable_sets"]):
+        targets["tbme-T"] = operators.T()
 
     # get set of required sources
     required_sources = set()
@@ -205,7 +208,7 @@ def generate_tbme(task, postfix=""):
 
     # targets: generate h2mixer input
     for (basename, operator) in targets.items():
-        lines.append("define-target work/"+basename+".dat")
+        lines.append("define-target work/"+basename+".bin")
         for (source, coefficient) in operator.items():
             lines.append("  add-source {:s} {:e}".format(source, coefficient))
         lines.append("")
