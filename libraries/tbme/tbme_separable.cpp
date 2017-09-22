@@ -503,7 +503,7 @@ namespace shell {
           }
         else if (operator_family == shell::AngularMomentumOperatorFamily::kTotal)
           {
-             matrix_element += double(ja)*(double(ja)+1);
+             matrix_element += double{ja}*(double{ja}+1);
           }
       }
 
@@ -787,7 +787,7 @@ namespace shell {
       }
     } else if (operator_type == IsospinOperatorType::kTz) {
       if ( b == a ) {
-        matrix_element += static_cast<double>(a.Tz());
+        matrix_element += double{a.Tz()};
       }
     } else if (operator_type == IsospinOperatorType::kRaising) {
       if ((jb == ja) && (lb == la) && (Tzb == Tza + 1)) {
@@ -931,17 +931,9 @@ namespace shell {
     // evaluate matrix element
     int racah_phase = ParitySign(d.j()+a.j()+J);
     double matrix_element = racah_phase * am::Wigner6J(c.j(),d.j(),J,b.j(),a.j(),0)
+      * Hat(a.j()) * Hat(b.j())
       * IsospinOBME(operator_type_1, overlap_orbital_space, overlap_sectors, overlap_matrices, c, a)
       * IsospinOBME(operator_type_2, overlap_orbital_space, overlap_sectors, overlap_matrices, d, b);
-
-    std::cout
-      << std::endl
-      << fmt::format(
-          "IsospinDotTBMEProduct {} {} {} {} J {} => {}",
-          c.LabelStr(),d.LabelStr(),a.LabelStr(),b.LabelStr(),J,
-          matrix_element
-        )
-      << std::endl;
 
     return matrix_element;
   }
@@ -994,7 +986,7 @@ namespace shell {
           overlap_orbital_space, overlap_sectors, overlap_matrices,
           c, d, b, a,
           J
-        );;
+        );
 
     return matrix_element;
   }
@@ -1067,14 +1059,6 @@ namespace shell {
                 overlap_orbital_space, overlap_sectors, overlap_matrices,
                 bra, ket
               );
-          std::cout
-            << std::endl
-            << fmt::format(
-                "IsospinMatrixJJJPN {} {} J {} => {}",
-                bra.LabelStr(),ket.LabelStr(),J,
-                matrix_element_tb
-              )
-            << std::endl;
         }
         double matrix_element = 1./(A-1)*matrix_element_ob + matrix_element_tb;
 
