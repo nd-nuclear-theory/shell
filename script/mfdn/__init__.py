@@ -128,6 +128,7 @@
       + Replace TruncationMode with SingleParticleTruncationMode and ManyBodyTruncationMode.
       + Replace truncation_mode key with sp_truncation_mode and mb_truncation_mode.
       + Fix FCI truncation.
+    - 09/22/17 (pjf): Take "observables" as list of tuples instead of dict.
 """
 
 __ALL__ = ['descriptors', 'handlers', 'radial', 'operators', 'tbme', 'utils', 'config']

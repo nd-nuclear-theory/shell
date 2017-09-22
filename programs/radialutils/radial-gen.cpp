@@ -33,6 +33,7 @@
     - Add non-square overlap mode.
     - Add file existence checks.
   + 1/27/16 (pjf): Add identity for non-square matrices
+  + 09/20/17 (pjf): Add support for generating pn overlaps.
 
 ******************************************************************************/
 

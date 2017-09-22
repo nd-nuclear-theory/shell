@@ -28,6 +28,12 @@
   + 11/6/16 (mac):
     - Remove use of size() in omp for loop limit.
     - Refactor implementation of KinematicScalarTBME.
+  + 09/20/17 (pjf): Add initial support for isospin operators (T^2,
+    Tz, T+, T-).
+  + 09/20/17 (mac): Fix normalization of NAS matrix elements for
+    new isospin operators.
+  + 09/21/17 (pjf): Fix missing Hat() factors in Racah's reduction
+    formula for isospin operators.
 
 ****************************************************************/
 

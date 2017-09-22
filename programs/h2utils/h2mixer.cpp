@@ -15,6 +15,7 @@
     define-radial-operator operator_type power radial_filename
       operator_type = r|k
       power = 1|2
+    define-pn-overlaps olap_filename
     define-source mode id ...
       define-source input id tbme_filename
       define-source operator id
@@ -42,6 +43,9 @@
     - Remove id on target channels.
     - Update input format.
   + 11/13/16 (mac): Move matrix utilities into mcutils/eigen.
+  + 09/20/17 (pjf): Add T^2 operator:
+    - Accept pn-overlaps for T^2 operator.
+    - Store pn-overlaps by including Tz0 in radial_operator_data.
 
 ******************************************************************************/
 

@@ -4,6 +4,7 @@
     - 5/24/17 (pjf):
       + Fixed VC scaling.
       + Added comments explaining scaling.
+    - 09/20/17 (pjf): Add isospin operators.
 """
 import math
 

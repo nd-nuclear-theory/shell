@@ -14,6 +14,7 @@ University of Notre Dame
   + Break out different many-body truncations into their own functions.
 - 08/26/17 (pjf): Add parity constraints for general truncations.
 - 09/12/17 (pjf): Update for config -> modes + environ split.
+- 09/22/17 (pjf): Take "observables" as list of tuples instead of dict.
 """
 import os
 import glob

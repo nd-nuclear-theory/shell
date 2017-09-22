@@ -12,6 +12,7 @@ University of Notre Dame
 - 08/26/17 (pjf): Add parity flag for WeightMax many-body truncation mode.
 - 9/12/17 (mac): Put mfdn executable filename under common mcscript install directory.
 - 09/12/17 (pjf): Split config.py -> mode.py + environ.py.
+- 09/20/17 (pjf): Add configuration for pn-overlap filenames
 """
 
 import os
@@ -84,6 +85,7 @@ class FilenameConfiguration(object):
         orbitals_filename_template (str): filename template for target basis orbitals
         radial_xform_filename_template (str): filename template for change of basis xform
         radial_me_filename_template (str): filename template for radial matrix elements
+        radial_pn_olap_filename_template (str): filename for pn overlap matrix elements
         radial_olap_int_filename_template (str): filename template for overlaps from interaction tbme basis
         radial_olap_coul_filename_template (str): filename template for overlaps from Coulomb tbme basis
         h2mixer_filename_template (str): filename template for h2mixer input
@@ -106,8 +108,10 @@ class FilenameConfiguration(object):
             xform, given postfix.
 
         radial_me_filename(postfix, operator_type, power): Generate filename for
-            radial matrix elements, given natural orbital iteration, operator
-            type, and power.
+            radial matrix elements, given postfix, operator type, and power.
+
+        radial_pn_olap_filename(postfix): Generate filename for pn overlaps
+            given postfix.
 
         radial_olap_int_filename(postfix): Generate filename for overlaps from
             interaction tbme basis, given postfix.

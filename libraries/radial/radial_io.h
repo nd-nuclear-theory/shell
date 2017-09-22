@@ -26,6 +26,7 @@
   + 11/3/16 (mac): Provide InRadialStream::SetToIndexing and hide direct
      indexing accessors (copies are easily invalidated).
   + 08/11/17 (pjf): Add verbose_mode option to OutRadialStream.
+  + 09/20/17 (pjf): Output Tz labels in verbose_mode.
 
 ****************************************************************/
 

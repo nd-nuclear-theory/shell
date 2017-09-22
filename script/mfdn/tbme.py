@@ -13,6 +13,8 @@ University of Notre Dame
 - 08/11/17 (pjf): Use new TruncationModes.
 - 08/26/17 (pjf): Add support for general truncation schemes.
 - 09/12/17 (pjf): Update for config -> modes + environ split.
+- 09/20/17 (pjf): Add isospin operators.
+- 09/22/17 (pjf): Take "observables" as list of tuples instead of dict.
 """
 import collections
 

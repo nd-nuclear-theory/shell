@@ -18,6 +18,9 @@ University of Notre Dame
   + Add set_up_orbitals_triangular().
   + Add set_up_orbitals() dispatch function.
 - 09/12/17 (pjf): Update for config -> modes + environ split.
+- 09/20/17 (pjf):
+  + Generate pn overlaps.
+  + Update for new --xform option of radial-gen.
 """
 import math
 
