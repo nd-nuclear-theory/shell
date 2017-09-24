@@ -10,6 +10,7 @@ University of Notre Dame
 - 06/22/17 (pjf): Update references to mcscript.exception.ScriptError.
 - 07/31/17 (pjf): Move mfdn driver from handler argument to task dictionary.
 - 09/12/17 (pjf): Update for config -> modes + environ split.
+- 09/24/17 (pjf): Fix call to cleanup_mfdn_workdir() in task_handler_natorb().
 """
 import os
 import glob
@@ -78,7 +79,7 @@ def task_handler_natorb(task):
     tbme.generate_tbme(task=task, postfix=utils.natural_orbital_indicator(1))
     mfdn_driver.run_mfdn(task=task, postfix=utils.natural_orbital_indicator(1))
     mfdn_driver.save_mfdn_output(task=task, postfix=utils.natural_orbital_indicator(1))
-    mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
+    mfdn_driver.cleanup_mfdn_workdir(task, postfix=utils.natural_orbital_indicator(1))
 
 
 ################################################################
