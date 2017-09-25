@@ -8,6 +8,7 @@
     - 06/08/17 (pjf): Created, copied from runmfd01; switch to MFDn v15.
     - 07/31/17 (pjf): Set MFDn driver module in task dictionary.
     - 08/11/17 (pjf): Update for split single-particle and many-body truncation modes.
+    - 09/24/17 (pjf): Save wavefunctions.
 """
 
 import mcscript
@@ -83,6 +84,9 @@ task = {
     ## "observable_sets": ["H-components","am-sqr"],
     "observable_sets": ["H-components"],
     "observables": [],
+
+    # wavefunction storage
+    "save_wavefunctions": True,
 
     # version parameters
     "h2_format": 15099,

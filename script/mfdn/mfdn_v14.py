@@ -23,6 +23,9 @@ University of Notre Dame
   + Fix FCI truncation.
 - 09/12/17 (pjf): Update for config -> modes + environ split.
 - 09/22/17 (pjf): Take "observables" as list of tuples instead of dict.
+- 09/24/17 (pjf):
+  + Archive wavefunction files in separate archive.
+  + Create tar files with minimal directory structure for easy inflation.
 """
 import os
 import glob
@@ -192,9 +195,10 @@ def save_mfdn_output(task, postfix=""):
     natural_orbitals = task.get("natural_orbitals")
     descriptor = task["metadata"]["descriptor"]
     print("Saving basic output files...")
-    res_filename = "{:s}-mfdn-{:s}{:s}.res".format(mcscript.parameters.run.name, descriptor, postfix)
+    filename_prefix = "{:s}-mfdn-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    res_filename = "{:s}.res".format(filename_prefix)
     mcscript.call(["cp", "--verbose", "work/mfdn.res", res_filename])
-    out_filename = "{:s}-mfdn-{:s}{:s}.out".format(mcscript.parameters.run.name, descriptor, postfix)
+    out_filename = "{:s}.out".format(filename_prefix)
     mcscript.call(["cp", "--verbose", "work/mfdn.out", out_filename])
 
     # save OBDME files for next natural orbital iteration
@@ -260,14 +264,29 @@ def save_mfdn_output(task, postfix=""):
     if (task["save_obdme"]):
         archive_file_list += glob.glob("work/*obdme*")
     # generate archive (outside work directory)
-    archive_filename = "{:s}-mfdn-{:s}{:s}.tgz".format(mcscript.parameters.run.name, descriptor, postfix)
+    archive_filename = "{:s}.tgz".format(filename_prefix)
     mcscript.call(
         [
             "tar", "zcvf", archive_filename,
             "--transform=s,work/,,",
+            "--transform=s,^,{:s}/{:s}{:s}/,".format(mcscript.parameters.run.name, descriptor, postfix),
             "--show-transformed"
         ] + archive_file_list
     )
+
+    # save wavefunctions (smwf files)
+    if task.get("save_wavefunctions"):
+        smwf_archive_file_list = glob.glob("work/mfdn_smwf*")
+        smwf_archive_file_list += glob.glob("work/mfdn_MBgroups*")
+        smwf_archive_filename = "{:s}-wf.tgz".format(filename_prefix)
+        mcscript.call(
+            [
+                "tar", "zcvf", smwf_archive_filename,
+                "--transform=s,work/,,",
+                "--transform=s,^,{:s}/{:s}{:s}/,".format(mcscript.parameters.run.name, descriptor, postfix),
+                "--show-transformed"
+            ] + smwf_archive_file_list
+        )
 
     # copy results out (if in multi-task run)
     if (mcscript.task.results_dir is not None):
@@ -279,6 +298,15 @@ def save_mfdn_output(task, postfix=""):
                 "--target-directory={}".format(mcscript.task.results_dir)
             ]
         )
+        if task.get("save_wavefunctions"):
+            mcscript.call(
+                [
+                    "cp",
+                    "--verbose",
+                    smwf_archive_filename,
+                    "--target-directory={}".format(mcscript.task.results_dir)
+                ]
+            )
 
 
 def cleanup_mfdn_workdir(task, postfix=""):

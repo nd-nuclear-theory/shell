@@ -40,10 +40,6 @@
         "target_truncation" (tuple): truncation of target TBMEs, as weight_max tuple
              (None: deduce automatically from valence shell and many-body truncation information)
 
-        # legacy -- to adapt or remove
-        "basis" (tuple): logical basis (radial_basis_p,1.,radial_basis_n,beta_n), to be scaled by hw
-        "scaled_basis" (tuple): deduced basis used in task descriptor, etc.
-
         # truncation parameters
         "sp_truncation_mode" (modes.SingleParticleTruncationMode): enumerated value
             indicating single-particle basis truncation; see docstring of
@@ -80,6 +76,9 @@
             "am-sqr": squared angular momenta
             "isospin": isospin observables
             "R20K20": center-of-mass diagnostic observables (TODO)
+
+        # wavefunction storage
+        "save_wavefunctions" (bool): whether or not to save smwf files in (separate) archive
 
         # version parameters
         "h2_format" (int): h2 file format to use (values include: 0, 15099)
@@ -129,6 +128,7 @@
       + Replace truncation_mode key with sp_truncation_mode and mb_truncation_mode.
       + Fix FCI truncation.
     - 09/22/17 (pjf): Take "observables" as list of tuples instead of dict.
+    - 09/24/17 (pjf): Add option to save wavefunctions for postprocessing.
 """
 
 __ALL__ = ['descriptors', 'handlers', 'radial', 'operators', 'tbme', 'utils', 'config']
