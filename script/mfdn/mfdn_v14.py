@@ -309,6 +309,9 @@ def save_mfdn_output(task, postfix=""):
                     "--target-directory={}".format(wavefunction_dir)
                 ]
             )
+            # wavefunction files are large and we shouldn't fill scratch
+            # with two copies
+            mcscript.call(["rm", "-vf", smwf_archive_filename])
 
 
 def cleanup_mfdn_workdir(task, postfix=""):
