@@ -278,7 +278,7 @@ def save_mfdn_output(task, postfix=""):
     if task.get("save_wavefunctions"):
         smwf_archive_file_list = glob.glob("work/mfdn_smwf*")
         smwf_archive_file_list += glob.glob("work/mfdn_MBgroups*")
-        smwf_archive_filename = "{:s}-wf.tgz".format(filename_prefix)
+        smwf_archive_filename = "{:s}-wf.tar".format(filename_prefix)
         mcscript.call(
             [
                 "tar", "zcvf", smwf_archive_filename,
@@ -299,12 +299,14 @@ def save_mfdn_output(task, postfix=""):
             ]
         )
         if task.get("save_wavefunctions"):
+            wavefunction_dir = os.path.join(mcscript.parameters.run.work_dir, "wavefunctions")
+            mcscript.call(["mkdir", "-p", wavefunction_dir])
             mcscript.call(
                 [
                     "cp",
                     "--verbose",
                     smwf_archive_filename,
-                    "--target-directory={}".format(mcscript.task.results_dir)
+                    "--target-directory={}".format(wavefunction_dir)
                 ]
             )
 

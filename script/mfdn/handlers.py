@@ -11,6 +11,7 @@ University of Notre Dame
 - 07/31/17 (pjf): Move mfdn driver from handler argument to task dictionary.
 - 09/12/17 (pjf): Update for config -> modes + environ split.
 - 09/24/17 (pjf): Fix call to cleanup_mfdn_workdir() in task_handler_natorb().
+- 09/25/17 (pjf): Add archive_handler_mfdn() and archive_handler_mfdn_hsi().
 """
 import os
 import glob
@@ -85,6 +86,48 @@ def task_handler_natorb(task):
 ################################################################
 # mfdn archiving
 ################################################################
+
+def archive_handler_mfdn():
+    """Generate archives for MFDn results and MFDn wavefunctions."""
+    # first, generate usual archive for results directory and copy to tape
+    archive_filename = mcscript.task.archive_handler_generic(include_results=True)
+
+    # next, generate wavefunction archive and copy to tape separately
+    wavefunction_archive_filename = None
+    wavefunction_dir = os.path.join(mcscript.parameters.run.work_dir, "wavefunctions")
+    if os.path.exists(wavefunction_dir):
+        wavefunction_archive_filename = os.path.join(
+            mcscript.task.archive_dir,
+            "{:s}-archive-{:s}-wf.tar".format(mcscript.parameters.run.name, mcscript.utils.date_tag())
+            )
+        toc_filename = "{}.toc".format(mcscript.parameters.run.name)
+        filename_list = [
+            toc_filename,
+            "wavefunctions"
+        ]
+        mcscript.control.call(
+            [
+                "tar",
+                "zcvf",
+                wavefunction_archive_filename,
+                "--transform=s,^,{:s}/,".format(mcscript.parameters.run.name),
+                "--show-transformed",
+                "--exclude=task-ARCH-*"   # avoid failure return code due to "tar: runxxxx/output/task-ARCH-0.out: file changed as we read it"
+            ] + filename_list,
+            cwd=mcscript.parameters.run.work_dir,
+            check_return=True
+            )
+
+    return (archive_filename, wavefunction_archive_filename)
+
+
+def archive_handler_mfdn_hsi():
+    """Generate archives for MFDn and save to tape."""
+    (archive_filename, wavefunction_archive_filename) = archive_handler_mfdn()
+    mcscript.task.archive_handler_hsi(archive_filename)
+    if wavefunction_archive_filename:
+        mcscript.task.archive_handler_hsi(wavefunction_archive_filename)
+
 
 def archive_handler_mfdn_res_only(task):
     """ Generate summary archive of MFDn results files.
