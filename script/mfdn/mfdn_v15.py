@@ -18,6 +18,7 @@ University of Notre Dame
 - 09/24/17 (pjf):
   + Archive wavefunction files in separate archive.
   + Create tar files with minimal directory structure for easy inflation.
+- 09/27/17 (pjf): Allow for counting modes with run_mode.
 """
 import os
 import glob
@@ -101,11 +102,12 @@ truncation_setup_functions = {
 }
 
 
-def run_mfdn(task, postfix=""):
+def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     """Generate input file and execute MFDn version 15 beta 00.
 
     Arguments:
         task (dict): as described in module docstring
+        run_mode (modes.MFDnRunMode): run mode for MFDn
         postfix (string, optional): identifier to add to generated files
 
     Raises:
@@ -116,6 +118,11 @@ def run_mfdn(task, postfix=""):
 
     # inputlist namelist dictionary
     inputlist = collections.OrderedDict()
+    # tbo: two-body observable namelist
+    obslist = {}
+
+    # run mode
+    inputlist["IFLAG_mode"] = int(run_mode)
 
     # nucleus
     inputlist["Nprotons"], inputlist["Nneutrons"] = task["nuclide"]
@@ -134,76 +141,72 @@ def run_mfdn(task, postfix=""):
     # truncation mode
     truncation_setup_functions[task["mb_truncation_mode"]](task, inputlist)
 
-    if (task["basis_mode"] in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):
-        inputlist["hbomeg"] = float(task["hw"])
+    if run_mode is modes.MFDnRunMode.kNormal:
+        if (task["basis_mode"] in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):
+            inputlist["hbomeg"] = float(task["hw"])
 
-    # diagonalization parameters
-    inputlist["neivals"] = int(task["eigenvectors"])
-    inputlist["maxits"] = int(task["lanczos"])
-    inputlist["tol"] = float(task["tolerance"])
+        # diagonalization parameters
+        inputlist["neivals"] = int(task["eigenvectors"])
+        inputlist["maxits"] = int(task["lanczos"])
+        inputlist["tol"] = float(task["tolerance"])
 
-    # Hamiltonian input
-    inputlist["TBMEfile"] = "tbme-H"
+        # Hamiltonian input
+        inputlist["TBMEfile"] = "tbme-H"
 
-    # tbo: two-body observable namelist
-    obslist = {}
+        # tbo: collect tbo names
+        obs_basename_list = ["tbme-rrel2"]
+        if ("H-components" in task["observable_sets"]):
+            obs_basename_list += ["tbme-Trel", "tbme-Ncm", "tbme-VNN"]
+            if (task["use_coulomb"]):
+                obs_basename_list += ["tbme-VC"]
+        if ("am-sqr" in task["observable_sets"]):
+            obs_basename_list += ["tbme-L", "tbme-Sp", "tbme-Sn", "tbme-S", "tbme-J"]
+        if ("isospin" in task["observable_sets"]):
+            obs_basename_list += ["tbme-T"]
+        if ("observables" in task):
+            obs_basename_list += [basename for (basename, operator) in task["observables"]]
 
-    # tbo: collect tbo names
-    obs_basename_list = ["tbme-rrel2"]
-    if ("H-components" in task["observable_sets"]):
-        obs_basename_list += ["tbme-Trel", "tbme-Ncm", "tbme-VNN"]
-        if (task["use_coulomb"]):
-            obs_basename_list += ["tbme-VC"]
-    if ("am-sqr" in task["observable_sets"]):
-        obs_basename_list += ["tbme-L", "tbme-Sp", "tbme-Sn", "tbme-S", "tbme-J"]
-    if ("isospin" in task["observable_sets"]):
-        obs_basename_list += ["tbme-T"]
-    if ("observables" in task):
-        obs_basename_list += [basename for (basename, operator) in task["observables"]]
+        # tbo: log tbo names in separate file to aid future data analysis
+        mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)
 
-    # tbo: log tbo names in separate file to aid future data analysis
-    mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)
+        # tbo: count number of observables
+        num_obs = len(obs_basename_list)
+        if (num_obs > 32):
+            raise mcscript.exception.ScriptError("Too many observables for MFDn v15")
 
-    # tbo: count number of observables
-    num_obs = len(obs_basename_list)
-    if (num_obs > 32):
-        raise mcscript.exception.ScriptError("Too many observables for MFDn v15")
+        inputlist["numTBops"] = num_obs
+        obslist["TBMEoperators"] = obs_basename_list
 
-    inputlist["numTBops"] = num_obs
-    obslist["TBMEoperators"] = obs_basename_list
+        # obdme: parameters
+        inputlist["obdme"] = True
+        obslist["max2K"] = int(2*task["obdme_multipolarity"])
 
-    # obdme: parameters
-    inputlist["obdme"] = True
-    obslist["max2K"] = int(2*task["obdme_multipolarity"])
+        # construct transition observable input if reference states given
+        if task.get("obdme_reference_state_list") is not None:
+            # obdme: validate reference state list
+            #
+            # guard against pathetically common mistakes
+            for (J, g_rel, i) in task["obdme_reference_state_list"]:
+                # validate integer/half-integer character of angular momentum
+                twice_J = int(2*J)
+                if ((twice_J % 2) != (sum(task["nuclide"]) % 2)):
+                    raise ValueError("invalid angular momentum for reference state")
+                # validate grade (here taken relative to natural grade)
+                # if ((g_rel != (truncation_parameters["Nmax"] % 2)) and (truncation_parameters["Nstep"] != 1)):
+                #     raise ValueError("invalid parity for reference state")
 
-    # construct transition observable input if reference states given
-    if task.get("obdme_reference_state_list") is not None:
-        # obdme: validate reference state list
-        #
-        # guard against pathetically common mistakes
-        for (J, g_rel, i) in task["obdme_reference_state_list"]:
-            # validate integer/half-integer character of angular momentum
-            twice_J = int(2*J)
-            if ((twice_J % 2) != (sum(task["nuclide"]) % 2)):
-                raise ValueError("invalid angular momentum for reference state")
-            # validate grade (here taken relative to natural grade)
-            # if ((g_rel != (truncation_parameters["Nmax"] % 2)) and (truncation_parameters["Nstep"] != 1)):
-            #     raise ValueError("invalid parity for reference state")
-
-        # obdme: construct input
-        inputlist["nrefstates"] = len(task["obdme_reference_state_list"])
-        obslist["ref2J"] = []
-        obslist["refseq"] = []
-        for (J, g_rel, i) in task["obdme_reference_state_list"]:
-            obslist["ref2J"].append(int(2*J))
-            obslist["refseq"].append(i)
+            # obdme: construct input
+            inputlist["nrefstates"] = len(task["obdme_reference_state_list"])
+            obslist["ref2J"] = []
+            obslist["refseq"] = []
+            for (J, g_rel, i) in task["obdme_reference_state_list"]:
+                obslist["ref2J"].append(int(2*J))
+                obslist["refseq"].append(i)
 
     # generate MFDn input file
     mcscript.utils.write_namelist(
         os.path.join("work", "mfdn.input"), input_dict={"inputlist": inputlist, "obslist": obslist}
     )
-
-    # mcscript.utils.write_input("work/mfdn.dat",input_lines=lines)
 
     # import partitioning file
     if (task["partition_filename"] is not None):
@@ -226,7 +229,7 @@ def run_mfdn(task, postfix=""):
     # test for basic indications of success
     if (not os.path.exists("mfdn.out")):
         raise mcscript.exception.ScriptError("mfdn.out not found")
-    if (not os.path.exists("mfdn.res")):
+    if (run_mode is modes.MFDnRunMode.kNormal) and (not os.path.exists("mfdn.res")):
         raise mcscript.exception.ScriptError("mfdn.res not found")
 
     # leave work directory

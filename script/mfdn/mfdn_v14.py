@@ -26,6 +26,7 @@ University of Notre Dame
 - 09/24/17 (pjf):
   + Archive wavefunction files in separate archive.
   + Create tar files with minimal directory structure for easy inflation.
+- 09/27/17 (pjf): Allow for counting modes with run_mode.
 """
 import os
 import glob
@@ -35,11 +36,12 @@ import mcscript
 from . import utils, modes, environ
 
 
-def run_mfdn(task, postfix=""):
+def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     """Generate input file and execute MFDn version 14 beta 06.
 
     Arguments:
         task (dict): as described in module docstring
+        run_mode (modes.MFDnRunMode): run mode for MFDn
         postfix (string, optional): identifier to add to generated files
 
     Raises:
@@ -80,7 +82,7 @@ def run_mfdn(task, postfix=""):
     else:
         Nmin = 1
 
-    lines.append("{:d}  # IFLAGMBSI".format(0))
+    lines.append("{:d}  # IFLAGMBSI".format(run_mode))
     lines.append("{ndiag:d}  # ndiag (0: no spares, automatic ndiag)".format(ndiag=ndiag))
     lines.append("{:d}  # number of classes".format(2))
     lines.append("{nuclide[0]:d}  # protons (class 1 particles)".format(**task))

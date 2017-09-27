@@ -30,6 +30,38 @@ from . import (
 # basic oscillator run
 ################################################################
 
+def task_handler_dimension(task, postfix=""):
+    """Task handler for dimension counting-only run.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    mfdn_driver = task.get("mfdn_driver")
+    if mfdn_driver is None:
+        mfdn_driver = mfdn_v14
+    radial.set_up_orbitals(task, postfix=postfix)
+    mfdn_driver.run_mfdn(task, run_mode=modes.MFDnRunMode.kDimension, postfix=postfix)
+
+
+def task_handler_nonzeros(task, postfix=""):
+    """Task handler for dimension counting-only run.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    mfdn_driver = task.get("mfdn_driver")
+    if mfdn_driver is None:
+        mfdn_driver = mfdn_v14
+    radial.set_up_orbitals(task, postfix=postfix)
+    mfdn_driver.run_mfdn(task, run_mode=modes.MFDnRunMode.kNonzeros, postfix=postfix)
+
+
+################################################################
+# basic oscillator run
+################################################################
+
 def task_handler_oscillator(task, postfix=""):
     """Task handler for basic oscillator run.
 

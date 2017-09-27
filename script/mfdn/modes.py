@@ -12,6 +12,7 @@ University of Notre Dame
 - 08/26/17 (pjf): Add parity flag for WeightMax many-body truncation mode.
 - 9/12/17 (mac): Put mfdn executable filename under common mcscript install directory.
 - 09/12/17 (pjf): Split config.py -> mode.py + environ.py.
+- 09/27/17 (pjf): Add MFDnRunMode options for counting-only modes.
 """
 
 import enum
@@ -118,3 +119,24 @@ class ManyBodyTruncationMode(enum.Enum):
     kNmax = 1
     kWeightMax = 2
     kFCI = 3
+
+
+################################################################
+# MFDn run modes
+################################################################
+
+@enum.unique
+class MFDnRunMode(enum.IntEnum):
+    """MFDn run mode (IFLAG_mode)
+
+    kNormal: 0, normal MFDn diagonalization run
+
+    kDimension: 1, count basis dimension
+
+    kNonzeros: 3, count nonzero matrix elements
+
+    """
+
+    kNormal = 0
+    kDimension = 1
+    kNonzeros = 3
