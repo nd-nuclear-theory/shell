@@ -10,6 +10,8 @@
 #include "moshinsky/moshinsky_bracket.h"
 #include "moshinsky/moshinsky_xform.h"
 
+// #include "cppformat/format.h"
+
 namespace moshinsky {
 
   ////////////////////////////////////////////////////////////////
@@ -1076,8 +1078,18 @@ namespace moshinsky {
                         canonical_two_body_jjjt_state_index_bra,canonical_two_body_jjjt_state_index_ket
                       );
 
+                    // determine normalization factor to convert target matrix element from AS to NAS
+                    double conversion_factor = 1.;
+                    if (two_body_species!=basis::TwoBodySpeciesPN::kPN)
+                      {
+                        if (two_body_jjjpn_bra.index1()==two_body_jjjpn_bra.index2())
+                          conversion_factor *= (1/sqrt(2.));
+                        if (two_body_jjjpn_ket.index1()==two_body_jjjpn_ket.index2())
+                          conversion_factor *= (1/sqrt(2.));
+                      }
+
                     // incorporate contribution
-                    matrix(bra_index,ket_index) += isospin_coefficient * two_body_jjjt_matrix_element;
+                    matrix(bra_index,ket_index) += conversion_factor * isospin_coefficient * two_body_jjjt_matrix_element;
 
                   }
             }

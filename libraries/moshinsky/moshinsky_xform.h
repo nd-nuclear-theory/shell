@@ -24,6 +24,8 @@
   7/22/16 (mac): Implement isospin branching.
   10/25/16 (mac): Update to use TwoBodySectorsJJJPN constructor with
     explicit Tz=0.
+  9/27/17 (mac): Change normalization for TwoBodyMatrixJJJPN results from
+    AS to NAS.
 
 ****************************************************************/
 
@@ -347,8 +349,8 @@ namespace moshinsky {
   // We need all source isospin components, since we are performing a sum over
   // source isospin components.
   //
-  // The output matrix element are antisymmetrized (AS) matrix elements,
-  // rather than normalized antisymmetrized (NAS) matrix elements.
+  // The output matrix element are now *normalized* antisymmetrized
+  // (NAS) matrix elements.
   //
   // PRECONDITION: The proton and neutron orbital label sets must be
   // defined identically, and the indexing order must be

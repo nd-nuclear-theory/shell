@@ -57,12 +57,11 @@ namespace shell {
   // H2 format code
   //
   //   0: oscillator-like sp indexing, used with MFDn v14
-  //   15000: Pieter's preliminary general orbitals test format for MFDn v15 beta00
+  //   15000: Pieter's preliminary general orbitals test format for MFDn v15 beta00 (not supported)
   //   15099: general orbitals specification June 2016
 
   typedef int H2Format;
   const int kVersion0=0;
-  const int kVersion15000=15000;
   const int kVersion15099=15099;
   // enum class H2Format
   // {kVersion0=0,kVersion15000=15000,kVersion15099=15099};
