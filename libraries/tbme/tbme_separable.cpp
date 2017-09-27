@@ -503,7 +503,7 @@ namespace shell {
           }
         else if (operator_family == shell::AngularMomentumOperatorFamily::kTotal)
           {
-             matrix_element += double{ja}*(double{ja}+1);
+            matrix_element += double(ja)*(double(ja)+1);
           }
       }
 
@@ -787,7 +787,7 @@ namespace shell {
       }
     } else if (operator_type == IsospinOperatorType::kTz) {
       if ( b == a ) {
-        matrix_element += double{a.Tz()};
+        matrix_element += double(a.Tz());
       }
     } else if (operator_type == IsospinOperatorType::kRaising) {
       if ((jb == ja) && (lb == la) && (Tzb == Tza + 1)) {
