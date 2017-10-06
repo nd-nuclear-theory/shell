@@ -145,7 +145,7 @@ def archive_handler_mfdn():
         mcscript.control.call(
             [
                 "tar",
-                "zcvf",
+                "cvf",
                 wavefunction_archive_filename,
                 "--transform=s,^,{:s}/,".format(mcscript.parameters.run.name),
                 "--show-transformed",
