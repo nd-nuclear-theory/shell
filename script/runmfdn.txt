@@ -106,3 +106,9 @@ runmfdn09: general truncation direct run with MFDn v15
     Usage: qsubm --here mfdn09
 
     We use tb-10 as the smallest available set of files.
+
+runmfdn10: counting-only run with MFDn v15
+
+    6He Nmax08 (counting)
+
+    Usage: qsubm --here mfdn10

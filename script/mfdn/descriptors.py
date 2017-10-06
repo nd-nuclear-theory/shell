@@ -10,6 +10,7 @@ University of Notre Dame
 - 08/11/17 (pjf): Use new TruncationModes.
 - 08/26/17 (pjf): Add task_descriptor_8 for general truncation.
 - 09/12/17 (pjf): Update for config -> modes + environ split.
+- 10/04/17 (pjf): Add counting-only descriptor.
 """
 import mcscript.exception
 import mcscript.utils
@@ -152,6 +153,44 @@ def task_descriptor_8(task):
         mixed_parity_indicator=mixed_parity_indicator,
         natural_orbital_indicator=natural_orbital_indicator,
         **mcscript.utils.dict_union(task, truncation_parameters)
+        )
+
+    return descriptor
+
+
+def task_descriptor_c1(task):
+    """Task descriptor format c1
+
+        Task descriptor for counting-only runs:
+            - Currently support Nmax and triangular s.p. truncations.
+            - Currently support FCI, Nmax, and WTmax m.b. truncations.
+    """
+    # oscillator basis
+    template_string = (
+        "Z{nuclide[0]}-N{nuclide[1]}"
+        "{sp_truncation:s}{mb_truncation:s}{mixed_parity_indicator}-Mj{Mj:03.1f}"
+    )
+    if task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kNmax:
+        sp_truncation = "-Nmax{Nmax:02d}".format(**task["truncation_parameters"])
+    elif task["sp_truncation_mode"] is modes.SingleParticleTruncationMode.kTriangular:
+        sp_truncation = "-an{n_coeff:06.3f}-bl{l_coeff:06.3f}-spWTmax{sp_weight_max:06.3f}".format(**task["truncation_parameters"])
+    else:
+        raise mcscript.exception.ScriptError("mode not supported by task descriptor")
+
+    truncation_parameters = task["truncation_parameters"]
+    if task["mb_truncation_mode"] is modes.ManyBodyTruncationMode.kFCI:
+        mb_truncation = "-FCI"
+    elif task["mb_truncation_mode"] is modes.ManyBodyTruncationMode.kNmax:
+        mb_truncation = ""
+    elif task["mb_truncation_mode"] is modes.ManyBodyTruncationMode.kWeightMax:
+        mb_truncation = "-WTmax{mb_weight_max:06.3f}".format(**truncation_parameters)
+    mixed_parity_indicator = mcscript.utils.ifelse(truncation_parameters.get("parity") == 0, "x", "")
+
+    descriptor = template_string.format(
+        sp_truncation=sp_truncation,
+        mb_truncation=mb_truncation,
+        mixed_parity_indicator=mixed_parity_indicator,
+        **task
         )
 
     return descriptor

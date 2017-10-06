@@ -25,9 +25,12 @@ from . import (
     mfdn_v14,
 )
 
+# set default MFDn driver
+default_mfdn_driver = mfdn_v14
+
 
 ################################################################
-# basic oscillator run
+# counting-only run
 ################################################################
 
 def task_handler_dimension(task, postfix=""):
@@ -39,9 +42,10 @@ def task_handler_dimension(task, postfix=""):
     """
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
-        mfdn_driver = mfdn_v14
+        mfdn_driver = default_mfdn_driver
     radial.set_up_orbitals(task, postfix=postfix)
     mfdn_driver.run_mfdn(task, run_mode=modes.MFDnRunMode.kDimension, postfix=postfix)
+    mfdn_driver.save_mfdn_output_out_only(task, postfix=postfix)
 
 
 def task_handler_nonzeros(task, postfix=""):
@@ -53,9 +57,10 @@ def task_handler_nonzeros(task, postfix=""):
     """
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
-        mfdn_driver = mfdn_v14
+        mfdn_driver = default_mfdn_driver
     radial.set_up_orbitals(task, postfix=postfix)
     mfdn_driver.run_mfdn(task, run_mode=modes.MFDnRunMode.kNonzeros, postfix=postfix)
+    mfdn_driver.save_mfdn_output_out_only(task, postfix=postfix)
 
 
 ################################################################
@@ -71,7 +76,7 @@ def task_handler_oscillator(task, postfix=""):
     """
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
-        mfdn_driver = mfdn_v14
+        mfdn_driver = default_mfdn_driver
     radial.set_up_interaction_orbitals(task, postfix=postfix)
     radial.set_up_orbitals(task, postfix=postfix)
     radial.set_up_radial_analytic(task, postfix=postfix)
@@ -92,14 +97,14 @@ def task_handler_natorb(task):
     """
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
-        mfdn_driver = mfdn_v14
+        mfdn_driver = default_mfdn_driver
 
     # sanity checks
     if not task.get("natural_orbitals"):
         raise mcscript.exception.ScriptError("natural orbitals not enabled")
 
     natorb_base_state = task.get("natorb_base_state")
-    if type(natorb_base_state) is not int:
+    if not isinstance(natorb_base_state, int):
         raise mcscript.exception.ScriptError("invalid natorb_base_state: {}".format(natorb_base_state))
 
     # first do base oscillator run

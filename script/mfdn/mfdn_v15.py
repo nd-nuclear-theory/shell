@@ -19,6 +19,7 @@ University of Notre Dame
   + Archive wavefunction files in separate archive.
   + Create tar files with minimal directory structure for easy inflation.
 - 09/27/17 (pjf): Allow for counting modes with run_mode.
+- 10/05/17 (pjf): Add save_mfdn_output_out_only.
 """
 import os
 import glob
@@ -229,25 +230,49 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # test for basic indications of success
     if (not os.path.exists("mfdn.out")):
         raise mcscript.exception.ScriptError("mfdn.out not found")
-    if (run_mode is modes.MFDnRunMode.kNormal) and (not os.path.exists("mfdn.res")):
+    if (not os.path.exists("mfdn.res")):
         raise mcscript.exception.ScriptError("mfdn.res not found")
 
     # leave work directory
     os.chdir("..")
 
 
-def save_mfdn_output(task, postfix=""):
-    """Generate input file and execute MFDn version 14 beta 06.
+def save_mfdn_output_out_only(task, postfix=""):
+    """Collect and save MFDn output files only.
 
     Arguments:
         task (dict): as described in module docstring
         postfix (string, optional): identifier to add to generated files
-
-    Raises:
-        mcscript.exception.ScriptError: if MFDn output not found
     """
     # save quick inspection copies of mfdn.{res,out}
-    natural_orbitals = task.get("natural_orbitals")
+    descriptor = task["metadata"]["descriptor"]
+    print("Saving basic output files...")
+    filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    res_filename = "{:s}.res".format(filename_prefix)
+    mcscript.call(["cp", "--verbose", "work/mfdn.res", res_filename])
+    out_filename = "{:s}.out".format(filename_prefix)
+    mcscript.call(["cp", "--verbose", "work/mfdn.out", out_filename])
+
+    # copy results out (if in multi-task run)
+    if (mcscript.task.results_dir is not None):
+        mcscript.call(
+            [
+                "cp",
+                "--verbose",
+                res_filename, out_filename,
+                "--target-directory={}".format(mcscript.task.results_dir)
+            ]
+        )
+
+
+def save_mfdn_output(task, postfix=""):
+    """Collect and save MFDn output.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    # save quick inspection copies of mfdn.{res,out}
     descriptor = task["metadata"]["descriptor"]
     print("Saving basic output files...")
     filename_prefix = "{:s}-mfdn15-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
@@ -257,7 +282,7 @@ def save_mfdn_output(task, postfix=""):
     mcscript.call(["cp", "--verbose", "work/mfdn.out", out_filename])
 
     # save OBDME files for next natural orbital iteration
-    if natural_orbitals:
+    if task.get("natural_orbitals"):
         print("Saving OBDME files for natural orbital generation...")
         obdme_info_filename = "mfdn.rppobdme.info"
         mcscript.call(
@@ -301,7 +326,7 @@ def save_mfdn_output(task, postfix=""):
             environ.filenames.radial_olap_coul_filename(postfix),
         ]
     # natural orbital information
-    if natural_orbitals:
+    if task.get("natural_orbitals"):
         archive_file_list += [
             environ.filenames.natorb_info_filename(postfix),
             environ.filenames.natorb_obdme_filename(postfix),

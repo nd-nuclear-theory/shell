@@ -59,7 +59,7 @@ tasks = [{
     "mb_truncation_mode": mfdn.modes.ManyBodyTruncationMode.kNmax,
     "truncation_parameters": {
         "Nv": 1,
-        "Nmax": 2,
+        "Nmax": 8,
         "Nstep": 2,
         },
 
@@ -74,7 +74,7 @@ tasks = [{
     # obdme parameters
     ## "hw_for_trans": 20,
     "obdme_multipolarity": 2,
-    "obdme_reference_state_list": [(0, 0, 1)],
+    # "obdme_reference_state_list": [(0, 0, 1)],
     "save_obdme": True,
 
     # two-body observables
@@ -87,7 +87,7 @@ tasks = [{
 
     # version parameters
     "h2_format": 15099,
-    "mfdn_executable": "v15-beta00/xmfdn-h2-lan",
+    "mfdn_executable": "v15-beta01/xmfdn-h2-lan",
     "mfdn_driver": mfdn.mfdn_v15
 }]
 
@@ -100,24 +100,17 @@ def task_pool(current_task):
     return pool
 
 
-def task_mask(current_task):
-    allow = mcscript.approx_equal(current_task["hw"], 10., 0.1) and (current_task["metadata"]["phase"] == 0)
-    allow = allow or (current_task["metadata"]["phase"] == 2)
-    return allow
-
-
 ##################################################################
 # task control
 ##################################################################
 
 mcscript.task.init(
     tasks,
-    task_descriptor=mfdn.descriptors.task_descriptor_7,
+    task_descriptor=mfdn.descriptors.task_descriptor_c1,
     task_pool=task_pool,
     phase_handler_list=[
         mfdn.handlers.task_handler_dimension,
-        mfdn.handlers.task_handler_nonzeros,
-        mfdn.handlers.task_handler_oscillator
+        mfdn.handlers.task_handler_nonzeros
         ]
     )
 

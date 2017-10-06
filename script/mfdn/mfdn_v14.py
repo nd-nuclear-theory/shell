@@ -27,6 +27,7 @@ University of Notre Dame
   + Archive wavefunction files in separate archive.
   + Create tar files with minimal directory structure for easy inflation.
 - 09/27/17 (pjf): Allow for counting modes with run_mode.
+- 10/05/17 (pjf): Add save_mfdn_output_out_only.
 """
 import os
 import glob
@@ -183,11 +184,40 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     os.chdir("..")
 
 
-def save_mfdn_output(task, postfix=""):
-    """Generate input file and execute MFDn version 14 beta 06.
+def save_mfdn_output_out_only(task, postfix=""):
+    """Collect and save MFDn output files only.
 
     Arguments:
         task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    # save quick inspection copies of mfdn.{res,out}
+    descriptor = task["metadata"]["descriptor"]
+    print("Saving basic output files...")
+    filename_prefix = "{:s}-mfdn-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
+    res_filename = "{:s}.res".format(filename_prefix)
+    mcscript.call(["cp", "--verbose", "work/mfdn.res", res_filename])
+    out_filename = "{:s}.out".format(filename_prefix)
+    mcscript.call(["cp", "--verbose", "work/mfdn.out", out_filename])
+
+    # copy results out (if in multi-task run)
+    if (mcscript.task.results_dir is not None):
+        mcscript.call(
+            [
+                "cp",
+                "--verbose",
+                res_filename, out_filename,
+                "--target-directory={}".format(mcscript.task.results_dir)
+            ]
+        )
+
+
+def save_mfdn_output(task, postfix=""):
+    """Collect and save MFDn output.
+
+    Arguments:
+        task (dict): as described in module docstring
+        run_mode (modes.MFDnRunMode): run mode for MFDn
         postfix (string, optional): identifier to add to generated files
 
     Raises:
