@@ -48,7 +48,7 @@ void TestQuadrupole()
           relative_component_sectors,
           relative_component_matrices,
           relative::KinematicOperator::kRSqr,
-          basis::TwoBodySpeciesPN::kPP
+          operator_species
         );
       std::string filename = fmt::format("quadrupole_test_Nmax{}_{}_rel.dat",Nmax,basis::kTwoBodySpeciesPNCodeChar[int(operator_species)]);
       basis::WriteRelativeOperatorLSJT(
