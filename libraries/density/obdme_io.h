@@ -13,6 +13,10 @@
     - InOBDMEReader parses info files at construction time.
     - The same reader can parse multiple data files.
     - Quantum numbers stored in data files are currently ignored.
+  + 10/16/17 (pjf):
+    - Define reader with g0 and Tz0.
+    - TODO: check these values against those stored in data files.
+
 
 ****************************************************************/
 
@@ -44,7 +48,9 @@ class InOBDMEReader {
 
   InOBDMEReader(
       const std::string& info_filename,
-      const basis::OrbitalSpaceLJPN& orbital_space
+      const basis::OrbitalSpaceLJPN& orbital_space,
+      int g0 = 0,
+      int Tz0 = 0
     );
   // Construct a reader by parsing an info file.
 
@@ -94,6 +100,7 @@ class InOBDMEReader {
 
   // indexing information
   basis::OrbitalSpaceLJPN orbital_space_;
+  int g0_, Tz0_;
 
   // filename
   std::string info_filename_;

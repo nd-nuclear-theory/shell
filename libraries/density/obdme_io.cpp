@@ -23,9 +23,10 @@ namespace shell {
 
 InOBDMEReader::InOBDMEReader(
     const std::string& info_filename,
-    const basis::OrbitalSpaceLJPN& orbital_space
+    const basis::OrbitalSpaceLJPN& orbital_space,
+    int g0, int Tz0
   )
-  : info_filename_(info_filename), orbital_space_(orbital_space)
+  : info_filename_(info_filename), orbital_space_(orbital_space), g0_(g0), Tz0_(Tz0)
 {
   std::ios_base::openmode mode_argument = std::ios_base::in;
 
@@ -43,9 +44,7 @@ InOBDMEReader::InOBDMEReader(
 }
 
 void InOBDMEReader::SetToIndexing(int order, basis::OrbitalSectorsLJPN& sectors) {
-  int g0 = order%2;
-  sectors = basis::OrbitalSectorsLJPN(orbital_space_, order, g0, 0);
-  // @note hard-coded Tz0=0
+  sectors = basis::OrbitalSectorsLJPN(orbital_space_, order, g0_, Tz0_);
 }
 
 void InOBDMEReader::ReadInfoHeader() {
@@ -255,7 +254,8 @@ void InOBDMEReader::ReadMultipole(const std::string& data_filename, int order, b
   for (int sector_index=0; sector_index < sectors.size(); ++sector_index) {
     // get next sector
     const basis::OrbitalSectorsLJPN::SectorType sector = sectors.GetSector(sector_index);
-    matrices[sector_index].resize(sector.bra_subspace().size(),sector.ket_subspace().size());
+    matrices[sector_index] = basis::OperatorBlocks<double>::value_type::Zero(
+        sector.bra_subspace().size(), sector.ket_subspace().size());
   }
 
   // extract data we want for this multipole
@@ -270,6 +270,9 @@ void InOBDMEReader::ReadMultipole(const std::string& data_filename, int order, b
     std::tie(sector_index, bra_index, ket_index) = basis::MatrixElementIndicesLJPN(
       orbital_space(), orbital_space(), sectors, info_line.bra_labels, info_line.ket_labels
     );
+    assert(sector_index != basis::kNone);
+    assert(bra_index != basis::kNone);
+    assert(ket_index != basis::kNone);
 
     // store matrix element -- multiply by sqrt(4*pi) to fix MFDn bug
     matrices[sector_index](bra_index,ket_index) = temp_matrix_element * 3.54490770181103205459633496668229;
