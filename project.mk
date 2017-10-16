@@ -23,6 +23,7 @@ install_prefix := $(install_prefix)/shell
 ################
 
 modules += programs/radialutils programs/relutils programs/h2utils
+modules += programs/obscalc
 
 # legacy programs -- DEPRECATED
 ##modules += programs/h2utils_legacy

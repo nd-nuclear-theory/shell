@@ -1,0 +1,5 @@
+set-transition-type E
+set-transition-rank 2
+define-radial-source r2-me-Nmax02.dat
+define-output E2-obme-Nmax02.dat
+
