@@ -13,6 +13,7 @@
   University of Notre Dame
 
   + 08/11/17 (pjf): Created, based on radial-compose.cpp.
+  + 10/12/17 (pjf): Update for changes to radial_io.
 
 ******************************************************************************/
 
@@ -98,6 +99,7 @@ int main(int argc, const char *argv[]) {
   basis::OrbitalSpaceLJPN bra_space, ket_space;
   basis::OrbitalSectorsLJPN sectors;
   shell::RadialOperatorType operator_type = inputs.radial_operator_type();
+  int operator_power = inputs.radial_operator_power();
   inputs.SetToIndexing(bra_space, ket_space, sectors);
 
   // Eigen initialization
@@ -109,7 +111,8 @@ int main(int argc, const char *argv[]) {
   std::cout << "INFO: Writing to file " << run_parameters.output_filename << std::endl;
   shell::OutRadialStream os(run_parameters.output_filename,
                             bra_space, ket_space, sectors,
-                            operator_type, true);  // verbose_mode = true
+                            operator_type, operator_power, true);
+                            // verbose_mode = true
   os.Write(matrices);
   os.Close();
 

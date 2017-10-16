@@ -12,6 +12,7 @@
   University of Notre Dame
 
   + 11/4/16 (pjf): Created, based on radial-gen.cpp.
+  + 10/12/17 (pjf): Update for changes to radial_io.
 
 ******************************************************************************/
 
@@ -111,11 +112,16 @@ int main(int argc, char **argv) {
   basis::OrbitalSpaceLJPN bra_orbital_space, ket_orbital_space;
   basis::OrbitalSectorsLJPN sectors;
   shell::RadialOperatorType operator_type = is.radial_operator_type();
+  int radial_operator_power = is.radial_operator_power();
   is.SetToIndexing(bra_orbital_space, ket_orbital_space, sectors);
 
   // check that this is an operator we can scale
   if (operator_type == shell::RadialOperatorType::kO) {
     std::cerr << "ERROR: Overlaps cannot be scaled. Exiting." << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+  if (operator_type == shell::RadialOperatorType::kGeneric) {
+    std::cerr << "ERROR: Generic operators cannot be scaled. Exiting." << std::endl;
     std::exit(EXIT_FAILURE);
   }
   if (sectors.Tz0() != 0) {
@@ -126,11 +132,11 @@ int main(int argc, char **argv) {
   float proton_scale_factor = 1.;
   float neutron_scale_factor = 1.;
   if (operator_type == shell::RadialOperatorType::kR) {
-    proton_scale_factor = std::pow(run_parameters.proton_scale, sectors.l0max());
-    neutron_scale_factor = std::pow(run_parameters.neutron_scale, sectors.l0max());
+    proton_scale_factor = std::pow(run_parameters.proton_scale, radial_operator_power);
+    neutron_scale_factor = std::pow(run_parameters.neutron_scale, radial_operator_power);
   } else if (operator_type == shell::RadialOperatorType::kK) {
-    proton_scale_factor = std::pow(run_parameters.proton_scale, -1*sectors.l0max());
-    neutron_scale_factor = std::pow(run_parameters.neutron_scale, -1*sectors.l0max());
+    proton_scale_factor = std::pow(run_parameters.proton_scale, -1*radial_operator_power);
+    neutron_scale_factor = std::pow(run_parameters.neutron_scale, -1*radial_operator_power);
   }
 
   // Eigen initialization
@@ -151,7 +157,7 @@ int main(int argc, char **argv) {
   // write out to file
   shell::OutRadialStream os(run_parameters.output_filename,
                             bra_orbital_space, ket_orbital_space, sectors,
-                            operator_type);
+                            operator_type, radial_operator_power);
   os.Write(matrices);
 
   is.Close();

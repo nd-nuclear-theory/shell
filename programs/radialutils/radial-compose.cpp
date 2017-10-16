@@ -13,6 +13,7 @@
   University of Notre Dame
 
   + 1/16/17 (pjf): Created, based on radial-xform.cpp.
+  + 10/12/17 (pjf): Update for changes to radial_io.
 
 ******************************************************************************/
 
@@ -144,6 +145,7 @@ int main(int argc, const char *argv[]) {
 
   // construct new indexing
   const shell::RadialOperatorType& out_operator_type = shell::RadialOperatorType::kO;
+  const int out_operator_power = 0;
   const basis::OrbitalSpaceLJPN& out_bra_space = olap1_bra_space;
   const basis::OrbitalSpaceLJPN& out_ket_space = olap2_ket_space;
   basis::OrbitalSectorsLJPN out_sectors(out_bra_space, out_ket_space, 0, 0);
@@ -190,7 +192,7 @@ int main(int argc, const char *argv[]) {
   std::cout << "INFO: Writing to file " << run_parameters.output_filename << std::endl;
   shell::OutRadialStream os(run_parameters.output_filename,
                             out_bra_space, out_ket_space, out_sectors,
-                            out_operator_type);
+                            out_operator_type, out_operator_power);
   os.Write(output_matrices);
   os.Close();
 

@@ -9,6 +9,7 @@
   10/30/16 (mac): Created (make_dummy_radial), based on radial_io_test.
   11/1/16 (mac): Update to use RadialOperatorType::kO.
   11/6/16 (mac): Rename to make_radial_dummy.
+  10/12/17 (pjf): Update for changes to radial_io.
 
 ****************************************************************/
 
@@ -29,7 +30,7 @@ void MakeRadialOut(
     const std::string& filename,
     shell::RadialOperatorType operator_type, int power,
     int Nmax
-  ) 
+  )
 {
   // set up bra/ket space
   basis::OrbitalSpaceLJPN bra_subspace(Nmax);
@@ -37,8 +38,8 @@ void MakeRadialOut(
   int l0max = power;
   int Tz0 = 0;
   basis::OrbitalSectorsLJPN sectors(bra_subspace,ket_subspace,l0max,Tz0);
-  shell::OutRadialStream os(filename,bra_subspace,ket_subspace,sectors,operator_type);
-  
+  shell::OutRadialStream os(filename,bra_subspace,ket_subspace,sectors,operator_type,power);
+
   // generate matrices
   basis::OperatorBlocks<double> matrices;
   basis::SetOperatorToIdentity(sectors,matrices);

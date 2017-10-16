@@ -15,6 +15,7 @@
   + 11/7/16 (pjf): Created, based on radial-scale.cpp.
   + 11/22/16 (pjf): Implemented similarity transforms.
   + 09/19/17 (pjf): Improved transformation to accept more types of transformations.
+  + 10/12/17 (pjf): Update for changes to radial_io.
 
 ******************************************************************************/
 
@@ -121,6 +122,7 @@ int main(int argc, const char *argv[]) {
   basis::OrbitalSpaceLJPN source_bra_space, source_ket_space;
   basis::OrbitalSectorsLJPN source_sectors;
   shell::RadialOperatorType source_operator_type = is.radial_operator_type();
+  int source_operator_order = is.radial_operator_power();
   is.SetToIndexing(source_bra_space, source_ket_space, source_sectors);
 
   basis::OrbitalSpaceLJPN olap_bra_space, olap_ket_space;
@@ -153,11 +155,18 @@ int main(int argc, const char *argv[]) {
 
   // construct new indexing
   const shell::RadialOperatorType& target_operator_type = source_operator_type;
+  const int target_operator_order = target_operator_order;
   const basis::OrbitalSpaceLJPN& target_space = olap_ket_space;
-  basis::OrbitalSectorsLJPN target_sectors(
-      target_space, target_space,
-      source_sectors.l0max(), source_sectors.Tz0()
-    );
+  basis::OrbitalSectorsLJPN target_sectors;
+  if (source_sectors.mode() == basis::SectorsConstraintMode::kAll) {
+    target_sectors = basis::OrbitalSectorsLJPN(target_space, target_space);
+  } else if (source_sectors.mode() == basis::SectorsConstraintMode::kRadial) {
+    target_sectors = basis::OrbitalSectorsLJPN(target_space, target_space,
+      source_sectors.l0max(), source_sectors.Tz0());
+  } else if (source_sectors.mode() == basis::SectorsConstraintMode::kSpherical) {
+    target_sectors = basis::OrbitalSectorsLJPN(target_space, target_space,
+      source_sectors.j0(), source_sectors.g0(), source_sectors.Tz0());
+  }
 
   // Eigen initialization
   basis::OperatorBlocks<double> olap_matrices, input_matrices, output_matrices;
@@ -228,7 +237,7 @@ int main(int argc, const char *argv[]) {
   std::cout << "INFO: Writing to file " << run_parameters.output_filename << std::endl;
   shell::OutRadialStream os(run_parameters.output_filename,
                             target_space, target_space, target_sectors,
-                            target_operator_type);
+                            target_operator_type, target_operator_order);
   os.Write(output_matrices);
 
   is.Close();

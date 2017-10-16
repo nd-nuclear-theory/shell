@@ -12,6 +12,7 @@
   University of Notre Dame
 
   + 11/13/16 (pjf): Created, based on orbital-gen.
+  + 10/12/17 (pjf): Update for changes to radial_io.
 
 ******************************************************************************/
 
@@ -247,7 +248,7 @@ int main(int argc, const char *argv[]) {
       // note hard-coded l0max=0, Tz0=0
   shell::OutRadialStream xs(run_parameters.output_xform_file,
                             input_space, output_space, output_sectors,
-                            shell::RadialOperatorType::kO);
+                            shell::RadialOperatorType::kO, 0);
   xs.Write(xform_matrices);
 
   // sort orbitals and write out

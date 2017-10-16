@@ -1,4 +1,4 @@
-/**************************************************************************//**
+/******************************************************************************
   @file radial-gen.cpp
 
   compute radial matrix elements
@@ -6,6 +6,7 @@
   Syntax:
     + radial-gen --kinematic operator_type order analytic_basis_type orbital_file output_filename
       - operator_type={r,k}
+    + radial-gen --radial order j0 g0 analytic_basis_type orbital_file output_filename
     + radial-gen --xform scale_ratio analytic_basis_type bra_orbital_file [ket_orbital_file] output_filename
     + radial-gen --pn-overlaps orbital_file output_filename
     + radial-gen --identity bra_orbital_file [ket_orbital_file] output_filename
@@ -34,6 +35,8 @@
     - Add file existence checks.
   + 1/27/16 (pjf): Add identity for non-square matrices
   + 09/20/17 (pjf): Add support for generating pn overlaps.
+  + 10/12/17 (pjf): Update for changes to radial_io:
+    - Add radial mode. (ugly hack, clean up later)
 
 ******************************************************************************/
 
@@ -58,7 +61,7 @@ enum class AnalyticBasisType : int {
   kOscillator = 0, kLaguerre = 1
 };
 
-enum class OperationMode {kKinematic, kXform, kPNOverlaps, kIdentity};
+enum class OperationMode {kKinematic, kRadial, kXform, kPNOverlaps, kIdentity};
 
 // Stores simple parameters for run
 struct RunParameters {
@@ -70,6 +73,8 @@ struct RunParameters {
   OperationMode mode;
   shell::RadialOperatorType radial_operator;
   int order;
+  int j0;
+  int g0;
   int Tz0;
   float scale_ratio;
   AnalyticBasisType basis_type;
@@ -78,6 +83,9 @@ struct RunParameters {
 void PrintUsage(char **argv) {
   std::cout << "Usage: " << argv[0]
             << " --kinematic {r|k} order analytic_basis_type orbital_file output_filename"
+            << std::endl;
+  std::cout << "Usage: " << argv[0]
+            << " --radial order j0 g0 Tz0 analytic_basis_type orbital_file output_filename"
             << std::endl;
   std::cout << "       " << argv[0]
             << " --xform scale_ratio analytic_basis_type bra_orbital_file [ket_orbital_file] output_filename"
@@ -106,6 +114,9 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters) {
     if (parameter_stream.str() == "--kinematic") {
       run_parameters.mode = OperationMode::kKinematic;
       run_parameters.Tz0 = 0;
+    } else if (parameter_stream.str() == "--radial") {
+      run_parameters.mode = OperationMode::kRadial;
+      run_parameters.radial_operator = shell::RadialOperatorType::kR;
     } else if (parameter_stream.str() == "--xform") {
       run_parameters.mode = OperationMode::kXform;
       run_parameters.order = 0;
@@ -168,6 +179,58 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters) {
 
     // reference scale is 1.0 for kinematic operators
     run_parameters.scale_ratio = 1.0;
+  } else if (run_parameters.mode == OperationMode::kRadial) {
+    // operator order
+    {
+      std::istringstream parameter_stream(argv[arg++]);
+      parameter_stream >> run_parameters.order;
+      if (!parameter_stream) {
+        PrintUsage(argv);
+        std::cerr << "Order must be an integer." << std::endl;
+        std::exit(EXIT_FAILURE);
+      }
+
+      if (run_parameters.order == 0) {
+        std::cout << "WARN: Order is zero. Do you mean xform?" << std::endl;
+        run_parameters.order = 0;
+      }
+    }
+
+    // j0
+    {
+      std::istringstream parameter_stream(argv[arg++]);
+      parameter_stream >> run_parameters.j0;
+      if (!parameter_stream) {
+        PrintUsage(argv);
+        std::cerr << "j0 must be an integer." << std::endl;
+        std::exit(EXIT_FAILURE);
+      }
+    }
+
+    // g0
+    {
+      std::istringstream parameter_stream(argv[arg++]);
+      parameter_stream >> run_parameters.g0;
+      if (!parameter_stream) {
+        PrintUsage(argv);
+        std::cerr << "g0 must be an integer." << std::endl;
+        std::exit(EXIT_FAILURE);
+      }
+    }
+
+    // Tz0
+    {
+      std::istringstream parameter_stream(argv[arg++]);
+      parameter_stream >> run_parameters.Tz0;
+      if (!parameter_stream) {
+        PrintUsage(argv);
+        std::cerr << "Tz0 must be an integer." << std::endl;
+        std::exit(EXIT_FAILURE);
+      }
+    }
+
+    // reference scale is 1.0 for kinematic operators
+    run_parameters.scale_ratio = 1.0;
   } else if (run_parameters.mode == OperationMode::kXform) {
     // order for xform is 0 (i.e. r^0)
     run_parameters.radial_operator = shell::RadialOperatorType::kO;
@@ -186,7 +249,7 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters) {
   }
 
   // basis type
-  if (run_parameters.mode == OperationMode::kKinematic || run_parameters.mode == OperationMode::kXform)
+  if (run_parameters.mode == OperationMode::kKinematic || run_parameters.mode == OperationMode::kRadial || run_parameters.mode == OperationMode::kXform)
   {
     std::istringstream parameter_stream(argv[arg++]);
     if (parameter_stream.str() == "oscillator") {
@@ -337,6 +400,12 @@ int main(int argc, char **argv) {
       else if (run_parameters.basis_type == AnalyticBasisType::kLaguerre)
         bra_basis_type = ket_basis_type = spline::Basis::LM;
     }
+  } else if (run_parameters.mode == OperationMode::kRadial) {
+      bra_scale_ratio = ket_scale_ratio = 1.;
+      if (run_parameters.basis_type == AnalyticBasisType::kOscillator)
+        bra_basis_type = ket_basis_type = spline::Basis::HC;
+      else if (run_parameters.basis_type == AnalyticBasisType::kLaguerre)
+        bra_basis_type = ket_basis_type = spline::Basis::LC;
   } else if (run_parameters.mode == OperationMode::kXform) {
     bra_scale_ratio = 1.;
     ket_scale_ratio = run_parameters.scale_ratio;
@@ -350,10 +419,15 @@ int main(int argc, char **argv) {
   // Construct indexing
   basis::OrbitalSpaceLJPN bra_space(bra_input_orbitals);
   basis::OrbitalSpaceLJPN ket_space(ket_input_orbitals);
-  basis::OrbitalSectorsLJPN sectors(bra_space, ket_space, run_parameters.order, run_parameters.Tz0);
-  /** @note currently has hard-coded Tz0=0 */
+  basis::OrbitalSectorsLJPN sectors;
+  if (run_parameters.mode == OperationMode::kRadial) {
+    sectors = basis::OrbitalSectorsLJPN(bra_space, ket_space, run_parameters.j0, run_parameters.g0, run_parameters.Tz0);
+    std::cout << sectors.DebugStr() << std::endl;
+  } else {
+     sectors = basis::OrbitalSectorsLJPN(bra_space, ket_space, run_parameters.order, run_parameters.Tz0);
+  }
 
-  if (run_parameters.mode == OperationMode::kKinematic || run_parameters.mode == OperationMode::kXform)
+  if (run_parameters.mode == OperationMode::kKinematic || run_parameters.mode == OperationMode::kRadial || run_parameters.mode == OperationMode::kXform)
   {
     CalculateMatrixElements(
         bra_basis_type, ket_basis_type,
@@ -373,7 +447,7 @@ int main(int argc, char **argv) {
   // write out to file
   shell::OutRadialStream os(run_parameters.output_filename,
                             bra_space, ket_space, sectors,
-                            run_parameters.radial_operator);
+                            run_parameters.radial_operator, run_parameters.order);
   os.Write(matrices);
 
   return EXIT_SUCCESS;

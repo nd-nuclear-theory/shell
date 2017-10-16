@@ -1,4 +1,4 @@
-/************************************************************//**
+/****************************************************************
   @file radial_io.h
 
   Defines I/O classes for radial matrix element storage.
@@ -27,21 +27,24 @@
      indexing accessors (copies are easily invalidated).
   + 08/11/17 (pjf): Add verbose_mode option to OutRadialStream.
   + 09/20/17 (pjf): Output Tz labels in verbose_mode.
-
+  + 10/12/17 (pjf): Add support for generic and spherically-constrained operators:
+    - Create new format (version 1) of radial file.
+    - Separate operator type from operator truncation; add generic RadialOperatorType.
+    - Store operator power separately for monomial radial operator.
 ****************************************************************/
 
 #ifndef RADIAL_IO_H_
 #define RADIAL_IO_H_
 
 #include <cstdlib>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <string>
 
 #include "eigen3/Eigen/Core"
 
-#include "basis/operator.h"
 #include "basis/nlj_orbital.h"
+#include "basis/operator.h"
 
 namespace shell {
 
@@ -49,11 +52,15 @@ namespace shell {
  * Radial IDs
  */
 enum class RadialOperatorType : char {
-  kR = 'r', kK = 'k', kO = 'o'
+  kR = 'r',
+  kK = 'k',
+  kO = 'o',
+  kGeneric = 'g'
 };
 
 /**
- * Base stream case with common attributes for input and output radial streams.
+ * Base stream case with common attributes for input and output radial
+ * streams.
  */
 class RadialStreamBase {
  public:
@@ -64,28 +71,31 @@ class RadialStreamBase {
   RadialStreamBase() = default;
 
   explicit RadialStreamBase(const std::string& filename)
-    : filename_(filename), sector_index_(0) {}
+      : filename_(filename), sector_index_(0) {}
 
-  RadialStreamBase(
-      const std::string& filename,
-      const basis::OrbitalSpaceLJPN& bra_space,
-      const basis::OrbitalSpaceLJPN& ket_space,
-      const basis::OrbitalSectorsLJPN& sectors,
-      const RadialOperatorType radial_operator_type
-    )
-    : filename_(filename), sector_index_(0),
-    bra_orbital_space_(bra_space),
-    ket_orbital_space_(ket_space),
-    radial_operator_type_(radial_operator_type),
-    sectors_(sectors) {}
+  RadialStreamBase(const std::string& filename,
+                   const basis::OrbitalSpaceLJPN& bra_space,
+                   const basis::OrbitalSpaceLJPN& ket_space,
+                   const basis::OrbitalSectorsLJPN& sectors,
+                   const RadialOperatorType radial_operator_type,
+                   int radial_operator_power)
+      : filename_(filename),
+        sector_index_(0),
+        bra_orbital_space_(bra_space),
+        ket_orbital_space_(ket_space),
+        radial_operator_type_(radial_operator_type),
+        radial_operator_power_(radial_operator_power),
+        sectors_(sectors) {}
 
   // operator type accessor
   const RadialOperatorType& radial_operator_type() const {
     return radial_operator_type_;
   }
 
- protected:
+  // operator power accessor
+  int radial_operator_power() const { return radial_operator_power_; }
 
+ protected:
   // indexing accessors
   const basis::OrbitalSpaceLJPN& bra_orbital_space() const {
     return bra_orbital_space_;
@@ -100,11 +110,14 @@ class RadialStreamBase {
   // scope and is destroyed, these references will be invalidated and
   // will point to "garbage" subspaces.
 
+  // operator information
+  RadialOperatorType radial_operator_type_;
+  int radial_operator_power_;
+
   // indexing information
   basis::OrbitalSpaceLJPN bra_orbital_space_;
   basis::OrbitalSpaceLJPN ket_orbital_space_;
   basis::OrbitalSectorsLJPN sectors_;
-  RadialOperatorType radial_operator_type_;
 
   // current pointer
   int sector_index_;
@@ -127,16 +140,12 @@ class InRadialStream : public RadialStreamBase {
   explicit InRadialStream(const std::string& filename);
 
   // destructor
-  ~InRadialStream() {
-    delete stream_ptr_;
-  }
+  ~InRadialStream() { delete stream_ptr_; }
 
   // I/O
-  void SetToIndexing(
-      basis::OrbitalSpaceLJPN& bra_orbital_space__,
-      basis::OrbitalSpaceLJPN& ket_orbital_space__,
-      basis::OrbitalSectorsLJPN& sectors__
-    );
+  void SetToIndexing(basis::OrbitalSpaceLJPN& bra_orbital_space__,
+                     basis::OrbitalSpaceLJPN& ket_orbital_space__,
+                     basis::OrbitalSectorsLJPN& sectors__);
   // Set space and sectors indexing variables to point to fresh copies
   // which will not be invalidated when stream is destroyed.
   //
@@ -150,8 +159,8 @@ class InRadialStream : public RadialStreamBase {
   void ReadHeader();
   Eigen::MatrixXd ReadNextSector();
 
-  // file stream
-  std::ifstream& stream() const {return *stream_ptr_;}  // alias for convenience
+  // file stream -- alias for convenience
+  std::ifstream& stream() const { return *stream_ptr_; }
   std::ifstream* stream_ptr_;
   int line_count_;
 };
@@ -167,36 +176,37 @@ class OutRadialStream : public RadialStreamBase {
   */
   OutRadialStream() : stream_ptr_(NULL) {}
 
-  explicit OutRadialStream(
-    const std::string& filename,
-    const basis::OrbitalSpaceLJPN& bra_space,
-    const basis::OrbitalSpaceLJPN& ket_space,
-    const basis::OrbitalSectorsLJPN& sectors,
-    const RadialOperatorType radial_operator_type,
-    const std::string& format_str,
-    bool verbose_mode = false);
+  explicit OutRadialStream(const std::string& filename,
+                           const basis::OrbitalSpaceLJPN& bra_space,
+                           const basis::OrbitalSpaceLJPN& ket_space,
+                           const basis::OrbitalSectorsLJPN& sectors,
+                           const RadialOperatorType radial_operator_type,
+                           int radial_operator_power,
+                           const std::string& format_str,
+                           bool verbose_mode = false);
 
-  explicit OutRadialStream(
-      const std::string& filename,
-      const basis::OrbitalSpaceLJPN& bra_space,
-      const basis::OrbitalSpaceLJPN& ket_space,
-      const basis::OrbitalSectorsLJPN& sectors,
-      const RadialOperatorType radial_operator_type)
-    : OutRadialStream(filename, bra_space, ket_space, sectors, radial_operator_type, "16.8e", false) {}
+  explicit OutRadialStream(const std::string& filename,
+                           const basis::OrbitalSpaceLJPN& bra_space,
+                           const basis::OrbitalSpaceLJPN& ket_space,
+                           const basis::OrbitalSectorsLJPN& sectors,
+                           const RadialOperatorType radial_operator_type,
+                           int radial_operator_power)
+      : OutRadialStream(filename, bra_space, ket_space, sectors,
+                        radial_operator_type, radial_operator_power, "16.8e",
+                        false) {}
 
-  explicit OutRadialStream(
-      const std::string& filename,
-      const basis::OrbitalSpaceLJPN& bra_space,
-      const basis::OrbitalSpaceLJPN& ket_space,
-      const basis::OrbitalSectorsLJPN& sectors,
-      const RadialOperatorType radial_operator_type,
-      bool verbose_mode)
-    : OutRadialStream(filename, bra_space, ket_space, sectors, radial_operator_type, "16.8e", verbose_mode) {}
+  explicit OutRadialStream(const std::string& filename,
+                           const basis::OrbitalSpaceLJPN& bra_space,
+                           const basis::OrbitalSpaceLJPN& ket_space,
+                           const basis::OrbitalSectorsLJPN& sectors,
+                           const RadialOperatorType radial_operator_type,
+                           int radial_operator_power, bool verbose_mode)
+      : OutRadialStream(filename, bra_space, ket_space, sectors,
+                        radial_operator_type, radial_operator_power, "16.8e",
+                        verbose_mode) {}
 
   // destructor
-  ~OutRadialStream() {
-    delete stream_ptr_;
-  }
+  ~OutRadialStream() { delete stream_ptr_; }
 
   // I/O
   void Write(const basis::OperatorBlocks<double>& matrices);
@@ -210,11 +220,11 @@ class OutRadialStream : public RadialStreamBase {
   std::string format_str_;
   bool verbose_mode_;
 
-  // file stream
-  std::ofstream& stream() const {return *stream_ptr_;}  // alias for convenience
+  // file stream -- alias for convenience
+  std::ofstream& stream() const { return *stream_ptr_; }
   std::ofstream* stream_ptr_;
   int line_count_;
 };
 
-};  // namespace shell
+};      // namespace shell
 #endif  // RADIAL_IO_H_

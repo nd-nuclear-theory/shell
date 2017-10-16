@@ -55,7 +55,7 @@ basis::OperatorBlocks<double> TestRadialOut(const std::string& filename, bool ve
 
   // set up output stream
   std::cout << "Output stream" << std::endl;
-  shell::OutRadialStream os(filename, bra_space, ket_space, sectors, shell::RadialOperatorType::kR);
+  shell::OutRadialStream os(filename, bra_space, ket_space, sectors, shell::RadialOperatorType::kR, sectors.l0max());
 
   // generate matrices
   basis::OperatorBlocks<double> matrices;
@@ -89,11 +89,11 @@ basis::OperatorBlocks<double> TestRadialIn(const std::string& filename) {
   // // show bra space
   // std::cout << "Bra space" << std::endl;
   // std::cout << is.bra_orbital_space().DebugStr();
-  // 
+  //
   // // show ket space
   // std::cout << "Ket space" << std::endl;
   // std::cout << is.ket_orbital_space().DebugStr();
-  // 
+  //
   // // show sectors
   // std::cout << "Sectors" << std::endl;
   // std::cout << is.sectors().DebugStr();
@@ -104,11 +104,11 @@ basis::OperatorBlocks<double> TestRadialIn(const std::string& filename) {
   is.SetToIndexing(bra_orbital_space,ket_orbital_space,sectors);
   std::cout << "Bra space" << std::endl;
   std::cout << bra_orbital_space.DebugStr();
-  
+
   // show ket space
   std::cout << "Ket space" << std::endl;
   std::cout << ket_orbital_space.DebugStr();
-  
+
   // show sectors
   std::cout << "Sectors" << std::endl;
   std::cout << sectors.DebugStr();

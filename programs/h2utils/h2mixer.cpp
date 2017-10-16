@@ -46,6 +46,7 @@
   + 09/20/17 (pjf): Add T^2 operator:
     - Accept pn-overlaps for T^2 operator.
     - Store pn-overlaps by including Tz0 in radial_operator_data.
+  + 10/12/17 (pjf): Update for changes to radial_io.
 
 ******************************************************************************/
 
@@ -487,6 +488,7 @@ void InitializeRadialOperators(RadialOperatorMap& radial_operators)
           radial_operator_data.sectors
         );
       assert(radial_operator_type==radial_operator_stream.radial_operator_type());
+      assert(radial_operator_power==radial_operator_stream.radial_operator_power());
       assert(radial_operator_power==radial_operator_data.sectors.l0max());
       assert(radial_operator_Tz0==radial_operator_data.sectors.Tz0());
 
@@ -650,6 +652,7 @@ void InitializeXformChannels(
           radial_operator_data.sectors
         );
       assert(radial_operator_type==radial_operator_stream.radial_operator_type());
+      assert(radial_operator_power==radial_operator_stream.radial_operator_power());
       assert(radial_operator_power==radial_operator_data.sectors.l0max());
       assert(radial_operator_data.sectors.Tz0()==0);
 

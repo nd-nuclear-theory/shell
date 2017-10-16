@@ -7,6 +7,7 @@
   University of Notre Dame
 
   11/6/16 (mac): Created, based on make_dummy_radial.
+  10/12/17 (pjf): Update for changes to radial_io.
 
 ****************************************************************/
 
@@ -26,7 +27,7 @@
 void MakeRadialOut(
     const std::string& filename,
     int Nmax
-  ) 
+  )
 {
   // set up bra/ket space
   basis::OrbitalSpaceLJPN bra_subspace(Nmax);
@@ -35,8 +36,8 @@ void MakeRadialOut(
   int Tz0 = 0;
   shell::RadialOperatorType operator_type = shell::RadialOperatorType::kO;
   basis::OrbitalSectorsLJPN sectors(bra_subspace,ket_subspace,l0max,Tz0);
-  shell::OutRadialStream os(filename,bra_subspace,ket_subspace,sectors,operator_type);
-  
+  shell::OutRadialStream os(filename,bra_subspace,ket_subspace,sectors,operator_type,0);
+
   // generate matrices
   basis::OperatorBlocks<double> matrices;
   basis::SetOperatorToZero(sectors,matrices);
