@@ -112,3 +112,13 @@ runmfdn10: counting-only run with MFDn v15
     6He Nmax08 (counting)
 
     Usage: qsubm --here mfdn10
+
+runmfdn1: harmonic oscillator direct run with MFDn v15b01 and duct-tape postprocessor
+
+    4He Nmax02 hw20 (direct)
+
+    Interaction: run0164-JISP16-tb-10
+
+    Usage: qsubm --here mfdn11
+
+    We use tb-10 as the smallest available set of files.

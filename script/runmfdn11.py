@@ -1,19 +1,17 @@
-""" runmfdn07.py
+""" runmfdn11.py
 
     See runmfdn.txt for description.
 
     Mark A. Caprio
     University of Notre Dame
 
-    - 06/08/17 (pjf): Created, copied from runmfd01; switch to MFDn v15.
-    - 07/31/17 (pjf): Set MFDn driver module in task dictionary.
-    - 08/11/17 (pjf): Update for split single-particle and many-body truncation modes.
-    - 09/24/17 (pjf): Save wavefunctions.
+    - 10/17/17 (pjf): Created, copied from runmfd07; add duct-tape postprocessor step.
 """
 
 import mcscript
 import mfdn
 import mfdn.mfdn_v15
+import mfdn.mfdn_ducttape
 
 # initialize mcscript
 mcscript.init()
@@ -77,7 +75,7 @@ task = {
     # obdme parameters
     ## "hw_for_trans": 20,
     "obdme_multipolarity": 2,
-    "obdme_reference_state_list": [(0, 0, 1)],
+    "obdme_reference_state_list": None,
     "save_obdme": True,
 
     # two-body observables
@@ -90,7 +88,8 @@ task = {
 
     # version parameters
     "h2_format": 15099,
-    "mfdn_executable": "v15-beta00/xmfdn-h2-lan",
+    "mfdn_executable": "v15-beta01/xmfdn-h2-lan",
+    "ducttape_executable": "v15-beta00/xmfdn-h2-ducttape",
     "mfdn_driver": mfdn.mfdn_v15,
 
 }
@@ -109,6 +108,8 @@ mfdn.radial.set_up_orbitals(task)
 mfdn.radial.set_up_radial_analytic(task)
 mfdn.tbme.generate_tbme(task)
 mfdn.mfdn_v15.run_mfdn(task)
+task["obdme_reference_state_list"] = [(0, 0, 1)]
+mfdn.mfdn_ducttape.run_mfdn(task)
 mfdn.mfdn_v15.save_mfdn_output(task)
 # mfdn.handlers.task_handler_oscillator(task)
 

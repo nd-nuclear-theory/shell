@@ -1,0 +1,164 @@
+Index: config.mk
+===================================================================
+--- config.mk	(revision 76)
++++ config.mk	(working copy)
+@@ -1 +1 @@
+-link config_edison_intel.mk
+\ No newline at end of file
++link /home/pjfasano/Research/code/shell/config/mfdn/config-intel.mk
+\ No newline at end of file
+Index: src_common/MFDn_Mscheme.f
+===================================================================
+--- src_common/MFDn_Mscheme.f	(revision 89)
++++ src_common/MFDn_Mscheme.f	(working copy)
+@@ -200,10 +200,18 @@
+ C
+ C     Write input to output file on root processor
+       if (mypid .eq. root) then
++#ifdef DUCTTAPE_POSTPROCESSOR
+          open(unit=7, file=outfilename, status='unknown',
++     $        action='write', position='append')
++#else
++         open(unit=7, file=outfilename, status='unknown',
+      $        action='write')
++#endif
+          write(7,*)
+          write(7,*) '  Output from MFDn in M-scheme basis Version 15'
++#ifdef DUCTTAPE_POSTPROCESSOR
++         write(7,*) '  DUCT-TAPE POSTPROCESSOR'
++#endif
+          write(7,*)
+          write(7,*)
+ C
+@@ -245,9 +253,15 @@
+          write(7,*)
+          write(7,*)
+ C
++#ifdef DUCTTAPE_POSTPROCESSOR
+          if (IFLAG_mode .eq. 0) then
++            write(7,*)  ' MFDn DUCT-TAPE POSTPROCESSOR'
++         endif
++#else
++         if (IFLAG_mode .eq. 0) then
+             write(7,*)  ' Normal run of MFDn'
+          endif
++#endif
+          write(7,*)
+          write(7,*) '  Number of MPI processors  ', nproc
+          write(7,*) '  Number of diagonals       ', ndiag
+@@ -315,6 +329,7 @@
+ C
+ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+ C
++#ifndef DUCTTAPE_POSTPROCESSOR
+       if (mypid .eq. root) then
+  1100    format('', A)
+  1101    format('', A,' = ', A)
+@@ -354,6 +369,7 @@
+          write(10, *)
+          close(unit=10, status='keep')
+       endif
++#endif
+ C
+ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+ C
+@@ -493,6 +509,7 @@
+ C
+ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+ C
++#ifndef DUCTTAPE_POSTPROCESSOR
+       if (mypid .eq. root) then
+          open(file=outputname, unit=10,
+      $        position='append', action='write')
+@@ -500,6 +517,7 @@
+          write(10, 1118) 'dimension ', totalMdim
+          close(unit=10, status='keep')
+       endif
++#endif
+ C
+ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+ C
+@@ -782,6 +800,7 @@
+ C     
+ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+ C
++#ifndef DUCTTAPE_POSTPROCESSOR
+       if (mypid .eq. root) then
+          open(file=outputname, unit=10,
+      $        position='append', action='write')
+@@ -789,6 +808,7 @@
+          write(10, *)
+          close(unit=10, status='keep')
+       endif
++#endif
+ C
+ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+ C
+@@ -818,6 +838,7 @@
+       endif
+ C
+ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
++#ifndef DUCTTAPE_POSTPROCESSOR
+ C
+ C     Allocate and initialize arrays for input interaction
+ C     Read input interaction files.  See README_Potentials 
+@@ -969,10 +990,17 @@
+       endif
+       tbefore = tafter
+ C
++#endif
+ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+ C
+ C     Evaluate select observables
+ C
++#ifdef DUCTTAPE_POSTPROCESSOR
++      neivals = min(neivals, maxits)
++      allocate(eivals(neivals))
++      allocate(errest(neivals))
++      allocate(errorest(neivals))
++#endif
+       if (numTBops .ge. 0) then
+          call EvalObserv(hrank, numTBops, neivals, nrefstates,
+      $        TwoMj, J2totmax, WTtotmax, obdme, tbdme,
+Index: src_common/subrts_Observables.F
+===================================================================
+--- src_common/subrts_Observables.F	(revision 76)
++++ src_common/subrts_Observables.F	(working copy)
+@@ -803,6 +803,7 @@
+  9735 format('# sum of neutron occ.prob.', 64(x,g12.4) )
+ !
+       open(file=outputname, unit=10, position='append', action='write')
++#ifndef DUCTTAPE_POSTPROCESSOR
+       write(10,*)
+       write(10,9000)
+       write(10,9001)
+@@ -949,6 +950,7 @@
+       enddo
+       write(10,9735)  tmpsum(1:neivals)
+ !
++#endif
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ !
+ !     next, select transition observables
+Index: src_common/subrts_SETUP_SPbasis.f
+===================================================================
+--- src_common/subrts_SETUP_SPbasis.f	(revision 76)
++++ src_common/subrts_SETUP_SPbasis.f	(working copy)
+@@ -201,7 +201,7 @@
+       use SPbasis
+       implicit none
+ C     local variables
+-      integer :: fh, i, ii, dummy, versionnumber, cls
++      integer :: fh, i, ii, versionnumber, cls
+ C     
+       fh = 42
+       versionnumber = 15099
+@@ -253,7 +253,7 @@
+       use SPbasis
+       implicit none
+ C     local variables
+-      integer :: fh, i, j, dummy, versionnumber
++      integer :: fh, i, j, versionnumber
+       integer :: a, na, la, j2a, pra, cls
+       real(4) :: wta
+       character(LEN=128) :: comments

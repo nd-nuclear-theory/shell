@@ -120,7 +120,7 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     # inputlist namelist dictionary
     inputlist = collections.OrderedDict()
     # tbo: two-body observable namelist
-    obslist = {}
+    obslist = collections.OrderedDict()
 
     # run mode
     inputlist["IFLAG_mode"] = int(run_mode)
@@ -206,7 +206,8 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
 
     # generate MFDn input file
     mcscript.utils.write_namelist(
-        os.path.join("work", "mfdn.input"), input_dict={"inputlist": inputlist, "obslist": obslist}
+        os.path.join("work", "mfdn.input"),
+        input_dict={"inputlist": inputlist, "obslist": obslist}
     )
 
     # import partitioning file
