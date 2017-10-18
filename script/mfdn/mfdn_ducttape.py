@@ -4,6 +4,7 @@ Patrick Fasano
 University of Notre Dame
 
 - 10/05/17 (pjf): Copied/stripped from mfdn_v15.py.
+- 10/18/17 (pjf): Use separate work directory for each postfix.
 """
 import os
 import glob
@@ -27,7 +28,8 @@ def run_mfdn(task, postfix=""):
         mcscript.exception.ScriptError: if MFDn output not found
     """
     # create work directory if it doesn't exist yet (-p)
-    mcscript.call(["mkdir", "-p", "work"])
+    work_dir = "work{:s}".format(postfix)
+    mcscript.call(["mkdir", "-p", work_dir])
 
     # inputlist namelist dictionary
     inputlist = collections.OrderedDict()
@@ -80,12 +82,12 @@ def run_mfdn(task, postfix=""):
 
     # generate MFDn input file
     mcscript.utils.write_namelist(
-        os.path.join("work", "mfdn.input"),
+        os.path.join(work_dir, "mfdn.input"),
         input_dict={"inputlist": inputlist, "obslist": obslist}
     )
 
     # enter work directory
-    os.chdir("work")
+    os.chdir(work_dir)
 
     # invoke MFDn
     mcscript.call(

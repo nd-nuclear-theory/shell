@@ -8,11 +8,12 @@
     - 06/05/17 (pjf): Copied from runmfdn01; modified for basic natural orbitals.
     - 07/31/17 (pjf): Set MFDn driver module in task dictionary.
     - 08/11/17 (pjf): Update for split single-particle and many-body truncation modes.
+    - 10/18/17 (pjf): Switch to MFDn v15b00.
 """
 
 import mcscript
 import mfdn
-import mfdn.mfdn_v14
+import mfdn.mfdn_v15
 
 # initialize mcscript
 mcscript.init()
@@ -84,9 +85,9 @@ task = {
     "observable_sets": ["H-components"],
 
     # version parameters
-    "h2_format": 0,
-    "mfdn_executable": "v14-beta06/xmfdn-h2-lan",
-    "mfdn_driver": mfdn.mfdn_v14,
+    "h2_format": 15099,
+    "mfdn_executable": "v15-beta00/xmfdn-h2-lan",
+    "mfdn_driver": mfdn.mfdn_v15,
 
     # natural orbitals
     "natural_orbitals": True,

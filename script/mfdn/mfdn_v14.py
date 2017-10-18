@@ -28,6 +28,7 @@ University of Notre Dame
   + Create tar files with minimal directory structure for easy inflation.
 - 09/27/17 (pjf): Allow for counting modes with run_mode.
 - 10/05/17 (pjf): Add save_mfdn_output_out_only.
+- 10/18/17 (pjf): Use separate work directory for each postfix.
 """
 import os
 import glob
@@ -151,19 +152,20 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     lines.append("")
 
     # create work directory if it doesn't exist yet (-p)
-    mcscript.call(["mkdir", "-p", "work"])
+    work_dir = "work{:s}".format(postfix)
+    mcscript.call(["mkdir", "-p", work_dir])
 
     # generate MFDn input file
-    mcscript.utils.write_input("work/mfdn.dat", input_lines=lines)
+    mcscript.utils.write_input(work_dir+"/mfdn.dat", input_lines=lines)
 
     # import partitioning file
     if (task["partition_filename"] is not None):
         if (not os.path.exists(task["partition_filename"])):
             raise mcscript.exception.ScriptError("partition file not found")
-        mcscript.call(["cp", "--verbose", task["partition_filename"], "work/mfdn_partitioning.info"])
+        mcscript.call(["cp", "--verbose", task["partition_filename"], work_dir+"/mfdn_partitioning.info"])
 
     # enter work directory
-    os.chdir("work")
+    os.chdir(work_dir)
 
     # invoke MFDn
     mcscript.call(
@@ -194,11 +196,12 @@ def save_mfdn_output_out_only(task, postfix=""):
     # save quick inspection copies of mfdn.{res,out}
     descriptor = task["metadata"]["descriptor"]
     print("Saving basic output files...")
+    work_dir = "work{:s}".format(postfix)
     filename_prefix = "{:s}-mfdn-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
     res_filename = "{:s}.res".format(filename_prefix)
-    mcscript.call(["cp", "--verbose", "work/mfdn.res", res_filename])
+    mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
     out_filename = "{:s}.out".format(filename_prefix)
-    mcscript.call(["cp", "--verbose", "work/mfdn.out", out_filename])
+    mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
 
     # copy results out (if in multi-task run)
     if (mcscript.task.results_dir is not None):
@@ -226,12 +229,13 @@ def save_mfdn_output(task, postfix=""):
     # save quick inspection copies of mfdn.{res,out}
     natural_orbitals = task.get("natural_orbitals")
     descriptor = task["metadata"]["descriptor"]
+    work_dir = "work{:s}".format(postfix)
     print("Saving basic output files...")
     filename_prefix = "{:s}-mfdn-{:s}{:s}".format(mcscript.parameters.run.name, descriptor, postfix)
     res_filename = "{:s}.res".format(filename_prefix)
-    mcscript.call(["cp", "--verbose", "work/mfdn.res", res_filename])
+    mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
     out_filename = "{:s}.out".format(filename_prefix)
-    mcscript.call(["cp", "--verbose", "work/mfdn.out", out_filename])
+    mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
 
     # save OBDME files for next natural orbital iteration
     if natural_orbitals:
@@ -240,11 +244,11 @@ def save_mfdn_output(task, postfix=""):
         mcscript.call(
             [
                 "cp", "--verbose",
-                "work/{}".format(obdme_info_filename),
+                os.path.join(work_dir, obdme_info_filename),
                 environ.filenames.natorb_info_filename(postfix)
             ]
         )
-        obdme_filename = glob.glob("work/mfdn.statrobdme.seq{:03d}*".format(task["natorb_base_state"]))
+        obdme_filename = glob.glob("{:s}/mfdn.statrobdme.seq{:03d}*".format(work_dir,task["natorb_base_state"]))
         mcscript.call(
             [
                 "cp", "--verbose",
@@ -287,20 +291,20 @@ def save_mfdn_output(task, postfix=""):
         archive_file_list += glob.glob(environ.filenames.natorb_xform_filename(postfix))
     # MFDn output
     archive_file_list += [
-        "work/mfdn.dat", "work/mfdn.out", "work/mfdn.res",
-        "work/mfdn_partitioning.generated", "work/mfdn_spstates.info"
+        work_dir+"/mfdn.dat", work_dir+"/mfdn.out", work_dir+"/mfdn.res",
+        work_dir+"/mfdn_partitioning.generated", work_dir+"/mfdn_spstates.info"
     ]
     # renamed versions
     archive_file_list += [out_filename, res_filename]
     # MFDN obdme
     if (task["save_obdme"]):
-        archive_file_list += glob.glob("work/*obdme*")
+        archive_file_list += glob.glob(work_dir+"/*obdme*")
     # generate archive (outside work directory)
     archive_filename = "{:s}.tgz".format(filename_prefix)
     mcscript.call(
         [
             "tar", "zcvf", archive_filename,
-            "--transform=s,work/,,",
+            "--transform=s,{:s}/,,".format(work_dir),
             "--transform=s,^,{:s}/{:s}{:s}/,".format(mcscript.parameters.run.name, descriptor, postfix),
             "--show-transformed"
         ] + archive_file_list
@@ -308,13 +312,13 @@ def save_mfdn_output(task, postfix=""):
 
     # save wavefunctions (smwf files)
     if task.get("save_wavefunctions"):
-        smwf_archive_file_list = glob.glob("work/mfdn_smwf*")
-        smwf_archive_file_list += glob.glob("work/mfdn_MBgroups*")
+        smwf_archive_file_list = glob.glob(work_dir+"/mfdn_smwf*")
+        smwf_archive_file_list += glob.glob(work_dir+"/mfdn_MBgroups*")
         smwf_archive_filename = "{:s}-wf.tar".format(filename_prefix)
         mcscript.call(
             [
                 "tar", "zcvf", smwf_archive_filename,
-                "--transform=s,work/,,",
+                "--transform=s,{:s}/,,".format(work_dir),
                 "--transform=s,^,{:s}/{:s}{:s}/,".format(mcscript.parameters.run.name, descriptor, postfix),
                 "--show-transformed"
             ] + smwf_archive_file_list
@@ -351,5 +355,5 @@ def cleanup_mfdn_workdir(task, postfix=""):
         postfix (string, optional): identifier to add to generated files
     """
     # cleanup of wave function files
-    scratch_file_list = glob.glob("work/*")
+    scratch_file_list = glob.glob("work{:s}/*".format(postfix))
     mcscript.call(["rm", "-vf"] + scratch_file_list)

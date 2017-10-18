@@ -15,6 +15,7 @@ University of Notre Dame
 - 09/12/17 (pjf): Update for config -> modes + environ split.
 - 09/20/17 (pjf): Add isospin operators.
 - 09/22/17 (pjf): Take "observables" as list of tuples instead of dict.
+- 10/18/17 (pjf): Use separate work directory for each postfix.
 """
 import collections
 
@@ -210,7 +211,7 @@ def generate_tbme(task, postfix=""):
 
     # targets: generate h2mixer input
     for (basename, operator) in targets.items():
-        lines.append("define-target work/"+basename+".bin")
+        lines.append("define-target work{:s}/{:s}.bin".format(postfix, basename))
         for (source, coefficient) in operator.items():
             lines.append("  add-source {:s} {:e}".format(source, coefficient))
         lines.append("")
@@ -225,7 +226,7 @@ def generate_tbme(task, postfix=""):
     mcscript.utils.write_input(environ.filenames.h2mixer_filename(postfix), input_lines=lines, verbose=False)
 
     # create work directory if it doesn't exist yet (-p)
-    mcscript.call(["mkdir", "-p", "work"])
+    mcscript.call(["mkdir", "-p", "work{:s}".format(postfix)])
 
     # invoke h2mixer
     mcscript.call(
