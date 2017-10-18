@@ -20,7 +20,9 @@ University of Notre Dame
   + Create tar files with minimal directory structure for easy inflation.
 - 09/27/17 (pjf): Allow for counting modes with run_mode.
 - 10/05/17 (pjf): Add save_mfdn_output_out_only.
-- 10/18/17 (pjf): Use separate work directory for each postfix.
+- 10/18/17 (pjf):
+  + Use separate work directory for each postfix.
+  + Factor out extract_natural_orbitals().
 """
 import os
 import glob
@@ -244,6 +246,46 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
     os.chdir("..")
 
 
+def extract_natural_orbitals(task, postfix=""):
+    """Extract OBDME files for subsequent natural orbital iterations.
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    # save OBDME files for next natural orbital iteration
+    if not task.get("natural_orbitals"):
+        raise mcscript.exception.ScriptError("natural orbitals not enabled")
+
+    work_dir = "work{:s}".format(postfix)
+    obdme_info_filename = "mfdn.rppobdme.info"
+    try:
+        (J, g, n) = task["natorb_base_state"]
+        obdme_filename = glob.glob(
+            "{:s}/mfdn.statrobdme.seq*.2J{:02d}.n{:02d}.2T*".format(work_dir, 2*J, n)
+            )
+    except TypeError:
+        obdme_filename = glob.glob(
+            "{:s}/mfdn.statrobdme.seq{:03d}*".format(work_dir, task["natorb_base_state"])
+            )
+
+    print("Saving OBDME files for natural orbital generation...")
+    mcscript.call(
+        [
+            "cp", "--verbose",
+            os.path.join(work_dir, obdme_info_filename),
+            environ.filenames.natorb_info_filename(postfix)
+        ]
+    )
+    mcscript.call(
+        [
+            "cp", "--verbose",
+            obdme_filename[0],
+            environ.filenames.natorb_obdme_filename(postfix)
+        ]
+    )
+
+
 def save_mfdn_output_out_only(task, postfix=""):
     """Collect and save MFDn output files only.
 
@@ -289,26 +331,6 @@ def save_mfdn_output(task, postfix=""):
     mcscript.call(["cp", "--verbose", work_dir+"/mfdn.res", res_filename])
     out_filename = "{:s}.out".format(filename_prefix)
     mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
-
-    # save OBDME files for next natural orbital iteration
-    if task.get("natural_orbitals"):
-        print("Saving OBDME files for natural orbital generation...")
-        obdme_info_filename = "mfdn.rppobdme.info"
-        mcscript.call(
-            [
-                "cp", "--verbose",
-                os.path.join(work_dir, obdme_info_filename),
-                environ.filenames.natorb_info_filename(postfix)
-            ]
-        )
-        obdme_filename = glob.glob("{:s}/mfdn.statrobdme.seq{:03d}*".format(work_dir,task["natorb_base_state"]))
-        mcscript.call(
-            [
-                "cp", "--verbose",
-                obdme_filename[0],
-                environ.filenames.natorb_obdme_filename(postfix)
-            ]
-        )
 
     # save full archive of input, log, and output files
     print("Saving full output files...")
