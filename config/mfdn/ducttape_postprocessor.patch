@@ -124,7 +124,23 @@ Index: src_common/subrts_Observables.F
 ===================================================================
 --- src_common/subrts_Observables.F	(revision 76)
 +++ src_common/subrts_Observables.F	(working copy)
-@@ -803,6 +803,7 @@
+@@ -392,6 +392,7 @@
+       deallocate(numJ)
+ C
+       if (mypid .eq. root) then
++#ifndef DUCTTAPE_POSTPROCESSOR
+          if (obdme) then
+ C     Write static OBDME to file and calculate static observables
+             call WriteStatOBDME(nstates, TwoMj,
+@@ -430,6 +431,7 @@
+                endif
+             enddo
+          endif
++#endif
+ C
+          tafter = MPI_WTIME()
+          write(7,*) '   time calc static observables',
+@@ -803,6 +805,7 @@
   9735 format('# sum of neutron occ.prob.', 64(x,g12.4) )
  !
        open(file=outputname, unit=10, position='append', action='write')
@@ -132,7 +148,7 @@ Index: src_common/subrts_Observables.F
        write(10,*)
        write(10,9000)
        write(10,9001)
-@@ -949,6 +950,7 @@
+@@ -949,6 +952,7 @@
        enddo
        write(10,9735)  tmpsum(1:neivals)
  !
