@@ -105,7 +105,7 @@ import sys
 Gb = 2.**30  # size of Gb in bytes
 
 # meshes for run configuration
-DEPTH_MESH = [1,6]  # list of OMP depths to consider
+DEPTH_MESH = [1,6,8,16]  # list of OMP depths to consider
 DIAGONAL_MESH = (
     list(range(1,15,2)) 
     + list(range(15,155,10))
@@ -114,7 +114,7 @@ DIAGONAL_MESH = (
 DIAGONAL_MESH_OMP = (
     list(range(1,15,2)) 
     + list(range(15,155,2))   # make finer for hybrid run
-    + list(range(155,1000,20))
+    + list(range(155,1000,8))
     )
 
 
