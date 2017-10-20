@@ -1,0 +1,79 @@
+
+10/18/17:
+
+   jisp16, Nmax04, jjjt:
+     - MC's moshinsky output jisp16_Nmax04_hw20.0_jjjt.dat
+     - Anna's upcoupling/downcoupling 171018-moshinsky-test-files/jisp16_tb_Nmax04.dat
+
+   Compare using compare_me.py: jisp16_Nmax04_hw20.0_jjjt-COMPARISON.dat.
+
+   Anna's files have both canonical and noncanonical ordering for
+   orbitals in tb states.  And Anna may be zero-suppressing on
+   output. So use label set from moshinsky output and provide 0
+   default for Anna's matrix elements.  All matrix elements agree,
+   except Anna spuriously suppressed two-body states with J>4.
+
+   coulomb, Nmax06, jjjt:
+     - MC's moshinsky output coulomb_Nmax06_jjjt.dat
+     - Anna's upcoupling/downcoupling 171018-moshinsky-test-files/coulomb_tb_Nmax04.dat
+
+   Compare using compare_me.py: jisp16_Nmax04_hw20.0_jjjt-COMPARISON.dat.
+
+   Anna's files have both canonical and noncanonical ordering for
+   orbitals in tb states.  And Anna may be zero-suppressing on
+   output. So use label set from moshinsky output and provide 0
+   default for Anna's matrix elements.  All matrix elements agree at
+   ~10^-7 level, except Anna spuriously suppressed two-body states
+   with J>4.
+
+10/19/17:
+
+   jisp16, Nmax06, jjjpn
+     - MC's moshinsky jisp16_Nmax06_hw20.0_jjjpn.dat
+     - h2 derived from m94 vxx run0164-JISP16-coul-tb-06-hw20-dat/JISP16-tb-6-20.dat
+   Output conversion from AS to NAS on the fly.
+   Compare by visual inspection.
+     - MC's moshinsky jisp16_Nmax06_hw20.0_h2v0.dat
+     - h2 derived from m94 vxx run0164-JISP16-coul-tb-06-hw20-dat/JISP16-tb-6-20.dat
+   Output conversion from AS to NAS added to h2_io capabilities.
+   Compare by compare_me.py.
+   Most deviations are ~10^7, some ~10^-4.
+  
+
+   coulomb, Nmax06, jjjpn
+     - MC's moshinsky coulomb_Nmax06_h2v0.dat
+     - h2 derived from m94 vxx run0164-JISP16-coul-tb-06-hw20-dat/VC-tb-6-20.dat
+   Compare by compare_me.py.
+   Fix relative matrix elements:
+     - sqrt(2) factor on pp matrix elements from relative oscillator length
+     - garbage in pn sector due to missing short-circuit check for T=1
+   Compare OK!
+   But actually...  That's at about the 10^-4 level.
+   And they shouldn't agree, since our Coulomb is for b=1 and dimensionless,
+   while the h2 is for the physical (proton charge) operator at hw=20.
+   Expected conversion factor: (alpha)[(m_N c^2)(20)]^(1/2)=0.999988.
+
+10/20/17
+
+   nnloopt, Nmax06, jjjpn
+     - MC's moshinsky nnloopt_Nmax06_hw40.0_caveat-nmax30_h2v0.dat
+     - h2 run0306-N2LOopt500-tb-06-hw40-dat/N2LOopt500-tb-6-40.dat
+   Moshinsky transform from jpv
+     veff.cf_n2lo_pp_nmax30_jrelmx10_lambda500_n3_hw40.00
+     veff.cf_n2lo_nn_nmax30_jrelmx10_lambda500_n3_hw40.00
+     veff.cf_n2lo_np_nmax30_jrelmx10_lambda500_n3_hw40.00
+   via jpv2rel to
+     nnloopt_Nmax20_hw40.0_caveat-nmax30_rel.dat
+   Compare by compare_me.py.
+   Errors ~5%, probably due to nmax30 truncation on benchmark relative files.
+
+   nnloopt, Nmax04, jjjt
+     - MC's moshinsky nnloopt_Nmax04_hw40.0_caveat-nmax30_jjjt.dat
+     - Anna's upcoupling/downcoupling 171020-moshinsky-test-files/nnlo-opt_tb_Nmax04.dat
+   Agree to ~10^-7.
+
+   quadrupole, Nmax04, jjjt
+     - MC's moshinsky quadrupole_Nmax04_total_jjjt.dat
+     - Anna's upcoupling/downcoupling 171020-moshinsky-test-files/Qtotal_tb_Nmax04.dat
+   Disagree...
+ 
