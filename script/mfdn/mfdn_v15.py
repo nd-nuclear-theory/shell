@@ -154,6 +154,8 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
         inputlist["neivals"] = int(task["eigenvectors"])
         inputlist["maxits"] = int(task["lanczos"])
         inputlist["tol"] = float(task["tolerance"])
+        if task.get("reduce_solver_threads"):
+            inputlist["reduce_solver_threads"] = task["reduce_solver_threads"]
 
         # Hamiltonian input
         inputlist["TBMEfile"] = "tbme-H"
