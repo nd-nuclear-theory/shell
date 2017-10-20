@@ -782,23 +782,34 @@ namespace moshinsky {
       )
   {
 
-    // define isospin Clebsch-Gordan coefficients
+    // Relation of pp/nn/pn matrix elements to JT-reduced matrix
+    // elements
     //
-    // Note: There are just the isospin Clebsch-Gordan
-    // coefficients for the Wigner-Eckhart branching of
-    // the isospin reduced matrix elements.  These do not
-    // include the Clebsch/normalization factors in the
-    // expansion of the pn states in terms of T=0/1
-    // states, which are treated below at the level of
-    // individual matrix elements.
-    static Eigen::Matrix3d kIsospinCoefficientMatrixTToTzForT1;
+    // Note: These are the isospin Clebsch-Gordan coefficients for the
+    // Wigner-Eckhart branching of the isospin reduced matrix elements
+    // to Tz, not for the expansion of the pn state in terms of T
+    // states.
+
+    // coefficients of <T=0||A0||T=0> source RMEs
+    static const double kIsospinCoefficientTToTzForT0 = 1.;
+
+    // coefficients of <T=1||A1||T=0> and vice versa source RMEs
+    static const double kIsospinCoefficientTToTzForT10 = 1.;
+    static const double kIsospinCoefficientTToTzForT01 = -sqrt(1/3.);
+
+    // coefficients of <T=1||...||T=1> source RMEs
+    //
+    //   i.e., contribution of <T=1||A_T0||T=1> to <Tz||A||Tz>,
+    //
+    //   indexed by (int(two_body_species),T0),
+    //
+    //   where We have listed Tz sectors in the order pp/nn/pn to
+    //   match the TwoBodySpecies enum ordering.
+    static Eigen::Matrix3d kIsospinCoefficientMatrixTToTzForT1;  // 
     kIsospinCoefficientMatrixTToTzForT1
       << +1, +std::sqrt(1/2.), +std::sqrt(1/10.),
       +1,-std::sqrt(1/2.),+std::sqrt(1/10.),
       +1,0,-std::sqrt(2./5.);
-    static const double kIsospinCoefficientTToTzForT10 = 1.;
-    static const double kIsospinCoefficientTToTzForT01 = -sqrt(1/3.);
-    static const double kIsospinCoefficientTToTzForT0 = 1.;
 
     // set up matrix to hold results
     Eigen::MatrixXd matrix = Eigen::MatrixXd::Zero(
@@ -824,7 +835,8 @@ namespace moshinsky {
               if (!am::AllowedTriangle(Tp,T0,T))
                 continue;
 
-              // impose Tz sufficiency for current sector two-body species
+              // impose isospin sufficient for current sector two-body
+              // species
               if (!(
                       (two_body_species==basis::TwoBodySpeciesPN::kPN)
                       || ((Tp==1)&&(T==1))
@@ -966,15 +978,13 @@ namespace moshinsky {
                     HalfInt j2_ket = two_body_jjjpn_ket.GetOrbital2().j();
 
                     // calculate pn state expansion coefficients
-                    double pn_normalization_factor = 1.0;
+                    //
+                    // This is the factor of 1/2 which comes from
+                    // expanding the pn state in terms of isospin
+                    // states |T,Tz> = |1,0> and |0,0>.
+                    double pn_expansion_factor = 1.0;
                     if (two_body_species==basis::TwoBodySpeciesPN::kPN)
-                      {
-                        pn_normalization_factor = 0.5;
-                        if (index1_bra==index2_bra)
-                          pn_normalization_factor *= sqrt(2.);
-                        if (index1_ket==index2_ket)
-                          pn_normalization_factor *= sqrt(2.);
-                      }
+                        pn_expansion_factor = 0.5;
 
                     // canonicalize indices of orbitals within
                     // two-body states
@@ -1072,24 +1082,23 @@ namespace moshinsky {
 
                     // look up source matrix element
                     double two_body_jjjt_matrix_element
-                      = pn_normalization_factor
-                      * canonicalization_factor_bra * canonicalization_factor_ket * canonicalization_factor
+                      = canonicalization_factor_bra * canonicalization_factor_ket * canonicalization_factor
                       * two_body_jjjt_matrix(
                         canonical_two_body_jjjt_state_index_bra,canonical_two_body_jjjt_state_index_ket
                       );
 
-                    // determine normalization factor to convert target matrix element from AS to NAS
-                    double conversion_factor = 1.;
-                    if (two_body_species!=basis::TwoBodySpeciesPN::kPN)
-                      {
-                        if (two_body_jjjpn_bra.index1()==two_body_jjjpn_bra.index2())
-                          conversion_factor *= (1/sqrt(2.));
-                        if (two_body_jjjpn_ket.index1()==two_body_jjjpn_ket.index2())
-                          conversion_factor *= (1/sqrt(2.));
-                      }
+                    //// determine normalization factor to convert target matrix element from AS to NAS
+                    //double conversion_factor = 1.;
+                    //if (two_body_species!=basis::TwoBodySpeciesPN::kPN)
+                    //  {
+                    //    if (two_body_jjjpn_bra.index1()==two_body_jjjpn_bra.index2())
+                    //      conversion_factor *= (1/sqrt(2.));
+                    //    if (two_body_jjjpn_ket.index1()==two_body_jjjpn_ket.index2())
+                    //      conversion_factor *= (1/sqrt(2.));
+                    //  }
 
                     // incorporate contribution
-                    matrix(bra_index,ket_index) += conversion_factor * isospin_coefficient * two_body_jjjt_matrix_element;
+                    matrix(bra_index,ket_index) += pn_expansion_factor * isospin_coefficient * two_body_jjjt_matrix_element;
 
                   }
             }

@@ -610,7 +610,10 @@ namespace shell {
       }
   }
 
-  void OutH2Stream::WriteSector_Version0(const Eigen::MatrixXd& matrix)
+  void OutH2Stream::WriteSector_Version0(
+      const Eigen::MatrixXd& matrix,
+      basis::NormalizationConversion conversion_mode
+    )
   {
     // Note: Although H2 format Version0 only suports *diagonal* sectors
     // (operator conserves Tz, J, g), we treat the bra and ket
@@ -655,8 +658,20 @@ namespace shell {
           const basis::TwoBodyStateJJJPN bra(bra_subspace,bra_index);
           const basis::TwoBodyStateJJJPN ket(ket_subspace,ket_index);
 
+          // determine matrix element normalization factor
+          double conversion_factor = 1.;
+          if (conversion_mode == basis::NormalizationConversion::kASToNAS)
+            {
+              if (bra.two_body_species()!=basis::TwoBodySpeciesPN::kPN)
+                if (bra.index1()==bra.index2())
+                  conversion_factor *= (1/sqrt(2.));
+              if (ket.two_body_species()!=basis::TwoBodySpeciesPN::kPN)
+                if (ket.index1()==ket.index2())
+                  conversion_factor *= (1/sqrt(2.));
+            }
+
           // retrieve matrix element for output
-          float output_matrix_element = matrix(bra_index,ket_index);;
+          float output_matrix_element = conversion_factor * matrix(bra_index,ket_index);
 
           // write line: output matrix element
           int output_i1 = bra.index1()+1;
@@ -691,7 +706,10 @@ namespace shell {
       }
   }
 
-  void OutH2Stream::WriteSector_Version15099(const Eigen::MatrixXd& matrix)
+  void OutH2Stream::WriteSector_Version15099(
+      const Eigen::MatrixXd& matrix,
+      basis::NormalizationConversion conversion_mode
+    )
   {
     // extract sector
     const typename basis::TwoBodySectorsJJJPN::SectorType& sector = sectors().GetSector(sector_index_);
@@ -726,8 +744,20 @@ namespace shell {
           const basis::TwoBodyStateJJJPN bra(bra_subspace,bra_index);
           const basis::TwoBodyStateJJJPN ket(ket_subspace,ket_index);
 
+          // determine matrix element normalization factor
+          double conversion_factor = 1.;
+          if (conversion_mode == basis::NormalizationConversion::kASToNAS)
+            {
+              if (bra.two_body_species()!=basis::TwoBodySpeciesPN::kPN)
+                if (bra.index1()==bra.index2())
+                  conversion_factor *= (1/sqrt(2.));
+              if (ket.two_body_species()!=basis::TwoBodySpeciesPN::kPN)
+                if (ket.index1()==ket.index2())
+                  conversion_factor *= (1/sqrt(2.));
+            }
+
           // retrieve matrix element for output
-          float output_matrix_element = matrix(bra_index,ket_index);
+          float output_matrix_element = conversion_factor * matrix(bra_index,ket_index);
 
           // write line: output matrix element
           int output_i1 = bra.index1()+1;
@@ -897,7 +927,10 @@ namespace shell {
     StreamCheck(bool(stream()),filename_,"Failure while writing H2 file header");
   }
   
-  void OutH2Stream::WriteSector(const Eigen::MatrixXd& matrix)
+  void OutH2Stream::WriteSector(
+      const Eigen::MatrixXd& matrix,
+      basis::NormalizationConversion conversion_mode
+    )
   {
     // validate matrix dimensions
     const typename basis::TwoBodySectorsJJJPN::SectorType& sector = sectors().GetSector(sector_index_);
@@ -905,11 +938,17 @@ namespace shell {
     const typename basis::TwoBodySectorsJJJPN::SubspaceType& ket_subspace = sector.ket_subspace();
     assert((matrix.rows()==sector.bra_subspace().size())&&(matrix.cols()==sector.ket_subspace().size()));
 
+    // validate output as NAS
+    assert(
+        (conversion_mode == basis::NormalizationConversion::kNone)
+        || (conversion_mode == basis::NormalizationConversion::kASToNAS)
+      );
+
     // write sector
     if (h2_format()==kVersion0)
-      WriteSector_Version0(matrix);
+      WriteSector_Version0(matrix,conversion_mode);
     else if (h2_format()==kVersion15099)
-      WriteSector_Version15099(matrix);
+      WriteSector_Version15099(matrix,conversion_mode);
     else
       assert(false);  // format version was already checked when writing header
 

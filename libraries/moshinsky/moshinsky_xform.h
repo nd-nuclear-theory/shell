@@ -346,18 +346,44 @@ namespace moshinsky {
   // Obtain two-body JJJPN sector by isospin branching, from isospin
   // component JJJT sectors.
   //
+  // It is assumed that all input matrix elements are JT-reduced
+  // matrix elements and output matrix elements are J-reduced matrix
+  // elements, under group theoretical conventions.  Although th
+  // Moshinsky transformation per se is independent of Wigner-Eckart
+  // convention, the isospin branching does depend upon convention.
+  //
+  // The input and output matrix elements are antisymmetrized (AS)
+  // matrix elements, rather than normalized antisymmetrized (NAS)
+  // matrix elements.
+  //
   // We need all source isospin components, since we are performing a sum over
   // source isospin components.
   //
-  // The output matrix element are now *normalized* antisymmetrized
-  // (NAS) matrix elements.
+  // Isospin branching relations (for AS matrix elements):
+  //
+  //   Conventions:
+  //     - proton is Tz=+1/2
+  //     - group theory convention for W-E theorem
+  //
+  //   Reference: See notes "relation of JT and pn TBME (AS)".
+  //
+  //   <ab;Jab||W||cd;Jcd>_pp,AS = (1,+1,T0,0|1,+1) <ab;Jab,1||W||cd;Jcd,1>_AS
+  //
+  //   <ab;Jab||W||cd;Jcd>_pn,AS = 1/2*[
+  //         (1,0,T0,0|1,0) <ab;Jab,1||W||cd;Jcd,1>_AS
+  //       + (0,0,T0,0|1,0) <ab;Jab,1||W||cd;Jcd,0>_AS
+  //       + (1,0,T0,0|0,0) <ab;Jab,0||W||cd;Jcd,1>_AS
+  //       + (0,0,T0,0|0,0) <ab;Jab,0||W||cd;Jcd,0>_AS
+  //      ]
+  //
+  //   <ab;Jab||W||cd;Jcd>_nn,AS = (1,-1,T0,0|1,-1) <ab;Jab,1||W||cd;Jcd,1>_AS
   //
   // PRECONDITION: The proton and neutron orbital label sets must be
   // defined identically, and the indexing order must be
-  // lexicographical in (N,j).  This is assumed when (1) proton and
-  // neutrons orbital labels are exchanged to place them in canonical
-  // order when looking up isospin-scheme matrix elements (2) orbital
-  // indices are compared to test canonicality.
+  // lexicographical in (N,j).  This precondition is relied upon when
+  // (1) proton and neutrons orbital labels are exchanged to place
+  // them in canonical order when looking up isospin-scheme matrix
+  // elements (2) orbital indices are compared to test canonicality.
   //
   // Arguments:
   //   operator_labels (basis::OperatorLabelsJT) : tensorial properties of operator

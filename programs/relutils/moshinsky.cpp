@@ -15,8 +15,9 @@
       "rcmlsjt" -- relative-cm matrix elements
       "lsjt" -- two-body LSJT-coupled matrix elements
       "jjjt" -- two-body jjJT-coupled matrix elements
-      "0" -- two-body jjJpn-coupled matrix elements (h2 version 0)
-      "15099" -- two-body jjJpn-coupled matrix elements (h2 version 15099)
+      "jjjpn" -- two-body jjJpn-coupled matrix elements
+      "h2v0" -- two-body jjJpn-coupled matrix elements (h2 version 0)
+      "h2v15099" -- two-body jjJpn-coupled matrix elements (h2 version 15099)
 
   Language: C++11
 
@@ -109,10 +110,20 @@ void ReadParameters(Parameters& parameters)
       parameters.coupling = Coupling::kLSJT;
     else if (coupling_code == "jjjt")
       parameters.coupling = Coupling::kJJJT;
-    else if ((coupling_code == "0") || (coupling_code == "15099"))
+    else if (coupling_code == "jjjpn")
       {
         parameters.coupling = Coupling::kJJJPN;
-        parameters.output_h2_format = atoi(coupling_code.c_str());
+        parameters.output_h2_format = basis::kNone;
+      }
+    else if (coupling_code == "h2v0")
+      {
+        parameters.coupling = Coupling::kJJJPN;
+        parameters.output_h2_format = 0;
+      }
+    else if (coupling_code == "h2v15099")
+      {
+        parameters.coupling = Coupling::kJJJPN;
+        parameters.output_h2_format = 15099;
       }
     else
       ParsingError(line_count,line,"unrecognized coupling scheme code");
@@ -370,7 +381,10 @@ void WriteTwoBodyH2(
   // iterate over sectors
   for (int sector_index = 0; sector_index < output_stream.num_sectors(); ++sector_index)
     {
-      output_stream.WriteSector(two_body_jjjpn_matrices[sector_index]);
+      output_stream.WriteSector(
+          two_body_jjjpn_matrices[sector_index],
+          basis::NormalizationConversion::kASToNAS
+        );
       std::cout << "." << std::flush;
     }
   std::cout << std::endl;
@@ -397,6 +411,10 @@ int main(int argc, char **argv)
   // process truncation cutoff
   int N1max, N2max;
   std::tie(N1max,N2max) = basis::TwoBodyCutoffs(parameters.truncation_rank,parameters.truncation_cutoff);
+
+  ////////////////////////////////////////////////////////////////
+  // read relative operator
+  ////////////////////////////////////////////////////////////////
 
   // set up operator
   basis::RelativeSpaceLSJT relative_space;
@@ -571,15 +589,28 @@ int main(int argc, char **argv)
   two_body_jjjpn_timer.Stop();
   std::cout << "  Time: " << two_body_jjjpn_timer.ElapsedTime() << std::endl;
 
-  WriteTwoBodyH2(
-      parameters,
-      operator_labels,
-      orbital_space,
-      two_body_jjjpn_space,
-      two_body_jjjpn_sectors,
-      two_body_jjjpn_matrices
-    );
-
+  if (parameters.output_h2_format == basis::kNone)
+    {
+      WriteTwoBodyJJJPN(
+          operator_labels,
+          two_body_jjjpn_space,
+          two_body_jjjpn_sectors,
+          two_body_jjjpn_matrices,
+          parameters.two_body_filename
+        );
+    }
+  else
+    {
+      // TODO fix to NAS
+      WriteTwoBodyH2(
+          parameters,
+          operator_labels,
+          orbital_space,
+          two_body_jjjpn_space,
+          two_body_jjjpn_sectors,
+          two_body_jjjpn_matrices
+        );
+    }
 
   ////////////////////////////////////////////////////////////////
   // termination

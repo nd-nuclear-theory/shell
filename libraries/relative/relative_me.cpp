@@ -16,20 +16,17 @@
 namespace relative {
 
   // isospin coefficients for operator which can see only protons,
-  // only neutrons, or both
+  // only neutrons
   //
-  // outer index: operator type (TwoBodySpeciesPN) = kPP=0,kNN=1,kPN=2
+  // outer index: operator type (OperatorTypePN) = kPP=0,kNN=1,kTotal=2 (short circuited)
   // inner index: isospin component T0 = 0,1,2
-  std::array<std::array<double,3>,3>
-  kOperatorIsospinFactors({
+  std::array<std::array<double,3>,2>
+  kSingleSpeciesOperatorIsospinFactors({
       std::array<double,3>({
         1/3.,1/std::sqrt(2.),std::sqrt(10.)/6.
           }),
         std::array<double,3>({
         1/3.,-1/std::sqrt(2.),std::sqrt(10.)/6.
-          }),
-        std::array<double,3>({
-        1.,0.,0.
           })
         });
 
@@ -79,6 +76,24 @@ namespace relative {
         // subspace dimension...
         assert(nmax==subspace.size()-1);
 
+        // relative coordinate dilation factor
+        //
+        // Oscillator lengths for two-particle rel-cm
+        // coordinates are related to oscillator length for
+        // single-particle basis as:
+        //
+        //   b_rel = 2^(1/2)*b
+        //   b_cm = 2^(-1/2)*b
+        //
+        // So for matrix elements of r^p must scale by
+        // (b_rel/b)^p.  For r^2, this is sqrt(2.)^2=2., and, for k^2, this is sqrt(2.)^-2=1/2.
+        double relative_oscillator_scale_factor;
+        if (kinematic_operator == relative::KinematicOperator::kRSqr)
+          relative_oscillator_scale_factor = 2.;
+        else if (kinematic_operator == relative::KinematicOperator::kKSqr)
+          relative_oscillator_scale_factor = 1/2.;
+
+
         // populate nonzero entries
         //
         // We make use of the known indexing scheme for a
@@ -95,10 +110,10 @@ namespace relative {
         for (int n=0; n<=nmax; ++n)
           {
             if (n>0)
-              matrix(n-1,n) = -operator_sign*sqrt(n*(n+L+0.5));
-            matrix(n,n) = (2*n+L+1.5);
+              matrix(n-1,n) = -operator_sign*relative_oscillator_scale_factor*sqrt(n*(n+L+0.5));
+            matrix(n,n) = relative_oscillator_scale_factor*(2*n+L+1.5);
             if (n<nmax)
-              matrix(n+1,n) = -operator_sign*sqrt((n+1)*(n+L+1.5));
+              matrix(n+1,n) = -operator_sign*relative_oscillator_scale_factor*sqrt((n+1)*(n+L+1.5));
 	  }
       }
   }
@@ -109,9 +124,12 @@ namespace relative {
       std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
       std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       relative::KinematicOperator kinematic_operator,
-      basis::TwoBodySpeciesPN operator_species
+      basis::OperatorTypePN operator_type
     )
   {
+
+    assert(operator_type == basis::OperatorTypePN::kTotal);
+
 
     // select phase for coordinate or momentum space
     // TODO: check phase for momentum space version and insert into appropriate terms below
@@ -127,6 +145,7 @@ namespace relative {
         operator_labels,relative_space,relative_component_sectors,relative_component_matrices
       );
 
+ 
     for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
       // for each isospin component
       {
@@ -135,9 +154,11 @@ namespace relative {
         const basis::RelativeSectorsLSJT& sectors = relative_component_sectors[T0];
         basis::OperatorBlocks<double>& matrices = relative_component_matrices[T0];
 
-        // determine isospin factor
-        double isospin_factor = kOperatorIsospinFactors[int(operator_species)][T0];
- 
+        // only implemented for total operator so far
+        // double isospin_factor = kSingleSpeciesOperatorIsospinFactors[int(operator_type)][T0];
+        if (T0!=0)
+          continue;
+
         // iterate over sectors
         for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
           {
@@ -341,8 +362,21 @@ namespace relative {
                   //     )
                   //   << std::endl;
 
+                  // relative coordinate dilation factor
+                  //
+                  // Oscillator lengths for two-particle rel-cm
+                  // coordinates are related to oscillator length for
+                  // single-particle basis as:
+                  //
+                  //   b_rel = 2^(1/2)*b
+                  //   b_cm = 2^(-1/2)*b
+                  //
+                  // So for matrix elements of r^p must scale by
+                  // (b_rel/b)^p.  For quadrupole, this is sqrt(2.)^2=2.
+                  const double relative_oscillator_scale_factor = 2.;
+
                   // combine factors
-                  matrix(bra_n,ket_n) = isospin_factor * angular_factor * radial_integral;
+                  matrix(bra_n,ket_n) = angular_factor * relative_oscillator_scale_factor * radial_integral;
                 }
 
               }
@@ -357,7 +391,7 @@ namespace relative {
       const basis::RelativeSpaceLSJT& relative_space,
       std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
       std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
-      basis::TwoBodySpeciesPN operator_species,
+      basis::OperatorTypePN operator_type,
       int num_steps
     )
   {
@@ -385,9 +419,9 @@ namespace relative {
             // short-circuit select diagonal sectors
             //
             // The a.m. scalar nature imposes diagonal on (L,S,J),
-            // positive parity imposes diagonal on (g), and then there
-            // is that apparent parity selection imposing diagonal in
-            // T.
+            // positive parity imposes diagonal on (g), and then
+            // consequently T is also fixed to be the same on both
+            // sides.
             if (!sector.IsDiagonal())
               continue;
 
@@ -399,9 +433,6 @@ namespace relative {
             int J = subspace.J();
             int T = subspace.T();
             int nmax = (Nmax-L)/2;   // max radial quantum number
-
-            // short circuit-select T=1 sectors (for proton-only operator)
-            // TODO: check what this comment meant and see if it is worthwhile
 
             // although actually we could get nmax just from the
             // subspace dimension...
@@ -415,15 +446,24 @@ namespace relative {
 
             Eigen::MatrixXd& matrix = matrices[sector_index];
 
-            double isospin_factor = kOperatorIsospinFactors[int(operator_species)][T0];
-            
-            // if (T0==0)
-            //   isospin_factor = 1/3.;
-            // else if (T0==1)
-            //   isospin_factor = 1/std::sqrt(2.);
-            // else if (T0==2)
-            //   isospin_factor = std::sqrt(10.)/6.;
-
+            // calculate isospin factors
+            //   and short-circuit evaluation of non-contributing sectors
+            double isospin_factor;
+            if (operator_type==basis::OperatorTypePN::kTotal)
+              {
+                if (T0==0)
+                  isospin_factor = 1.;
+                else
+                  continue;
+              }
+            else
+              {
+                if (T==1)
+                  isospin_factor = kSingleSpeciesOperatorIsospinFactors[int(operator_type)][T0];
+                else
+                  continue;
+              }
+             
             for (int bra_n=0; bra_n<=nmax; ++bra_n)
               for (int ket_n=0; ket_n<=nmax; ++ket_n)
                 {
@@ -436,10 +476,22 @@ namespace relative {
                   const int num_size = num_steps+1;
                   double radial_integral = bra_wavefunction.MatrixElement(num_size,ket_wavefunction,-1);
 
-                  // impose isospin factors
-                  matrix(bra_n,ket_n) = isospin_factor * radial_integral;
-                }
+                  // relative coordinate dilation factor
+                  //
+                  // Oscillator lengths for two-particle rel-cm
+                  // coordinates are related to oscillator length for
+                  // single-particle basis as:
+                  //
+                  //   b_rel = 2^(1/2)*b
+                  //   b_cm = 2^(-1/2)*b
+                  //
+                  // So for matrix elements of r^p must scale by
+                  // (b_rel/b)^p.  For Coulomb, this is 1/sqrt(2.).
+                  const double relative_oscillator_scale_factor = 1/std::sqrt(2.);
 
+                  // impose isospin factors
+                  matrix(bra_n,ket_n) = isospin_factor * relative_oscillator_scale_factor * radial_integral;
+                }
 
           }
       }

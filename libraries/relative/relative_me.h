@@ -21,6 +21,8 @@
     - Rename to relative_me.
     - Remove ConstructDiagonalConstantOperator.
   + 7/1/17 (mac): Add ConstructQuadrupoleOperator.
+  + 10/19/17 (mac): Add scale factors for relative oscillator length.
+
 ****************************************************************/
 
 #ifndef RELATIVE_ME_H_
@@ -63,9 +65,14 @@ namespace relative {
       std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
       std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       relative::KinematicOperator kinematic_operator,
-      basis::TwoBodySpeciesPN operator_species
+      basis::OperatorTypePN operator_type
     );
   // Construct quadrupole operator in relative LSJT basis.
+  //
+  // Here the operator_type indicates protons/neutrons/both relative
+  // to *total* center of mass.
+  //
+  // TODO: implement p and n operators
   //
   // Arguments:
   //   operator_labels (input) : tensorial properties of operator
@@ -74,17 +81,20 @@ namespace relative {
   //   relative_component_matrices (output) : target matrices
   //   kinematic_operator (input): whether to construct coordinate
   //     or momentum operator (coopted from ConstructKinematicOperator)
-  //   operator_species (input): operator for protons, neutrons, or both
+  //   operator_type (input): operator for protons, neutrons, or both
 
   void ConstructCoulombOperator(
       const basis::OperatorLabelsJT& operator_labels,
       const basis::RelativeSpaceLSJT& relative_space,
       std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
       std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
-      basis::TwoBodySpeciesPN operator_species,
+      basis::OperatorTypePN operator_type,
       int num_steps
     );
   // Construct coulomb operator in relative LSJT basis.
+  //
+  // Here the operator_type indicates whether this is a single species
+  // operator for protons/neutrons or sees both types of nucleons.
   //
   // Makes use of spline integration.  An offset inner integration
   // point x0>0 is required to prevent the integrand from exploding.
@@ -98,7 +108,7 @@ namespace relative {
   //   relative_space (input): target space
   //   relative_component_sectors (output): target sectors
   //   relative_component_matrices (output): target matrices
-  //   operator_species (input): operator for protons, neutrons, or both
+  //   operator_type (input): operator for protons, neutrons, or both
   //   num_steps (input): number of integration steps
 
   ////////////////////////////////////////////////////////////////

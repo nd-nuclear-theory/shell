@@ -32,6 +32,8 @@
     - Convert from AS to NAS storage.
   11/13/16 (mac): Implement H2 Version15099 binary output.
   11/28/16 (mac): Add Tz0 to h2 format 15099 output header.
+  10/19/17 (mac): Add optional on-the-fly conversion from AS to
+    NAS matrix elements on output.
 
 ****************************************************************/
 
@@ -291,7 +293,10 @@ namespace shell {
       };
 
     // I/O
-    void WriteSector(const Eigen::MatrixXd& matrix);
+    void WriteSector(
+        const Eigen::MatrixXd& matrix,
+        basis::NormalizationConversion conversion_mode = basis::NormalizationConversion::kNone
+      );
     void Close();
 
     // debugging
@@ -307,11 +312,11 @@ namespace shell {
 
     // ... Version0
     void WriteHeader_Version0();
-    void WriteSector_Version0(const Eigen::MatrixXd& matrix);
+    void WriteSector_Version0(const Eigen::MatrixXd& matrix, basis::NormalizationConversion conversion_mode);
 
     // ... Version15099
     void WriteHeader_Version15099();
-    void WriteSector_Version15099(const Eigen::MatrixXd& matrix);
+    void WriteSector_Version15099(const Eigen::MatrixXd& matrix, basis::NormalizationConversion conversion_mode);
 
     // file stream
     // std::ofstream& stream() const {return *stream_ptr_;}  // alias for convenience
