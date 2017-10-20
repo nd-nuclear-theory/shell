@@ -25,6 +25,7 @@
             n_nz (int or float) : number of nonzero matrix elements in matrix
 
         Any extra junk on a line is ignored.
+        Lines after header beginning with "#" are ignored.
 
     ----------------------------------------------------------------
 
@@ -311,6 +312,8 @@ if (__name__ == "__main__"):
         if line.strip() == "":
             continue
         tokens = line.split()
+        if tokens[0][0] == "#":
+            continue
         params.Z = int(tokens[0])
         params.N = int(tokens[1])
         params.Nmax = int(tokens[2])
