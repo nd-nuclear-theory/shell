@@ -13,6 +13,7 @@ University of Notre Dame
 - 09/24/17 (pjf): Fix call to cleanup_mfdn_workdir() in task_handler_natorb().
 - 09/25/17 (pjf): Add archive_handler_mfdn() and archive_handler_mfdn_hsi().
 - 10/11/17 (pjf): Break task handlers into serial/hybrid phases.
+- 10/18/17 (pjf): Call extract_natural_orbitals().
 """
 import os
 import glob
@@ -80,6 +81,11 @@ def task_handler_post_run(task, postfix=""):
     mfdn_driver = task.get("mfdn_driver")
     if mfdn_driver is None:
         mfdn_driver = default_mfdn_driver
+
+    # save OBDME files for next natural orbital iteration
+    if task.get("natural_orbitals"):
+        mfdn_driver.extract_natural_orbitals(task, postfix)
+
     mfdn_driver.save_mfdn_output(task, postfix=postfix)
     mfdn_driver.cleanup_mfdn_workdir(task, postfix=postfix)
 

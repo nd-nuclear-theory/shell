@@ -16,6 +16,7 @@
   + 11/22/16 (pjf): Implemented similarity transforms.
   + 09/19/17 (pjf): Improved transformation to accept more types of transformations.
   + 10/12/17 (pjf): Update for changes to radial_io.
+  + 10/18/17 (pjf): Correctly set target_operator_order.
 
 ******************************************************************************/
 
@@ -155,7 +156,7 @@ int main(int argc, const char *argv[]) {
 
   // construct new indexing
   const shell::RadialOperatorType& target_operator_type = source_operator_type;
-  const int target_operator_order = target_operator_order;
+  const int target_operator_order = source_operator_order;
   const basis::OrbitalSpaceLJPN& target_space = olap_ket_space;
   basis::OrbitalSectorsLJPN target_sectors;
   if (source_sectors.mode() == basis::SectorsConstraintMode::kAll) {
