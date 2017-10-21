@@ -6,7 +6,16 @@ one-body
   density matrix elements.
 
   Syntax:
-    + obscalc-ob operator_filename robdme_info robdme_file
+    + obscalc-ob
+
+  Input format:
+
+    set-output-file output_filename
+    set-indexing orbital_filename
+    define-operator name operator_filename
+    define-static-densities J g n robdme_info_filename robdme_filename
+    define-transition-densities Jf gf nf Ji gi fi robdme_info_filename
+robdme_filename
 
   Patrick J. Fasano
   University of Notre Dame
@@ -20,76 +29,177 @@ one-body
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <vector>
 
+#include "am/halfint.h"
 #include "basis/nlj_orbital.h"
 #include "basis/proton_neutron.h"
 #include "cppformat/format.h"
 #include "density/obdme_io.h"
 #include "radial/radial_io.h"
 
-// Stores simple parameters for run
-struct RunParameters {
-  // filenames
-  std::string operator_filename;
-  std::string robdme_info;
-  std::string robdme_file;
-};
+// Store one-body operators
+struct OneBodyOperator {
+  std::string name;
+  basis::OrbitalSpaceLJPN space;
+  basis::OrbitalSectorsLJPN sectors;
+  basis::OperatorBlocks<double> operator_matrices;
 
-void PrintUsage(char** argv) {
-  std::cout << "Usage: " << argv[0]
-            << " operator_filename robdme_info robdme_file" << std::endl;
+  explicit OneBodyOperator(const std::string& name__, const std::string& filename)
+      : name(name__) {
+    // read operator
+    shell::InRadialStream is(filename);
+    is.Read(operator_matrices);
+
+    // get indexing
+    basis::OrbitalSpaceLJPN ket_space;
+    is.SetToIndexing(space, ket_space, sectors);
+    assert(space.OrbitalInfo() == ket_space.OrbitalInfo());
+    is.Close();
+  }
 }
 
-void ProcessArguments(int argc, char** argv, RunParameters& run_parameters) {
-  // argument counter
-  int arg = 1;
+// store one-body static densities
+struct StaticOneBodyDensities {
+  HalfInt J;
+  int g, n;
+  std::string robdme_filename;
+  shell::InOBDMEReader obdme_reader;
 
-  // usage message (must at least provide mode)
-  if (argc - 1 < 3) {
-    PrintUsage(argv);
-    std::exit(EXIT_FAILURE);
+  StaticOneBodyDensities(HalfInt J__, int g__, int n__,
+                         const basis::OrbitalSpaceLJPN& space,
+                         const std::string& robdme_info,
+                         const std::string& robdme_file)
+      : J(J__),
+        g(g__),
+        n(n__),
+        obdme_reader(robdme_info, space, 0, 0),
+        robdme_filename(robdme_file) {}
+  // TODO(pjf): generalize to parity- and isospin-changing operators
+
+  void ReadMultipole(int j0, basis::OperatorBlocks<double> density_matrices) {
+    obdme_reader.ReadMultipole(robdme_file, j0, density_matrices);
+  }
+}
+
+// store one-body static densities
+struct TransitionOneBodyDensities {
+  HalfInt Ji, Jf;
+  int gi, gf, ni, nf;
+  std::string robdme_filename;
+  shell::InOBDMEReader obdme_reader;
+
+  TransitionOneBodyDensities(HalfInt Jf__, int gf__, int nf__, HalfInt Ji__,
+                             int gi__, int ni__,
+                             const basis::OrbitalSpaceLJPN& space,
+                             const std::string robdme_info,
+                             const std::string robdme_file)
+      : Jf(Jf__),
+        gf(gf__),
+        nf(nf__),
+        Ji(Ji__),
+        gi(gi__),
+        ni(ni__),
+        obdme_reader(robdme_info, space, 0, 0),
+        robdme_filename(robdme_file) {
+    assert(gf == gi);
+    // TODO(pjf): generalize to parity- and isospin-changing operators
   }
 
-  // operator file
-  {
-    std::istringstream parameter_stream(argv[arg++]);
-    parameter_stream >> run_parameters.operator_filename;
-    if (!parameter_stream) {
-      PrintUsage(argv);
-      std::cerr << "Invalid operator filename." << std::endl;
-      std::exit(EXIT_FAILURE);
-    }
-    struct stat st;
-    if (stat(run_parameters.operator_filename.c_str(), &st) != 0) {
-      std::cerr << "ERROR: file " << run_parameters.operator_filename
-                << " does not exist!" << std::endl;
-      std::exit(EXIT_FAILURE);
-    }
+  void ReadMultipole(int j0, basis::OperatorBlocks<double> density_matrices) {
+    // assert(am::AllowedTriangle(Jf, Ji, j0));
+    obdme_reader.ReadMultipole(robdme_file, j0, density_matrices);
   }
+}
 
-  // input ROBDME info file
-  {
-    std::istringstream parameter_stream(argv[arg++]);
-    parameter_stream >> run_parameters.robdme_info;
-    std::cout << run_parameters.robdme_info << std::endl;
-    struct stat st;
-    if (stat(run_parameters.robdme_info.c_str(), &st) != 0) {
-      std::cerr << "ERROR: file " << run_parameters.robdme_info
-                << " does not exist!" << std::endl;
-      std::exit(EXIT_FAILURE);
-    }
-  }
+// Stores parameters for run
+struct RunParameters {
+  // filenames
+  std::string output_filename;
+  basis::OrbitalSpaceLJPN space;
+  std::vector<OneBodyOperator> operators;
+  std::vector<StaticOneBodyDensities> static_densities;
+  std::vector<TransitionOneBodyDensities> transition_densities;
+};
 
-  // input static ROBDME file
-  {
-    std::istringstream parameter_stream(argv[arg++]);
-    parameter_stream >> run_parameters.robdme_file;
-    std::cout << run_parameters.robdme_file << std::endl;
-    struct stat st;
-    if (stat(run_parameters.robdme_file.c_str(), &st) != 0) {
-      std::cerr << "ERROR: file " << run_parameters.robdme_file
-                << " does not exist!" << std::endl;
-      std::exit(EXIT_FAILURE);
+void PrintUsage(char** argv) { std::cout << "Usage: " << argv[0] << std::endl; }
+
+void ReadParameters(RunParameters& run_parameters) {
+  std::string line;
+  int line_count = 0;
+
+  while (std::getline(std::cin, line)) {
+    ++line_count;
+
+    // set up for line parsing
+    std::istringstream line_stream(line);
+    std::string keyword;
+    line_stream >> keyword;
+
+    // skip blank line or hash comment line
+    if ((keyword == "") || (keyword == "#")) continue;
+
+    // select action based on keyword
+    if (keyword == "set-output-file") {
+      line_stream >> run_parameters.output_filename;
+      ParsingCheck(line_stream, line_count, line);
+      struct stat st;
+      if (stat(run_parameters.output_filename.c_str(), &st) == 0) {
+        std::cerr << "WARN: overwriting file " << run_parameters.output_filename
+                  << std::endl;
+      }
+    } else if (keyword == "set-indexing") {
+      std::string orbital_filename;
+      line_stream >> transition_type;
+      ParsingCheck(line_stream, line_count, line);
+
+      std::ifstream orbital_stream(orbital_filename);
+      std::vector<basis::OrbitalPNInfo> input_orbitals =
+          basis::ParseOrbitalPNStream(orbital_stream, true);
+      run_parameters.space = basis::OrbitalSpaceLJPN(input_orbitals);
+    } else if (keyword == "define-operator") {
+      std::string name, filename;
+      line_stream >> name >> filename;
+      ParsingCheck(line_stream, line_count, line);
+      struct stat st;
+      if (stat(filename, &st) != 0) {
+        std::cerr << "ERROR: file " << filename << " does not exist!" << std::endl;
+        std::exit(EXIT_FAILURE);
+      }
+
+      run_parameters.operators.emplace_back(name, filename);
+    } else if (keyword == "set-basis-scale-factor") {
+      line_stream >> run_parameters.scale_factor;
+      ParsingCheck(line_stream, line_count, line);
+    } else if (keyword == "define-radial-source") {
+      line_stream >> run_parameters.radial_me_filename;
+      ParsingCheck(line_stream, line_count, line);
+      struct stat st;
+      if (stat(run_parameters.radial_me_filename.c_str(), &st) != 0) {
+        std::cerr << "ERROR: file " << run_parameters.radial_me_filename
+                  << " does not exist!" << std::endl;
+        std::exit(EXIT_FAILURE);
+      }
+    } else if (keyword == "set-charge") {
+      std::string charge, species_code;
+      double value;
+      line_stream >> charge >> species_code >> value;
+      ParsingCheck(line_stream, line_count, line);
+
+      int species_index;
+      if (species_code == "p" || species_code == "P") {
+        species_index = 0;
+      } else if (species_code == "n" || species_code == "N") {
+        species_index = 1;
+      }
+
+      if (charge == "q") {
+        run_parameters.electric_charge[species_index] = value;
+      } else if (charge == "gl") {
+        run_parameters.orbital_g[species_index] = value;
+      } else if (charge == "gs") {
+        run_parameters.g[species_index] = value;
+      }
     }
   }
 }
@@ -109,26 +219,6 @@ int main(int argc, char** argv) {
                            omp_get_max_threads(), omp_get_num_procs())
             << std::endl
             << std::endl;
-
-  // read operator
-  shell::InRadialStream is(run_parameters.operator_filename);
-  basis::OperatorBlocks<double> operator_matrices;
-  is.Read(operator_matrices);
-
-  // get indexing
-  basis::OrbitalSpaceLJPN bra_space, ket_space;
-  basis::OrbitalSectorsLJPN sectors;
-  is.SetToIndexing(bra_space, ket_space, sectors);
-  assert(bra_space.OrbitalInfo() == ket_space.OrbitalInfo());
-  basis::OrbitalSpaceLJPN& space = bra_space;
-  is.Close();
-
-  // get OBDMEs
-  basis::OperatorBlocks<double> density_matrices;
-  shell::InOBDMEReader obdme_reader(run_parameters.robdme_info, space,
-                                    sectors.g0(), sectors.Tz0());
-  obdme_reader.ReadMultipole(run_parameters.robdme_file, sectors.j0(),
-                             density_matrices);
 
   // loop and sum over \sum_{a,b} rho_{ab} T_{ba}
   double value = 0;
