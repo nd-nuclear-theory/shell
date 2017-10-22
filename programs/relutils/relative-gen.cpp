@@ -33,9 +33,9 @@
       Relative r^2 operator (~intrinsic r^2 operator).
       [TODO: merge with ksqr?  provide pp|nn variants?]
 
-    qrel r|k pp|nn|pn [TODO]
+    qrel r|k pp|nn|total [TODO]
 
-    coulomb pp|nn|pn [TODO]
+    coulomb pp|nn|total steps [TODO]
       Coulomb potential.
 
     symmunit T0 Np Lp Sp Jp Tp N L S J T
@@ -46,10 +46,10 @@
     symmetry_phase_mode = kHermitian
     Jmax = Nmax+1
 
-  Example (writerel_coulomb_Nmax6.in):
+  Example (coulomb_Nmax20_p.in):
     0 0 0 2
-    6
-    coulomb
+    20
+    coulomb p 500
     coulomb_Nmax6_rel.dat
 
 
@@ -68,6 +68,7 @@
 ****************************************************************/
 
 #include "basis/lsjt_operator.h"
+#include "basis/proton_neutron.h"
 #include "cppformat/format.h"
 #include "mcutils/parsing.h"
 #include "relative/relative_me.h"
@@ -90,7 +91,11 @@ struct Parameters
   basis::RelativeOperatorParametersLSJT operator_parameters;
   std::string operator_name;
   std::string target_filename;
+
+  // optional parameters for specific operators
   UnitTensorLabels unit_tensor_labels;
+  basis::OperatorTypePN operator_type;
+  int num_steps;
 };
 
 void ReadParameters(Parameters& parameters)
@@ -160,6 +165,22 @@ void ReadParameters(Parameters& parameters)
           >> parameters.unit_tensor_labels.J
           >> parameters.unit_tensor_labels.T;
         ParsingCheck(line_stream,line_count,line);
+      }
+    else if (parameters.operator_name == "coulomb")
+      {
+        std::string operator_type_string;
+        line_stream
+          >> operator_type_string
+          >> parameters.num_steps;
+        ParsingCheck(line_stream,line_count,line);
+        if (operator_type_string=="p")
+          parameters.operator_type = basis::OperatorTypePN::kP;
+        else if (operator_type_string=="n")
+          parameters.operator_type = basis::OperatorTypePN::kN;
+        else if (operator_type_string=="total")
+          parameters.operator_type = basis::OperatorTypePN::kTotal;
+        else
+          ParsingError(line_count,line,"invalid operator type (p/n/total)");
       }
   }
 
@@ -236,12 +257,12 @@ void PopulateOperator(
     }
   else if (parameters.operator_name == "coulomb")
     {
-      int num_steps = 500;  // 500 steps seems to suffice for ~8 digits precision at Nmax20
+      // 500 steps seems to suffice for ~8 digits precision at Nmax20
       relative::ConstructCoulombOperator(
           operator_parameters,
           relative_space,relative_component_sectors,relative_component_matrices,
-          basis::OperatorTypePN::kP,
-          num_steps
+          parameters.operator_type,
+          parameters.num_steps
         );
     }
   else if (parameters.operator_name == "symmunit")
