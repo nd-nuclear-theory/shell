@@ -8,20 +8,19 @@
 
   Input format:
 
-    set-transition-type type
-      type = E|M
-    set-transition-rank lambda
+    set-indexing orbital_filename
     set-basis-scale-factor scale_factor
     define-radial-source radial_filename
-    define-output output_filename
-    set-charge charge species value (optional)
-      charge = q|gl|gs
+    define-target type lambda species output_filename
+      type = E|Dl|Ds
       species = p|n
 
   Patrick J. Fasano
   University of Notre Dame
 
   + 09/29/17 (pjf): Created, based on orbital-gen.
+  + 10/24/17 (pjf): Rewritten, generating E/Dl/Ds, with multiple operators
+      generated in one invocation.
 
 ******************************************************************************/
 
@@ -36,46 +35,85 @@
 #include "am/wigner_gsl.h"
 #include "basis/nlj_orbital.h"
 #include "basis/proton_neutron.h"
+#include "cppformat/format.h"
 #include "radial/radial_io.h"
 
 const double kPi = 3.1415926535897;
-const double kQp = 1.;
-const double kQn = 0.;
-const double kGp = 5.585694702;  // NIST CODATA 2014
-const double kGn = -3.82608545;  // NIST CODATA 2014
-const double kGlp = 1.;
-const double kGln = 0.;
 
 ////////////////////////////////////////////////////////////////
 // process arguments
 /////////////////////////////////////////////////////////////////
 
-enum class TransitionType : char { kE = 'E', kM = 'M' };
+enum class OperatorType : char { kE, kDl, kDs };
+std::map<std::string, OperatorType> operator_map = {
+    {"E", OperatorType::kE}, {"Dl", OperatorType::kDl}, {"Ds", OperatorType::kDs}};
+
+// Label for radial operator as (type,power,j0,g0,Tz0) of r, k, or o.
+typedef std::tuple<shell::RadialOperatorType, int, int, int, int> RadialOperatorLabels;
+
+// Indexing and matrix elements for a radial .
+//
+// Caveat: Just "copying" indexing in here is not good enough, since
+// then sectors can be left pointing to deleted temporaries for the
+// orbital subspaces.
+struct RadialOperatorData {
+  RadialOperatorData() = default;
+
+  RadialOperatorData(const std::string& filename_) : filename(filename_) {
+    // open radial operator file
+    basis::OrbitalSpaceLJPN ket_space;
+    shell::InRadialStream radial_operator_stream(filename_);
+    radial_operator_stream.SetToIndexing(space, ket_space, sectors);
+    if (space.OrbitalInfo() != ket_space.OrbitalInfo()) {
+      std::cerr << "ERROR: Bra and ket spaces of radial matrix elements are "
+                   "not the same."
+                << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
+    labels = RadialOperatorLabels{radial_operator_stream.radial_operator_type(),
+                                  radial_operator_stream.radial_operator_power(),
+                                  sectors.j0(), sectors.g0(), sectors.Tz0()};
+    radial_operator_stream.Read(matrices);
+    radial_operator_stream.Close();
+  }
+
+  // operator identification
+  RadialOperatorLabels labels;
+
+  // input filename
+  std::string filename;
+
+  // operator indexing and storage
+  basis::OrbitalSpaceLJPN space;
+  basis::OrbitalSectorsLJPN sectors;
+  basis::OperatorBlocks<double> matrices;
+};
+
+// Map to hold all loaded radial operators.
+typedef std::map<RadialOperatorLabels, RadialOperatorData> RadialOperatorMap;
+
+struct TargetChannel {
+  OperatorType operator_type;
+  int lambda;
+  basis::OrbitalSpeciesPN species;
+  std::string output_filename;
+
+  TargetChannel(OperatorType op_, int lambda_, basis::OrbitalSpeciesPN species_,
+                const std::string& output_filename_)
+      : operator_type(op_),
+        lambda(lambda_),
+        species(species_),
+        output_filename(output_filename_) {}
+};
 
 // Stores simple parameters for run
 struct RunParameters {
-  // filename
-  std::string orbital_filename;
-  std::string radial_me_filename;
-  std::string output_filename;
-  // mode
-  TransitionType transition_type;
-  int lambda;
+  basis::OrbitalSpaceLJPN space;
   double scale_factor;
-  std::array<double, 2> electric_charge;
-  std::array<double, 2> g;
-  std::array<double, 2> orbital_g;
 
-  /** default constructor */
-  RunParameters()
-      : radial_me_filename(""),
-        output_filename(""),
-        transition_type(TransitionType::kE),
-        lambda(0),
-        scale_factor(1.0),
-        electric_charge{kQp, kQn},
-        g{kGp, kGn},
-        orbital_g{kGlp, kGln} {}
+  RadialOperatorMap radial_operators;
+  std::vector<TargetChannel> targets;
 };
 
 void PrintUsage(const char** argv) {
@@ -98,71 +136,88 @@ void ReadParameters(RunParameters& run_parameters) {
     if ((keyword == "") || (keyword == "#")) continue;
 
     // select action based on keyword
-    if (keyword == "set-transition-type") {
-      char transition_type;
-      line_stream >> transition_type;
-      if ((transition_type != 'E') && (transition_type != 'M')) {
-        std::cerr << "Valid transition types: E, M" << std::endl;
+    if (keyword == "set-indexing") {
+      std::string orbital_filename;
+      line_stream >> orbital_filename;
+      ParsingCheck(line_stream, line_count, line);
+      struct stat st;
+      if (stat(orbital_filename.c_str(), &st) != 0) {
+        std::cerr << "ERROR: file " << orbital_filename << " does not exist!"
+                  << std::endl;
         std::exit(EXIT_FAILURE);
       }
-      run_parameters.transition_type = static_cast<TransitionType>(transition_type);
-    } else if (keyword == "set-transition-rank") {
-      line_stream >> run_parameters.lambda;
-      ParsingCheck(line_stream, line_count, line);
+
+      std::ifstream orbital_stream(orbital_filename);
+      auto input_orbitals = basis::ParseOrbitalPNStream(orbital_stream, true);
+      run_parameters.space = basis::OrbitalSpaceLJPN(input_orbitals);
     } else if (keyword == "set-basis-scale-factor") {
       line_stream >> run_parameters.scale_factor;
       ParsingCheck(line_stream, line_count, line);
     } else if (keyword == "define-radial-source") {
-      line_stream >> run_parameters.radial_me_filename;
+      std::string radial_me_filename;
+      line_stream >> radial_me_filename;
       ParsingCheck(line_stream, line_count, line);
       struct stat st;
-      if (stat(run_parameters.radial_me_filename.c_str(), &st) != 0) {
-        std::cerr << "ERROR: file " << run_parameters.radial_me_filename
-                  << " does not exist!" << std::endl;
+      if (stat(radial_me_filename.c_str(), &st) != 0) {
+        std::cerr << "ERROR: file " << radial_me_filename << " does not exist!"
+                  << std::endl;
         std::exit(EXIT_FAILURE);
       }
-    } else if (keyword == "define-output") {
-      line_stream >> run_parameters.output_filename;
+
+      RadialOperatorData radial_operator_data(radial_me_filename);
+      run_parameters.radial_operators.insert(
+          {radial_operator_data.labels, radial_operator_data});
+    } else if (keyword == "define-target") {
+      // type lambda species output_filename
+      std::string operator_string, output_filename;
+      int lambda;
+      char species_code;
+
+      line_stream >> operator_string >> lambda >> species_code >> output_filename;
       ParsingCheck(line_stream, line_count, line);
+
+      // operator_type
+      auto it = operator_map.find(operator_string);
+      if (it == operator_map.end()) {
+        std::cerr << "Valid transition types: E, Dl, Ds" << std::endl;
+        std::exit(EXIT_FAILURE);
+      }
+      OperatorType operator_type = it->second;
+
+      // species
+      basis::OrbitalSpeciesPN species;
+      if (species_code == 'p') {
+        species = basis::OrbitalSpeciesPN::kP;
+      } else if (species_code == 'n') {
+        species = basis::OrbitalSpeciesPN::kN;
+      } else {
+        std::cerr << "Invalid species code: " << species_code << std::endl;
+        std::exit(EXIT_FAILURE);
+      }
+
+      // check output file
       struct stat st;
-      if (stat(run_parameters.output_filename.c_str(), &st) == 0) {
-        std::cerr << "WARN: overwriting file " << run_parameters.output_filename
-                  << std::endl;
-      }
-    } else if (keyword == "set-charge") {
-      std::string charge, species_code;
-      double value;
-      line_stream >> charge >> species_code >> value;
-      ParsingCheck(line_stream, line_count, line);
-
-      int species_index;
-      if (species_code == "p" || species_code == "P") {
-        species_index = 0;
-      } else if (species_code == "n" || species_code == "N") {
-        species_index = 1;
+      if (stat(output_filename.c_str(), &st) == 0) {
+        std::cerr << "WARN: overwriting file " << output_filename << std::endl;
       }
 
-      if (charge == "q") {
-        run_parameters.electric_charge[species_index] = value;
-      } else if (charge == "gl") {
-        run_parameters.orbital_g[species_index] = value;
-      } else if (charge == "gs") {
-        run_parameters.g[species_index] = value;
-      }
+      run_parameters.targets.emplace_back(operator_type, lambda, species,
+                                          output_filename);
     }
   }
 }
 
-double CalculatePrefactorE(const RunParameters& run_parameters,
+double CalculatePrefactorE(double scale_factor,
+                           const TargetChannel& target,
                            const basis::OrbitalSubspaceLJPN& a,
                            const basis::OrbitalSubspaceLJPN& b) {
   assert(a.orbital_species() == b.orbital_species());
-  int lambda = run_parameters.lambda;
-  double charge =
-      run_parameters.electric_charge[static_cast<int>(a.orbital_species())];
-  double factor = std::pow(run_parameters.scale_factor, lambda);
+  if (a.orbital_species() != target.species) return 0;
 
-  factor *= charge / std::sqrt(4. * kPi);
+  const int& lambda = target.lambda;
+
+  double factor = std::pow(scale_factor, lambda);
+  factor *= 1. / std::sqrt(4. * kPi);
   factor *= ParitySign(b.j() + lambda - HalfInt(1, 2));
 
   // parity conservation -- enforced by sector enumeration
@@ -178,16 +233,16 @@ double CalculatePrefactorE(const RunParameters& run_parameters,
   return factor;
 }
 
-double CalculatePrefactorM(const RunParameters& run_parameters,
+double CalculatePrefactorM(double scale_factor,
+                           const TargetChannel& target,
                            const basis::OrbitalSubspaceLJPN& a,
                            const basis::OrbitalSubspaceLJPN& b) {
   assert(a.orbital_species() == b.orbital_species());
-  int lambda = run_parameters.lambda;
-  double gl = run_parameters.orbital_g[static_cast<int>(a.orbital_species())];
-  double gs = run_parameters.g[static_cast<int>(a.orbital_species())];
+  if (a.orbital_species() != target.species) return 0;
 
-  double factor = std::pow(run_parameters.scale_factor, lambda - 1);
+  const int& lambda = target.lambda;
 
+  double factor = std::pow(scale_factor, lambda - 1);
   factor *= 1 / std::sqrt(4. * kPi);
   factor *= ParitySign(b.j() + lambda - HalfInt(1, 2));
 
@@ -206,8 +261,73 @@ double CalculatePrefactorM(const RunParameters& run_parameters,
       + ParitySign(b.l() + b.j() + HalfInt(1, 2)) * (b.j() + HalfInt(1, 2)));
 
   factor *= (lambda - kappa);
-  factor *= (gl * (1 + kappa / (lambda + 1)) - (gs / 2.));
+  if (target.operator_type == OperatorType::kDl) {
+    factor *= (1 + kappa / (lambda + 1));
+  } else if (target.operator_type == OperatorType::kDs) {
+    factor *= -0.5;
+  }
   return factor;
+}
+
+void GenerateTarget(const RunParameters& run_parameters,
+                    const TargetChannel& target) {
+  // get radial matrix elements
+  int radial_order =
+      target.lambda - ((target.operator_type == OperatorType::kDl)
+                       || (target.operator_type == OperatorType::kDs));
+  int g0 = radial_order % 2;
+  int Tz0 = 0;
+  RadialOperatorLabels key{shell::RadialOperatorType::kR, radial_order,
+                           target.lambda, g0, 0};
+  if (run_parameters.radial_operators.count(key) == 0) {
+    std::cerr << fmt::format(
+                     "ERROR: Missing radial matrix elements: {}^{:d} j0={:d} "
+                     "g0={:d} Tz0={:d}",
+                     static_cast<char>(shell::RadialOperatorType::kR),
+                     radial_order, target.lambda, g0, Tz0)
+              << std::endl;
+  }
+  const RadialOperatorData& radial_operator_data =
+      run_parameters.radial_operators.at(key);
+  assert(radial_operator_data.space.OrbitalInfo()
+         == run_parameters.space.OrbitalInfo());
+
+  // construct new sectors
+  basis::OrbitalSectorsLJPN output_sectors(
+      run_parameters.space, run_parameters.space, target.lambda, g0, Tz0);
+  // default initialization
+  basis::OperatorBlocks<double> output_matrices;
+
+  // loop over blocks and apply factor
+  for (int sector_index = 0; sector_index < output_sectors.size(); ++sector_index) {
+    const auto& output_sector = output_sectors.GetSector(sector_index);
+    const auto& bra_subspace = output_sector.bra_subspace();
+    const auto& ket_subspace = output_sector.ket_subspace();
+
+    const int bra_subspace_index = output_sector.bra_subspace_index();
+    const int ket_subspace_index = output_sector.ket_subspace_index();
+    int radial_sector_index = radial_operator_data.sectors.LookUpSectorIndex(
+        bra_subspace_index, ket_subspace_index);
+    assert(radial_sector_index != basis::kNone);
+
+    double prefactor = 0.;
+    if (target.operator_type == OperatorType::kE) {
+      prefactor = CalculatePrefactorE(run_parameters.scale_factor, target,
+                                      bra_subspace, ket_subspace);
+    } else if ((target.operator_type == OperatorType::kDl)
+               || (target.operator_type == OperatorType::kDs)) {
+      prefactor = CalculatePrefactorM(run_parameters.scale_factor, target,
+                                      bra_subspace, ket_subspace);
+    }
+    output_matrices.push_back(
+        prefactor * radial_operator_data.matrices[radial_sector_index]);
+  }
+
+  // write operator to file
+  shell::OutRadialStream os(target.output_filename, run_parameters.space,
+                            run_parameters.space, output_sectors,
+                            shell::RadialOperatorType::kGeneric, radial_order);
+  os.Write(output_matrices);
 }
 
 int main(int argc, const char* argv[]) {
@@ -216,67 +336,9 @@ int main(int argc, const char* argv[]) {
   RunParameters run_parameters;
   ReadParameters(run_parameters);
 
-  // Read radial matrix elements
-  shell::InRadialStream radial_me_s(run_parameters.radial_me_filename);
-
-  // get indexing
-  basis::OrbitalSpaceLJPN bra_space, ket_space;
-  basis::OrbitalSectorsLJPN radial_sectors;
-  shell::RadialOperatorType radial_operator_type =
-      radial_me_s.radial_operator_type();
-  int radial_operator_power = radial_me_s.radial_operator_power();
-  radial_me_s.SetToIndexing(bra_space, ket_space, radial_sectors);
-
-  if (bra_space.OrbitalInfo() != ket_space.OrbitalInfo()) {
-    std::cerr << "ERROR: Bra and ket spaces of radial matrix elements are not "
-                 "the same. Cannot transform."
-              << std::endl;
-    std::exit(EXIT_FAILURE);
+  for (const auto& target : run_parameters.targets) {
+    GenerateTarget(run_parameters, target);
   }
-
-  int radial_order = run_parameters.lambda
-                     - (run_parameters.transition_type == TransitionType::kM);
-  assert(radial_operator_type == shell::RadialOperatorType::kR);
-  assert(radial_operator_power == radial_order);
-  assert(radial_sectors.Tz0() == 0);
-
-  // get radial matrix elements
-  basis::OperatorBlocks<double> radial_matrices;
-  radial_me_s.Read(radial_matrices);
-  radial_me_s.Close();
-
-  // construct new sectors
-  basis::OperatorBlocks<double> operator_matrices;
-  int g0 = radial_order % 2;
-  basis::OrbitalSectorsLJPN operator_sectors(bra_space, ket_space,
-                                             run_parameters.lambda, g0, 0);
-
-  for (int sector_index = 0; sector_index < operator_sectors.size(); ++sector_index) {
-    const auto& operator_sector = operator_sectors.GetSector(sector_index);
-    const auto& bra_subspace = operator_sector.bra_subspace();
-    const auto& ket_subspace = operator_sector.ket_subspace();
-
-    const int bra_subspace_index = operator_sector.bra_subspace_index();
-    const int ket_subspace_index = operator_sector.ket_subspace_index();
-    int radial_sector_index =
-        radial_sectors.LookUpSectorIndex(bra_subspace_index, ket_subspace_index);
-    assert(radial_sector_index != basis::kNone);
-
-    double prefactor = 0.;
-    if (run_parameters.transition_type == TransitionType::kE) {
-      prefactor = CalculatePrefactorE(run_parameters, bra_subspace, ket_subspace);
-    } else {
-      prefactor = CalculatePrefactorM(run_parameters, bra_subspace, ket_subspace);
-    }
-
-    operator_matrices.push_back(prefactor * radial_matrices[radial_sector_index]);
-  }
-
-  // write operator to file
-  shell::OutRadialStream os(run_parameters.output_filename, bra_space,
-                            ket_space, operator_sectors,
-                            shell::RadialOperatorType::kGeneric, radial_order);
-  os.Write(operator_matrices);
 
   /* return code */
   return EXIT_SUCCESS;
