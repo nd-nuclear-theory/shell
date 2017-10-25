@@ -16,6 +16,7 @@ University of Notre Dame
 - 09/20/17 (pjf): Add isospin operators.
 - 09/22/17 (pjf): Take "observables" as list of tuples instead of dict.
 - 10/18/17 (pjf): Use separate work directory for each postfix.
+- 10/25/17 (pjf): Rename "observables" to "tb_observables".
 """
 import collections
 
@@ -67,8 +68,8 @@ def generate_tbme(task, postfix=""):
         )
 
     # accumulate observables
-    if (task.get("observables")):
-        for (basename, operator) in task["observables"]:
+    if (task.get("tb_observables")):
+        for (basename, operator) in task["tb_observables"]:
             targets[basename] = operator
 
     # target: radius squared

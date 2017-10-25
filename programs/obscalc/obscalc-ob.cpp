@@ -11,15 +11,17 @@
 
     set-output-file output_filename
     set-indexing orbital_filename
+    set-robdme-info robdme_info_filename
     define-operator name operator_filename
-    define-static-densities 2J g n robdme_info_filename robdme_filename
-    define-transition-densities 2Jf gf nf 2Ji gi fi robdme_info_filename robdme_filename
+    define-static-densities 2J g n robdme_filename
+    define-transition-densities 2Jf gf nf 2Ji gi fi robdme_filename
 
   Patrick J. Fasano
   University of Notre Dame
 
   + 10/08/17 (pjf): Created.
   + 10/23/17 (pjf): Rewrite for reading/writing many observables at one time.
+  + 10/25/17 (pjf): Make robdme info filename global to run.
 
 ******************************************************************************/
 
@@ -61,7 +63,6 @@ struct OneBodyOperator {
 struct OneBodyDensities {
   HalfInt Ji, Jf;
   int gi, gf, ni, nf;
-  std::string robdme_info_filename;
   std::string robdme_filename;
 };
 
@@ -70,6 +71,7 @@ struct RunParameters {
   // filenames
   std::string output_filename;
   basis::OrbitalSpaceLJPN space;
+  std::string robdme_info_filename;
   std::vector<OneBodyOperator> operators;
   std::vector<OneBodyDensities> static_densities;
   std::vector<OneBodyDensities> transition_densities;
@@ -116,6 +118,17 @@ void ReadParameters(RunParameters& run_parameters) {
       std::vector<basis::OrbitalPNInfo> input_orbitals =
           basis::ParseOrbitalPNStream(orbital_stream, true);
       run_parameters.space = basis::OrbitalSpaceLJPN(input_orbitals);
+    } else if (keyword == "set-robdme-info") {
+        std::string robdme_info_filename;
+        line_stream >> robdme_info_filename;
+        ParsingCheck(line_stream, line_count, line);
+        struct stat st;
+        if (stat(robdme_info_filename.c_str(), &st) != 0) {
+          std::cerr << "ERROR: file " << robdme_info_filename
+                    << " does not exist!" << std::endl;
+          std::exit(EXIT_FAILURE);
+        }
+        run_parameters.robdme_info_filename = robdme_info_filename;
     } else if (keyword == "define-operator") {
       std::string name, filename;
       line_stream >> name >> filename;
@@ -129,15 +142,10 @@ void ReadParameters(RunParameters& run_parameters) {
     } else if (keyword == "define-static-densities") {
       OneBodyDensities densities;
       int twiceJ, g, n;
-      std::string robdme_info_filename, robdme_filename;
-      line_stream >> twiceJ >> g >> n >> robdme_info_filename >> robdme_filename;
+      std::string robdme_filename;
+      line_stream >> twiceJ >> g >> n >> robdme_filename;
       ParsingCheck(line_stream, line_count, line);
       struct stat st;
-      if (stat(robdme_info_filename.c_str(), &st) != 0) {
-        std::cerr << "ERROR: file " << robdme_info_filename
-                  << " does not exist!" << std::endl;
-        std::exit(EXIT_FAILURE);
-      }
       if (stat(robdme_filename.c_str(), &st) != 0) {
         std::cerr << "ERROR: file " << robdme_filename << " does not exist!"
                   << std::endl;
@@ -146,22 +154,15 @@ void ReadParameters(RunParameters& run_parameters) {
       densities.Jf = densities.Ji = HalfInt(twiceJ, 2);
       densities.gf = densities.gi = g;
       densities.nf = densities.ni = n;
-      densities.robdme_info_filename = robdme_info_filename;
       densities.robdme_filename = robdme_filename;
       run_parameters.static_densities.push_back(densities);
     } else if (keyword == "define-transition-densities") {
       OneBodyDensities densities;
       int twiceJf, gf, nf, twiceJi, gi, ni;
-      std::string robdme_info_filename, robdme_filename;
-      line_stream >> twiceJf >> gf >> nf >> twiceJi >> gi >> ni
-          >> robdme_info_filename >> robdme_filename;
+      std::string robdme_filename;
+      line_stream >> twiceJf >> gf >> nf >> twiceJi >> gi >> ni >> robdme_filename;
       ParsingCheck(line_stream, line_count, line);
       struct stat st;
-      if (stat(robdme_info_filename.c_str(), &st) != 0) {
-        std::cerr << "ERROR: file " << robdme_info_filename
-                  << " does not exist!" << std::endl;
-        std::exit(EXIT_FAILURE);
-      }
       if (stat(robdme_filename.c_str(), &st) != 0) {
         std::cerr << "ERROR: file " << robdme_filename << " does not exist!"
                   << std::endl;
@@ -173,7 +174,6 @@ void ReadParameters(RunParameters& run_parameters) {
       densities.Ji = HalfInt(twiceJi, 2);
       densities.gi = gi;
       densities.ni = ni;
-      densities.robdme_info_filename = robdme_info_filename;
       densities.robdme_filename = robdme_filename;
       run_parameters.transition_densities.push_back(densities);
     }
@@ -187,7 +187,7 @@ double CalculateMatrixElement(const RunParameters& run_parameters,
   const basis::OrbitalSpaceLJPN& space = run_parameters.space;
   const basis::OrbitalSectorsLJPN& sectors = op.sectors;
   const basis::OperatorBlocks<double>& operator_matrices = op.operator_matrices;
-  shell::InOBDMEReader obdme_reader(densities.robdme_info_filename, space, 0, 0);
+  shell::InOBDMEReader obdme_reader(run_parameters.robdme_info_filename, space, 0, 0);
   obdme_reader.ReadMultipole(densities.robdme_filename, op.sectors.j0(),
                              density_matrices);
 

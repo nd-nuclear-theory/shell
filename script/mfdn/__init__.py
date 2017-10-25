@@ -67,9 +67,10 @@
         "obdme_multipolarity" (int): maximum multipolarity for calculation of densities
         "obdme_reference_state_list" (list): list of reference states (J,g,i) for density calculation, or "all2all"
         "save_obdme" (bool): whether or not to save obdme files in archive
+        "ob_observables" (list): list of operators (type, order) to calculate, e.g. [('E',2),('M',1)]
 
         # two-body observables
-        "observables" (list of ("basename", CoefficientDict) tuples): additional observable definitions
+        "tb_observables" (list of ("basename", CoefficientDict) tuples): additional observable definitions
             (see mfdn.operators)
         "observable_sets" (list of str): codes for predefined observable sets to include
             "H-components": Hamiltonian terms
@@ -129,6 +130,7 @@
       + Fix FCI truncation.
     - 09/22/17 (pjf): Take "observables" as list of tuples instead of dict.
     - 09/24/17 (pjf): Add option to save wavefunctions for postprocessing.
+    - 10/25/17 (pjf): Rename "observables" to "tb_observables".
 """
 
 __ALL__ = ['descriptors', 'handlers', 'radial', 'operators', 'tbme', 'utils', 'config']

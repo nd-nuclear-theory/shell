@@ -21,6 +21,7 @@ University of Notre Dame
 - 09/20/17 (pjf):
   + Generate pn overlaps.
   + Update for new --xform option of radial-gen.
+- 10/25/17 (pjf): Add radial generation for electromagnetic observables.
 """
 import math
 
@@ -191,7 +192,7 @@ def set_up_radial_analytic(task, postfix=""):
         raise ValueError("invalid basis mode {basis_mode}".format(**task))
 
     # basis radial code -- expected by radial_utils codes
-    basis_radial_code = "oscillator"  # TO GENERALIZE: if not oscillator basis
+    basis_radial_code = "oscillator"  # TODO GENERALIZE: if not oscillator basis
 
     # generate radial integrals
     for operator_type in ["r", "k"]:
@@ -219,6 +220,31 @@ def set_up_radial_analytic(task, postfix=""):
         ],
         mode=mcscript.CallMode.kSerial
     )
+
+    # generate radial integrals for electromagnetic observables
+    for (operator_type, order) in task.get("ob_observables", []):
+        if operator_type == 'E':
+            radial_power = order
+        elif operator_type == 'M':
+            radial_power = order-1
+        else:
+            raise mcscript.exception.ScriptError("only E or M transitions currently supported")
+        g0 = radial_power % 2
+        Tz0 = 0  # TODO(pjf): generalize to isospin-changing operators
+        mcscript.call(
+            [
+                environ.environ.shell_filename("radial-gen"),
+                "--radial",
+                "{:d}".format(radial_power),
+                "{:d}".format(order),
+                "{:d}".format(g0),
+                "{:d}".format(Tz0),
+                basis_radial_code,
+                environ.filenames.orbitals_filename(postfix),
+                environ.filenames.radial_me_filename(postfix, operator_type, order)
+            ],
+            mode=mcscript.CallMode.kSerial
+        )
 
     # generate radial overlaps -- generate trivial identities if applicable
     if (task["basis_mode"] in {modes.BasisMode.kDirect}):
@@ -347,3 +373,16 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
         ],
         mode=mcscript.CallMode.kSerial
     )
+
+    # transform radial integrals for electromagnetic observables
+    for (operator_type, order) in task.get("ob_observables", []):
+        mcscript.call(
+            [
+                environ.environ.shell_filename("radial-xform"),
+                environ.filenames.orbitals_filename(target_postfix),
+                environ.filenames.natorb_xform_filename(target_postfix),
+                environ.filenames.radial_me_filename(source_postfix, operator_type, order),
+                environ.filenames.radial_me_filename(target_postfix, operator_type, order)
+            ],
+            mode=mcscript.CallMode.kSerial
+        )

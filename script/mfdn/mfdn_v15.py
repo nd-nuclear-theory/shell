@@ -23,6 +23,7 @@ University of Notre Dame
 - 10/18/17 (pjf):
   + Use separate work directory for each postfix.
   + Factor out extract_natural_orbitals().
+- 10/25/17 (pjf): Rename "observables" to "tb_observables".
 """
 import os
 import glob
@@ -170,8 +171,8 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             obs_basename_list += ["tbme-L", "tbme-Sp", "tbme-Sn", "tbme-S", "tbme-J"]
         if ("isospin" in task["observable_sets"]):
             obs_basename_list += ["tbme-T"]
-        if ("observables" in task):
-            obs_basename_list += [basename for (basename, operator) in task["observables"]]
+        if ("tb_observables" in task):
+            obs_basename_list += [basename for (basename, operator) in task["tb_observables"]]
 
         # tbo: log tbo names in separate file to aid future data analysis
         mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)
