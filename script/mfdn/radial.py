@@ -222,7 +222,7 @@ def set_up_radial_analytic(task, postfix=""):
     )
 
     # set up radial matrix elements for observables
-    set_up_observable_radial_analytic(task, postfix="")
+    set_up_observable_radial_analytic(task, postfix)
 
     # generate radial overlaps -- generate trivial identities if applicable
     if (task["basis_mode"] in {modes.BasisMode.kDirect}):
