@@ -133,8 +133,8 @@
     - 10/25/17 (pjf): Rename "observables" to "tb_observables".
 """
 
-__ALL__ = ['descriptors', 'handlers', 'radial', 'operators', 'tbme', 'utils', 'config']
-from . import descriptors, handlers, radial, operators, tbme, utils, modes
+__ALL__ = ['descriptors', 'handlers', 'radial', 'operators', 'tbme', 'utils', 'modes', 'environ']
+from . import descriptors, handlers, radial, operators, tbme, utils, modes, postprocessing
 
 if (__name__ == "__MAIN__"):
     pass
