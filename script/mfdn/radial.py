@@ -221,30 +221,8 @@ def set_up_radial_analytic(task, postfix=""):
         mode=mcscript.CallMode.kSerial
     )
 
-    # generate radial integrals for electromagnetic observables
-    for (operator_type, order) in task.get("ob_observables", []):
-        if operator_type == 'E':
-            radial_power = order
-        elif operator_type == 'M':
-            radial_power = order-1
-        else:
-            raise mcscript.exception.ScriptError("only E or M transitions currently supported")
-        g0 = radial_power % 2
-        Tz0 = 0  # TODO(pjf): generalize to isospin-changing operators
-        mcscript.call(
-            [
-                environ.environ.shell_filename("radial-gen"),
-                "--radial",
-                "{:d}".format(radial_power),
-                "{:d}".format(order),
-                "{:d}".format(g0),
-                "{:d}".format(Tz0),
-                basis_radial_code,
-                environ.filenames.orbitals_filename(postfix),
-                environ.filenames.radial_me_filename(postfix, operator_type, order)
-            ],
-            mode=mcscript.CallMode.kSerial
-        )
+    # set up radial matrix elements for observables
+    set_up_observable_radial_analytic(task, postfix="")
 
     # generate radial overlaps -- generate trivial identities if applicable
     if (task["basis_mode"] in {modes.BasisMode.kDirect}):
@@ -374,7 +352,66 @@ def set_up_radial_natorb(task, source_postfix, target_postfix):
         mode=mcscript.CallMode.kSerial
     )
 
-    # transform radial integrals for electromagnetic observables
+    # set up radial matrix elements for natural orbitals
+    set_up_observable_radial_natorb(task, source_postfix, target_postfix)
+
+
+def set_up_observable_radial_analytic(task, postfix=""):
+    """Generate radial integrals and overlaps by integration for one-body observables.
+
+    Operation mode may in general be direct oscillator, dilated
+    oscillator, or generic (TODO).
+
+    Arguments:
+        task (dict): as described in module docstring
+        postfix (string, optional): identifier to add to generated files
+    """
+    # validate basis mode
+    if (task["basis_mode"] not in {modes.BasisMode.kDirect, modes.BasisMode.kDilated}):  # no modes.BasisMode.kGeneric yet
+        raise ValueError("invalid basis mode {basis_mode}".format(**task))
+
+    # basis radial code -- expected by radial_utils codes
+    basis_radial_code = "oscillator"  # TODO GENERALIZE: if not oscillator basis
+
+    for (operator_type, order) in task.get("ob_observables", []):
+        if operator_type == 'E':
+            radial_power = order
+        elif operator_type == 'M':
+            radial_power = order-1
+        else:
+            raise mcscript.exception.ScriptError("only E or M transitions currently supported")
+        g0 = radial_power % 2
+        Tz0 = 0  # TODO(pjf): generalize to isospin-changing operators
+        mcscript.call(
+            [
+                environ.environ.shell_filename("radial-gen"),
+                "--radial",
+                "{:d}".format(radial_power),
+                "{:d}".format(order),
+                "{:d}".format(g0),
+                "{:d}".format(Tz0),
+                basis_radial_code,
+                environ.filenames.orbitals_filename(postfix),
+                environ.filenames.radial_me_filename(postfix, operator_type, order)
+            ],
+            mode=mcscript.CallMode.kSerial
+        )
+
+
+def set_up_observable_radial_natorb(task, source_postfix, target_postfix):
+    """Generate radial integrals and overlaps by transformation for MFDn run in natural orbital basis.
+
+    Operation mode must be generic.
+
+    Arguments:
+        task (dict): as described in module docstring
+        source_postfix (str): postfix for old basis
+        target_postfix (str): postfix for new basis
+    """
+    # validate natural orbitals enabled
+    if not task.get("natural_orbitals"):
+        raise mcscript.exception.ScriptError("natural orbitals are not enabled")
+
     for (operator_type, order) in task.get("ob_observables", []):
         mcscript.call(
             [
