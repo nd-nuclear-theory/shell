@@ -335,6 +335,15 @@ def save_mfdn_output(task, postfix=""):
     out_filename = "{:s}.out".format(filename_prefix)
     mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
 
+    # append obscalc-ob output to res file
+    if os.path.exists(environ.filenames.obscalc_ob_res_filename(postfix)):
+        print("Appending obscalc-ob output to res file...")
+        with open(res_filename, 'a') as res_file:
+            res_file.write("\n")
+            with open(environ.filenames.obscalc_ob_res_filename(postfix), 'r') as obs_file:
+                for line in obs_file:
+                    res_file.write(line)
+
     # save full archive of input, log, and output files
     print("Saving full output files...")
     # logging
@@ -380,8 +389,8 @@ def save_mfdn_output(task, postfix=""):
     if (task["save_obdme"]):
         archive_file_list += glob.glob(work_dir+"/*obdme*")
     # observable output
-    archive_file_list += glob.glob("em-gen.in")
-    archive_file_list += glob.glob("obscalc-ob.*")
+    archive_file_list += glob.glob("em-gen*")
+    archive_file_list += glob.glob("obscalc-ob*")
     # generate archive (outside work directory)
     archive_filename = "{:s}.tgz".format(filename_prefix)
     mcscript.call(
