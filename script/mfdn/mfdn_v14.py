@@ -321,6 +321,9 @@ def save_mfdn_output(task, postfix=""):
     # MFDN obdme
     if (task["save_obdme"]):
         archive_file_list += glob.glob(work_dir+"/*obdme*")
+    # observable output
+    archive_file_list += glob.glob("em-gen.in")
+    archive_file_list += glob.glob("obscalc-ob.*")
     # generate archive (outside work directory)
     archive_filename = "{:s}.tgz".format(filename_prefix)
     mcscript.call(
