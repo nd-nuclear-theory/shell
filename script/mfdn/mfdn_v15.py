@@ -23,6 +23,7 @@ University of Notre Dame
 - 10/18/17 (pjf):
   + Use separate work directory for each postfix.
   + Factor out extract_natural_orbitals().
+- 10/25/17 (pjf): Rename "observables" to "tb_observables".
 """
 import os
 import glob
@@ -170,8 +171,8 @@ def run_mfdn(task, run_mode=modes.MFDnRunMode.kNormal, postfix=""):
             obs_basename_list += ["tbme-L", "tbme-Sp", "tbme-Sn", "tbme-S", "tbme-J"]
         if ("isospin" in task["observable_sets"]):
             obs_basename_list += ["tbme-T"]
-        if ("observables" in task):
-            obs_basename_list += [basename for (basename, operator) in task["observables"]]
+        if ("tb_observables" in task):
+            obs_basename_list += [basename for (basename, operator) in task["tb_observables"]]
 
         # tbo: log tbo names in separate file to aid future data analysis
         mcscript.utils.write_input("tbo_names{:s}.dat".format(postfix), input_lines=obs_basename_list)
@@ -334,6 +335,15 @@ def save_mfdn_output(task, postfix=""):
     out_filename = "{:s}.out".format(filename_prefix)
     mcscript.call(["cp", "--verbose", work_dir+"/mfdn.out", out_filename])
 
+    # append obscalc-ob output to res file
+    if os.path.exists(environ.filenames.obscalc_ob_res_filename(postfix)):
+        print("Appending obscalc-ob output to res file...")
+        with open(res_filename, 'a') as res_file:
+            res_file.write("\n")
+            with open(environ.filenames.obscalc_ob_res_filename(postfix), 'r') as obs_file:
+                for line in obs_file:
+                    res_file.write(line)
+
     # save full archive of input, log, and output files
     print("Saving full output files...")
     # logging
@@ -378,6 +388,9 @@ def save_mfdn_output(task, postfix=""):
     # MFDN obdme
     if (task["save_obdme"]):
         archive_file_list += glob.glob(work_dir+"/*obdme*")
+    # observable output
+    archive_file_list += glob.glob("em-gen*")
+    archive_file_list += glob.glob("obscalc-ob*")
     # generate archive (outside work directory)
     archive_filename = "{:s}.tgz".format(filename_prefix)
     mcscript.call(

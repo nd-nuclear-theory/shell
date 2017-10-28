@@ -13,6 +13,7 @@ University of Notre Dame
 - 9/12/17 (mac): Put mfdn executable filename under common mcscript install directory.
 - 09/12/17 (pjf): Split config.py -> mode.py + environ.py.
 - 09/20/17 (pjf): Add configuration for pn-overlap filenames
+- 10/15/17 (pjf): Add em-gen and obscalc-ob filenames.
 """
 
 import os
@@ -88,7 +89,10 @@ class FilenameConfiguration(object):
         radial_pn_olap_filename_template (str): filename for pn overlap matrix elements
         radial_olap_int_filename_template (str): filename template for overlaps from interaction tbme basis
         radial_olap_coul_filename_template (str): filename template for overlaps from Coulomb tbme basis
+        observable_me_filename_template (str): filename template for observable matrix elements
         h2mixer_filename_template (str): filename template for h2mixer input
+        obscalc_ob_filename_template (str): filename template for obscalc-ob input
+        emgen_filename_template (str): filename template for em-gen input
         natorb_info_filename_template (str): filename template for OBDME info for building natural orbitals
         natorb_obdme_filename_template (str): filename template for static OBDME file for building natural orbitals
         natorb_xform_filename_template (str): filename template for natural orbital xform from previous basis
@@ -119,16 +123,28 @@ class FilenameConfiguration(object):
         radial_olap_coul_filename(postfix): Generate filename for overlaps from
             Coulomb tbme basis, given postfix.
 
+        observable_me_filename(postfix, operator_type, order, species): Generate
+            filename for radial matrix elements, given postfix, operator type,
+            power, and species.
+
         h2mixer_filename(postfix): Generate filename h2mixer input, given
             postfix.
 
-        def natorb_info_filename(postfix): Generate filename for MFDn OBDME info
+        obscalc_ob_filename(postfix): Generate filename obscalc-ob input, given
+            postfix.
+
+        obscalc_ob_res_filename(postfix): Generate filename obscalc-ob input,
+            given postfix.
+
+        emgen_filename(postfix): Generate filename em-gen input, given postfix.
+
+        natorb_info_filename(postfix): Generate filename for MFDn OBDME info
             output (from which to build natural orbitals), given postfix.
 
-        def natorb_obdme_filename(postfix): Generate filename for MFDn static
+         natorb_obdme_filename(postfix): Generate filename for MFDn static
             OBDME output (from which to build natural orbitals), given postfix.
 
-        def natorb_xform_filename(postfix): Generate filename for xform from
+        natorb_xform_filename(postfix): Generate filename for xform from
             previous natural orbit to current natural orbit, given postfix.
     """
 
@@ -141,7 +157,11 @@ class FilenameConfiguration(object):
     radial_pn_olap_filename_template = "radial-pn-olap{:s}.dat"
     radial_olap_int_filename_template = "radial-olap-int{:s}.dat"
     radial_olap_coul_filename_template = "radial-olap-coul{:s}.dat"
+    observable_me_filename_template = "observable-me-{}{}{}{:s}.dat"  # "{}{}{}" will be replaced by {"E2p","M1n",etc.}
     h2mixer_filename_template = "h2mixer{:s}.in"
+    obscalc_ob_filename_template = "obscalc-ob{:s}.in"
+    obscalc_ob_res_filename_template = "obscalc-ob{:s}.res"
+    emgen_filename_template = "em-gen{:s}.in"
     natorb_info_filename_template = "natorb-obdme{:s}.info"
     natorb_obdme_filename_template = "natorb-obdme{:s}.dat"
     natorb_xform_filename_template = "natorb-xform{:s}.dat"
@@ -180,9 +200,25 @@ class FilenameConfiguration(object):
         """Construct filename for overlaps from Coulomb tbme basis."""
         return self.radial_olap_coul_filename_template.format(postfix)
 
+    def observable_me_filename(self, postfix, operator_type, power, species):
+        """Construct filename for observable matrix elements."""
+        return self.observable_me_filename_template.format(operator_type, power, species, postfix)
+
     def h2mixer_filename(self, postfix):
         """Construct filename for h2mixer input."""
         return self.h2mixer_filename_template.format(postfix)
+
+    def obscalc_ob_filename(self, postfix):
+        """Construct filename for obscalc-ob input."""
+        return self.obscalc_ob_filename_template.format(postfix)
+
+    def obscalc_ob_res_filename(self, postfix):
+        """Construct filename for obscalc-ob output."""
+        return self.obscalc_ob_res_filename_template.format(postfix)
+
+    def emgen_filename(self, postfix):
+        """Construct filename for em-gen input."""
+        return self.emgen_filename_template.format(postfix)
 
     def natorb_info_filename(self, postfix):
         """Construct filename for MFDn OBDME info output."""

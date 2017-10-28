@@ -79,6 +79,7 @@ task = {
     "obdme_multipolarity": 2,
     "obdme_reference_state_list": [(0, 0, 1)],
     "save_obdme": True,
+    "ob_observables": [('M', 1), ('E', 2)],
 
     # two-body observables
     ## "observable_sets": ["H-components","am-sqr"],

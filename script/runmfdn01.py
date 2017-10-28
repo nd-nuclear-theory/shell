@@ -85,7 +85,7 @@ task = {
     # two-body observables
     ## "observable_sets": ["H-components","am-sqr","isospin"],
     "observable_sets": ["H-components"],
-    "observables": [],
+    "tb_observables": [],
 
     # version parameters
     "h2_format": 0,

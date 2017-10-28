@@ -2,8 +2,7 @@
   obscalc-ob.cpp
 
   Calculate one-body observable from one-body operator matrix elements and
-one-body
-  density matrix elements.
+  one-body density matrix elements.
 
   Syntax:
     + obscalc-ob
@@ -12,15 +11,17 @@ one-body
 
     set-output-file output_filename
     set-indexing orbital_filename
+    set-robdme-info robdme_info_filename
     define-operator name operator_filename
-    define-static-densities J g n robdme_info_filename robdme_filename
-    define-transition-densities Jf gf nf Ji gi fi robdme_info_filename
-robdme_filename
+    define-static-densities 2J g n robdme_filename
+    define-transition-densities 2Jf gf nf 2Ji gi fi robdme_filename
 
   Patrick J. Fasano
   University of Notre Dame
 
   + 10/08/17 (pjf): Created.
+  + 10/23/17 (pjf): Rewrite for reading/writing many observables at one time.
+  + 10/25/17 (pjf): Make robdme info filename global to run.
 
 ******************************************************************************/
 
@@ -57,69 +58,23 @@ struct OneBodyOperator {
     assert(space.OrbitalInfo() == ket_space.OrbitalInfo());
     is.Close();
   }
-}
+};
 
-// store one-body static densities
-struct StaticOneBodyDensities {
-  HalfInt J;
-  int g, n;
-  std::string robdme_filename;
-  shell::InOBDMEReader obdme_reader;
-
-  StaticOneBodyDensities(HalfInt J__, int g__, int n__,
-                         const basis::OrbitalSpaceLJPN& space,
-                         const std::string& robdme_info,
-                         const std::string& robdme_file)
-      : J(J__),
-        g(g__),
-        n(n__),
-        obdme_reader(robdme_info, space, 0, 0),
-        robdme_filename(robdme_file) {}
-  // TODO(pjf): generalize to parity- and isospin-changing operators
-
-  void ReadMultipole(int j0, basis::OperatorBlocks<double> density_matrices) {
-    obdme_reader.ReadMultipole(robdme_file, j0, density_matrices);
-  }
-}
-
-// store one-body static densities
-struct TransitionOneBodyDensities {
+struct OneBodyDensities {
   HalfInt Ji, Jf;
   int gi, gf, ni, nf;
   std::string robdme_filename;
-  shell::InOBDMEReader obdme_reader;
-
-  TransitionOneBodyDensities(HalfInt Jf__, int gf__, int nf__, HalfInt Ji__,
-                             int gi__, int ni__,
-                             const basis::OrbitalSpaceLJPN& space,
-                             const std::string robdme_info,
-                             const std::string robdme_file)
-      : Jf(Jf__),
-        gf(gf__),
-        nf(nf__),
-        Ji(Ji__),
-        gi(gi__),
-        ni(ni__),
-        obdme_reader(robdme_info, space, 0, 0),
-        robdme_filename(robdme_file) {
-    assert(gf == gi);
-    // TODO(pjf): generalize to parity- and isospin-changing operators
-  }
-
-  void ReadMultipole(int j0, basis::OperatorBlocks<double> density_matrices) {
-    // assert(am::AllowedTriangle(Jf, Ji, j0));
-    obdme_reader.ReadMultipole(robdme_file, j0, density_matrices);
-  }
-}
+};
 
 // Stores parameters for run
 struct RunParameters {
   // filenames
   std::string output_filename;
   basis::OrbitalSpaceLJPN space;
+  std::string robdme_info_filename;
   std::vector<OneBodyOperator> operators;
-  std::vector<StaticOneBodyDensities> static_densities;
-  std::vector<TransitionOneBodyDensities> transition_densities;
+  std::vector<OneBodyDensities> static_densities;
+  std::vector<OneBodyDensities> transition_densities;
 };
 
 void PrintUsage(char** argv) { std::cout << "Usage: " << argv[0] << std::endl; }
@@ -150,75 +105,91 @@ void ReadParameters(RunParameters& run_parameters) {
       }
     } else if (keyword == "set-indexing") {
       std::string orbital_filename;
-      line_stream >> transition_type;
+      line_stream >> orbital_filename;
       ParsingCheck(line_stream, line_count, line);
+      struct stat st;
+      if (stat(orbital_filename.c_str(), &st) != 0) {
+        std::cerr << "ERROR: file " << orbital_filename << " does not exist!"
+                  << std::endl;
+        std::exit(EXIT_FAILURE);
+      }
 
       std::ifstream orbital_stream(orbital_filename);
       std::vector<basis::OrbitalPNInfo> input_orbitals =
           basis::ParseOrbitalPNStream(orbital_stream, true);
       run_parameters.space = basis::OrbitalSpaceLJPN(input_orbitals);
+    } else if (keyword == "set-robdme-info") {
+        std::string robdme_info_filename;
+        line_stream >> robdme_info_filename;
+        ParsingCheck(line_stream, line_count, line);
+        struct stat st;
+        if (stat(robdme_info_filename.c_str(), &st) != 0) {
+          std::cerr << "ERROR: file " << robdme_info_filename
+                    << " does not exist!" << std::endl;
+          std::exit(EXIT_FAILURE);
+        }
+        run_parameters.robdme_info_filename = robdme_info_filename;
     } else if (keyword == "define-operator") {
       std::string name, filename;
       line_stream >> name >> filename;
       ParsingCheck(line_stream, line_count, line);
       struct stat st;
-      if (stat(filename, &st) != 0) {
+      if (stat(filename.c_str(), &st) != 0) {
         std::cerr << "ERROR: file " << filename << " does not exist!" << std::endl;
         std::exit(EXIT_FAILURE);
       }
-
       run_parameters.operators.emplace_back(name, filename);
-    } else if (keyword == "set-basis-scale-factor") {
-      line_stream >> run_parameters.scale_factor;
-      ParsingCheck(line_stream, line_count, line);
-    } else if (keyword == "define-radial-source") {
-      line_stream >> run_parameters.radial_me_filename;
+    } else if (keyword == "define-static-densities") {
+      OneBodyDensities densities;
+      int twiceJ, g, n;
+      std::string robdme_filename;
+      line_stream >> twiceJ >> g >> n >> robdme_filename;
       ParsingCheck(line_stream, line_count, line);
       struct stat st;
-      if (stat(run_parameters.radial_me_filename.c_str(), &st) != 0) {
-        std::cerr << "ERROR: file " << run_parameters.radial_me_filename
-                  << " does not exist!" << std::endl;
+      if (stat(robdme_filename.c_str(), &st) != 0) {
+        std::cerr << "ERROR: file " << robdme_filename << " does not exist!"
+                  << std::endl;
         std::exit(EXIT_FAILURE);
       }
-    } else if (keyword == "set-charge") {
-      std::string charge, species_code;
-      double value;
-      line_stream >> charge >> species_code >> value;
+      densities.Jf = densities.Ji = HalfInt(twiceJ, 2);
+      densities.gf = densities.gi = g;
+      densities.nf = densities.ni = n;
+      densities.robdme_filename = robdme_filename;
+      run_parameters.static_densities.push_back(densities);
+    } else if (keyword == "define-transition-densities") {
+      OneBodyDensities densities;
+      int twiceJf, gf, nf, twiceJi, gi, ni;
+      std::string robdme_filename;
+      line_stream >> twiceJf >> gf >> nf >> twiceJi >> gi >> ni >> robdme_filename;
       ParsingCheck(line_stream, line_count, line);
-
-      int species_index;
-      if (species_code == "p" || species_code == "P") {
-        species_index = 0;
-      } else if (species_code == "n" || species_code == "N") {
-        species_index = 1;
+      struct stat st;
+      if (stat(robdme_filename.c_str(), &st) != 0) {
+        std::cerr << "ERROR: file " << robdme_filename << " does not exist!"
+                  << std::endl;
+        std::exit(EXIT_FAILURE);
       }
-
-      if (charge == "q") {
-        run_parameters.electric_charge[species_index] = value;
-      } else if (charge == "gl") {
-        run_parameters.orbital_g[species_index] = value;
-      } else if (charge == "gs") {
-        run_parameters.g[species_index] = value;
-      }
+      densities.Jf = HalfInt(twiceJf, 2);
+      densities.gf = gf;
+      densities.nf = nf;
+      densities.Ji = HalfInt(twiceJi, 2);
+      densities.gi = gi;
+      densities.ni = ni;
+      densities.robdme_filename = robdme_filename;
+      run_parameters.transition_densities.push_back(densities);
     }
   }
 }
 
-int main(int argc, char** argv) {
-  // header
-  std::cout << std::endl;
-  std::cout << "obscalc-ob -- one-body observable evaluation" << std::endl;
-  std::cout << std::endl;
-
-  // process arguments
-  RunParameters run_parameters;
-  ProcessArguments(argc, argv, run_parameters);
-
-  // parallel performance diagnostic
-  std::cout << fmt::format("INFO: OMP max_threads {}, num_procs {}",
-                           omp_get_max_threads(), omp_get_num_procs())
-            << std::endl
-            << std::endl;
+double CalculateMatrixElement(const RunParameters& run_parameters,
+                              const OneBodyOperator& op,
+                              const OneBodyDensities& densities) {
+  basis::OperatorBlocks<double> density_matrices;
+  const basis::OrbitalSpaceLJPN& space = run_parameters.space;
+  const basis::OrbitalSectorsLJPN& sectors = op.sectors;
+  const basis::OperatorBlocks<double>& operator_matrices = op.operator_matrices;
+  shell::InOBDMEReader obdme_reader(run_parameters.robdme_info_filename, space, 0, 0);
+  obdme_reader.ReadMultipole(densities.robdme_filename, op.sectors.j0(),
+                             density_matrices);
 
   // loop and sum over \sum_{a,b} rho_{ab} T_{ba}
   double value = 0;
@@ -226,8 +197,8 @@ int main(int argc, char** argv) {
        ++subspace_index_a) {
     for (int subspace_index_b = 0; subspace_index_b < space.size();
          ++subspace_index_b) {
-      auto subspace_a = space.GetSubspace(subspace_index_a);
-      auto subspace_b = space.GetSubspace(subspace_index_b);
+      const auto subspace_a = space.GetSubspace(subspace_index_a);
+      const auto subspace_b = space.GetSubspace(subspace_index_b);
       auto sector_index =
           sectors.LookUpSectorIndex(subspace_index_a, subspace_index_b);
       if (sector_index == basis::kNone) continue;
@@ -242,6 +213,80 @@ int main(int argc, char** argv) {
       }
     }
   }
+  return value;
+}
 
-  std::cout << "value: " << value << std::endl;
+int main(int argc, char** argv) {
+  // header
+  std::cout << std::endl;
+  std::cout << "obscalc-ob -- one-body observable evaluation" << std::endl;
+  std::cout << std::endl;
+
+  // process input
+  RunParameters run_parameters;
+  ReadParameters(run_parameters);
+
+  // parallel performance diagnostic
+  std::cout << fmt::format("INFO: OMP max_threads {}, num_procs {}",
+                           omp_get_max_threads(), omp_get_num_procs())
+            << std::endl
+            << std::endl;
+
+  // open output
+  std::ios_base::openmode mode_argument = std::ios_base::trunc;
+  std::ofstream out_stream(run_parameters.output_filename, mode_argument);
+  StreamCheck(bool(out_stream), run_parameters.output_filename,
+              "Failure opening file for output");
+
+  out_stream << "[Observables]" << std::endl;
+  out_stream << "names =";
+  for (const auto& op : run_parameters.operators) {
+    out_stream << " " << op.name;
+  }
+  out_stream << std::endl << std::endl;
+
+  // static observables
+  out_stream << "[Static one-body observables]" << std::endl;
+  out_stream << fmt::format("# {:>2} {:>2} {:>2} ", "2J", "g", "n");
+  for (const auto& op : run_parameters.operators) {
+    out_stream << fmt::format(" {:>15}", op.name);
+  }
+  out_stream << std::endl;
+
+  for (const auto& densities : run_parameters.static_densities) {
+    out_stream << fmt::format("  {:2d} {:2d} {:2d} ", densities.Jf.TwiceValue(),
+                              densities.gf, densities.nf);
+
+    for (const auto& op : run_parameters.operators) {
+      out_stream << fmt::format(
+          " {:15.8E}", CalculateMatrixElement(run_parameters, op, densities));
+    }
+    out_stream << std::endl;
+  }
+  out_stream << std::endl;
+
+  // transition observables
+  out_stream << "[Transition one-body observables]" << std::endl;
+  out_stream << fmt::format("# {:>3} {:>3} {:>3}  {:>3} {:>3} {:>3} ", "2Jf",
+                            "gf", "nf", "2Ji", "gi", "ni");
+  for (const auto& op : run_parameters.operators) {
+    out_stream << fmt::format(" {:>15}", op.name);
+  }
+  out_stream << std::endl;
+
+  for (const auto& densities : run_parameters.transition_densities) {
+    out_stream << fmt::format("  {:3d} {:3d} {:3d}  {:3d} {:3d} {:3d} ",
+                              densities.Jf.TwiceValue(),
+                              densities.gf,
+                              densities.nf,
+                              densities.Ji.TwiceValue(),
+                              densities.gi,
+                              densities.ni);
+
+    for (const auto& op : run_parameters.operators) {
+      out_stream << fmt::format(
+          " {:15.8E}", CalculateMatrixElement(run_parameters, op, densities));
+    }
+    out_stream << std::endl;
+  }
 }

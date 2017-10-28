@@ -43,7 +43,7 @@ InOBDMEReader::InOBDMEReader(
 
 }
 
-void InOBDMEReader::SetToIndexing(int order, basis::OrbitalSectorsLJPN& sectors) {
+void InOBDMEReader::SetToIndexing(int order, basis::OrbitalSectorsLJPN& sectors) const {
   sectors = basis::OrbitalSectorsLJPN(orbital_space_, order, g0_, Tz0_);
 }
 
@@ -233,7 +233,7 @@ void InOBDMEReader::ReadInfo1500() {
   }
 }
 
-void InOBDMEReader::ReadMultipole(const std::string& data_filename, int order, basis::OperatorBlocks<double>& matrices) {
+void InOBDMEReader::ReadMultipole(const std::string& data_filename, int order, basis::OperatorBlocks<double>& matrices) const {
   int data_line_count = 0;
   double temp_matrix_element = 0;
 
@@ -259,7 +259,7 @@ void InOBDMEReader::ReadMultipole(const std::string& data_filename, int order, b
   }
 
   // extract data we want for this multipole
-  for (auto& info_line : obdme_info()) {
+  for (const auto& info_line : obdme_info()) {
     data_stream >> temp_matrix_element;
 
     // skip this element if we don't want it
@@ -281,7 +281,7 @@ void InOBDMEReader::ReadMultipole(const std::string& data_filename, int order, b
   data_stream.close();
 }
 
-void InOBDMEReader::ReadDataHeader(std::ifstream& data_stream, int& data_line_count) {
+void InOBDMEReader::ReadDataHeader(std::ifstream& data_stream, int& data_line_count) const {
   std::string line;
   int num_protons, num_neutrons;
   int bra_seq, ket_seq, bra_n, ket_n;
@@ -344,7 +344,7 @@ void InOBDMEReader::ReadDataHeader(std::ifstream& data_stream, int& data_line_co
     ParsingCheck(line_stream, data_line_count, line);
     assert(proton_obdmes == num_proton_obdme_);
     assert(neutron_obdmes == num_neutron_obdme_);
-  } else if (version == 1500){
+  } else if (version == 1500) {
     int total_obdmes;
     ++data_line_count;
     std::getline(data_stream, line);

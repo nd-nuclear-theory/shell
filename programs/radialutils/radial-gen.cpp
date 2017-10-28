@@ -422,7 +422,6 @@ int main(int argc, char **argv) {
   basis::OrbitalSectorsLJPN sectors;
   if (run_parameters.mode == OperationMode::kRadial) {
     sectors = basis::OrbitalSectorsLJPN(bra_space, ket_space, run_parameters.j0, run_parameters.g0, run_parameters.Tz0);
-    std::cout << sectors.DebugStr() << std::endl;
   } else {
      sectors = basis::OrbitalSectorsLJPN(bra_space, ket_space, run_parameters.order, run_parameters.Tz0);
   }

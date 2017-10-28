@@ -56,13 +56,14 @@ class InOBDMEReader {
 
   // destructor
   ~InOBDMEReader() {
-    delete info_stream_ptr_;
+    if (info_stream_ptr_)
+      delete info_stream_ptr_;
   }
 
   // Get sectors associated with a particular multipole order
-  void SetToIndexing(int order, basis::OrbitalSectorsLJPN& sectors);
+  void SetToIndexing(int order, basis::OrbitalSectorsLJPN& sectors) const;
   // extract a single multiple order from a data file
-  void ReadMultipole(const std::string& data_filename, int order, basis::OperatorBlocks<double>& matrices);
+  void ReadMultipole(const std::string& data_filename, int order, basis::OperatorBlocks<double>& matrices) const;
 
   // info file data structure
   struct InfoLine {
@@ -89,9 +90,9 @@ class InOBDMEReader {
   void ReadInfo1500();
 
   // read data header
-  void ReadDataHeader(std::ifstream& data_stream, int& data_line_count);
-  void ReadDataHeader1405(std::ifstream& data_stream, int& data_line_count);
-  void ReadDataHeader1500(std::ifstream& data_stream, int& data_line_count);
+  void ReadDataHeader(std::ifstream& data_stream, int& data_line_count) const;
+  // void ReadDataHeader1405(std::ifstream& data_stream, int& data_line_count) const;
+  // void ReadDataHeader1500(std::ifstream& data_stream, int& data_line_count) const;
 
   // indexing accessors
   const basis::OrbitalSpaceLJPN& orbital_space() const {

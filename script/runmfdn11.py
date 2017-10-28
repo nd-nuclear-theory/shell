@@ -81,7 +81,7 @@ task = {
     # two-body observables
     ## "observable_sets": ["H-components","am-sqr"],
     "observable_sets": ["H-components"],
-    "observables": [],
+    "tb_observables": [],
 
     # wavefunction storage
     "save_wavefunctions": True,

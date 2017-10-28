@@ -14,6 +14,7 @@
 import mcscript
 import mfdn
 import mfdn.mfdn_v15
+import mfdn.postprocessing
 
 # initialize mcscript
 mcscript.init()
@@ -33,7 +34,7 @@ mfdn.environ.environ.interaction_run_list = [
 
 task = {
     # nuclide parameters
-    "nuclide": (2, 2),
+    "nuclide": (2, 1),
 
     # Hamiltonian parameters
     "interaction": "JISP16",
@@ -62,12 +63,12 @@ task = {
     "mb_truncation_mode": mfdn.modes.ManyBodyTruncationMode.kNmax,
     "truncation_parameters": {
         "Nv": 0,
-        "Nmax": 2,
+        "Nmax": 6,
         "Nstep": 2,
         },
 
     # diagonalization parameters
-    "Mj": 0,
+    "Mj": 0.5,
     "eigenvectors": 15,
     "initial_vector": -2,
     "lanczos": 200,
@@ -77,13 +78,14 @@ task = {
     # obdme parameters
     ## "hw_for_trans": 20,
     "obdme_multipolarity": 2,
-    "obdme_reference_state_list": [(0, 0, 1)],
+    "obdme_reference_state_list": [(0.5, 0, 1)],
     "save_obdme": True,
+    "ob_observables": [('M', 1), ('E', 2)],
 
     # two-body observables
     ## "observable_sets": ["H-components","am-sqr"],
     "observable_sets": ["H-components"],
-    "observables": [],
+    "tb_observables": [],
 
     # wavefunction storage
     "save_wavefunctions": True,
@@ -110,6 +112,8 @@ mfdn.radial.set_up_radial_analytic(task)
 mfdn.tbme.generate_tbme(task)
 mfdn.mfdn_v15.run_mfdn(task)
 mfdn.mfdn_v15.save_mfdn_output(task)
+mfdn.postprocessing.generate_em(task)
+mfdn.postprocessing.evaluate_ob_observables(task)
 # mfdn.handlers.task_handler_oscillator(task)
 
 ##################################################################
