@@ -33,7 +33,7 @@
       Relative r^2 operator (~intrinsic r^2 operator).
       [TODO: merge with ksqr?  provide pp|nn variants?]
 
-    qrel r|k pp|nn|total [TODO]
+    quadrupole r|k pp|nn|total [TODO]
 
     coulomb pp|nn|total steps [TODO]
       Coulomb potential.
