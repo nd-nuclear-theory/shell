@@ -26,6 +26,15 @@ import mcscript
 # library of format strings
 ################################################################
 
+# these strings are just for the quantum numbers, not including the RME itself
+
+# LSJT format from basis::lsjt_operator.h:
+#
+#   T0  N1' l1' N2' l2' L' S' J' T' g'  N1 l1 N2 l2 L S J T g  JT-RME
+
+conversion_list_lsjt = (1+9+9)*[int]
+format_string_lsjt = "{:1d} " + (2*9)*"{:2d}"
+
 # JJJT format from basis::jjjt_operator.h:
 #
 # T0  N1' l1' j1' N2' l2' j2' J' T' g'  N1 l1 j1 N2 l2 j2 J T g  JT-RME
@@ -209,6 +218,16 @@ def compare_nnloopt_jjjt():
     with open("nnloopt_Nmax04_hw40.0_caveat-nmax30_jjjt-COMPARISON.dat","w") as out_stream:
         compare_matrix_elements(out_stream,matrix_element_dict1,matrix_element_dict2,format_string_jjjt,"+16.8e",1e-4,matrix_element_labels)
 
+def compare_quadrupole_lsjt():
+    """ Quadrupole: Compare moshinsky with Anna."""
+    with open("../work/moshinsky/quadrupole/quadrupole_Nmax04_total_lsjt.dat") as in_stream:
+        (matrix_element_labels,matrix_element_dict1) = read_me_file(in_stream,conversion_list_lsjt,num_header_lines=0)
+    with open("171030-moshinsky-test-files/quadrupole_operator_two_body_lsjt.txt") as in_stream:
+        (_,matrix_element_dict2) = read_me_file(in_stream,conversion_list_jjjt,num_header_lines=11)
+
+    with open("quadrupole_Nmax04_total_lsjt-COMPARISON.dat","w") as out_stream:
+        compare_matrix_elements(out_stream,matrix_element_dict1,matrix_element_dict2,format_string_jjjt,"+16.8e",1e-4,matrix_element_labels)
+
 def compare_quadrupole_jjjt():
     """ Quadrupole: Compare moshinsky with Anna."""
     with open("../work/moshinsky/quadrupole/quadrupole_Nmax04_total_jjjt.dat") as in_stream:
@@ -258,7 +277,8 @@ def main():
     ## compare_jisp16_jjjt()
     ## compare_coulomb_jjjt()
     ## compare_nnloopt_jjjt()
-    compare_quadrupole_jjjt()
+    compare_quadrupole_lsjt()
+    ##compare_quadrupole_jjjt()
 
     # h2 comparisons
     ## compare_jisp16_h2v0()
