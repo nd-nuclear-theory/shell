@@ -77,3 +77,16 @@
      - Anna's upcoupling/downcoupling 171020-moshinsky-test-files/Qtotal_tb_Nmax04.dat
    Disagree...
  
+11/2/17
+
+   Anna realizes was providing wrong quadrupole operator...
+
+   quadrupole, Nmax04, lsjtt
+     - MC's moshinsky quadrupole_Nmax04_total_lsjt.dat
+     - Anna's upcoupling/downcoupling 171101-moshinsky-test-files/quadrupole_Nmax04_total_lsjt_spncci.dat
+   Agree to within factors of sqrt(2) and 2, probably since moshinsky output is NAS.
+
+   quadrupole, Nmax04, jjjt
+     - MC's moshinsky quadrupole_Nmax04_total_jjjt.dat
+     - Anna's upcoupling/downcoupling 171101-moshinsky-test-files/quadrupole_Nmax04_total_jjjt_spncci.dat
+   Agree!

@@ -222,7 +222,7 @@ def compare_quadrupole_lsjt():
     """ Quadrupole: Compare moshinsky with Anna."""
     with open("../work/moshinsky/quadrupole/quadrupole_Nmax04_total_lsjt.dat") as in_stream:
         (matrix_element_labels,matrix_element_dict1) = read_me_file(in_stream,conversion_list_lsjt,num_header_lines=0)
-    with open("171030-moshinsky-test-files/quadrupole_operator_two_body_lsjt.txt") as in_stream:
+    with open("171101-moshinsky-test-files/quadrupole_Nmax04_total_lsjt_spncci.dat") as in_stream:
         (_,matrix_element_dict2) = read_me_file(in_stream,conversion_list_jjjt,num_header_lines=11)
 
     with open("quadrupole_Nmax04_total_lsjt-COMPARISON.dat","w") as out_stream:
@@ -232,7 +232,7 @@ def compare_quadrupole_jjjt():
     """ Quadrupole: Compare moshinsky with Anna."""
     with open("../work/moshinsky/quadrupole/quadrupole_Nmax04_total_jjjt.dat") as in_stream:
         (matrix_element_labels,matrix_element_dict1) = read_me_file(in_stream,conversion_list_jjjt,num_header_lines=0)
-    with open("171020-moshinsky-test-files/Qtotal_tb_Nmax04.dat") as in_stream:
+    with open("171101-moshinsky-test-files/quadrupole_Nmax04_total_jjjt_spncci.dat") as in_stream:
         (_,matrix_element_dict2) = read_me_file(in_stream,conversion_list_jjjt,num_header_lines=11)
 
     with open("quadrupole_Nmax04_total_jjjt-COMPARISON.dat","w") as out_stream:
@@ -278,7 +278,7 @@ def main():
     ## compare_coulomb_jjjt()
     ## compare_nnloopt_jjjt()
     compare_quadrupole_lsjt()
-    ##compare_quadrupole_jjjt()
+    compare_quadrupole_jjjt()
 
     # h2 comparisons
     ## compare_jisp16_h2v0()

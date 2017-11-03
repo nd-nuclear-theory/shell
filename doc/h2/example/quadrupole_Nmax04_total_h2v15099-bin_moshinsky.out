@@ -1,0 +1,28 @@
+Parameters
+  rank 2 cutoff 4
+Read relative operator...
+  J0 2 g0 0 T0_min 0 T0_max 2 symmetry 0
+  Nmax 6 Jmax 7
+  Allocated matrix elements: 368 314 151
+Augment to relative-cm LSJTN...
+  Time: 0
+  Allocated matrix elements: 3294 4627 1572
+Transform to two-body LSJTN...
+  Time: 0.016
+  Allocated matrix elements: 3294 4627 1572
+Recouple to two-body JJJTN...
+  Time: 0.015
+Gather to two-body JJJT...
+  Time: 0
+Branch to two-body JJJPN...
+  Time: 0
+Output stream
+  File: quadrupole_Nmax04_total_h2v15099.bin
+  Format: 15099 (binary)
+  Operator properties: J0 2 g0 0 Tz0 0
+  Orbitals: p 15 n 15 (oscillator-like true)
+  Truncation: p 4.0000 n 4.0000 pp 4.0000 nn 4.0000 pn 4.0000
+  Sectors: pp 23 nn 23 pn 23 => total 69
+  Matrix elements: pp 1518 nn 1518 pn 6224 => total 9260
+
+.....................................................................
