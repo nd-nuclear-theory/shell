@@ -1,0 +1,333 @@
+C
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+C
+C     contains: 
+C
+C       subroutine read_TBME_bin
+C       subroutine write_TBME_bin
+C       subroutine read_TBME_ascii
+C       subroutine write_TBME_ascii
+C
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+C
+      subroutine read_TBME_bin(hamfile) 
+      use SPbasis
+      use TBMEdata
+      implicit none
+      character(LEN=128), intent(in) :: hamfile
+C     
+      integer :: versionnumber, flag
+      integer, dimension(8) :: itemp
+C     
+      if (allocated(ntbmeJ_IDN)) then
+         flag = 1
+      else
+         flag = 0
+      endif
+C
+      open(unit=17, file=TRIM(hamfile)//'.bin',
+     $     status='old', action='read', form='unformatted')
+C     header info
+      read(17) versionnumber
+      if (versionnumber .ne. 0) call cancelall(950)
+C
+      read(17) itemp(1:5)
+      if (itemp(1) .ne. nclasses) call cancelall(951)
+C
+      if (itemp(2) .gt. mxn2l) then
+         print*
+         print*, ' WARNING: N_1b input file',itemp(2),
+     $        ' larger than mxn2l', mxn2l
+         print*, ' WARNING: adjusting mxn2l accordingly'
+         print*
+         write(7,*)
+         write(7,*) ' WARNING: N_1b input file',itemp(2),
+     $        ' larger than mxn2l', mxn2l
+         write(7,*) ' WARNING: adjusting mxn2l accordingly'
+         write(7,*)
+         mxn2l = itemp(2)
+         nshel = mxn2l + 1
+         norbt = nshel*(nshel+1)/2
+         flag = 0
+      elseif (itemp(2) .lt. mxn2l) then 
+         call cancelall(952)
+      endif
+C
+      if (itemp(3) .gt. Ntot2max) then
+         print*
+         print*, ' WARNING: N_2b input file',itemp(3),
+     $        ' larger than Ntot2max', Ntot2max
+         print*, ' WARNING: adjusting Ntot2max accordingly'
+         print*
+         write(7,*)
+         write(7,*) ' WARNING: N_2b input file',itemp(3),
+     $        ' larger than Ntot2max', Ntot2max
+         write(7,*) ' WARNING: adjusting Ntot2max accordingly'
+         write(7,*)
+         Ntot2max = itemp(3)
+         Jtot2max = Ntot2max + 1
+         flag = 0
+      elseif (itemp(3) .lt. Ntot2max) then 
+         call cancelall(953)
+      endif
+C
+      if (flag .eq. 0) then
+         if (allocated(ntbmeJ_IDN)) call finalize_H2full
+         call init_H2full
+      endif
+C
+      if (itemp(4) .ne. ntbme_IDN) call cancelall(954)
+      if (itemp(5) .ne. ntbme_DIS) call cancelall(955)
+C
+C     actual matrix elements
+      read(17) H2full_IDN(1:ntbme_IDN, 1)
+      if (nclasses .eq. 2) then
+         read(17) H2full_IDN(1:ntbme_IDN, 2)
+         read(17) H2full_DIS(1:ntbme_DIS)
+      endif
+C
+      close(unit=17, status='keep')      
+C
+      return
+C
+      end subroutine read_TBME_bin
+C
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+C
+      subroutine write_TBME_bin(ntypes, N1bmax, N2bmax,
+     $     ntbme_IDN, ntbme_DIS, TBME_IDN, TBME_DIS, hamfile) 
+      implicit none
+      integer, intent(in) :: ntypes,N1bmax,N2bmax,ntbme_IDN,ntbme_DIS
+      real, dimension(ntbme_IDN, ntypes), intent(in) :: TBME_IDN
+      real, dimension(ntbme_DIS), intent(in) :: TBME_DIS
+      character(LEN=128), intent(in) :: hamfile
+C     
+      integer :: versionnumber
+C
+      open(unit=13, file=TRIM(hamfile)//'.bin',
+     $     status='unknown', action='write', form='unformatted')
+C     header info
+      versionnumber = 0
+      write(13) versionnumber
+      write(13) ntypes, N1bmax, N2bmax, ntbme_IDN, ntbme_DIS
+C     actual matrix elements
+      write(13) TBME_IDN(1:ntbme_IDN, 1)
+      if (ntypes .eq. 2) then
+         write(13) TBME_IDN(1:ntbme_IDN, 2)
+         write(13) TBME_DIS(1:ntbme_DIS)
+      endif
+C
+      close(unit=13, status='keep')      
+C
+      return
+C
+      end subroutine write_TBME_bin
+C
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+C
+      subroutine read_TBME_ascii(hamfile) 
+      use SPbasis
+      use TBMEdata
+      implicit none
+C
+      character(LEN=128), intent(in) :: hamfile
+C     
+      integer :: versionnumber, icls, i, flag
+      integer :: ia,ib,ic, id, itype
+      integer :: jt, pt, indx, phase
+      real :: matel
+      integer, dimension(2) :: itemp
+      character(LEN=128) :: comments
+      character(LEN=1) :: key
+C     
+      if (allocated(ntbmeJ_IDN)) then
+         flag = 1
+      else
+         flag = 0
+      endif
+C
+      open(unit=17, file=TRIM(hamfile)//'.dat',
+     $     status='old', action='read')
+C     comments
+      key = '#'
+      do while (key .eq. '#')
+         read(unit=17, fmt='(a)', advance='no') key
+         if (key .eq. '#') then
+            read(17, *) comments
+            write(7,*) TRIM(comments)
+         else
+            exit
+         endif
+      enddo
+C     header info
+      read(17, *) versionnumber
+      if (versionnumber .ne. 0) call cancelall(960)
+C
+      read(17, *) i             ! ntypes
+      if (i .ne. nclasses) call cancelall(961)
+C
+      read(17, *) i             ! mxn2l
+      if (i .gt. mxn2l) then
+         print*
+         print*, ' WARNING: N_1b input file',i,
+     $        ' larger than mxn2l', mxn2l
+         print*, ' WARNING: adjusting mxn2l accordingly'
+         print*
+         write(7,*)
+         write(7,*) ' WARNING: N_1b input file',i,
+     $        ' larger than mxn2l', mxn2l
+         write(7,*) ' WARNING: adjusting mxn2l accordingly'
+         write(7,*)
+         mxn2l = i
+         nshel = mxn2l + 1
+         norbt = nshel*(nshel+1)/2
+         flag = 0
+      elseif (i .lt. mxn2l) then 
+         call cancelall(962)
+      endif
+C
+      read(17, *) i             ! Ntot2max
+      if (i .gt. Ntot2max) then
+         print*
+         print*, ' WARNING: N_2b input file',i,
+     $        ' larger than Ntot2max', Ntot2max
+         print*, ' WARNING: adjusting Ntot2max accordingly'
+         print*
+         write(7,*)
+         write(7,*) ' WARNING: N_2b input file',i,
+     $        ' larger than Ntot2max', Ntot2max
+         write(7,*) ' WARNING: adjusting Ntot2max accordingly'
+         write(7,*)
+         Ntot2max = i
+         Jtot2max = Ntot2max + 1
+         flag = 0
+      elseif (i .lt. Ntot2max) then 
+         call cancelall(963)
+      endif
+C
+      if (flag .eq. 0) then
+         if (allocated(ntbmeJ_IDN)) call finalize_H2full
+         call init_H2full
+         H2full_IDN = 0.0
+         H2full_DIS = 0.0
+      endif
+C
+      read(17, *) itemp(1:nclasses) ! ntbme_IDN, ntbme_DIS
+      if (itemp(1) .ne. ntbme_IDN) call cancelall(964)
+      if (itemp(2) .ne. ntbme_DIS) call cancelall(965)
+C
+      do icls = 1, nclasses
+         do i = 1, ntbme_IDN
+            read(17, *) ia, ib, ic, id, jt, itype, matel
+            jt = jt / 2
+            pt = mod(l_orb(ia)+l_orb(ib), 2)
+            call retrieveTBMEindex_IDN(ia, ib, ic, id,
+     $           jt, pt, norbt, Jtot2max, j2_orb, 
+     $           ntbmeJ_IDN, ntpsJ_IDN, tpsJindx_IDN, phase, indx)
+            H2full_IDN(indx, icls) = phase * matel
+         enddo
+      enddo
+C
+      if (nclasses .eq. 2) then
+         do i = 1, ntbme_DIS
+            read(17, *) ia, ib, ic, id, jt, itype, matel
+            jt = jt / 2
+            pt = mod(l_orb(ia)+l_orb(ib), 2)
+            call retrieveTBMEindex_DIS(ia, ib, ic, id,
+     $           jt, pt, norbt, Jtot2max, 
+     $           ntbmeJ_DIS, ntpsJ_DIS, tpsJindx_DIS, indx)
+            H2full_DIS(indx) = matel
+         enddo
+      endif
+C     done reading on root
+      close(unit=17, status='keep')
+C
+      return
+C
+      end subroutine read_TBME_ascii
+C
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
+C
+      subroutine write_TBME_ascii(ntypes, N1bmax, N2bmax,
+     $     TBME_IDN, TBME_DIS, hamfile) 
+      use TBMEdata
+      implicit none
+      integer, intent(in) :: ntypes,N1bmax,N2bmax
+      real, dimension(ntbme_IDN, ntypes), intent(in) :: TBME_IDN
+      real, dimension(ntbme_DIS), intent(in) :: TBME_DIS
+      character(LEN=128), intent(in) :: hamfile
+C     
+      integer :: icls, type, indx, i, ii, jt, pt, istop, k
+      integer :: ia, ib, ic, id, versionnumber
+C
+      open(unit=13, file=TRIM(hamfile)//'.dat',
+     $     status='unknown', action='write')
+ 6781 format(6i6, 4x, e18.8, i6)
+C     header info
+      versionnumber = 0
+      write(13, *) versionnumber
+      write(13, *) ntypes
+      write(13, *) N1bmax
+      write(13, *) N2bmax
+      write(13, *) ntbme_IDN, ntbme_DIS
+C
+C     actual matrix elements
+      do icls = 1, ntypes
+         type = icls * 11
+         indx = 0
+         ii = 0
+         istop = 0
+         do jt = 0, Jtot2max
+            do pt = 0, 1
+               istop = istop + ntpsJ_IDN(jt,pt) 
+               do i = 1, ntpsJ_IDN(jt,pt)
+                  ii = ii + 1
+                  ia = TPJstates_IDN(1, ii) 
+                  ib = TPJstates_IDN(2, ii) 
+C     jt = TPSJstates_IDN(3, ii) 
+                  do k = ii, istop
+                     ic = TPJstates_IDN(1, k) 
+                     id = TPJstates_IDN(2, k) 
+C     jt = TPJstates_IDN(3, k) 
+                     indx = indx + 1
+                     write(13, 6781) ia, ib, ic, id, 2*jt, type,
+     $                    TBME_IDN(indx, icls)
+                  enddo
+               enddo
+            enddo
+         enddo
+      enddo
+C
+      if (ntypes.eq.2) then
+         type = 12
+         indx = 0
+         ii = 0
+         istop = 0
+         do jt = 0, Jtot2max
+            do pt = 0, 1
+               istop = istop + ntpsJ_DIS(jt,pt) 
+               do i = 1, ntpsJ_DIS(jt,pt)
+                  ii = ii + 1
+                  ia = TPJstates_DIS(1, ii) 
+                  ib = TPJstates_DIS(2, ii) 
+C     jt = TPSJstates_DIS(3, ii) 
+                  do k = ii, istop
+                     ic = TPJstates_DIS(1, k) 
+                     id = TPJstates_DIS(2, k) 
+C     jt = TPJstates_DIS(3, k) 
+                     indx = indx + 1
+                     write(13, 6781) ia, ib, ic, id, 2*jt, type,
+     $                    TBME_DIS(indx)
+                  enddo
+               enddo
+            enddo
+         enddo
+      endif
+C
+      close(unit=13, status='keep')      
+C
+      return
+C
+      end subroutine write_TBME_ascii
+C
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
