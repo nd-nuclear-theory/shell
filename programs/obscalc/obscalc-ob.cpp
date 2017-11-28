@@ -22,6 +22,7 @@
   + 10/08/17 (pjf): Created.
   + 10/23/17 (pjf): Rewrite for reading/writing many observables at one time.
   + 10/25/17 (pjf): Make robdme info filename global to run.
+  + 11/28/17 (pjf): Include version in header.
 
 ******************************************************************************/
 
@@ -220,6 +221,7 @@ int main(int argc, char** argv) {
   // header
   std::cout << std::endl;
   std::cout << "obscalc-ob -- one-body observable evaluation" << std::endl;
+  std::cout << "version: " VCS_REVISION << std::endl;
   std::cout << std::endl;
 
   // process input

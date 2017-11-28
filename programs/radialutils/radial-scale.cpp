@@ -13,6 +13,7 @@
 
   + 11/4/16 (pjf): Created, based on radial-gen.cpp.
   + 10/12/17 (pjf): Update for changes to radial_io.
+  + 11/28/17 (pjf): Print header with version.
 
 ******************************************************************************/
 
@@ -102,6 +103,12 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters) {
 }
 
 int main(int argc, char **argv) {
+  // header
+  std::cout << std::endl;
+  std::cout << "radial-scale -- analytic radial matrix element scaling" << std::endl;
+  std::cout << "version: " VCS_REVISION << std::endl;
+  std::cout << std::endl;
+
   RunParameters run_parameters;
   ProcessArguments(argc, argv, run_parameters);
 

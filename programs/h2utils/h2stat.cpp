@@ -12,6 +12,7 @@
   10/22/16 (mac): Add mode argument.
   10/30/16 (mac): Update command line syntax.
   11/13/16 (mac): Add sector matrix output mode.
+  11/28/17 (pjf): Include version in header.
 
 ******************************************************************************/
 
@@ -214,6 +215,7 @@ int main(int argc, char **argv)
   // header
   std::cout << std::endl;
   std::cout << "h2stat  -- MFDn H2 file statistics" << std::endl;
+  std::cout << "version: " VCS_REVISION << std::endl;
   std::cout << std::endl;
 
   // read parameters

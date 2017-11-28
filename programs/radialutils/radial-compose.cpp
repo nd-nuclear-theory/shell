@@ -14,6 +14,7 @@
 
   + 1/16/17 (pjf): Created, based on radial-xform.cpp.
   + 10/12/17 (pjf): Update for changes to radial_io.
+  + 11/28/17 (pjf): Print header with version.
 
 ******************************************************************************/
 
@@ -48,6 +49,12 @@ void PrintUsage(const char *argv[]) {
 }
 
 void ProcessArguments(const int argc, const char *argv[], RunParameters& run_parameters) {
+  // header
+  std::cout << std::endl;
+  std::cout << "radial-compose -- radial matrix element composition" << std::endl;
+  std::cout << "version: " VCS_REVISION << std::endl;
+  std::cout << std::endl;
+
   // argument counter
   int arg = 0;
 

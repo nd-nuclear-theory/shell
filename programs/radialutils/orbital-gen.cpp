@@ -12,6 +12,7 @@
   University of Notre Dame
 
   + 11/6/16 (pjf): Created, based on radial-gen.
+  + 11/28/17 (pjf): Print header with version.
 
 ******************************************************************************/
 
@@ -159,6 +160,12 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
 }
 
 int main(int argc, const char *argv[]) {
+  // header
+  std::cout << std::endl;
+  std::cout << "orbital-gen -- orbital file generation" << std::endl;
+  std::cout << "version: " VCS_REVISION << std::endl;
+  std::cout << std::endl;
+
   RunParameters run_parameters;
   ProcessArguments(argc, argv, run_parameters);
   std::vector<basis::OrbitalPNInfo> orbitals;

@@ -8,6 +8,8 @@ project_name := shell
 
 install_prefix := $(install_prefix)/shell
 
+$(eval $(vcs-git))
+
 ################################################################
 # modules -- list of directories in which to search
 # for module.mk include files

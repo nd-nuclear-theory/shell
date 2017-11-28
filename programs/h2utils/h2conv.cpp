@@ -10,6 +10,7 @@
 
   10/19/16 (mac): Created, based on h2stat.
   10/22/16 (mac): Update syntax.
+  11/28/17 (pjf): Include version in header.
 
 ******************************************************************************/
 
@@ -74,6 +75,7 @@ int main(int argc, char **argv)
   // header
   std::cout << std::endl;
   std::cout << "h2conv -- MFDn H2 file conversion" << std::endl;
+  std::cout << "version: " VCS_REVISION << std::endl;
   std::cout << std::endl;
 
   // read parameters

@@ -21,6 +21,7 @@
   + 09/29/17 (pjf): Created, based on orbital-gen.
   + 10/24/17 (pjf): Rewritten, generating E/Dl/Ds, with multiple operators
       generated in one invocation.
+  + 11/28/17 (pjf): Print header with version.
 
 ******************************************************************************/
 
@@ -332,6 +333,12 @@ void GenerateTarget(const RunParameters& run_parameters,
 
 int main(int argc, const char* argv[]) {
   if (argc != 1) PrintUsage(argv);
+
+  // header
+  std::cout << std::endl;
+  std::cout << "em-gen -- electromagnetic matrix element generation" << std::endl;
+  std::cout << "version: " VCS_REVISION << std::endl;
+  std::cout << std::endl;
 
   RunParameters run_parameters;
   ReadParameters(run_parameters);

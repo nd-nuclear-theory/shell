@@ -13,6 +13,7 @@
 
   + 11/13/16 (pjf): Created, based on orbital-gen.
   + 10/12/17 (pjf): Update for changes to radial_io.
+  + 11/28/17 (pjf): Print header with version.
 
 ******************************************************************************/
 
@@ -196,6 +197,12 @@ bool cmp(const basis::OrbitalPNInfo& lhs, const basis::OrbitalPNInfo& rhs) {
 // main program
 ////////////////////////////////////////////////////////////////
 int main(int argc, const char *argv[]) {
+  // header
+  std::cout << std::endl;
+  std::cout << "natorb-gen -- natural orbital generation" << std::endl;
+  std::cout << "version: " VCS_REVISION << std::endl;
+  std::cout << std::endl;
+
   RunParameters run_parameters;
   ProcessArguments(argc, argv, run_parameters);
 

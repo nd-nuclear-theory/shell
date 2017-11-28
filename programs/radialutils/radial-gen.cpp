@@ -37,6 +37,7 @@
   + 09/20/17 (pjf): Add support for generating pn overlaps.
   + 10/12/17 (pjf): Update for changes to radial_io:
     - Add radial mode. (ugly hack, clean up later)
+    + 11/28/17 (pjf): Include version in header.
 
 ******************************************************************************/
 
@@ -84,7 +85,7 @@ void PrintUsage(char **argv) {
   std::cout << "Usage: " << argv[0]
             << " --kinematic {r|k} order analytic_basis_type orbital_file output_filename"
             << std::endl;
-  std::cout << "Usage: " << argv[0]
+  std::cout << "       " << argv[0]
             << " --radial order j0 g0 Tz0 analytic_basis_type orbital_file output_filename"
             << std::endl;
   std::cout << "       " << argv[0]
@@ -353,10 +354,10 @@ void CalculateMatrixElements(
 }
 
 int main(int argc, char **argv) {
-
   // header
   std::cout << std::endl;
   std::cout << "radial-gen -- radial integral evaluation" << std::endl;
+  std::cout << "version: " VCS_REVISION << std::endl;
   std::cout << std::endl;
 
   // process arguments
