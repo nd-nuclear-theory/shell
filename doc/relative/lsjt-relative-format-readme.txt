@@ -1,5 +1,9 @@
 Notre Dame lsjt relative interaction format
 
+12/18/17 (mac): Add rsqr and ksqr examples.
+
+----------------------------------------------------------------
+
 (1) This readme (lsjt-relative-format-readme.txt) and example interaction
 files may be found in the "shell" repository under the directory
 doc/relative.
@@ -36,6 +40,13 @@ on coding (internal data structures, I/O routines, etc.).
      oscillator length b=1 to physical Coulomb matrix elements at
      given hw, see Appendix below.
 
+   - rsqr_Nmac06_total_rel.dat & ksqr_Nmac06_total_rel.dat: intrinsic
+     r^2 and k^2 operators, for oscillator length b=1
+
+     Stored with all isospin components (T=0..2).
+
+     Generated from SU(1,1) radial matrix element expressions, with
+     relative-gen (commit f06f17f).
 
    - quadrupole_Nmax06_total_rel.dat: isoscalar (mass) quadrupole
      operator, for oscillator length b=1
