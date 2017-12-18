@@ -181,7 +181,7 @@ def task_handler_natorb_run(task, postfix):
 
     # set correct basis mode
     task["basis_mode"] = modes.BasisMode.kGeneric
-    mfdn_driver.run_mfdn(task=task, postfix=utils.natural_orbital_indicator(1))
+    mfdn_driver.run_mfdn(task=task, postfix=postfix)
 
 
 def task_handler_natorb(task):

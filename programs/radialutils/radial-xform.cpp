@@ -17,6 +17,7 @@
   + 09/19/17 (pjf): Improved transformation to accept more types of transformations.
   + 10/12/17 (pjf): Update for changes to radial_io.
   + 10/18/17 (pjf): Correctly set target_operator_order.
+  + 11/28/17 (pjf): Print header with version.
 
 ******************************************************************************/
 
@@ -107,6 +108,12 @@ void ProcessArguments(const int argc, const char *argv[], RunParameters& run_par
 }
 
 int main(int argc, const char *argv[]) {
+  // header
+  std::cout << std::endl;
+  std::cout << "radial-xform -- radial matrix element transformation" << std::endl;
+  std::cout << "version: " VCS_REVISION << std::endl;
+  std::cout << std::endl;
+
   RunParameters run_parameters;
   ProcessArguments(argc, argv, run_parameters);
 

@@ -22,7 +22,7 @@
     T0_max: 0 for isoscalar, 2 for pp/nn/pn matrix elements
 
   Language: C++11
-                                 
+
   Mark A. Caprio
   University of Notre Dame
 
@@ -31,6 +31,7 @@
   10/9/16 (pjf): Rename mcpp -> mcutils.
   10/19/16 (mac): Remove superflous debugging options.
   3/28/17 (mac): Add support for non-isoscalar operators.
+  11/28/17 (pjf): Print header with version.
 
 ****************************************************************/
 
@@ -86,7 +87,7 @@ void ReadParameters(Parameters& parameters)
     if (parameters.T0_max==0)
       line_stream >> parameters.source_filename;
     else
-      line_stream 
+      line_stream
         >> parameters.source_filenames[0]
         >> parameters.source_filenames[1]
         >> parameters.source_filenames[2];
@@ -110,6 +111,11 @@ void ReadParameters(Parameters& parameters)
 
 int main(int argc, char **argv)
 {
+  // header
+  std::cout << std::endl;
+  std::cout << "jpv2rel -- JPV to relative file conversion" << std::endl;
+  std::cout << "version: " VCS_REVISION << std::endl;
+  std::cout << std::endl;
 
   // parameter input
   Parameters parameters;
@@ -141,7 +147,7 @@ int main(int argc, char **argv)
   for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
     std::cout << " " << basis::AllocatedEntries(relative_component_matrices[T0]);
   std::cout << std::endl;
-        
+
   // populate matrix elements
   if (parameters.T0_max==0)
     {

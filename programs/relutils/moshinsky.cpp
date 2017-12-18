@@ -28,6 +28,7 @@
   8/16/16 (mac): Add diagnostic output of relative-cm matrix elements.
   10/9/16 (pjf): Rename mcpp -> mcutils.
   10/25/16 (mac): Update use of ParsingError.
+  11/28/17 (pjf): Print header with version.
 
 ****************************************************************/
 
@@ -127,7 +128,7 @@ void ReadParameters(Parameters& parameters)
       }
     else
       ParsingError(line_count,line,"unrecognized coupling scheme code");
-    
+
 
   }
 
@@ -165,7 +166,7 @@ void ReadRelative(
 //
 // Arguments:
 //   parameters (Parameters) : includes tensorial properties of operator
-//      choice of operator to use 
+//      choice of operator to use
 //   relative_space (..., output) : target space
 //   relative_component_sectors (..., output) : target sectors
 //   relative_component_matrices (..., output) : target matrices
@@ -196,7 +197,7 @@ void ReadRelative(
   relative_space = basis::RelativeSpaceLSJT(
       operator_parameters.Nmax,operator_parameters.Jmax
     );
-  
+
   // populate sectors and matrices
   for (int T0=operator_parameters.T0_min; T0<=operator_parameters.T0_max; ++T0)
     // for each isospin component
@@ -377,7 +378,7 @@ void WriteTwoBodyH2(
     );
   std::cout << output_stream.DiagnosticStr();
   std::cout << std::endl;
-  
+
   // iterate over sectors
   for (int sector_index = 0; sector_index < output_stream.num_sectors(); ++sector_index)
     {
@@ -396,6 +397,11 @@ void WriteTwoBodyH2(
 
 int main(int argc, char **argv)
 {
+  // header
+  std::cout << std::endl;
+  std::cout << "moshinsky -- Moshinsky transformation of general relative operator" << std::endl;
+  std::cout << "version: " VCS_REVISION << std::endl;
+  std::cout << std::endl;
 
   // parameter input
   Parameters parameters;
@@ -427,7 +433,7 @@ int main(int argc, char **argv)
       operator_labels,relative_component_sectors,relative_component_matrices
     );
 
-  
+
   ////////////////////////////////////////////////////////////////
   // augment to relative-cm LSJTN
   ////////////////////////////////////////////////////////////////
@@ -512,12 +518,12 @@ int main(int argc, char **argv)
   ////////////////////////////////////////////////////////////////
 
   std::cout << "Recouple to two-body JJJTN..." << std::endl;
-  
+
   // define space and operator containers
   basis::TwoBodySpaceJJJTN two_body_jjjtn_space(parameters.truncation_rank,parameters.truncation_cutoff);
   std::array<basis::TwoBodySectorsJJJTN,3> two_body_jjjtn_component_sectors;
   std::array<basis::OperatorBlocks<double>,3> two_body_jjjtn_component_matrices;
-  
+
   // do recoupling
   Timer two_body_jjjtn_timer;
   two_body_jjjtn_timer.Start();

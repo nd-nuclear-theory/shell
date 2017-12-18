@@ -47,6 +47,7 @@
     - Accept pn-overlaps for T^2 operator.
     - Store pn-overlaps by including Tz0 in radial_operator_data.
   + 10/12/17 (pjf): Update for changes to radial_io.
+  + 11/28/17 (pjf): Include version in header.
 
 ******************************************************************************/
 
@@ -1070,6 +1071,7 @@ int main(int argc, char **argv)
   // header
   std::cout << std::endl;
   std::cout << "h2mixer -- MFDn H2 file generation" << std::endl;
+  std::cout << "version: " VCS_REVISION << std::endl;
   std::cout << std::endl;
 
   // read parameters

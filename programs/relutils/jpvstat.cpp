@@ -11,6 +11,7 @@
   University of Notre Dame
 
   3/28/17 (mac): Created, from structure of h2stat and code from jpv2rel.
+  11/28/17 (pjf): Include version in header.
 
 ******************************************************************************/
 
@@ -70,6 +71,7 @@ int main(int argc, char **argv)
   // header
   std::cout << std::endl;
   std::cout << "jpvstat  -- JPV relative file sector summary" << std::endl;
+  std::cout << "version: " VCS_REVISION << std::endl;
   std::cout << std::endl;
 
   // read parameters
@@ -111,7 +113,7 @@ int main(int argc, char **argv)
       relative_component_matrices,
       true  // verbose
     );
-  
+
 
   ////////////////////////////////////////////////////////////////
   // termination

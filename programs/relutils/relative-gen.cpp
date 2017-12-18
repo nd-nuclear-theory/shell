@@ -54,7 +54,7 @@
 
 
   Language: C++11
-                                 
+
   Mark A. Caprio
   University of Notre Dame
 
@@ -64,6 +64,7 @@
   3/6/17 (mac): Rough in Coulomb interaction code.
   3/26/17 (mac): Finish implementing Coulomb.  Rename to relative-gen.cpp.
   4/5/17 (mac): Update call to ConstructZeroOperatorRelativeLSJT.
+  11/28/17 (pjf): Print header with version.
 
 ****************************************************************/
 
@@ -209,7 +210,7 @@ void PopulateOperator(
 //
 // Arguments:
 //   parameters (Parameters) : includes tensorial properties of operator
-//      choice of operator to use 
+//      choice of operator to use
 //   relative_space (..., output) : target space
 //   relative_component_sectors (..., output) : target sectors
 //   relative_component_matrices (..., output) : target matrices
@@ -358,6 +359,11 @@ void PopulateOperator(
 
 int main(int argc, char **argv)
 {
+  // header
+  std::cout << std::endl;
+  std::cout << "relative-gen -- relative operator matrix element generation" << std::endl;
+  std::cout << "version: " VCS_REVISION << std::endl;
+  std::cout << std::endl;
 
   // parameter input
   Parameters parameters;
