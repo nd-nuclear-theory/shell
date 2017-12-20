@@ -1,7 +1,11 @@
 Notre Dame lsjt relative interaction format
 
-12/18/17 (mac): Add rsqr and ksqr examples.
+URL: https://github.com/nd-nuclear-theory/shell
 
+History:
+  10/28/17 (mac): extract descriptions from basis commit 9d7b487
+  12/18/17 (mac): Add rsqr and ksqr examples.
+  12/19/17 (mac): Add Moshinsky examples.
 ----------------------------------------------------------------
 
 (1) This readme (lsjt-relative-format-readme.txt) and example interaction
@@ -22,7 +26,7 @@ The relavant comments from both these files are copied below for your
 reference.  Please refer to the original files for further information
 on coding (internal data structures, I/O routines, etc.).
 
-(3) Example files provided:
+(3) Example relative files provided:
 
    - jisp16_Nmax20_hw20.0_rel.dat: JISP16, hw=20 MeV, truncated to
      relative Nmax=20
@@ -55,10 +59,18 @@ on coding (internal data structures, I/O routines, etc.).
      relative-gen [actually, interim test code relative_me_test
      (TODO)].
 
+(4) Examples of Moshinsky transformation runs on these files:
 
-URL: https://github.com/nd-nuclear-theory/shell
-   
-10/28/17 (mac): extract descriptions from basis commit 9d7b487
+   Input files for moshinsky (*.in), resulting standard output (*.out)
+   and resulting h2 TBME file (*_h2v15099.dat) are provided.
+
+   - rsqr_Nmax02_total_h2v15099.{in,out,dat}: intrinsic r^2, starting
+     from Nmax06 relative matrix elements and providing tbmes through
+     2-body Nmax02
+
+   - quadrupole_Nmax02_total_h2v15099.{in,out,dat} -- intrinsic
+     quadrupole operator, starting from Nmax06 relative matrix
+     elements and providing tbmes through 2-body Nmax02
 
 ----------------------------------------------------------------
 
