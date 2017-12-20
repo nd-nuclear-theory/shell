@@ -8,8 +8,6 @@ project_name := shell
 
 install_prefix := $(install_prefix)/shell
 
-$(eval $(vcs-git))
-
 ################################################################
 # modules -- list of directories in which to search
 # for module.mk include files
@@ -60,6 +58,9 @@ extras :=
 LDLIBS += -lgsl
 LDLIBS += -lgslcblas
 CPPFLAGS += -DHAVE_INLINE
+
+# compile git information into executables
+CPPFLAGS += -D'VCS_REVISION="$(vcs-git)"'
 
 # basis submodule
 #   map vs. hash for space lookup in basis library
