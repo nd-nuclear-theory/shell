@@ -20,8 +20,8 @@ k_mN_csqr = 938.92  # (m_N c^2)~938.92 MeV
 k_hbar_c = 197.327  # (hbar c)~197.327 Mev fm
 
 # environment
-data_dir_h2 = os.environ.get("SHELL_DATA_DIR_H2")
-print("SHELL_DATA_DIR_H2",data_dir_h2)
+data_dir_h2 = os.environ.get("NCCI_DATA_DIR_H2")
+print("NCCI_DATA_DIR_H2",data_dir_h2)
 install_dir = os.environ.get("SHELL_INSTALL_DIR")
 print("SHELL_INSTALL_DIR",install_dir)
 

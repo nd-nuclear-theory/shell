@@ -12,7 +12,7 @@ Requires environment configuration, such as:
 
   setenv SHELL_PROJECT_DIR "${HOME}/projects/shell"
   setenv SHELL_MFDN_DIR "${HOME}/projects/mfdn"
-  setenv SHELL_DATA_DIR_H2 "/afs/crc.nd.edu/group/nuclthy/data/h2"
+  setenv NCCI_DATA_DIR_H2 "/afs/crc.nd.edu/group/nuclthy/data/h2"
 
 Execute:
 
