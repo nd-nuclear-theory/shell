@@ -1,0 +1,15 @@
+
+jpv2rel -- JPV to relative file conversion
+version: 
+
+Operator setup...
+  Truncation: Nmax 20 Jmax 4 T0_max 0
+  Matrix elements: 1285
+  Allocated: 2035
+Reading relative operator file (JPV format)...
+  Filename: Vrel_JISP16_bare_Jmax4.hw20
+  Reached termination marker.
+Writing relative operator file...
+  Filename: jisp16_Nmax20_hw20.0_rel.dat
+  Operator properties: J0 0 g0 0 T0_min 0 T0_max 0 symmetry 0
+  Truncation: Nmax 20 Jmax 4
