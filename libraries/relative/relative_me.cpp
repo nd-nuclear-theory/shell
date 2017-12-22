@@ -78,21 +78,13 @@ namespace relative {
 
         // relative coordinate dilation factor
         //
-        // Oscillator lengths for two-particle rel-cm
-        // coordinates are related to oscillator length for
-        // single-particle basis as:
-        //
-        //   b_rel = 2^(1/2)*b
-        //   b_cm = 2^(-1/2)*b
-        //
-        // So for matrix elements of r^p must scale by
-        // (b_rel/b)^p.  For r^2, this is sqrt(2.)^2=2., and, for k^2, this is sqrt(2.)^-2=1/2.
+        // See "Note on oscillator length" at start of header file.
+
         double relative_oscillator_scale_factor;
         if (kinematic_operator == relative::KinematicOperator::kRSqr)
           relative_oscillator_scale_factor = 2.;
         else if (kinematic_operator == relative::KinematicOperator::kKSqr)
           relative_oscillator_scale_factor = 1/2.;
-
 
         // populate nonzero entries
         //
@@ -364,15 +356,8 @@ namespace relative {
 
                   // relative coordinate dilation factor
                   //
-                  // Oscillator lengths for two-particle rel-cm
-                  // coordinates are related to oscillator length for
-                  // single-particle basis as:
-                  //
-                  //   b_rel = 2^(1/2)*b
-                  //   b_cm = 2^(-1/2)*b
-                  //
-                  // So for matrix elements of r^p must scale by
-                  // (b_rel/b)^p.  For quadrupole, this is sqrt(2.)^2=2.
+                  // See "Note on oscillator length" at start of header file.
+
                   const double relative_oscillator_scale_factor = 2.;
 
                   // combine factors
@@ -478,15 +463,8 @@ namespace relative {
 
                   // relative coordinate dilation factor
                   //
-                  // Oscillator lengths for two-particle rel-cm
-                  // coordinates are related to oscillator length for
-                  // single-particle basis as:
-                  //
-                  //   b_rel = 2^(1/2)*b
-                  //   b_cm = 2^(-1/2)*b
-                  //
-                  // So for matrix elements of r^p must scale by
-                  // (b_rel/b)^p.  For Coulomb, this is 1/sqrt(2.).
+                  // See "Note on oscillator length" at start of header file.
+
                   const double relative_oscillator_scale_factor = 1/std::sqrt(2.);
 
                   // impose isospin factors
