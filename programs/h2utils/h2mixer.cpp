@@ -1096,7 +1096,7 @@ int main(int argc, char **argv)
   Eigen::setNbThreads(0);
 
   // start timing
-  Timer total_time;
+  mcutils::SteadyTimer total_time;
   total_time.Start();
 
   ////////////////////////////////////////////////////////////////

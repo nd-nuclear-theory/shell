@@ -83,7 +83,7 @@ int main(int argc, char **argv)
   ProcessArguments(argc,argv,run_parameters);
 
   // start timing
-  Timer total_time;
+  mcutils::SteadyTimer total_time;
   total_time.Start();
 
   // stream initialization

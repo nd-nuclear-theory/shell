@@ -243,7 +243,7 @@ void GatherAndWriteRelativeCM(
   std::array<basis::OperatorBlocks<double>,3> relative_cm_lsjt_component_matrices;
 
   // construct gathered operator
-  Timer relative_cm_lsjt_timer;
+  mcutils::SteadyTimer relative_cm_lsjt_timer;
   relative_cm_lsjt_timer.Start();
   basis::GatherOperatorRelativeCMLSJTNToRelativeCMLSJT(
       operator_labels,
@@ -287,7 +287,7 @@ void GatherAndWriteTwoBodyLSJT(
   std::array<basis::OperatorBlocks<double>,3> two_body_lsjt_component_matrices;
 
   // construct gathered operator
-  Timer two_body_lsjt_timer;
+  mcutils::SteadyTimer two_body_lsjt_timer;
   two_body_lsjt_timer.Start();
   basis::GatherOperatorTwoBodyLSJTNToTwoBodyLSJT(
       operator_labels,
@@ -446,7 +446,7 @@ int main(int argc, char **argv)
   std::array<basis::OperatorBlocks<double>,3> relative_cm_lsjtn_component_matrices;
 
   // do transformation
-  Timer relative_cm_lsjtn_timer;
+  mcutils::SteadyTimer relative_cm_lsjtn_timer;
   relative_cm_lsjtn_timer.Start();
   moshinsky::TransformOperatorRelativeLSJTToRelativeCMLSJTN(
       operator_labels,
@@ -485,7 +485,7 @@ int main(int argc, char **argv)
   std::array<basis::OperatorBlocks<double>,3> two_body_lsjtn_component_matrices;
 
   // do transformation
-  Timer two_body_lsjtn_timer;
+  mcutils::SteadyTimer two_body_lsjtn_timer;
   two_body_lsjtn_timer.Start();
   moshinsky::TransformOperatorRelativeCMLSJTNToTwoBodyLSJTN(
       operator_labels,
@@ -525,7 +525,7 @@ int main(int argc, char **argv)
   std::array<basis::OperatorBlocks<double>,3> two_body_jjjtn_component_matrices;
 
   // do recoupling
-  Timer two_body_jjjtn_timer;
+  mcutils::SteadyTimer two_body_jjjtn_timer;
   two_body_jjjtn_timer.Start();
   moshinsky::TransformOperatorTwoBodyLSJTNToTwoBodyJJJTN(
       operator_labels,
@@ -547,7 +547,7 @@ int main(int argc, char **argv)
   std::array<basis::OperatorBlocks<double>,3> two_body_jjjt_component_matrices;
 
   // construct gathered operator
-  Timer two_body_jjjt_timer;
+  mcutils::SteadyTimer two_body_jjjt_timer;
   two_body_jjjt_timer.Start();
   basis::GatherOperatorTwoBodyJJJTNToTwoBodyJJJT(
       operator_labels,
@@ -585,7 +585,7 @@ int main(int argc, char **argv)
   basis::OperatorBlocks<double> two_body_jjjpn_matrices;
 
   // do branching
-  Timer two_body_jjjpn_timer;
+  mcutils::SteadyTimer two_body_jjjpn_timer;
   two_body_jjjpn_timer.Start();
   moshinsky::TransformOperatorTwoBodyJJJTToTwoBodyJJJPN(
       operator_labels,
