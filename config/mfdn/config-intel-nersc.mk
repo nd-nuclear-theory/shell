@@ -4,6 +4,8 @@ include config/config-intel.mk
 FC := ftn
 CC := cc
 
+FFLAGS += -ip
+F90FLAGS += -ip
 
 # keep binaries separate by target architecture
 ## install_prefix := install/$(CRAY_CPU_TARGET)
