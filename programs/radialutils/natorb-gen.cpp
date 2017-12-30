@@ -1,4 +1,5 @@
-/**************************************************************************//**
+/******************************************************************************/
+/**
   @file natorb-gen.cpp
 
   generate natural orbitals
@@ -14,6 +15,7 @@
   + 11/13/16 (pjf): Created, based on orbital-gen.
   + 10/12/17 (pjf): Update for changes to radial_io.
   + 11/28/17 (pjf): Print header with version.
+  + 12/29/17 (pjf): Use input orbital indexing for output orbitals.
 
 ******************************************************************************/
 
@@ -246,11 +248,12 @@ int main(int argc, const char *argv[]) {
     }
   }
 
-  // Calculate weights
-  ComputeOrbitalWeights(output_orbitals);
+  // TODO(pjf) Calculate weights
+  // ComputeOrbitalWeights(output_orbitals);
 
   // write xform out to file
-  basis::OrbitalSpaceLJPN output_space(output_orbitals);
+  // TODO(pjf) construct new indexing for output
+  basis::OrbitalSpaceLJPN& output_space = input_space;
   basis::OrbitalSectorsLJPN output_sectors(input_space, output_space, 0, 0);
       // note hard-coded l0max=0, Tz0=0
   shell::OutRadialStream xs(run_parameters.output_xform_file,
@@ -261,7 +264,7 @@ int main(int argc, const char *argv[]) {
   // sort orbitals and write out
   std::sort(output_orbitals.begin(), output_orbitals.end(), cmp);
   std::ofstream output_orbital_s(run_parameters.output_orbital_file);
-  output_orbital_s << basis::OrbitalDefinitionStr(output_orbitals, true);
+  output_orbital_s << basis::OrbitalDefinitionStr(output_space.OrbitalInfo(), true);
   output_orbital_s.close();
 
   /* return code */
