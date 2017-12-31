@@ -16,6 +16,7 @@
   + 10/12/17 (pjf): Update for changes to radial_io.
   + 11/28/17 (pjf): Print header with version.
   + 12/29/17 (pjf): Use input orbital indexing for output orbitals.
+  + 12/30/17 (pjf): Ensure orbital file is properly sorted.
 
 ******************************************************************************/
 
@@ -187,15 +188,6 @@ void SortEigensystem(Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>& eigensolver
 }
 
 ////////////////////////////////////////////////////////////////
-// Sort function for orbitals by (orbital_species,weight,l,j,n)
-////////////////////////////////////////////////////////////////
-bool cmp(const basis::OrbitalPNInfo& lhs, const basis::OrbitalPNInfo& rhs) {
-  auto lhs_labels = std::make_tuple(lhs.orbital_species, lhs.weight, lhs.l, lhs.j, lhs.n);
-  auto rhs_labels = std::make_tuple(rhs.orbital_species, rhs.weight, rhs.l, rhs.j, rhs.n);
-  return lhs_labels < rhs_labels;
-}
-
-////////////////////////////////////////////////////////////////
 // main program
 ////////////////////////////////////////////////////////////////
 int main(int argc, const char *argv[]) {
@@ -224,7 +216,8 @@ int main(int argc, const char *argv[]) {
 
   // Here we loop through the density matrices and diagonalize each sector.
   basis::OperatorBlocks<double> xform_matrices;
-  std::vector<basis::OrbitalPNInfo> output_orbitals;
+  // TODO(pjf) generalize to use eigenvalues for orbital weights
+  // std::vector<basis::OrbitalPNInfo> output_orbitals;
   for (int sector_index = 0; sector_index < sectors.size(); ++sector_index) {
     // get next sector
     const basis::OrbitalSectorsLJPN::SectorType sector = sectors.GetSector(sector_index);
@@ -243,12 +236,13 @@ int main(int argc, const char *argv[]) {
 
     // add to output
     xform_matrices.push_back(eigenvectors);
-    for (int i=0; i < eigenvalues.size(); ++i) {
-      output_orbitals.emplace_back(species, i, l, j, eigenvalues(i));
-    }
+    // TODO(pjf) generalize to use eigenvalues for orbital weights
+    // for (int i=0; i < eigenvalues.size(); ++i) {
+    //   output_orbitals.emplace_back(species, i, l, j, eigenvalues(i));
+    // }
   }
 
-  // TODO(pjf) Calculate weights
+  // TODO(pjf) generalize to use eigenvalues for orbital weights
   // ComputeOrbitalWeights(output_orbitals);
 
   // write xform out to file
@@ -262,9 +256,10 @@ int main(int argc, const char *argv[]) {
   xs.Write(xform_matrices);
 
   // sort orbitals and write out
-  std::sort(output_orbitals.begin(), output_orbitals.end(), cmp);
+  std::vector<basis::OrbitalPNInfo> output_orbitals = output_space.OrbitalInfo();
+  std::sort(output_orbitals.begin(), output_orbitals.end(), basis::OrbitalSortCmpWeight);
   std::ofstream output_orbital_s(run_parameters.output_orbital_file);
-  output_orbital_s << basis::OrbitalDefinitionStr(output_space.OrbitalInfo(), true);
+  output_orbital_s << basis::OrbitalDefinitionStr(output_orbitals, true);
   output_orbital_s.close();
 
   /* return code */
