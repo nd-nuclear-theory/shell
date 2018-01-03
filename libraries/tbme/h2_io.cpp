@@ -262,7 +262,6 @@ namespace shell {
   // format/mode-specific I/O: header
   ////////////////////////////////////////////////////////////////
 
-
   void InH2Stream::ReadHeader_Version0() 
   {
     // header parameters
@@ -378,6 +377,84 @@ namespace shell {
         mcutils::WriteBinary<int>(stream(),bytes);
       }
   };
+
+  void InH2Stream::ReadHeader_Version15099()
+  // WIP
+  {
+    // header parameters
+    int num_types, N1max, N2max, size_pp_nn, size_pn;
+
+    if (h2_mode()==H2Mode::kText)
+      {
+        // set up line input
+        std::string line;
+
+        // header line 1: number of particle types
+        {
+          ++line_count_;
+          std::getline(stream(),line);
+          std::istringstream line_stream(line);
+          line_stream >> num_types; 
+          ParsingCheck(line_stream,line_count_,line);
+        }
+
+        // header line 2: 1-body basis limit
+        {
+          ++line_count_;
+          std::getline(stream(),line);
+          std::istringstream line_stream(line);
+          line_stream >> N1max; 
+          ParsingCheck(line_stream,line_count_,line);
+        }
+
+        // header line 3: 2-body basis limit
+        {
+          ++line_count_;
+          std::getline(stream(),line);
+          std::istringstream line_stream(line);
+          line_stream >> N2max; 
+          ParsingCheck(line_stream,line_count_,line);
+        }
+		
+        // header line 4: matrix size
+        {
+          ++line_count_;
+          std::getline(stream(),line);
+          std::istringstream line_stream(line);
+          line_stream >> size_pp_nn >> size_pn; 
+          ParsingCheck(line_stream,line_count_,line);
+        }
+      }
+    else if (h2_mode()==H2Mode::kBinary)
+      {
+        int num_fields = 5;
+        int bytes = num_fields * kIntegerSize;
+        mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
+        mcutils::ReadBinary<int>(stream(),num_types);
+        mcutils::ReadBinary<int>(stream(),N1max);
+        mcutils::ReadBinary<int>(stream(),N2max);
+        mcutils::ReadBinary<int>(stream(),size_pp_nn);
+        mcutils::ReadBinary<int>(stream(),size_pn);
+        mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
+      }
+
+    // set up indexing
+    orbital_space_ = basis::OrbitalSpacePN(N1max);
+    space_ = basis::TwoBodySpaceJJJPN(orbital_space_,basis::WeightMax(N1max,N2max));
+    int J0 = 0;
+    int g0 = 0;
+    int Tz0 = 0;
+    sectors_ = basis::TwoBodySectorsJJJPN(space_,J0,g0,Tz0);
+
+    // store information by type
+    EvaluateJmaxByType(space_,Jmax_by_type_);
+    EvaluateCountsByType(sectors_,num_sectors_by_type_,size_by_type_);
+
+    // validate unused input parameters
+    assert(num_types == 2);
+    assert(size_pp_nn==size_by_type()[0]);
+    assert(size_pn==size_by_type()[2]);
+  }
 
   void OutH2Stream::WriteHeader_Version15099()
   {

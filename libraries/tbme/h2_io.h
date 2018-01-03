@@ -253,6 +253,8 @@ namespace shell {
     void ReadSector_Version0(Eigen::MatrixXd& matrix, bool store);
 
     // ... Version15099
+    void ReadHeader_Version15099();
+    void ReadSector_Version15099(Eigen::MatrixXd& matrix, bool store);
 
     // file stream
     std::ifstream& stream() const {return *stream_ptr_;}  // alias for convenience
