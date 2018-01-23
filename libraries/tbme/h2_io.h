@@ -34,7 +34,7 @@
   11/28/16 (mac): Add Tz0 to h2 format 15099 output header.
   10/19/17 (mac): Add optional on-the-fly conversion from AS to
     NAS matrix elements on output.
-  1/22/18 (mac): Implement h2v15000.
+  1/22/18 (mac): Begin implementing nonzero Tz0.
 ****************************************************************/
 
 #ifndef H2_IO_H_
@@ -66,7 +66,6 @@ namespace shell {
   typedef int H2Format;
   const int kVersion0=0;
   const int kVersion15099=15099;
-  const int kVersion15100=15100;
   // enum class H2Format
   // {kVersion0=0,kVersion15000=15000,kVersion15099=15099};
 

@@ -13,7 +13,7 @@ module_programs_cpp_test := tbme_separable_test tbme_mapping_test
 # module_programs_f :=
 # module_generated :=
 
-module_extras := h2_io_v0.cpp h2_io_v15099.cpp h2_io_v15100.cpp
+module_extras := h2_io_v0.cpp h2_io_v15099.cpp
 
 ################################################################
 # library creation flag
@@ -25,7 +25,7 @@ $(eval $(library))
 # custom dependencies
 ################################################################
 
-h2_io: h2_io_v0.cpp h2_io_v15099.cpp h2_io_v15100.cpp
+h2_io: h2_io_v0.cpp h2_io_v15099.cpp
 
 
 $(eval $(end-module))
