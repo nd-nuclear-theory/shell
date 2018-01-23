@@ -227,7 +227,13 @@ namespace shell {
     orbital_space_ = basis::OrbitalSpacePN(orbitals);
     // std::cout << orbital_space_.DebugStr() << std::endl;
     space_ = basis::TwoBodySpaceJJJPN(orbital_space_,basis::WeightMax(wp,wn,wpp,wnn,wpn));
-    sectors_ = basis::TwoBodySectorsJJJPN(space_,J0,g0,Tz0);
+    if (Tz0==0)
+      // impose upper triangularity on sector selection rule for Tz0=0
+      sector_direction = basis::SectorDirection::kCanonical;
+    else
+      // but need all possible sectors when Tz0!=0
+      sector_direction = basis::SectorDirection::kBoth;
+    sectors_ = basis::TwoBodySectorsJJJPN(space_,J0,g0,Tz0,sector_direction);
 
     // deduce matrix limits by type
     EvaluateJmaxByType(space_,Jmax_by_type_);
