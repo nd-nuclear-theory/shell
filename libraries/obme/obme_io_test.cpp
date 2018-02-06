@@ -1,5 +1,5 @@
 /****************************************************************
-  radial_io_test.cpp
+  obme_io_test.cpp
 
   Patrick J. Fasano
   University of Notre Dame
@@ -11,7 +11,7 @@
 #include <iostream>
 #include <string>
 
-#include "radial/radial_io.h"
+#include "obme/obme_io.h"
 
 #include "eigen3/Eigen/Core"
 #include "basis/nlj_orbital.h"

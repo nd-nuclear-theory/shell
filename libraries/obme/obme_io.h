@@ -1,7 +1,7 @@
 /****************************************************************
-  @file radial_io.h
+  @file obme_io.h
 
-  Defines I/O classes for radial matrix element storage.
+  Defines I/O classes for one-body matrix element storage.
 
   Language: C++11
 
@@ -33,8 +33,8 @@
     - Store operator power separately for monomial radial operator.
 ****************************************************************/
 
-#ifndef RADIAL_IO_H_
-#define RADIAL_IO_H_
+#ifndef OBME_IO_H_
+#define OBME_IO_H_
 
 #include <cstdlib>
 #include <fstream>
@@ -227,4 +227,4 @@ class OutRadialStream : public RadialStreamBase {
 };
 
 };      // namespace shell
-#endif  // RADIAL_IO_H_
+#endif  // OBME_IO_H_
