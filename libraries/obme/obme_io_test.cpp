@@ -55,7 +55,7 @@ basis::OperatorBlocks<double> TestRadialOut(const std::string& filename, bool ve
 
   // set up output stream
   std::cout << "Output stream" << std::endl;
-  shell::OutRadialStream os(filename, bra_space, ket_space, sectors, shell::RadialOperatorType::kR, sectors.l0max());
+  shell::OutOBMEStream os(filename, bra_space, ket_space, sectors, shell::RadialOperatorType::kR, sectors.l0max());
 
   // generate matrices
   basis::OperatorBlocks<double> matrices;
@@ -84,7 +84,7 @@ basis::OperatorBlocks<double> TestRadialIn(const std::string& filename) {
 
   // set up input stream
   std::cout << "Input stream" << std::endl;
-  shell::InRadialStream is(filename);
+  shell::InOBMEStream is(filename);
 
   // // show bra space
   // std::cout << "Bra space" << std::endl;
