@@ -9,6 +9,10 @@ FC := mpif90
 FFLAGS := -fopenmp 
 FFLAGS += -O3 -ffast-math -funroll-loops
 
+ifdef DEBUG
+  FFLAGS += -g -traceback
+endif
+
 # C
 CC := mpicc
 CFLAGS := $(FFLAGS)
