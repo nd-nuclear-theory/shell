@@ -34,7 +34,7 @@
   11/28/16 (mac): Add Tz0 to h2 format 15099 output header.
   10/19/17 (mac): Add optional on-the-fly conversion from AS to
     NAS matrix elements on output.
-
+  1/22/18 (mac): Begin implementing nonzero Tz0.
 ****************************************************************/
 
 #ifndef H2_IO_H_
@@ -60,7 +60,8 @@ namespace shell {
   //
   //   0: oscillator-like sp indexing, used with MFDn v14
   //   15000: Pieter's preliminary general orbitals test format for MFDn v15 beta00 (not supported)
-  //   15099: general orbitals specification June 2016
+  //   15099: general orbitals specification (June 2016)
+  //   15100: add support for nonzero Tz0 (January 2018) -- WIP
 
   typedef int H2Format;
   const int kVersion0=0;
@@ -253,6 +254,12 @@ namespace shell {
     void ReadSector_Version0(Eigen::MatrixXd& matrix, bool store);
 
     // ... Version15099
+    void ReadHeader_Version15099();
+    void ReadSector_Version15099(Eigen::MatrixXd& matrix, bool store);
+
+    // ... Version15100
+    void ReadHeader_Version15100();
+    void ReadSector_Version15100(Eigen::MatrixXd& matrix, bool store);
 
     // file stream
     std::ifstream& stream() const {return *stream_ptr_;}  // alias for convenience
@@ -317,6 +324,10 @@ namespace shell {
     // ... Version15099
     void WriteHeader_Version15099();
     void WriteSector_Version15099(const Eigen::MatrixXd& matrix, basis::NormalizationConversion conversion_mode);
+
+    // ... Version15100
+    void WriteHeader_Version15100();
+    void WriteSector_Version15100(const Eigen::MatrixXd& matrix, basis::NormalizationConversion conversion_mode);
 
     // file stream
     // std::ofstream& stream() const {return *stream_ptr_;}  // alias for convenience

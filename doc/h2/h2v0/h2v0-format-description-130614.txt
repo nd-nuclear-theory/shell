@@ -1,0 +1,149 @@
+
+MFDn H2 data format notes
+Mark A. Caprio, 6/14/13
+
+----------------------------------------------------------------
+
+The H2 format comes in both text mode (.dat) and binary (.bin)
+variants, which contain identical information.  Either way, the file
+consists of a header, followed by the matrix elements.
+
+These formats may be converted back and forth with the h2cp utility.
+
+----------------------------------------------------------------
+Text mode (.dat) 
+----------------------------------------------------------------
+
+Header example
+
+This example header is for a file in "3-4" truncation (one-body
+cutoff N1b=3, two-body cutoff N2b=4)...
+
+Line 1: Reserved for format code
+
+	0
+
+Line 2: Number of species
+	
+	2
+
+(This would be 1 for neutron drop interactions or 2 for nuclear interactions.)
+
+Line 3: N1b -- Maximum one-body N=2n+l (shell cutoff)
+
+	3
+	
+Line 4: N2b -- Maximum two-body N=(2n1+l1)+(2n2+l2) (two-body cutoff)
+
+	4
+
+Line 4: Number of like-nucleon(pp/nn) matrix element, number of pn matrix elements
+
+       381    1456
+
+Data format
+
+Each data line contains one matrix element 
+
+     <k1 k2; J | V | k3 k4; J>_(type).
+
+In the text-mode version of H2 format, these indexing labels are
+included in the file as well, to aid in human-readability.  So the
+full contents of the line are:
+
+     k1 k2 k3 k4 JJ type matrix_element
+
+The indices k are orbital indices, 1-based from the 0s orbital, and numbered by 
+increasing j within each shell: 1=0s1/2, 2=0p1/2, 3=0p3/2, ...
+
+The angular momentum is given as JJ = 2*J, for consistency with the
+common convention of always storing twice J (though odd half-integer J
+values do not actually show up in the context of TBMEs).
+
+The type is indicated by the string literal (which, bizarrely enough,
+may actually be interpreted as a decimal integer!) 11 for pp, 12 for
+pn, or 22 for nn.
+
+In the like-nucleon case, note that the matrix element is the
+*normalized* antisymmetrized (NAS) matrix element, rather than the
+unnormalized matrix element (see appendix to csbasis [PRC 86, 034312
+(2012)]).
+
+As a simple example, let us inspect the first few data lines in a file
+representing a very simple "interaction", namely, the identity
+operator on the two-body space:
+
+   1   1   1   1   0  11    1.0000000e+00
+   1   1   1   4   0  11    0.0000000e+00
+   1   1   2   2   0  11    0.0000000e+00
+   1   1   2   7   0  11    0.0000000e+00
+
+The iteration over matrix element quantum numbers is done in a particular 
+order: 
+
+a) Matrix elements are arranged into sectors by 
+
+       1) Tz = pp, nn, pn
+       2) J = 0, 1, ...
+       3) P = +, -
+
+with P most rapidly varying.  
+
+b) Within a sector, it is useful to first consider the ordering of
+states |ab;J> in the basis and the symmetry constraints on these
+states.  States are ordered lexicographically.  For like-nucleon
+states, we impose the symmetry restriction a<=b.  Also, for
+like-nucleon states, if a=b, then J is restricted to even values.
+Then, brackets <cd;J|V|ab;J> are ordered ordered lexicographically by
+(bra)(ket), that is, by (ab)(cd), where pairs (ab) are ordered as just
+described.  By Hermiticity of V, we impose the symmetry restriction
+(ab)<=(cd).
+
+----------------------------------------------------------------
+Binary mode (.bin) 
+----------------------------------------------------------------
+
+The basic data content is the same as in text mode: The header
+information is written as 4-byte integers.  The matrix elements are
+written in the same order as documented above, as 4-byte IEEE
+single-precision floating point values.  But all that indexing
+information is left off, as superfluous, since we have a well-defined
+ordering for the matrix elements.
+
+The complication is that MFDn uses standard FORTRAN binary I/O, which
+is "record" based.  Each record is sandwiched between two delimiters.
+These are 4-byte integers, each giving the byte-count of the record.
+
+So, how is the file broken into records?  To insure forward
+compatibility, we write the format code as it own record.  Then the
+rest of the header is in one record.  Then the rest of the matrix
+elements are written out in three records: all the pp matrix elements,
+all the nn matrix elements, and all the pn matrix elements.  
+
+FORTRAN handles the record structure automatically.  But codes in
+other languages (C++, etc.) can add in these record delimiters manually.
+
+Example: Let consider the binary format file corresponding to the
+above example.  We can first parse it as 4-byte integers, using the
+"octal dump" utility od
+
+    od -Ad -t d4 example-3-4.bin
+
+which reveals
+
+0000000           4           0           4          28
+0000016           2           0           0           3
+0000032           4         381        1456          28
+0000048        1524  1065353216           0           0
+...
+
+That "1065353216" is really the floating point value 1e+0.  We can
+verify this if we re-parse the file as 4-byte floats, using
+
+    od -Ad -t fF example-3-4.bin
+
+which reveals
+
+...
+0000048       2.136e-42               1               0               0
+...

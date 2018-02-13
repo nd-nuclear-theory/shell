@@ -225,10 +225,7 @@ double CalculatePrefactorE(double scale_factor,
   // factor *= ((a.l() + b.l() + lambda) % 2 == 0);
 
   // Racah reduction formula
-  //
-  // Note: Suhonen 6.23 has an extra factor of Hat(lambda), due to difference
-  // from group theory convention
-  factor *= Hat(a.j()) * Hat(b.j())
+  factor *= Hat(a.j()) * Hat(b.j()) * Hat(lambda)
             * am::Wigner3J(a.j(), b.j(), lambda, HalfInt(1, 2), -HalfInt(1, 2), 0);
 
   return factor;
@@ -251,10 +248,7 @@ double CalculatePrefactorM(double scale_factor,
   // factor *= ((a.l() + b.l() + lambda + 1) % 2 == 0);
 
   // Racah reduction formula
-  //
-  // Note: Suhonen 6.23 has an extra factor of Hat(lambda), due to difference
-  // from group theory convention
-  factor *= Hat(a.j()) * Hat(b.j())
+  factor *= Hat(a.j()) * Hat(b.j()) * Hat(lambda)
             * am::Wigner3J(a.j(), b.j(), lambda, HalfInt(1, 2), -HalfInt(1, 2), 0);
 
   double kappa = double(

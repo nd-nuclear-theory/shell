@@ -214,7 +214,7 @@ double CalculateMatrixElement(const RunParameters& run_parameters,
       }
     }
   }
-  return value;
+  return (1./Hat(op.sectors.j0())) * value;
 }
 
 int main(int argc, char** argv) {
