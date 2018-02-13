@@ -17,6 +17,10 @@ ifdef DUCTTAPE_POSTPROCESSOR
   FFLAGS += -DDUCTTAPE_POSTPROCESSOR
 endif
 
+ifdef DEBUG
+  FFLAGS += -g -traceback
+endif
+
 F90FLAGS := $(FFLAGS)
 
 # C
