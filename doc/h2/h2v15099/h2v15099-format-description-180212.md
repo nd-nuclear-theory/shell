@@ -1,5 +1,5 @@
-MFDn H2 data format notes
-v15099
+# MFDn H2 data format notes (v15099) #
+
 Mark A. Caprio
 
 2/12/18 (mac): Created.
