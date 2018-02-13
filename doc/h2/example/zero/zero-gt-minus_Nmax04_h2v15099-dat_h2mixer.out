@@ -1,0 +1,6 @@
+
+h2mixer -- MFDn H2 file generation
+version: 64be1ef-dirty
+
+Parallelization: max_threads 4, num_procs 4
+
