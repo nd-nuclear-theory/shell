@@ -118,10 +118,6 @@ that block.
         if (bra_sector_index!=ket_sector_index) or (bra_index<=ket_index)
           write (bra_index,ket_index)
 
-   The ordering of matrix elements is *identical* in ASCII (.dat) and binary
-(.bin) files.  The sector-by-sector I/O routines in shell depend on this.
-(Don't believe any comments in Pieter's README files to the contrary.)
-
 ## More on header formats ##
 
    See Pieter's readme file
