@@ -16,6 +16,206 @@ namespace shell {
   ////////////////////////////////////////////////////////////////
 
   ////////////////////////////////////////////////////////////////
+  // upgraded one-body operator
+  ////////////////////////////////////////////////////////////////
+
+  basis::OperatorBlock<double>
+  UpgradeOneBodyOperatorJJJPN(basis::OneBodyOperatorLJPN ob_operator,
+                              const basis::TwoBodySectorsJJJPN::SectorType& sector,
+                              int A
+                             )
+  {
+    const basis::TwoBodySubspaceJJJPN& bra_subspace = sector.bra_subspace();
+    const int bra_subspace_size = bra_subspace.size();
+    const basis::TwoBodySubspaceJJJPN& ket_subspace = sector.ket_subspace();
+    const int ket_subspace_size = ket_subspace.size();
+
+    basis::OperatorBlock<double> matrix =
+      basis::OperatorBlock<double>::Zero(bra_subspace_size, ket_subspace_size);
+
+    // short circuit on triangle constraint
+    if (!am::AllowedTriangle(bra_subspace.J(), ket_subspace.J(), ob_operator.sectors.j0()))
+      return matrix;
+
+    // build sector matrix
+    for (int bra_index = 0; bra_index < bra_subspace_size; ++bra_index)
+      for (int ket_index = 0; ket_index < ket_subspace_size; ++ket_index)
+      {
+        // construct states
+        const basis::TwoBodyStateJJJPN bra(bra_subspace, bra_index);
+        const basis::TwoBodyStateJJJPN ket(ket_subspace, ket_index);
+        const basis::OrbitalStatePN& a = ket.GetOrbital1();
+        const basis::OrbitalStatePN& b = ket.GetOrbital2();
+        const basis::OrbitalStatePN& c = bra.GetOrbital1();
+        const basis::OrbitalStatePN& d = bra.GetOrbital2();
+
+        // calculate AS two-body element
+        double matrix_element = 0.;
+        if (d == b)
+          matrix_element += ob_operator.get_matrix_element(c, a);
+        if (c == a)
+          matrix_element += ob_operator.get_matrix_element(d, b);
+
+        int phase = - ParitySign(ket.J()-a.j()-b.j());
+        if (d == a)
+          matrix_element += phase*ob_operator.get_matrix_element(c, b);
+        if (c == b)
+          matrix_element += phase*ob_operator.get_matrix_element(d, a);
+
+        // convert to NAS if needed
+        if (a == b)
+          matrix_element *= 1/(sqrt(2.));
+        if (c == d)
+          matrix_element *= 1/(sqrt(2.));
+
+        matrix(bra_index, ket_index) = matrix_element;
+      }
+    return 1./(A-1)*matrix;
+  }
+
+
+  ////////////////////////////////////////////////////////////////
+  // Racah reduction formula
+  ////////////////////////////////////////////////////////////////
+  double RacahDotProductFormula(const basis::OneBodyOperatorLJPN& ob_operator1,
+                                const basis::OneBodyOperatorLJPN& ob_operator2,
+                                int bra_J, int ket_J,
+                                const basis::OrbitalStatePN& c, const basis::OrbitalStatePN& d,
+                                const basis::OrbitalStatePN& a, const basis::OrbitalStatePN& b
+                               )
+  {
+    int operator_j0 = ob_operator1.sectors.j0();
+    // evaluate Racah reduction formula
+    double matrix_element;
+    matrix_element = ob_operator1.get_matrix_element(c, a) * ob_operator2.get_matrix_element(d, b);
+    // TODO(pjf): enable below Hat when converting to Edmonds convention inside h2mixer
+    // matrix_element *= Hat(bra.J())
+    matrix_element *= ParitySign(d.j()+bra_J+a.j());
+    matrix_element *= am::Wigner6J(c.j(), d.j(), bra_J, b.j(), a.j(), operator_j0);
+
+    return matrix_element;
+  }
+
+  basis::OperatorBlock<double>
+  RacahReduceDotProductJJJPN(const basis::OneBodyOperatorLJPN& ob_operator1,
+                             const basis::OneBodyOperatorLJPN& ob_operator2,
+                             const basis::TwoBodySectorsJJJPN::SectorType& sector)
+  {
+    // sanity check on
+    assert(ob_operator1.sectors.j0() == ob_operator2.sectors.j0());
+    int operator_j0 = ob_operator1.sectors.j0();
+
+    const basis::TwoBodySubspaceJJJPN& bra_subspace = sector.bra_subspace();
+    const int bra_subspace_size = bra_subspace.size();
+    const basis::TwoBodySubspaceJJJPN& ket_subspace = sector.ket_subspace();
+    const int ket_subspace_size = ket_subspace.size();
+
+    basis::OperatorBlock<double> matrix =
+      basis::OperatorBlock<double>::Zero(bra_subspace_size, ket_subspace_size);
+
+    // short circuit on triangle constraint
+    if (bra_subspace.J() != ket_subspace.J())
+      return matrix;
+
+    // build sector matrix
+    for (int bra_index = 0; bra_index < bra_subspace_size; ++bra_index)
+      for (int ket_index = 0; ket_index < ket_subspace_size; ++ket_index)
+      {
+        // construct states
+        const basis::TwoBodyStateJJJPN bra(bra_subspace, bra_index);
+        const basis::TwoBodyStateJJJPN ket(ket_subspace, ket_index);
+        const basis::OrbitalStatePN& a = ket.GetOrbital1();
+        const basis::OrbitalStatePN& b = ket.GetOrbital2();
+        const basis::OrbitalStatePN& c = bra.GetOrbital1();
+        const basis::OrbitalStatePN& d = bra.GetOrbital2();
+
+        int phase = - ParitySign(ket.J()-a.j()-b.j());  // AS phase
+        double matrix_element =
+          RacahDotProductFormula(ob_operator1, ob_operator2, bra.J(), ket.J(), c, d, a, b)
+          + phase*RacahDotProductFormula(ob_operator1, ob_operator2, bra.J(), ket.J(), c, d, b, a);
+
+        // convert to NAS if needed
+        if (a == b)
+          matrix_element *= 1/(sqrt(2.));
+        if (c == d)
+          matrix_element *= 1/(sqrt(2.));
+
+        matrix(bra_index, ket_index) = matrix_element;
+      }
+    return matrix;
+  }
+
+  double RacahTensorProductFormula(const basis::OneBodyOperatorLJPN& ob_operator1,
+                                   const basis::OneBodyOperatorLJPN& ob_operator2,
+                                   int bra_J, int ket_J, int J0,
+                                   const basis::OrbitalStatePN& c, const basis::OrbitalStatePN& d,
+                                   const basis::OrbitalStatePN& a, const basis::OrbitalStatePN& b
+                                  )
+  {
+    int ob_operator1_j0 = ob_operator1.sectors.j0();
+    int ob_operator2_j0 = ob_operator2.sectors.j0();
+    double matrix_element;
+    matrix_element = ob_operator1.get_matrix_element(c, a) * ob_operator2.get_matrix_element(d, b);
+    // TODO(pjf): enable below Hat when converting to Edmonds convention
+    // matrix_element *= Hat(bra_J)
+    matrix_element *= Hat(J0) * Hat(ket_J);
+    matrix_element *= am::Wigner9J(c.j(), d.j(), bra_J, a.j(), b.j(), ket_J, ob_operator1_j0, ob_operator2_j0, J0);
+
+    return matrix_element;
+  }
+
+  basis::OperatorBlock<double>
+  RacahReduceTensorProductJJJPN(const basis::OneBodyOperatorLJPN ob_operator1,
+                                const basis::OneBodyOperatorLJPN ob_operator2,
+                                const basis::TwoBodySectorsJJJPN::SectorType& sector,
+                                int J0
+                               )
+  {
+    // sanity check on
+    assert(am::AllowedTriangle(ob_operator1.sectors.j0(), ob_operator2.sectors.j0(), J0));
+
+    const basis::TwoBodySubspaceJJJPN& bra_subspace = sector.bra_subspace();
+    const int bra_subspace_size = bra_subspace.size();
+    const basis::TwoBodySubspaceJJJPN& ket_subspace = sector.ket_subspace();
+    const int ket_subspace_size = ket_subspace.size();
+
+    basis::OperatorBlock<double> matrix =
+      basis::OperatorBlock<double>::Zero(bra_subspace_size, ket_subspace_size);
+
+    // short circuit on triangle constraint
+    if (!am::AllowedTriangle(bra_subspace.J(), ket_subspace.J(), J0))
+      return matrix;
+
+    // build sector matrix
+    for (int bra_index = 0; bra_index < bra_subspace_size; ++bra_index)
+      for (int ket_index = 0; ket_index < ket_subspace_size; ++ket_index)
+      {
+        // construct states
+        const basis::TwoBodyStateJJJPN bra(bra_subspace, bra_index);
+        const basis::TwoBodyStateJJJPN ket(ket_subspace, ket_index);
+        const basis::OrbitalStatePN& a = ket.GetOrbital1();
+        const basis::OrbitalStatePN& b = ket.GetOrbital2();
+        const basis::OrbitalStatePN& c = bra.GetOrbital1();
+        const basis::OrbitalStatePN& d = bra.GetOrbital2();
+
+        int phase = - ParitySign(ket.J()-a.j()-b.j());  // AS phase
+        // evaluate Racah reduction formula on AS states
+        double matrix_element =
+          RacahTensorProductFormula(ob_operator1, ob_operator2, bra.J(), ket.J(), J0, c, d, a, b)
+          + phase*RacahTensorProductFormula(ob_operator1, ob_operator2, bra.J(), ket.J(), J0, c, d, b, a);
+
+        // convert to NAS if needed
+        if (a == b)
+          matrix_element *= 1/(sqrt(2.));
+        if (c == d)
+          matrix_element *= 1/(sqrt(2.));
+
+        matrix(bra_index, ket_index) = matrix_element;
+      }
+    return matrix;
+  }
+
+  ////////////////////////////////////////////////////////////////
   // two-body identity operator
   ////////////////////////////////////////////////////////////////
 
@@ -90,320 +290,13 @@ namespace shell {
   }
 
   ////////////////////////////////////////////////////////////////
-  // kinematic operators -- scalar (T^2)
+  // kinematic operators
   ////////////////////////////////////////////////////////////////
-
-  double KinematicScalarOBME(
-      // radial matrix element data
-      const basis::OrbitalSpaceLJPN& radial_orbital_space,
-      const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::OperatorBlocks<double>& radial_matrices,
-      // one-body labels
-      const basis::OrbitalStatePN& b, const basis::OrbitalStatePN& a
-    )
-  // Evaluate <b|T^2|a> for a scalar one-body operator T^2, i.e., r^2
-  // or k^2.
-  //
-  // <b|T^2|a> = <R_b|T^2|R_a>[(la,ja)==(lb,jb)]
-  //
-  // See, e.g., below csbasis (39).
-  {
-
-    // int na = a.n();
-    // int nb = b.n();
-    int la = a.l();
-    int lb = b.l();
-    HalfInt ja = a.j();
-    HalfInt jb = b.j();
-
-    double matrix_element = 0.;
-    if ( (lb == la) && (jb == ja) )
-      {
-        matrix_element += basis::MatrixElementLJPN(
-            radial_orbital_space,radial_orbital_space,radial_sectors,radial_matrices,
-            b,a
-          );
-      }
-
-    return matrix_element;
-  }
-
-  double KinematicScalarTBMEProduct(
-      // radial matrix element data
-      const basis::OrbitalSpaceLJPN& radial_orbital_space,
-      const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::OperatorBlocks<double>& radial_matrices,
-      // two-body labels
-      const basis::OrbitalStatePN& c, const basis::OrbitalStatePN& d,
-      const basis::OrbitalStatePN& a, const basis::OrbitalStatePN& b
-    )
-  // Evaluate the unsymmetrized matrix element (cd;J|V_(T^2)|ab;J) of
-  // the "upgraded" two-body operator obtained from a scalar one-body
-  // operator T^2, i.e., r^2 or k^2.
-  //
-  // See csbasis (52), which is written for a pn state but applies to
-  // any unsymmetrized product state.
-  {
-    // short circuit check equality of (l,j) on each one-body factor
-    //
-    // Note: This is redundant to (but preempts) the (l,j) equality
-    // check in KinematicScalarOBME.
-    bool triangle_allowed = (
-        ((c.l()==a.l())&&(c.j()==a.j()))
-        && ((d.l()==b.l())&&(d.j()==b.j()))
-      );
-    if (!triangle_allowed )
-      return 0.;
-
-    // evaluate matrix element
-    double matrix_element = 0.;
-    if (d == b)
-      matrix_element += KinematicScalarOBME(
-          radial_orbital_space,radial_sectors,radial_matrices,
-          c,a
-        );
-    if (c == a)
-      matrix_element += KinematicScalarOBME(
-          radial_orbital_space,radial_sectors,radial_matrices,
-          d,b
-        );
-
-    return matrix_element;
-  }
-
-  double KinematicScalarTBME(
-      // radial matrix element data
-      const basis::OrbitalSpaceLJPN& radial_orbital_space,
-      const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::OperatorBlocks<double>& radial_matrices,
-      // two-body labels
-      const basis::TwoBodyStateJJJPN& bra, const basis::TwoBodyStateJJJPN& ket
-    )
-  // Evaluate the full (possibly antisymmetrized) matrix element
-  // <cd;J|V_(T^2)|ab;J> for the "upgraded" two-body operator obtained
-  // from a scalar one-body operator T^2, i.e., r^2 or k^2.
-  //
-  // Computes <cd;J|V|ab;J>_AS for pp/nn states, or <cd;J|V|ab;J>_pn
-  // for pn states.
-  //
-  // See csbasis (52) and (54).
-  {
-    // extract orbitals
-    const basis::OrbitalStatePN& a = ket.GetOrbital1();
-    const basis::OrbitalStatePN& b = ket.GetOrbital2();
-    const basis::OrbitalStatePN& c = bra.GetOrbital1();
-    const basis::OrbitalStatePN& d = bra.GetOrbital2();
-
-    // extract sector parameters
-    assert(bra.two_body_species()==ket.two_body_species());
-    basis::TwoBodySpeciesPN two_body_species = ket.two_body_species();
-    assert(bra.J()==ket.J());
-    int J = ket.J();
-
-    // evaluate matrix element
-    double matrix_element = 0.;
-    matrix_element += KinematicScalarTBMEProduct(
-          radial_orbital_space,radial_sectors,radial_matrices,
-          c,d,a,b
-      );
-    if (two_body_species != basis::TwoBodySpeciesPN::kPN)
-      {
-        int phase = - ParitySign(J-a.j()-b.j());
-        matrix_element += phase * KinematicScalarTBMEProduct(
-            radial_orbital_space,radial_sectors,radial_matrices,
-            c,d,b,a
-          );
-      }
-
-    return matrix_element;
-  }
-
-  ////////////////////////////////////////////////////////////////
-  // kinematic operators -- vector (T1.T2)
-  ////////////////////////////////////////////////////////////////
-
-  double KinematicVectorOBRME(
-      // radial matrix element data
-      const basis::OrbitalSpaceLJPN& radial_orbital_space,
-      const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::OperatorBlocks<double>& radial_matrices,
-      // one-body labels
-      const basis::OrbitalStatePN& b, const basis::OrbitalStatePN& a
-    )
-  // Evaluate <b||T||a> for a vector one-body operator T, i.e., r or
-  // k.
-  //
-  // See csbasis (58)-(60).  Omits the "extra" phase factor on the
-  // momentum operator in csbasis (59), to avoid carrying around
-  // imaginary factors, as well as for uniformity between the r and k
-  // cases.  This phase factor must instead be taken into account
-  // later by the calling function KinematicVectorDotTBMEProduct
-  // when calculating the TBME.
-  //
-  // QUERY (mac): Why the extra factor Hat(ja)???  Without that
-  // factor, this RME would be in Edmonds convention.  But I think
-  // this factor is the wrong way to go to group theory convention.
-  {
-
-    // int na = a.n();
-    // int nb = b.n();
-    int la = a.l();
-    int lb = b.l();
-    HalfInt ja = a.j();
-    HalfInt jb = b.j();
-
-    double matrix_element = 0.;
-
-    if (
-        am::AllowedTriangle(la,1,lb)  // might be redundant to j and parity checks?
-        && am::AllowedTriangle(ja,1,jb)
-        && ((la+lb+1)%2==0)
-      )
-      {
-        double radial_matrix_element = basis::MatrixElementLJPN(
-              radial_orbital_space,radial_orbital_space,radial_sectors,radial_matrices,
-              b,a
-            );
-        matrix_element += ParitySign(jb-ja+1) * Hat(ja)
-          * am::ClebschGordan(ja,HalfInt(1,2),1,0,jb,HalfInt(1,2))
-          * radial_matrix_element;
-      }
-
-    return matrix_element;
-  }
-
-  double KinematicVectorDotTBMEProduct(
-      // radial matrix element data
-      const basis::OrbitalSpaceLJPN& radial_orbital_space,
-      const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::OperatorBlocks<double>& radial_matrices,
-      // mode
-      bool momentum_space,
-      // two-body labels
-      const basis::OrbitalStatePN& c, const basis::OrbitalStatePN& d,
-      const basis::OrbitalStatePN& a, const basis::OrbitalStatePN& b,
-      int J
-    )
-  // Evaluate the unsymmetrized matrix element (cd|T1.T2|ab) of a dot
-  // product of one-body vector operators (i.e., T = r or k), using
-  // <b||T||a>.
-  //
-  // See csbasis (57).  Incorporates momentum space phase factor from
-  // csbasis (59), which was omitted from KinematicVectorOBRME to
-  // avoid carrying around imaginary factors.
-  {
-
-    // short circuit check on triangularity of each one-body factor
-    //
-    // Note: This is redundant to (but preempts) the triangularity
-    // checks in KinematicVectorOBRME.
-
-    bool triangle_allowed = (
-        (am::AllowedTriangle(c.l(),1,a.l()) && am::AllowedTriangle(c.j(),1,a.j()) && ((c.l()+1+a.l())%2==0))
-        &&
-        (am::AllowedTriangle(d.l(),1,b.l()) && am::AllowedTriangle(d.j(),1,b.j()) && ((d.l()+1+b.l())%2==0))
-      );
-    if (!triangle_allowed )
-      return 0.;
-
-    // evaluate matrix element
-    int racah_phase = ParitySign(d.j()+a.j()+J);
-    double matrix_element = racah_phase * am::Wigner6J(c.j(),d.j(),J,b.j(),a.j(),1)
-      * KinematicVectorOBRME(radial_orbital_space,radial_sectors,radial_matrices,c,a)
-      * KinematicVectorOBRME(radial_orbital_space,radial_sectors,radial_matrices,d,b);
-
-    // momentum space phase factor
-    if (momentum_space)
-      matrix_element *= ParitySign((c.l()+d.l()-a.l()-b.l())/2);
-
-    // std::cout
-    //   << std::endl
-    //   << fmt::format(
-    //       "KinematicVectorDotTBMEProduct {} {} {} {} J {} => {}",
-    //       c.LabelStr(),d.LabelStr(),a.LabelStr(),b.LabelStr(),J,
-    //       matrix_element
-    //     )
-    //   << std::endl;
-
-    return matrix_element;
-  }
-
-  double KinematicVectorDotTBME(
-      // two-body labels
-      const basis::OrbitalSpaceLJPN& radial_orbital_space,
-      const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::OperatorBlocks<double>& radial_matrices,
-      // mode
-      bool momentum_space,
-      // two-body labels
-      const basis::TwoBodyStateJJJPN& bra, const basis::TwoBodyStateJJJPN& ket
-    )
-  // Evaluate the full (possibly antisymmetrized) matrix element
-  // <cd|T1.T2|ab> of a dot product of one-body vector operators
-  // (i.e., T = r or k), using the unsymmetrized matrix element
-  // (cd|T1.T2|ab).
-  //
-  // Computes <cd;J|T1.T2|ab;J>_AS for pp/nn states, or
-  // <cd;J|T1.T2|ab;J>_pn for pn states.
-  //
-  // See csbasis (55) and (56).
-  {
-    // extract orbitals
-    const basis::OrbitalStatePN& a = ket.GetOrbital1();
-    const basis::OrbitalStatePN& b = ket.GetOrbital2();
-    const basis::OrbitalStatePN& c = bra.GetOrbital1();
-    const basis::OrbitalStatePN& d = bra.GetOrbital2();
-
-    // extract sector parameters
-    assert(bra.two_body_species()==ket.two_body_species());
-    basis::TwoBodySpeciesPN two_body_species = ket.two_body_species();
-    assert(bra.J()==ket.J());
-    int J = ket.J();
-
-    // std::cout
-    //   << std::endl
-    //   << fmt::format(
-    //       "KinematicVectorDotTBME {} {} {} {} J {} : ({},{})",
-    //       c.LabelStr(),d.LabelStr(),a.LabelStr(),b.LabelStr(),J,
-    //       bra.index(),ket.index()
-    //     )
-    //   << std::endl;
-
-    // evaluate matrix element
-    double matrix_element = 0.;
-    matrix_element += KinematicVectorDotTBMEProduct(
-        radial_orbital_space,radial_sectors,radial_matrices,
-        momentum_space,
-        c,d,a,b,J
-      );
-    if (two_body_species!=basis::TwoBodySpeciesPN::kPN)
-      {
-        int phase = -ParitySign(J-a.j()-b.j());
-        matrix_element += phase * KinematicVectorDotTBMEProduct(
-            radial_orbital_space,radial_sectors,radial_matrices,
-            momentum_space,
-            c,d,b,a,J
-          );
-      }
-
-    //std::cout
-    //  << std::endl
-    //  << fmt::format(
-    //      "   => {}",
-    //      matrix_element
-    //    )
-    //  << std::endl;
-
-    return matrix_element;
-  }
 
   Eigen::MatrixXd
   KinematicMatrixJJJPN(
-      const basis::OrbitalSpaceLJPN& radial_orbital_space,
-      const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::OperatorBlocks<double>& radial_matrices,
+      const shell::OneBodyOperator& radial_operator,
       KinematicOperatorType kinematic_operator_type,
-      shell::RadialOperatorType radial_operator_type,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       int A
     )
@@ -412,60 +305,23 @@ namespace shell {
     assert(sector.IsDiagonal());
     const basis::TwoBodySubspaceJJJPN& subspace = sector.ket_subspace();
 
-    // generate matrix for sector
-    Eigen::MatrixXd matrix = Eigen::MatrixXd::Zero(subspace.size(),subspace.size());
-
     // recover sector properties
     const basis::TwoBodySpeciesPN two_body_species = subspace.two_body_species();
     const int J = subspace.J();
     const int g = subspace.g();
-    bool momentum_space = (radial_operator_type == shell::RadialOperatorType::kK);
+    int momentum_space_phase = ParitySign(radial_operator.radial_operator_type == shell::RadialOperatorType::kK);
 
-    // for upper-triangular pairs of states in sector
-    const int subspace_size = subspace.size();
-#pragma omp parallel for collapse(2) if (0)  // disabled until have chance to profile
-    for (int bra_index = 0; bra_index < subspace_size; ++bra_index)
-      for (int ket_index = 0; ket_index < subspace_size; ++ket_index)
-        {
-
-          // diagonal sector: restrict to upper triangle
-          // if (sector.IsDiagonal())
-          if (!(bra_index<=ket_index))
-            continue;
-
-          // construct states
-          basis::TwoBodyStateJJJPN bra(subspace,bra_index);
-          basis::TwoBodyStateJJJPN ket(subspace,ket_index);
-
-          // calculate matrix element (pn or AS)
-          double matrix_element;
-          if (kinematic_operator_type==KinematicOperatorType::kUTSqr)
-            matrix_element = 1./(A-1)*KinematicScalarTBME(
-                radial_orbital_space,radial_sectors,radial_matrices,
-                bra,ket
-              );
-          else // if (kinematic_operator_type==KinematicOperatorType::kVT1T2)
-            matrix_element = KinematicVectorDotTBME(
-                radial_orbital_space,radial_sectors,radial_matrices,
-                momentum_space,
-                bra,ket
-              );
-
-          // convert to NAS if needed
-          if (two_body_species!=basis::TwoBodySpeciesPN::kPN)
-            {
-              if (bra.index1()==bra.index2())
-                matrix_element *= 1/(sqrt(2.));
-              if (ket.index1()==ket.index2())
-                matrix_element *= 1/(sqrt(2.));
-            }
-
-          // store matrix element
-          matrix(bra_index,ket_index) = matrix_element;
-        }
+    basis::OperatorBlock<double> matrix;
+    if (kinematic_operator_type == KinematicOperatorType::kUTSqr)
+    {
+      matrix = UpgradeOneBodyOperatorJJJPN(radial_operator, sector, A);
+    }
+    else // if (kinematic_operator_type==KinematicOperatorType::kVT1T2)
+    {
+      matrix = momentum_space_phase*RacahReduceDotProductJJJPN(radial_operator, radial_operator, sector);
+    }
 
     return matrix;
-
   };
 
   ////////////////////////////////////////////////////////////////

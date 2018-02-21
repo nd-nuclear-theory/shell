@@ -43,7 +43,7 @@
 #include "eigen3/Eigen/Dense"
 
 #include "basis/jjjpn_scheme.h"
-#include "radial/radial_io.h"
+#include "obme/obme_io.h"
 
 namespace shell {
   ////////////////////////////////////////////////////////////////
@@ -102,11 +102,8 @@ namespace shell {
 
   Eigen::MatrixXd
   KinematicMatrixJJJPN(
-      const basis::OrbitalSpaceLJPN& radial_orbital_space,
-      const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::OperatorBlocks<double>& radial_matrices,
+      const shell::OneBodyOperator& one_body_operator,
       KinematicOperatorType kinematic_operator_type,
-      shell::RadialOperatorType radial_operator_type,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       int A
     );
@@ -125,7 +122,7 @@ namespace shell {
   //
   //   Obtained by csbasis (52)-(54).
   //
-  // Case kUTSwr:
+  // Case kUTSqr:
   //
   //   Populate matrix with two-body matrix elements for the
   //   *two-body* operator V_(T1.T2) obtained from a a dot product of
