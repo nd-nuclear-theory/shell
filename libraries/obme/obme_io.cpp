@@ -15,6 +15,7 @@
 
 #include "mcutils/eigen.h"
 #include "mcutils/parsing.h"
+#include "obme/obme_operator.h"
 #include "obme/obme_io.h"
 
 namespace shell
@@ -30,6 +31,15 @@ InOBMEStream::InOBMEStream(const std::string& filename)
   ReadHeader();
 }
 
+void InOBMEStream::GetOneBodyOperator(OneBodyOperator& one_body_operator)
+{
+  one_body_operator.operator_type = operator_type();
+  one_body_operator.radial_operator_type = radial_operator_type();
+  one_body_operator.radial_operator_power = radial_operator_power();
+  SetToIndexing(one_body_operator.bra_orbital_space, one_body_operator.ket_orbital_space, one_body_operator.sectors);
+  Read(one_body_operator.matrices);
+}
+
 void InOBMEStream::SetToIndexing(basis::OrbitalSpaceLJPN& bra_orbital_space__,
                                  basis::OrbitalSpaceLJPN& ket_orbital_space__,
                                  basis::OrbitalSectorsLJPN& sectors__)
@@ -38,22 +48,9 @@ void InOBMEStream::SetToIndexing(basis::OrbitalSpaceLJPN& bra_orbital_space__,
   bra_orbital_space__ = bra_orbital_space();
   ket_orbital_space__ = ket_orbital_space();
 
-  // sectors -- must reconstruct sectors pointing to these new copies of the
-  // subspaces
-  if (sectors().mode() == basis::SectorsConstraintMode::kAll)
-  {
-    sectors__ = basis::OrbitalSectorsLJPN(bra_orbital_space__, ket_orbital_space__);
-  }
-  else if (sectors().mode() == basis::SectorsConstraintMode::kRadial)
-  {
-    sectors__ = basis::OrbitalSectorsLJPN(bra_orbital_space__, ket_orbital_space__,
-                                          sectors().l0max(), sectors().Tz0());
-  }
-  else if (sectors().mode() == basis::SectorsConstraintMode::kSpherical)
-  {
-    sectors__ = basis::OrbitalSectorsLJPN(bra_orbital_space__, ket_orbital_space__,
-                                          sectors().j0(), sectors().g0(), sectors().Tz0());
-  }
+  // sectors -- must reconstruct sectors pointing to these new copies of the subspaces
+  sectors__ = basis::OrbitalSectorsLJPN(bra_orbital_space__, ket_orbital_space__,
+                                        sectors().j0(), sectors().g0(), sectors().Tz0());
 }
 
 void InOBMEStream::Read(basis::OperatorBlocks<double>& matrices)
@@ -70,10 +67,9 @@ void InOBMEStream::ReadHeader()
 {
   std::string line;
   int version;
-  char operator_type;
+  char operator_type, radial_operator_type;
   int l0max, j0, g0, Tz0;
   int num_orbitals_bra, num_orbitals_ket;
-  basis::SectorsConstraintMode constraint_mode;
 
   // version -- but first gobble any comment lines
   while (std::getline(stream(), line), line[0] == '#')
@@ -95,9 +91,10 @@ void InOBMEStream::ReadHeader()
       ++line_count_;
       std::getline(stream(), line);
       std::istringstream line_stream(line);
-      line_stream >> operator_type >> radial_operator_power_;
+      line_stream >> operator_type >> radial_operator_type >> radial_operator_power_;
       ParsingCheck(line_stream, line_count_, line);
-      radial_operator_type_ = static_cast<RadialOperatorType>(operator_type);
+      operator_type_ = static_cast<basis::OneBodyOperatorType>(operator_type);
+      radial_operator_type_ = static_cast<RadialOperatorType>(radial_operator_type);
     }
 
     // j0, g0, and Tz0
@@ -229,12 +226,13 @@ OutOBMEStream::OutOBMEStream(const std::string& filename,
                              const basis::OrbitalSpaceLJPN& bra_space,
                              const basis::OrbitalSpaceLJPN& ket_space,
                              const basis::OrbitalSectorsLJPN& sectors,
+                             const basis::OneBodyOperatorType operator_type,
                              const RadialOperatorType radial_operator_type,
                              int radial_operator_power,
                              const std::string& format_str,
                              bool verbose_mode)
-    : OBMEStreamBase(filename, bra_space, ket_space, sectors, radial_operator_type,
-                     radial_operator_power),
+    : OBMEStreamBase(filename, bra_space, ket_space, sectors, operator_type,
+                     radial_operator_type, radial_operator_power),
       format_str_(format_str),
       verbose_mode_(verbose_mode)
 {
@@ -271,8 +269,8 @@ void OutOBMEStream::WriteHeader()
   stream() << "# shell radial matrix elements file" << std::endl;
   stream() << "# version number 2" << std::endl;
   stream() << "# header lines:" << std::endl;
-  stream() << "#   operator power" << std::endl;
-  stream() << "#   constraint_mode j0 g0 Tz0" << std::endl;
+  stream() << "#   type operator power" << std::endl;
+  stream() << "#   j0 g0 Tz0" << std::endl;
   stream() << "#   bra_basis_size ket_basis_size" << std::endl;
 
   // version number
@@ -280,7 +278,8 @@ void OutOBMEStream::WriteHeader()
   ++line_count_;
 
   // operator info
-  stream() << " " << static_cast<char>(radial_operator_type())  //
+  stream() << " " << static_cast<char>(operator_type())  //
+           << " " << static_cast<char>(radial_operator_type())  //
            << " " << radial_operator_power()                    //
            << std::endl;                                        //
   ++line_count_;

@@ -44,19 +44,9 @@
 #include "eigen3/Eigen/Core"
 
 #include "basis/nlj_orbital.h"
-#include "basis/operator.h"
+#include "obme/obme_operator.h"
 
 namespace shell {
-/**
- * Radial IDs
- */
-enum class RadialOperatorType : char {
-  kR = 'r',       // radius
-  kK = 'k',       // momentum
-  kO = 'o',       // overlaps
-  kGeneric = 'g'  // generic
-};
-
 /**
  * Base stream case with common attributes for input and output radial
  * streams.
@@ -76,17 +66,20 @@ class OBMEStreamBase {
                  const basis::OrbitalSpaceLJPN& bra_space,
                  const basis::OrbitalSpaceLJPN& ket_space,
                  const basis::OrbitalSectorsLJPN& sectors,
+                 const basis::OneBodyOperatorType operator_type,
                  const RadialOperatorType radial_operator_type,
                  int radial_operator_power)
       : filename_(filename),
         sector_index_(0),
         bra_orbital_space_(bra_space),
         ket_orbital_space_(ket_space),
+        operator_type_(operator_type),
         radial_operator_type_(radial_operator_type),
         radial_operator_power_(radial_operator_power),
         sectors_(sectors) {}
 
   // operator type accessor
+  const basis::OneBodyOperatorType& operator_type() const { return operator_type_; }
   const RadialOperatorType& radial_operator_type() const { return radial_operator_type_; }
 
   // operator power accessor
@@ -104,6 +97,7 @@ class OBMEStreamBase {
   // will point to "garbage" subspaces.
 
   // operator information
+  basis::OneBodyOperatorType operator_type_;
   RadialOperatorType radial_operator_type_;
   int radial_operator_power_;
 
@@ -145,6 +139,7 @@ class InOBMEStream : public OBMEStreamBase {
   // If the internal bra and ket orbital spaces are equal, it is
   // safe to use the same target variable to hold both.
 
+  void GetOneBodyOperator(OneBodyOperator& one_body_operator);
   void Read(basis::OperatorBlocks<double>& matrices);
   void Close();
 
@@ -173,6 +168,7 @@ class OutOBMEStream : public OBMEStreamBase {
                          const basis::OrbitalSpaceLJPN& bra_space,
                          const basis::OrbitalSpaceLJPN& ket_space,
                          const basis::OrbitalSectorsLJPN& sectors,
+                         const basis::OneBodyOperatorType operator_type,
                          const RadialOperatorType radial_operator_type,
                          int radial_operator_power,
                          const std::string& format_str,
@@ -182,18 +178,20 @@ class OutOBMEStream : public OBMEStreamBase {
                          const basis::OrbitalSpaceLJPN& bra_space,
                          const basis::OrbitalSpaceLJPN& ket_space,
                          const basis::OrbitalSectorsLJPN& sectors,
+                         const basis::OneBodyOperatorType operator_type,
                          const RadialOperatorType radial_operator_type,
                          int radial_operator_power)
-      : OutOBMEStream(filename, bra_space, ket_space, sectors, radial_operator_type,
-                      radial_operator_power, "16.8e", false) {}
+      : OutOBMEStream(filename, bra_space, ket_space, sectors, operator_type,
+                      radial_operator_type, radial_operator_power, "16.8e", false) {}
 
   explicit OutOBMEStream(const std::string& filename, const basis::OrbitalSpaceLJPN& bra_space,
                          const basis::OrbitalSpaceLJPN& ket_space,
                          const basis::OrbitalSectorsLJPN& sectors,
+                         const basis::OneBodyOperatorType operator_type,
                          const RadialOperatorType radial_operator_type,
                          int radial_operator_power, bool verbose_mode)
-      : OutOBMEStream(filename, bra_space, ket_space, sectors, radial_operator_type,
-                      radial_operator_power, "16.8e", verbose_mode) {}
+      : OutOBMEStream(filename, bra_space, ket_space, sectors, operator_type,
+                      radial_operator_type, radial_operator_power, "16.8e", verbose_mode) {}
 
   // destructor
   ~OutOBMEStream() { delete stream_ptr_; }
