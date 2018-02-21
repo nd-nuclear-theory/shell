@@ -38,26 +38,15 @@
 #include "basis/proton_neutron.h"
 #include "cppformat/format.h"
 #include "density/obdme_io.h"
-#include "radial/radial_io.h"
+#include "obme/obme_operator.h"
+#include "obme/obme_io.h"
 
-// Store one-body operators
-struct OneBodyOperator {
-  std::string name;
-  basis::OrbitalSpaceLJPN space;
-  basis::OrbitalSectorsLJPN sectors;
-  basis::OperatorBlocks<double> operator_matrices;
+struct OneBodyOperator : public shell::OneBodyOperator {
+  std::string filename;
 
-  explicit OneBodyOperator(const std::string& name__, const std::string& filename)
-      : name(name__) {
-    // read operator
-    shell::InRadialStream is(filename);
-    is.Read(operator_matrices);
-
-    // get indexing
-    basis::OrbitalSpaceLJPN ket_space;
-    is.SetToIndexing(space, ket_space, sectors);
-    assert(space.OrbitalInfo() == ket_space.OrbitalInfo());
-    is.Close();
+  OneBodyOperator(const std::string& name_, const std::string& filename_) : filename(filename_)
+  {
+    name = name_;
   }
 };
 
@@ -182,12 +171,12 @@ void ReadParameters(RunParameters& run_parameters) {
 }
 
 double CalculateMatrixElement(const RunParameters& run_parameters,
-                              const OneBodyOperator& op,
+                              const shell::OneBodyOperator& op,
                               const OneBodyDensities& densities) {
   basis::OperatorBlocks<double> density_matrices;
   const basis::OrbitalSpaceLJPN& space = run_parameters.space;
   const basis::OrbitalSectorsLJPN& sectors = op.sectors;
-  const basis::OperatorBlocks<double>& operator_matrices = op.operator_matrices;
+  const basis::OperatorBlocks<double>& operator_matrices = op.matrices;
   shell::InOBDMEReader obdme_reader(run_parameters.robdme_info_filename, space, 0, 0);
   obdme_reader.ReadMultipole(densities.robdme_filename, op.sectors.j0(),
                              density_matrices);
@@ -234,6 +223,17 @@ int main(int argc, char** argv) {
             << std::endl
             << std::endl;
 
+  // read operators
+  for (auto op : run_parameters.operators)
+  {
+    shell::InOBMEStream stream(op.filename);
+    stream.GetOneBodyOperator(op);
+    stream.Close();
+
+    assert(op.bra_orbital_space.OrbitalInfo() == op.ket_orbital_space.OrbitalInfo());
+    assert(op.operator_type == basis::OneBodyOperatorType::kSpherical);
+  }
+
   // open output
   std::ios_base::openmode mode_argument = std::ios_base::trunc;
   std::ofstream out_stream(run_parameters.output_filename, mode_argument);
@@ -249,14 +249,14 @@ int main(int argc, char** argv) {
 
   // static observables
   out_stream << "[Static one-body observables]" << std::endl;
-  out_stream << fmt::format("# {:>2} {:>2} {:>2} ", "2J", "g", "n");
+  out_stream << fmt::format("# {:>2} {:>2} {:>2} ", "J", "g", "n");
   for (const auto& op : run_parameters.operators) {
     out_stream << fmt::format(" {:>15}", op.name);
   }
   out_stream << std::endl;
 
   for (const auto& densities : run_parameters.static_densities) {
-    out_stream << fmt::format("  {:2d} {:2d} {:2d} ", densities.Jf.TwiceValue(),
+    out_stream << fmt::format("  {:2d} {:2d} {:2d} ", float(densities.Jf),
                               densities.gf, densities.nf);
 
     for (const auto& op : run_parameters.operators) {
@@ -269,8 +269,8 @@ int main(int argc, char** argv) {
 
   // transition observables
   out_stream << "[Transition one-body observables]" << std::endl;
-  out_stream << fmt::format("# {:>3} {:>3} {:>3}  {:>3} {:>3} {:>3} ", "2Jf",
-                            "gf", "nf", "2Ji", "gi", "ni");
+  out_stream << fmt::format("# {:>3} {:>3} {:>3}  {:>3} {:>3} {:>3} ", "Jf",
+                            "gf", "nf", "Ji", "gi", "ni");
   for (const auto& op : run_parameters.operators) {
     out_stream << fmt::format(" {:>15}", op.name);
   }
@@ -278,10 +278,10 @@ int main(int argc, char** argv) {
 
   for (const auto& densities : run_parameters.transition_densities) {
     out_stream << fmt::format("  {:3d} {:3d} {:3d}  {:3d} {:3d} {:3d} ",
-                              densities.Jf.TwiceValue(),
+                              float(densities.Jf),
                               densities.gf,
                               densities.nf,
-                              densities.Ji.TwiceValue(),
+                              float(densities.Ji),
                               densities.gi,
                               densities.ni);
 

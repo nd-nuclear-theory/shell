@@ -27,7 +27,7 @@
 #include "mcutils/profiling.h"
 #include "basis/nlj_orbital.h"
 #include "basis/nlj_operator.h"
-#include "radial/radial_io.h"
+#include "obme/obme_io.h"
 
 ////////////////////////////////////////////////////////////////
 // process arguments
@@ -100,12 +100,13 @@ int main(int argc, const char *argv[]) {
   ProcessArguments(argc, argv, run_parameters);
 
   // Read input
-  shell::InRadialStream inputs(run_parameters.input_filename);
+  shell::InOBMEStream inputs(run_parameters.input_filename);
 
   // get indexing
   basis::OrbitalSpaceLJPN bra_space, ket_space;
   basis::OrbitalSectorsLJPN sectors;
-  shell::RadialOperatorType operator_type = inputs.radial_operator_type();
+  basis::OneBodyOperatorType operator_type = inputs.operator_type();
+  shell::RadialOperatorType radial_operator_type = inputs.radial_operator_type();
   int operator_power = inputs.radial_operator_power();
   inputs.SetToIndexing(bra_space, ket_space, sectors);
 
@@ -116,9 +117,9 @@ int main(int argc, const char *argv[]) {
 
   // write out to file
   std::cout << "INFO: Writing to file " << run_parameters.output_filename << std::endl;
-  shell::OutRadialStream os(run_parameters.output_filename,
-                            bra_space, ket_space, sectors,
-                            operator_type, operator_power, true);
+  shell::OutOBMEStream os(run_parameters.output_filename,
+                          bra_space, ket_space, sectors,
+                          operator_type, radial_operator_type, operator_power, true);
                             // verbose_mode = true
   os.Write(matrices);
   os.Close();

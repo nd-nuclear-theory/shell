@@ -37,7 +37,8 @@
 #include "basis/nlj_orbital.h"
 #include "basis/proton_neutron.h"
 #include "cppformat/format.h"
-#include "radial/radial_io.h"
+#include "obme/obme_operator.h"
+#include "obme/obme_io.h"
 
 const double kPi = 3.1415926535897;
 
@@ -52,31 +53,33 @@ std::map<std::string, OperatorType> operator_map = {
 // Label for radial operator as (type,power,j0,g0,Tz0) of r, k, or o.
 typedef std::tuple<shell::RadialOperatorType, int, int, int, int> RadialOperatorLabels;
 
-// Indexing and matrix elements for a radial .
+// Indexing and matrix elements for a radial operator.
 //
 // Caveat: Just "copying" indexing in here is not good enough, since
 // then sectors can be left pointing to deleted temporaries for the
 // orbital subspaces.
-struct RadialOperatorData {
+struct RadialOperatorData : public shell::OneBodyOperator {
   RadialOperatorData() = default;
 
-  RadialOperatorData(const std::string& filename_) : filename(filename_) {
-    // open radial operator file
-    basis::OrbitalSpaceLJPN ket_space;
-    shell::InRadialStream radial_operator_stream(filename_);
-    radial_operator_stream.SetToIndexing(space, ket_space, sectors);
-    if (space.OrbitalInfo() != ket_space.OrbitalInfo()) {
+  RadialOperatorData(const std::string& filename_) : filename(filename_)
+  {
+    shell::InOBMEStream stream_(filename_);
+    stream_.GetOneBodyOperator(*this);
+    stream_.Close();
+    if (bra_orbital_space.OrbitalInfo() != ket_orbital_space.OrbitalInfo()) {
       std::cerr << "ERROR: Bra and ket spaces of radial matrix elements are "
                    "not the same."
                 << std::endl;
       std::exit(EXIT_FAILURE);
     }
+    if (operator_type != basis::OneBodyOperatorType::kRadial) {
+      std::cerr << "ERROR: Matrix elements must be radial matrix elements." << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
 
-    labels = RadialOperatorLabels{radial_operator_stream.radial_operator_type(),
-                                  radial_operator_stream.radial_operator_power(),
+    labels = RadialOperatorLabels{radial_operator_type,
+                                  radial_operator_power,
                                   sectors.j0(), sectors.g0(), sectors.Tz0()};
-    radial_operator_stream.Read(matrices);
-    radial_operator_stream.Close();
   }
 
   // operator identification
@@ -84,11 +87,6 @@ struct RadialOperatorData {
 
   // input filename
   std::string filename;
-
-  // operator indexing and storage
-  basis::OrbitalSpaceLJPN space;
-  basis::OrbitalSectorsLJPN sectors;
-  basis::OperatorBlocks<double> matrices;
 };
 
 // Map to hold all loaded radial operators.
@@ -284,7 +282,7 @@ void GenerateTarget(const RunParameters& run_parameters,
   }
   const RadialOperatorData& radial_operator_data =
       run_parameters.radial_operators.at(key);
-  assert(radial_operator_data.space.OrbitalInfo()
+  assert(radial_operator_data.ket_orbital_space.OrbitalInfo()
          == run_parameters.space.OrbitalInfo());
 
   // construct new sectors
@@ -319,9 +317,9 @@ void GenerateTarget(const RunParameters& run_parameters,
   }
 
   // write operator to file
-  shell::OutRadialStream os(target.output_filename, run_parameters.space,
-                            run_parameters.space, output_sectors,
-                            shell::RadialOperatorType::kGeneric, radial_order);
+  shell::OutOBMEStream os(target.output_filename, run_parameters.space,
+                          run_parameters.space, output_sectors,
+                          basis::OneBodyOperatorType::kSpherical, shell::RadialOperatorType::kGeneric, radial_order);
   os.Write(output_matrices);
 }
 
