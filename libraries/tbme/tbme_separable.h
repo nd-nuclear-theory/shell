@@ -34,6 +34,8 @@
     new isospin operators.
   + 09/21/17 (pjf): Fix missing Hat() factors in Racah's reduction
     formula for isospin operators.
+  + 02/23/18 (pjf): Implement kinematic operators in terms of generic
+    Racah's reduction formula code.
 
 ****************************************************************/
 

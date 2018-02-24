@@ -15,6 +15,18 @@ namespace shell {
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
 
+  bool one_body_sector_allowed(const basis::OrbitalSectorsLJPN& sectors,
+                               const basis::OrbitalStatePN& bra,
+                               const basis::OrbitalStatePN& ket
+                              )
+  {
+    bool allowed = true;
+    allowed &= am::AllowedTriangle(ket.j(), sectors.j0(), bra.j());
+    allowed &= ((ket.g()+sectors.g0()+bra.g())%2 == 0);
+    allowed &= (bra.Tz() == ket.Tz() + sectors.Tz0());
+    return allowed;
+  }
+
   ////////////////////////////////////////////////////////////////
   // upgraded one-body operator
   ////////////////////////////////////////////////////////////////
@@ -34,7 +46,9 @@ namespace shell {
       basis::OperatorBlock<double>::Zero(bra_subspace_size, ket_subspace_size);
 
     // short circuit on triangle constraint
-    if (!am::AllowedTriangle(bra_subspace.J(), ket_subspace.J(), ob_operator.sectors.j0()))
+    int j0 = ob_operator.sectors.j0();
+    int g0 = ob_operator.sectors.g0();
+    if (!am::AllowedTriangle(bra_subspace.J(), ket_subspace.J(), j0))
       return matrix;
 
     // build sector matrix
@@ -51,16 +65,20 @@ namespace shell {
 
         // calculate AS two-body element
         double matrix_element = 0.;
-        if (d == b)
-          matrix_element += ob_operator.get_matrix_element(c, a);
-        if (c == a)
-          matrix_element += ob_operator.get_matrix_element(d, b);
+        if (d == b && one_body_sector_allowed(ob_operator.sectors, c, a))
+          // TODO(pjf): Remove Hat() when switching to Edmonds convention
+          matrix_element += ob_operator.get_matrix_element(c, a) / Hat(a.j());
+        if (c == a && one_body_sector_allowed(ob_operator.sectors, d, b))
+        // TODO(pjf): Remove Hat() when switching to Edmonds convention
+          matrix_element += ob_operator.get_matrix_element(d, b) / Hat(b.j());
 
         int phase = - ParitySign(ket.J()-a.j()-b.j());
-        if (d == a)
-          matrix_element += phase*ob_operator.get_matrix_element(c, b);
-        if (c == b)
-          matrix_element += phase*ob_operator.get_matrix_element(d, a);
+        if (d == a && one_body_sector_allowed(ob_operator.sectors, c, b))
+        // TODO(pjf): Remove Hat() when switching to Edmonds convention
+          matrix_element += phase*ob_operator.get_matrix_element(c, b) / Hat(b.j());
+        if (c == b && one_body_sector_allowed(ob_operator.sectors, d, a))
+        // TODO(pjf): Remove Hat() when switching to Edmonds convention
+          matrix_element += phase*ob_operator.get_matrix_element(d, a) / Hat(a.j());
 
         // convert to NAS if needed
         if (a == b)
@@ -84,10 +102,13 @@ namespace shell {
                                 const basis::OrbitalStatePN& a, const basis::OrbitalStatePN& b
                                )
   {
+    // short-circuit on sector-constraint-disallowed RME
+    if (!one_body_sector_allowed(ob_operator1.sectors, c, a) || !one_body_sector_allowed(ob_operator2.sectors, d, b))
+      return 0.;
     int operator_j0 = ob_operator1.sectors.j0();
     // evaluate Racah reduction formula
-    double matrix_element;
-    matrix_element = ob_operator1.get_matrix_element(c, a) * ob_operator2.get_matrix_element(d, b);
+    double matrix_element
+      = ob_operator1.get_matrix_element(c, a) * ob_operator2.get_matrix_element(d, b);
     // TODO(pjf): enable below Hat when converting to Edmonds convention inside h2mixer
     // matrix_element *= Hat(bra.J())
     matrix_element *= ParitySign(d.j()+bra_J+a.j());
@@ -154,8 +175,11 @@ namespace shell {
   {
     int ob_operator1_j0 = ob_operator1.sectors.j0();
     int ob_operator2_j0 = ob_operator2.sectors.j0();
-    double matrix_element;
-    matrix_element = ob_operator1.get_matrix_element(c, a) * ob_operator2.get_matrix_element(d, b);
+    // short-circuit on sector-constraint-disallowed RME
+    if (!one_body_sector_allowed(ob_operator1.sectors, c, a) || !one_body_sector_allowed(ob_operator2.sectors, d, b))
+      return 0.;
+    double matrix_element
+      = ob_operator1.get_matrix_element(c, a) * ob_operator2.get_matrix_element(d, b);
     // TODO(pjf): enable below Hat when converting to Edmonds convention
     // matrix_element *= Hat(bra_J)
     matrix_element *= Hat(J0) * Hat(ket_J);

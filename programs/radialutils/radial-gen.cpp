@@ -186,11 +186,11 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters) {
         static_cast<shell::RadialOperatorType>(operator_type), order, j0, g0, Tz0});
     } else if (keyword == "define-xform-target") {
       // define-xform-target scale_factor Tz0 bra_orbital_file output_filename
-      std::string bra_orbital_file, output_filename;
+      std::string output_filename;
       float scale_factor;
       int Tz0;
 
-      line_stream >> scale_factor >> Tz0 >> bra_orbital_file >> output_filename;
+      line_stream >> scale_factor >> Tz0 >> bra_orbital_filename >> output_filename;
       ParsingCheck(line_stream, line_count, line);
 
       operator_parameters.push_back({bra_orbital_filename, ket_orbital_filename, output_filename,
@@ -292,7 +292,6 @@ void BuildOperator(OperatorParameters operator_parameters) {
     ket_basis_type = it->second;
   }
 
-  std::cout << bra_scale_factor << ket_scale_factor << order << std::endl;
   CalculateRadialMatrixElements(
       bra_basis_type, ket_basis_type,
       bra_scale_factor, ket_scale_factor,
@@ -310,13 +309,18 @@ void BuildOperator(OperatorParameters operator_parameters) {
     {
       const basis::OrbitalSectorsLJPN::SectorType sector = sectors.GetSector(sector_index);
       HalfInt bra_j = sector.bra_subspace().j();
+      int bra_l = sector.bra_subspace().l();
       HalfInt ket_j = sector.ket_subspace().j();
+      int ket_l = sector.ket_subspace().l();
       if (operator_parameters.order == 1 && operator_parameters.j0 == 1)
       {
         // see csbasis (58) and (60)
         matrices[sector_index] *=
           ParitySign(ket_j - HalfInt(1,2) + 1) * Hat(bra_j) * Hat(ket_j)
           * am::Wigner3J(bra_j, ket_j, 1, HalfInt(1,2), HalfInt(-1,2), 0);
+        if (operator_parameters.radial_operator == shell::RadialOperatorType::kK)
+          matrices[sector_index] *= ParitySign((bra_l - ket_l - 1)/2);
+          // guaranteed real by parity
       }
       else if (operator_parameters.order == 2 && operator_parameters.j0 == 0)
       {
