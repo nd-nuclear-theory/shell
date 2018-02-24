@@ -12,7 +12,7 @@
       rank = ob|tb
     set-target-multipolarity J0 g0 Tz0
     set-mass A
-    define-radial-operator operator_type power radial_filename
+    define-radial-operator operator_type power j0 g0 Tz0 radial_filename
       operator_type = r|k
       power = 1|2
     define-pn-overlaps olap_filename
@@ -61,7 +61,7 @@
 #include "cppformat/format.h"
 #include "mcutils/eigen.h"
 #include "mcutils/profiling.h"
-#include "radial/radial_io.h"
+#include "obme/obme_io.h"
 #include "tbme/h2_io.h"
 #include "tbme/tbme_separable.h"
 #include "tbme/tbme_xform.h"
@@ -71,10 +71,10 @@
 // radial operator containers
 ////////////////////////////////////////////////////////////////
 
-typedef std::tuple<shell::RadialOperatorType,int,int> RadialOperatorLabels;
-// Label for radial operator as (type,power,Tz0) of r, k, or o.
+typedef std::tuple<shell::RadialOperatorType,int,int,int,int> RadialOperatorLabels;
+// Label for radial operator as (type,power,j0,g0,Tz0) of r, k, or o.
 
-struct RadialOperatorData
+struct RadialOperatorData : public shell::OneBodyOperator
 // Indexing and matrix elements for a radial operator or radial overlaps.
 //
 // For overlaps, the "bra" space is the source basis, and the "ket"
@@ -96,12 +96,6 @@ struct RadialOperatorData
 
   // input filename
   std::string filename;
-
-  // operator indexing and storage
-  basis::OrbitalSpaceLJPN bra_orbital_space;
-  basis::OrbitalSpaceLJPN ket_orbital_space;
-  basis::OrbitalSectorsLJPN sectors;
-  basis::OperatorBlocks<double> matrices;
 };
 
 typedef std::map<RadialOperatorLabels,RadialOperatorData> RadialOperatorMap;
@@ -146,13 +140,13 @@ std::set<std::string> kIdentityOperatorIdSet(
     {"identity","loop-test"}
   );
 
-typedef std::tuple<shell::KinematicOperatorType,shell::RadialOperatorType,int> KinematicOperatorDefinition;
+typedef std::tuple<shell::KinematicOperatorType,shell::RadialOperatorType,int,int,int> KinematicOperatorDefinition;
 std::map<std::string,KinematicOperatorDefinition> kKinematicOperatorDefinitions(
       {
-        {"Ursqr",KinematicOperatorDefinition(shell::KinematicOperatorType::kUTSqr,shell::RadialOperatorType::kR,2)},
-        {"Vr1r2",KinematicOperatorDefinition(shell::KinematicOperatorType::kVT1T2,shell::RadialOperatorType::kR,1)},
-        {"Uksqr",KinematicOperatorDefinition(shell::KinematicOperatorType::kUTSqr,shell::RadialOperatorType::kK,2)},
-        {"Vk1k2",KinematicOperatorDefinition(shell::KinematicOperatorType::kVT1T2,shell::RadialOperatorType::kK,1)}
+        {"Ursqr",KinematicOperatorDefinition(shell::KinematicOperatorType::kUTSqr,shell::RadialOperatorType::kR,2,0,0)},
+        {"Vr1r2",KinematicOperatorDefinition(shell::KinematicOperatorType::kVT1T2,shell::RadialOperatorType::kR,1,1,1)},
+        {"Uksqr",KinematicOperatorDefinition(shell::KinematicOperatorType::kUTSqr,shell::RadialOperatorType::kK,2,0,0)},
+        {"Vk1k2",KinematicOperatorDefinition(shell::KinematicOperatorType::kVT1T2,shell::RadialOperatorType::kK,1,1,1)}
       }
     );
 
@@ -356,17 +350,17 @@ void ReadParameters(
         {
           std::string type_code, filename;
           int power;
-          line_stream >> type_code >> power >> filename;
+          int j0, g0, Tz0;
+          line_stream >> type_code >> power >> j0 >> g0 >> Tz0 >> filename;
           ParsingCheck(line_stream,line_count,line);
 
           // cast operator type code to enum
           if (!((type_code=="r")||(type_code=="k")))
             ParsingError(line_count,line,"Unrecognized radial operator type code");
-          int Tz0 = 0;
           shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType(type_code[0]);
 
           // store radial operator information to map
-          RadialOperatorLabels labels(radial_operator_type,power,Tz0);
+          RadialOperatorLabels labels(radial_operator_type,power,j0,g0,Tz0);
           radial_operators.insert({labels,RadialOperatorData(labels,filename)});
         }
       else if (keyword=="define-pn-overlaps")
@@ -377,10 +371,12 @@ void ReadParameters(
 
           shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kO;
           int power = 0;
+          int j0 = 0;
+          int g0 = 0;
           int Tz0 = 1;
 
           // store radial operator information to map
-          RadialOperatorLabels labels(radial_operator_type,power,Tz0);
+          RadialOperatorLabels labels(radial_operator_type,power,j0,g0,Tz0);
           radial_operators.insert({labels,RadialOperatorData(labels,filename)});
         }
       else if (keyword=="define-source")
@@ -472,7 +468,9 @@ void InitializeRadialOperators(RadialOperatorMap& radial_operators)
       RadialOperatorData& radial_operator_data = labels_data.second;
       shell::RadialOperatorType radial_operator_type = std::get<0>(radial_operator_data.labels);
       int radial_operator_power = std::get<1>(radial_operator_data.labels);
-      int radial_operator_Tz0 = std::get<2>(radial_operator_data.labels);
+      int radial_operator_j0 = std::get<2>(radial_operator_data.labels);
+      int radial_operator_g0 = std::get<3>(radial_operator_data.labels);
+      int radial_operator_Tz0 = std::get<4>(radial_operator_data.labels);
       std::cout
         << fmt::format(
             "Reading radial matrix elements for operator {}^{} from {}...",
@@ -482,19 +480,16 @@ void InitializeRadialOperators(RadialOperatorMap& radial_operators)
         << std::endl;
 
       // open radial operator file
-      shell::InRadialStream radial_operator_stream(radial_operator_data.filename);
-      radial_operator_stream.SetToIndexing(
-          radial_operator_data.bra_orbital_space,
-          radial_operator_data.ket_orbital_space,
-          radial_operator_data.sectors
-        );
-      assert(radial_operator_type==radial_operator_stream.radial_operator_type());
-      assert(radial_operator_power==radial_operator_stream.radial_operator_power());
-      assert(radial_operator_power==radial_operator_data.sectors.l0max());
-      assert(radial_operator_Tz0==radial_operator_data.sectors.Tz0());
+      shell::InOBMEStream radial_operator_stream(radial_operator_data.filename);
 
-      // read matrices
-      radial_operator_stream.Read(radial_operator_data.matrices);
+      // get radial operator
+      radial_operator_stream.GetOneBodyOperator(radial_operator_data);
+
+      assert(radial_operator_type == radial_operator_stream.radial_operator_type());
+      assert(radial_operator_power == radial_operator_stream.radial_operator_power());
+      assert(radial_operator_j0 == radial_operator_data.sectors.j0());
+      assert(radial_operator_g0 == radial_operator_data.sectors.g0());
+      assert(radial_operator_Tz0 == radial_operator_data.sectors.Tz0());
 
       // close file
       radial_operator_stream.Close();
@@ -641,12 +636,14 @@ void InitializeXformChannels(
       // set up radial operator data
       shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kO;
       int radial_operator_power = 0;
+      int radial_operator_j0 = 0;
+      int radial_operator_g0 = 0;
       int radial_operator_Tz0 = 0;
       radial_operator_data =
-        RadialOperatorData(RadialOperatorLabels(radial_operator_type,radial_operator_power,radial_operator_Tz0),xform_channel.olap_filename);
+        RadialOperatorData(RadialOperatorLabels(radial_operator_type,radial_operator_power,radial_operator_j0,radial_operator_g0,radial_operator_Tz0),xform_channel.olap_filename);
 
       // open radial operator file
-      shell::InRadialStream radial_operator_stream(radial_operator_data.filename);
+      shell::InOBMEStream radial_operator_stream(radial_operator_data.filename);
       radial_operator_stream.SetToIndexing(
           radial_operator_data.bra_orbital_space,
           radial_operator_data.ket_orbital_space,
@@ -654,8 +651,9 @@ void InitializeXformChannels(
         );
       assert(radial_operator_type==radial_operator_stream.radial_operator_type());
       assert(radial_operator_power==radial_operator_stream.radial_operator_power());
-      assert(radial_operator_power==radial_operator_data.sectors.l0max());
-      assert(radial_operator_data.sectors.Tz0()==0);
+      assert(radial_operator_j0==radial_operator_data.sectors.j0());
+      assert(radial_operator_g0==radial_operator_data.sectors.g0());
+      assert(radial_operator_Tz0==radial_operator_data.sectors.Tz0());
 
       // read matrices
       radial_operator_stream.Read(radial_operator_data.matrices);
@@ -831,10 +829,11 @@ void GenerateOperatorSources(
           shell::KinematicOperatorType kinematic_operator_type;
           shell::RadialOperatorType radial_operator_type;
           int radial_operator_power;
+          int j0, g0;
           int Tz0 = 0;
-          std::tie(kinematic_operator_type,radial_operator_type,radial_operator_power)
+          std::tie(kinematic_operator_type,radial_operator_type,radial_operator_power,j0,g0)
             = kKinematicOperatorDefinitions.at(operator_channel.id);
-          RadialOperatorLabels radial_operator_labels = RadialOperatorLabels(radial_operator_type,radial_operator_power,Tz0);
+          RadialOperatorLabels radial_operator_labels = RadialOperatorLabels(radial_operator_type,radial_operator_power,j0,g0,Tz0);
           const RadialOperatorData& radial_operator_data = radial_operators[radial_operator_labels];
 
           // std::cout
@@ -844,8 +843,8 @@ void GenerateOperatorSources(
           //     )
           //   << std::endl;
           operator_matrix = shell::KinematicMatrixJJJPN(
-              radial_operator_data.ket_orbital_space,radial_operator_data.sectors,radial_operator_data.matrices,
-              kinematic_operator_type,radial_operator_type,
+              radial_operator_data,
+              kinematic_operator_type,
               target_sector,run_parameters.A
             );
         }
@@ -867,10 +866,10 @@ void GenerateOperatorSources(
           shell::RadialOperatorType radial_operator_type = shell::RadialOperatorType::kO;
           shell::IsospinOperatorType operator_type;
           int radial_operator_power = 0;
-          int Tz0 = 1;
+          int j0 = 0, g0 = 0, Tz0 = 1;
           std::tie(operator_type)
             = kIsospinOperatorDefinitions.at(operator_channel.id);
-          RadialOperatorLabels pn_overlap_labels = RadialOperatorLabels(radial_operator_type,radial_operator_power,Tz0);
+          RadialOperatorLabels pn_overlap_labels = RadialOperatorLabels(radial_operator_type,radial_operator_power,j0,g0,Tz0);
           const RadialOperatorData& pn_overlap_data = radial_operators[pn_overlap_labels];
           operator_matrix = shell::IsospinMatrixJJJPN(
               pn_overlap_data.ket_orbital_space, pn_overlap_data.sectors, pn_overlap_data.matrices,
