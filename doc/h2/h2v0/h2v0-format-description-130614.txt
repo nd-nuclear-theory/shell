@@ -114,7 +114,7 @@ The complication is that MFDn uses standard FORTRAN binary I/O, which
 is "record" based.  Each record is sandwiched between two delimiters.
 These are 4-byte integers, each giving the byte-count of the record.
 
-So, how is the file broken into records?  To insure forward
+So, how is the file broken into records?  To ensure forward
 compatibility, we write the format code as it own record.  Then the
 rest of the header is in one record.  Then the rest of the matrix
 elements are written out in three records: all the pp matrix elements,

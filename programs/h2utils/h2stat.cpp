@@ -13,6 +13,9 @@
   10/30/16 (mac): Update command line syntax.
   11/13/16 (mac): Add sector matrix output mode.
   11/28/17 (pjf): Include version in header.
+  02/12/18 (mac):
+    - Remove artificial restriction to scalar operators.
+    - Add sector tabulation.
 
 ******************************************************************************/
 
@@ -98,8 +101,11 @@ void DoOrbitals(shell::InH2Stream& input_stream)
 
 void DoIndexing(shell::InH2Stream& input_stream)
 {
-  std::cout << "Orbital space" << std::endl
-            << std::endl;
+  std::cout
+    << "********************************" << std::endl
+    << "Orbital space" << std::endl
+    << "********************************" << std::endl
+    << std::endl;
   const basis::OrbitalSpacePN& orbital_space = input_stream.orbital_space();
 
   std::cout << " Subspaces" << std::endl;
@@ -113,8 +119,12 @@ void DoIndexing(shell::InH2Stream& input_stream)
       std::cout << std::endl;
     }
 
-  std::cout << "Two-body space" << std::endl
-            << std::endl;
+  std::cout
+    << "********************************" << std::endl
+    << "Two-body space" << std::endl
+    << "********************************" << std::endl
+    << std::endl;
+
   const basis::TwoBodySpaceJJJPN& space = input_stream.space();
 
   std::cout << " Subspaces" << std::endl;
@@ -128,9 +138,15 @@ void DoIndexing(shell::InH2Stream& input_stream)
       std::cout << std::endl;
     }
 
-  // std::cout << "Two-body sectors" << std::endl;
-  // std::cout << input_stream.sectors().DebugStr();
-  // std::cout << std::endl;
+  std::cout
+    << "********************************" << std::endl
+    << "Two-body sectors" << std::endl
+    << "********************************" << std::endl
+    << std::endl;
+
+  std::cout << "Two-body sectors" << std::endl;
+  std::cout << input_stream.sectors().DebugStr();
+  std::cout << std::endl;
 }
 
 void DoVerify(shell::InH2Stream& input_stream)
@@ -177,19 +193,6 @@ void DoMatrices(shell::InH2Stream& input_stream)
       std::cout << std::endl;
 
       // fill in lower triangle of matrix
-      //
-      // The full square matrix must be populated before remapping.
-      //
-      // Caution: We naively assume a symmetric matrix.  This is
-      // appropriate for scalar operators, but this may need to change
-      // to a more general phase relation for two-body nonscalar
-      // operators.
-      //
-      // Limitation: For now we assume a scalar operator, until we
-      // work out symmetry phase issues for nonscalar operators.
-      assert(input_stream.sectors().J0()==0);
-      assert(input_stream.sectors().g0()==0);
-      assert(input_stream.sectors().Tz0()==0);
       if (sector.IsDiagonal())
         mcutils::CompleteLowerTriangle(matrix);
 
