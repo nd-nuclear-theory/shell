@@ -1,0 +1,10 @@
+# identity_Nmax04_h2v15099-dat_h2mixer.in -- make identity operator
+
+set-target-indexing-oscillator tb 4
+set-target-multipolarity 0 0 0
+set-output-format 15099
+set-mass 2
+
+define-source operator identity
+define-target identity_Nmax04_h2v15099.dat
+add-source identity 1.0
