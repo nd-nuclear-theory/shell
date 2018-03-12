@@ -1,0 +1,10 @@
+# coulomb_Nmax02_h2v15099-dat_h2mixer.in -- copy jisp16
+
+set-target-indexing-oscillator tb 2
+set-target-multipolarity 0 0 0
+set-output-format 15099
+set-mass 2
+
+define-source input VNN run0164-JISP16-tb-20/VC-tb-20-20.bin
+define-target coulomb_Nmax02_h2v15099.dat
+add-source VNN 1.0
