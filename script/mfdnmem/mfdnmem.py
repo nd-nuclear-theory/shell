@@ -246,7 +246,7 @@ def tabulate_usage(params, size_range, threads, core_node, mesh):
             continue
         elif size_core > size_min:
             # memory usage is in acceptable range
-            even = "*" if params.n_p % num_nodes == 0 else " "
+            even = "*" if num_nodes % n_d == 0 else " "
             print(template_line.format(
                 n_d=params.n_d, n_p=params.n_p, n_n=num_nodes, even=even,
                 mem_1=size_core_1 / GB, mem_2=size_core_2 / GB,
