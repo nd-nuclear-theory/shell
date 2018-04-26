@@ -1,0 +1,9 @@
+# zero-H_Nmax04_h2v15099-dat_h2mixer.in -- make zero operator with Hamiltonian selection
+
+set-target-indexing-oscillator tb 2
+set-target-multipolarity 0 0 0
+set-output-format 15099
+set-mass 2
+
+define-target zero-H_Nmax02_h2v15099.dat
+
