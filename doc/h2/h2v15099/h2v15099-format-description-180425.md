@@ -33,37 +33,27 @@ examples are taken from:
 
 Syntax:
 
-    ~~~~  
     version_number
-    ~~~~
 
 Example:
 
-    ~~~~  
     15099
-    ~~~~
 
 ### Orbital listing header ###
 
 Syntax:
 
-    ~~~~
     num_orbitals_p num_orbitals_n
-    ~~~~
 
 Example:
 
-    ~~~~
     15 15
-    ~~~~
 
 ### Orbital listing body ###
 
 Syntax:
 
-    ~~~~
      index  n  l  twice_j class  weight
-    ~~~~
 
   * index (int): 1-based index for orbital
   * n (int): radial n quantum number
@@ -74,7 +64,6 @@ Syntax:
 
 Example:
 
-    ~~~~
        1   0   0   1   1   0.00000000
        2   0   1   1   1   1.00000000
        ...
@@ -83,15 +72,12 @@ Example:
        2   0   1   1   2   1.00000000
        ...
       15   0   4   9   2   4.00000000
-    ~~~~
 
 ### Header line 1: operator properties ###
 
 Syntax:
 
-    ~~~~
     J0 g0 Tz0
-    ~~~~
 
   * J0 (int): J for operator
   * g0 (int): parity grade for operator (g=0,1; P=(-)^g)
@@ -101,26 +87,20 @@ Example:
 
 For a scalar, positive parity, Tz-conserving operator...
 
-    ~~~~
     0 0 0
-    ~~~~
 
 ### Header line 2: 1-body basis limit ###
 
 Syntax:
 
-    ~~~~
     wp, wn
-    ~~~~
 
   * wp (float): weight max for protons
   * wp (float): weight max for neutrons
 
 Example:
 
-    ~~~~
     4.000000e+00 4.000000e+00
-    ~~~~
 
 
 ### Header line 3: 2-body basis limit ###
@@ -129,9 +109,7 @@ These are the maximum weights for truncation on each 2-body subspace (pp, nn, pn
 
 Syntax:
 
-    ~~~~
     wpp wnn wpn
-    ~~~~
 
   * wpp (float): weight max for two-body pp state
   * wnn (float): weight max for two-body nn state
@@ -139,9 +117,7 @@ Syntax:
 
 Example:
 
-    ~~~~
     4.000000e+00 4.000000e+00 4.000000e+00
-    ~~~~
 
 ### Header line 4: 2-body basis a.m. limit ###
 
@@ -150,15 +126,11 @@ informational, at least currently, not used as a separate truncation parameter.
 
 Syntax:
 
-    ~~~~
     twice_Jmax_pp twice_Jmax_nn twice_Jmax_pn
-    ~~~~
 
 Example:
 
-    ~~~~
     10 10 10
-    ~~~~
 
 ### Header line 5: matrix size ###
 
@@ -167,15 +139,11 @@ operators, this is specifically the label for pp/nn/pn label for the *ket*.
 
 Syntax:
 
-    ~~~~
     size_pp size_nn size_pn
-    ~~~~
 
 Example:
 
-    ~~~~
     481 481 1856
-    ~~~~
 
 ## Matrix elements ##
 
@@ -186,9 +154,7 @@ purely from the information in the header.
 
 Syntax:
 
-    ~~~~
     i1 i2 i3 i4 twice_J_bra twice_J_ket two_body_species_code matrix_element
-    ~~~~
 
   * i1 i2 i3 i4 (int): single particle orbital indices
   * twice_J_bra twice_J_ket (int): 2*J for bra and ket
@@ -215,7 +181,6 @@ Syntax:
 
 Example:
 
-    ~~~~
     1   1   1   1   0   0 11   +1.0000000e+00
     1   1   1   4   0   0 11   +0.0000000e+00
     1   1   1  11   0   0 11   +0.0000000e+00
@@ -229,7 +194,6 @@ Example:
     1   4   1   4   0   0 11   +1.0000000e+00
     1   4   1  11   0   0 11   +0.0000000e+00
     ...
-    ~~~~
 
 ## File formatting: binary ##
 
