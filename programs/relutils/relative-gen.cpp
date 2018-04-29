@@ -28,14 +28,22 @@
 
     ksqr
       Relative k^2 operator (~intrinsic kinetic energy).
+      [TODO: merge with rsqr?  provide p/n/total variants?]
 
     rsqr
       Relative r^2 operator (~intrinsic r^2 operator).
-      [TODO: merge with ksqr?  provide pp|nn variants?]
+      [TODO: merge with ksqr?  provide p/n/total variants?]
 
-    quadrupole r|k pp|nn|total [TODO]
+    quadrupole pp|nn|total r|k
+      [TODO: implement & implement p/n variants in underlying code]
 
-    coulomb pp|nn|total steps [TODO]
+    orbital-am p|n|total
+      [TODO: implement p/n variants in underlying code]
+
+    spin-am p|n|total
+      [TODO: implement p/n variants in underlying code]
+
+    coulomb p|n|total steps
       Coulomb potential.
 
     symmunit T0 Np Lp Sp Jp Tp N L S J T
@@ -95,7 +103,8 @@ struct Parameters
 
   // optional parameters for specific operators
   UnitTensorLabels unit_tensor_labels;
-  basis::OperatorTypePN operator_type;
+  basis::OperatorTypePN operator_type_pn;
+  relative::KinematicOperator kinematic_operator_type;
   int num_steps;
 };
 
@@ -138,7 +147,6 @@ void ReadParameters(Parameters& parameters)
   parameters.operator_parameters.symmetry_phase_mode = basis::SymmetryPhaseMode::kHermitian;
 
   // impose current limitations on tensor character
-  assert(parameters.operator_parameters.J0==0);
   assert(parameters.operator_parameters.g0==0);
   assert(parameters.operator_parameters.T0_min==0);
 
@@ -150,8 +158,74 @@ void ReadParameters(Parameters& parameters)
     line_stream >> parameters.operator_name;
     ParsingCheck(line_stream,line_count,line);
 
-    // additional operator parameters
-    if (parameters.operator_name == "symmunit")
+    // parse additional operator parameters
+
+    if (
+        (parameters.operator_name == "orbital-am")
+        || (parameters.operator_name == "spin-am")
+      )
+      // generic p/n/total operator
+      {
+        std::string operator_type_pn_string;
+        line_stream
+          >> operator_type_pn_string;
+        ParsingCheck(line_stream,line_count,line);
+        if (operator_type_pn_string=="p")
+          parameters.operator_type_pn = basis::OperatorTypePN::kP;
+        else if (operator_type_pn_string=="n")
+          parameters.operator_type_pn = basis::OperatorTypePN::kN;
+        else if (operator_type_pn_string=="total")
+          parameters.operator_type_pn = basis::OperatorTypePN::kTotal;
+        else
+          ParsingError(line_count,line,"invalid operator type (p/n/total)");
+      }
+    else if (
+        (parameters.operator_name == "quadrupole")
+      )
+      // coulomb
+      {
+        std::string operator_type_pn_string;
+        std::string kinematic_operator_type_string;
+        line_stream
+          >> operator_type_pn_string
+          >> kinematic_operator_type_string;
+        ParsingCheck(line_stream,line_count,line);
+        if (operator_type_pn_string=="p")
+          parameters.operator_type_pn = basis::OperatorTypePN::kP;
+        else if (operator_type_pn_string=="n")
+          parameters.operator_type_pn = basis::OperatorTypePN::kN;
+        else if (operator_type_pn_string=="total")
+          parameters.operator_type_pn = basis::OperatorTypePN::kTotal;
+        else
+          ParsingError(line_count,line,"invalid operator type (p/n/total)");
+        if (kinematic_operator_type_string=="r")
+          parameters.kinematic_operator_type = relative::KinematicOperator::kRSqr;
+        else if (kinematic_operator_type_string=="k")
+          parameters.kinematic_operator_type = relative::KinematicOperator::kKSqr;
+        else
+          ParsingError(line_count,line,"invalid operator type (r/k)");
+      }
+    else if (
+        (parameters.operator_name == "coulomb")
+      )
+      // coulomb
+      {
+        std::string operator_type_pn_string;
+        line_stream
+          >> operator_type_pn_string
+          >> parameters.num_steps;
+        ParsingCheck(line_stream,line_count,line);
+        if (operator_type_pn_string=="p")
+          parameters.operator_type_pn = basis::OperatorTypePN::kP;
+        else if (operator_type_pn_string=="n")
+          parameters.operator_type_pn = basis::OperatorTypePN::kN;
+        else if (operator_type_pn_string=="total")
+          parameters.operator_type_pn = basis::OperatorTypePN::kTotal;
+        else
+          ParsingError(line_count,line,"invalid operator type (p/n/total)");
+      }
+    else if (parameters.operator_name == "symmunit")
+      // special for "symmunit"
       {
         line_stream
           >> parameters.unit_tensor_labels.T0
@@ -166,22 +240,6 @@ void ReadParameters(Parameters& parameters)
           >> parameters.unit_tensor_labels.J
           >> parameters.unit_tensor_labels.T;
         ParsingCheck(line_stream,line_count,line);
-      }
-    else if (parameters.operator_name == "coulomb")
-      {
-        std::string operator_type_string;
-        line_stream
-          >> operator_type_string
-          >> parameters.num_steps;
-        ParsingCheck(line_stream,line_count,line);
-        if (operator_type_string=="p")
-          parameters.operator_type = basis::OperatorTypePN::kP;
-        else if (operator_type_string=="n")
-          parameters.operator_type = basis::OperatorTypePN::kN;
-        else if (operator_type_string=="total")
-          parameters.operator_type = basis::OperatorTypePN::kTotal;
-        else
-          ParsingError(line_count,line,"invalid operator type (p/n/total)");
       }
   }
 
@@ -256,13 +314,38 @@ void PopulateOperator(
           relative::KinematicOperator::kKSqr
         );
     }
+  else if (parameters.operator_name == "quadrupole")
+    {
+      relative::ConstructQuadrupoleOperator(
+          operator_parameters,
+          relative_space,relative_component_sectors,relative_component_matrices,
+          parameters.kinematic_operator_type,
+          parameters.operator_type_pn
+        );
+    }
+  else if (parameters.operator_name == "orbital-am")
+    {
+      relative::ConstructOrbitalAMOperator(
+          operator_parameters,
+          relative_space,relative_component_sectors,relative_component_matrices,
+          parameters.operator_type_pn
+        );
+    }
+  else if (parameters.operator_name == "spin-am")
+    {
+      relative::ConstructSpinAMOperator(
+          operator_parameters,
+          relative_space,relative_component_sectors,relative_component_matrices,
+          parameters.operator_type_pn
+        );
+    }
   else if (parameters.operator_name == "coulomb")
     {
       // 500 steps seems to suffice for ~8 digits precision at Nmax20
       relative::ConstructCoulombOperator(
           operator_parameters,
           relative_space,relative_component_sectors,relative_component_matrices,
-          parameters.operator_type,
+          parameters.operator_type_pn,
           parameters.num_steps
         );
     }

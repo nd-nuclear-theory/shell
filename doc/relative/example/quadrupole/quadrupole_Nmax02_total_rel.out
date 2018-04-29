@@ -1,0 +1,8 @@
+
+relative-gen -- relative operator matrix element generation
+version: 40fb709-dirty
+
+Writing relative operator file...
+  Filename: quadrupole_Nmax02_total_rel.dat
+  Operator properties: J0 2 g0 0 T0_min 0 T0_max 2 symmetry 0
+  Truncation: Nmax 2 Jmax 3

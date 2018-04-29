@@ -9,6 +9,7 @@
 
 #include "relative_me.h"
 
+#include "am/racah_reduction.h"
 #include "am/wigner_gsl.h"
 #include "cppformat/format.h"
 #include "spline/wavefunction_class.h"
@@ -38,6 +39,9 @@ namespace relative {
       relative::KinematicOperator kinematic_operator
     )
   {
+    // validate operator parameters
+    assert(operator_labels.J0==0);
+    assert(operator_labels.g0==0);
 
     // select phase for coordinate or momentum space
     int operator_sign;
@@ -98,7 +102,7 @@ namespace relative {
         // factor (-)^(bra_n+ket_n), i.e., adding a (-) sign
         // on the bra.n()=n+1 or n-1 terms.
 
-        Eigen::MatrixXd& matrix = matrices[sector_index];
+        basis::OperatorBlock<double>& matrix = matrices[sector_index];
         for (int n=0; n<=nmax; ++n)
           {
             if (n>0)
@@ -119,6 +123,10 @@ namespace relative {
       basis::OperatorTypePN operator_type
     )
   {
+
+    // validate operator parameters
+    assert(operator_labels.J0==2);
+    assert(operator_labels.g0==0);
 
     assert(operator_type == basis::OperatorTypePN::kTotal);
 
@@ -162,10 +170,10 @@ namespace relative {
 
             // short-circuit select allowed sectors
             //
-            // Quadrupole (J0=2) and positive parity (g0=0) selection
-            // rules should already have been enforced in sector
-            // construction, but here we also impose orbital
-            // quadrupole (L0=2) and spin scalar selection (S0=0).
+            // Quadrupole (J0=2) and positive parity (g0=0) selection rules
+            // should already have been enforced in sector construction, but
+            // here we also impose orbital quadrupole (L0=2) and spin scalar
+            // selection (S0=0).
             if (!(
                     am::AllowedTriangle(bra_subspace.L(),2,ket_subspace.L())
                     && am::AllowedTriangle(bra_subspace.S(),0,ket_subspace.S())
@@ -184,14 +192,16 @@ namespace relative {
             // determine angular factor
             //
             // We evaluate <L'S'L'||Y_2||LSJ> (S'=S) using the known
-            // <L'||Y_2||L> and Racah's two-system reduction formula
-            // for the case where one operator is the identity.  This
-            // is given for the special case of j orbitals (s=1/2) in
-            // Suhonen (2.57), but here we have must generalize to
-            // S=0,1.
+            // <L'||Y_2||L> and Racah's two-system reduction formula for the
+            // case where one operator is the identity.  This is given for the
+            // special case of j orbitals (s=1/2) in Suhonen (2.57), but here we
+            // have must generalize to S=0,1.
             //
-            // We then convert the RME normalization from
-            // Racah convention to group theory convention.
+            // We then convert the RME normalization from Edmonds convention to
+            // Rose convention.
+            //
+            // TODO: recode more cleanly all in Rose convention and using
+            // am::RacahReductionFactor1Rose
 
             int bra_L = bra_subspace.L();
             int ket_L = ket_subspace.L();
@@ -204,18 +214,18 @@ namespace relative {
               *Hat(bra_J)*Hat(ket_J)*Hat(bra_L)*Hat(ket_L)
               *am::Wigner3J(ket_L,2,bra_L,0,0,0)
               *am::Wigner6J(bra_L,bra_J,S,ket_J,ket_L,2);
-            angular_factor /= Hat(bra_J);  // conver to group theory convention
+            angular_factor /= Hat(bra_J);  // convert to Rose convention
 
             // alias to matrix
-            Eigen::MatrixXd& matrix = matrices[sector_index];
+            basis::OperatorBlock<double>& matrix = matrices[sector_index];
 
             // populate nonzero entries
             //
             // Restrict to a tri-diagonal loop over radial labels.
             //
-            // We make use of the known indexing scheme for a
-            // RelativeLSJT basis, that the radial quantum number n is
-            // just the 0-based state index.
+            // We make use of the known indexing scheme for a RelativeLSJT
+            // basis, that the radial quantum number n is just the 0-based state
+            // index.
 
             int bra_subspace_size = bra_subspace.size();
             int ket_subspace_size = ket_subspace.size();
@@ -256,20 +266,24 @@ namespace relative {
 
                   // radial matrix element
                   //
-                  // Apply SU(1,1) radial matrix element formulas from Rowe JPA 38, 10181 (2015):
+                  // Apply SU(1,1) radial matrix element formulas from Rowe JPA
+                  // 38, 10181 (2015):
                   //
-                  // - for (delta L)=0, use (delta l)=0 matrix elements of r^2 from (39)
+                  // - for (delta L)=0, use (delta l)=0 matrix elements of r^2
+                  // - from (39)
                   //
-                  // - for (delta L)=2, use resolution of identity over intermediate L space,
-                  //   by double application of the (delta l)=1 matrix elements of r from (64)&(65)
+                  // - for (delta L)=2, use resolution of identity over
+                  //   intermediate L space, by double application of the (delta
+                  //   l)=1 matrix elements of r from (64)&(65)
                   //
-                  // While Rowe uses "positive at infinity" convention
-                  // for the radial wave functions, we use "positive
-                  // at origin" convention.  Conversion introduces a
-                  // factor (-)^(bra_n+ket_n), i.e., adding a (-) sign
-                  // on the bra.n()=n+1 or n-1 terms.
+                  // While Rowe uses "positive at infinity" convention for the
+                  // radial wave functions, we use "positive at origin"
+                  // convention.  Conversion introduces a factor
+                  // (-)^(bra_n+ket_n), i.e., adding a (-) sign on the
+                  // bra.n()=n+1 or n-1 terms.
 
-                  // validation of radial formulas: cross check with numerical evaluation
+                  // validation of radial formulas: cross check with numerical
+                  // evaluation
                   //
                   // Carried out with unrestricted loop over bra_n to
                   // numerically check zero entries as well.
@@ -294,8 +308,8 @@ namespace relative {
                   // ...
                   // (delta L)=+2
                   //
-                  // This case does not appear naturally for canonical ordering of sectors, but it wast forced
-                  // for testing purposes:
+                  // This case does not appear naturally for canonical ordering
+                  // of sectors, but it wast forced for testing purposes:
                   //
                   //   // debugging: override canonical sector ordering
                   //   relative_component_sectors[T0]
@@ -367,9 +381,204 @@ namespace relative {
               }
           }
       }
-    
   }
 
+  void ConstructOrbitalAMOperator(
+      const basis::OperatorLabelsJT& operator_labels,
+      const basis::RelativeSpaceLSJT& relative_space,
+      std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
+      basis::OperatorTypePN operator_type
+    )
+  {
+
+    // validate operator parameters
+    assert(operator_labels.J0==1);
+    assert(operator_labels.g0==0);
+
+    assert(operator_type == basis::OperatorTypePN::kTotal);
+
+    // zero initialize operator
+    basis::ConstructZeroOperatorRelativeLSJT(
+        operator_labels,relative_space,relative_component_sectors,relative_component_matrices
+      );
+
+    for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+      // for each isospin component
+      {
+
+        // select T0 component
+        const basis::RelativeSectorsLSJT& sectors = relative_component_sectors[T0];
+        basis::OperatorBlocks<double>& matrices = relative_component_matrices[T0];
+
+        // only implemented for total operator so far
+        // double isospin_factor = kSingleSpeciesOperatorIsospinFactors[int(operator_type)][T0];
+        if (T0!=0)
+          continue;
+
+        // iterate over sectors
+        for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+          {
+
+            // set us aliases -- for sector and subspaces
+            const basis::RelativeSectorsLSJT::SectorType& sector = sectors.GetSector(sector_index);
+            const basis::RelativeSubspaceLSJT& bra_subspace = sector.bra_subspace();
+            const basis::RelativeSubspaceLSJT& ket_subspace = sector.ket_subspace();
+
+            // short-circuit select allowed sectors
+            //
+            // Dipole (J0=1) and positive parity (g0=0) selection rules should
+            // already have been enforced in sector construction, but here we
+            // also impose orbital angular momentum conservation by the
+            // generator L (L'=L) and spin scalar selection (S0=0).
+            if (!(
+                    (bra_subspace.L()==ket_subspace.L())
+                    && am::AllowedTriangle(bra_subspace.S(),0,ket_subspace.S())
+                  )
+              )
+              continue;
+
+            // determine angular factor
+            //
+            // Obtained from Racah's two-system reduction formula and the basic
+            // RME for the angular momentum generator.  See "intrinsic dipole
+            // operators" notes (p. 2).
+
+            int L = ket_subspace.L();
+            int S = ket_subspace.S();
+            int bra_J = bra_subspace.J();
+            int ket_J = ket_subspace.J();
+
+            //TODO
+            double angular_factor
+              = am::RacahReductionFactor1Rose(L,S,bra_J,L,S,ket_J,1)
+              *std::sqrt(L*(L+1));
+
+            // alias to matrix
+            basis::OperatorBlock<double>& matrix = matrices[sector_index];
+
+            // populate nonzero entries
+            //
+            // We make use of the known indexing scheme for a
+            // RelativeLSJT basis, that the radial quantum number n is
+            // just the 0-based state index.  
+            //
+            // The (LSJ') and (LSJ) subspaces are the same size, so this is a
+            // square block, and the block is simply proportional to the
+            // identity matrix.
+
+            int bra_subspace_size = bra_subspace.size();
+            int ket_subspace_size = ket_subspace.size();
+            assert(bra_subspace_size==ket_subspace_size);  // (LSJ') and (LSJ) subspaces same size
+            // matrix = angular_factor*basis::OperatorBlock<double>:Identity(bra_subspace.size(),ket_subspace.size());
+            for (int ket_n=0; ket_n<ket_subspace_size; ++ket_n)
+              {
+                int bra_n = ket_n;
+                matrix(bra_n,ket_n) = angular_factor;
+              }
+
+          }
+      }
+  }
+
+  void ConstructSpinAMOperator(
+      const basis::OperatorLabelsJT& operator_labels,
+      const basis::RelativeSpaceLSJT& relative_space,
+      std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
+      basis::OperatorTypePN operator_type
+    )
+  {
+
+    // validate operator parameters
+    assert(operator_labels.J0==1);
+    assert(operator_labels.g0==0);
+
+    assert(operator_type == basis::OperatorTypePN::kTotal);
+
+    // zero initialize operator
+    basis::ConstructZeroOperatorRelativeLSJT(
+        operator_labels,relative_space,relative_component_sectors,relative_component_matrices
+      );
+
+    for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+      // for each isospin component
+      {
+
+        // select T0 component
+        const basis::RelativeSectorsLSJT& sectors = relative_component_sectors[T0];
+        basis::OperatorBlocks<double>& matrices = relative_component_matrices[T0];
+
+        // only implemented for total operator so far
+        // double isospin_factor = kSingleSpeciesOperatorIsospinFactors[int(operator_type)][T0];
+        if (T0!=0)
+          continue;
+
+        // iterate over sectors
+        for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+          {
+
+            // set us aliases -- for sector and subspaces
+            const basis::RelativeSectorsLSJT::SectorType& sector = sectors.GetSector(sector_index);
+            const basis::RelativeSubspaceLSJT& bra_subspace = sector.bra_subspace();
+            const basis::RelativeSubspaceLSJT& ket_subspace = sector.ket_subspace();
+
+            // short-circuit select allowed sectors
+            //
+            // Dipole (J0=1) and positive parity (g0=0) selection rules should
+            // already have been enforced in sector construction, but here we
+            // also impose spin angular momentum conservation by the generator S
+            // (S'=S) and orbital angular momentum scalar selection (L0=0).
+            if (!(
+                    (bra_subspace.S()==ket_subspace.S())
+                    && am::AllowedTriangle(bra_subspace.L(),0,ket_subspace.L())
+                  )
+              )
+              continue;
+
+            // determine angular factor
+            //
+            // Obtained from Racah's two-system reduction formula and the basic
+            // RME for the angular momentum generator.  See "intrinsic dipole
+            // operators" notes (p. 2).
+
+            int L = ket_subspace.L();
+            int S = ket_subspace.S();
+            int bra_J = bra_subspace.J();
+            int ket_J = ket_subspace.J();
+
+            //TODO
+            double angular_factor
+              = am::RacahReductionFactor2Rose(L,S,bra_J,L,S,ket_J,1)
+              *std::sqrt(S*(S+1));
+
+            // alias to matrix
+            basis::OperatorBlock<double>& matrix = matrices[sector_index];
+
+            // populate nonzero entries
+            //
+            // We make use of the known indexing scheme for a
+            // RelativeLSJT basis, that the radial quantum number n is
+            // just the 0-based state index.  
+            //
+            // The (LSJ') and (LSJ) subspaces are the same size, so this is a
+            // square block, and the block is simply proportional to the
+            // identity matrix.
+
+            int bra_subspace_size = bra_subspace.size();
+            int ket_subspace_size = ket_subspace.size();
+            assert(bra_subspace_size==ket_subspace_size);  // (LSJ') and (LSJ) subspaces same size
+            // matrix = angular_factor*basis::OperatorBlock<double>:Identity(bra_subspace.size(),ket_subspace.size());
+            for (int ket_n=0; ket_n<ket_subspace_size; ++ket_n)
+              {
+                int bra_n = ket_n;
+                matrix(bra_n,ket_n) = angular_factor;
+              }
+
+          }
+      }
+  }
+  
 
   void ConstructCoulombOperator(
       const basis::OperatorLabelsJT& operator_labels,
@@ -380,6 +589,10 @@ namespace relative {
       int num_steps
     )
   {
+
+    // validate operator parameters
+    assert(operator_labels.J0==0);
+    assert(operator_labels.g0==0);
 
     // zero initialize operator
     basis::ConstructZeroOperatorRelativeLSJT(
@@ -429,7 +642,7 @@ namespace relative {
             // RelativeLSJT basis, that the radial quantum number n is
             // just the 0-based state index.
 
-            Eigen::MatrixXd& matrix = matrices[sector_index];
+            basis::OperatorBlock<double>& matrix = matrices[sector_index];
 
             // calculate isospin factors
             //   and short-circuit evaluation of non-contributing sectors

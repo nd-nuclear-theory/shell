@@ -24,6 +24,15 @@
   scale by (b_rel/b)^-n.  Thus, e.g., for Coulomb (n=-1) the scale
   factor is 1/sqrt(2.).
 
+  Note on relative coordinate convention: The relative coordinate and momentum
+  are taken in "mechanics" convention
+
+    r_rel = r_1 - r_2
+
+    k_rel = (1/2) (k_1 - k_2)
+
+  This is to be contrasted with the symmetrized "Moshinsky" convention.
+
   See notes on "internal representation of an operator in JT
   scheme" in lsjt_operator.h for the general principles of how the
   operators are represented.
@@ -51,6 +60,10 @@
 
 namespace relative {
 
+  ////////////////////////////////////////////////////////////////
+  // quadratic operators in coordinates and momenta
+  ////////////////////////////////////////////////////////////////
+
   enum class KinematicOperator {kKSqr,kRSqr};
   void ConstructKinematicOperator(
       const basis::OperatorLabelsJT& operator_labels,
@@ -61,6 +74,22 @@ namespace relative {
     );
   // Construct simple "kinematic" (r^2 and k^2) operators in relative
   // LSJT basis.
+  //
+  // These matrix elements are for the relative (r_rel)^2 or (k_rel)^2 operators
+  // on the two-body system.  The intrinsic r^2_intr or k^2_intr operators on the
+  // A-body system are obtained as the two-body operators
+  //
+  //   r^2_intr = (1/A) V[(r_rel)^2]
+  //   k^2_intr = (4/A) V[(k_rel)^2]
+  //
+  // and T_intr is obtained as
+  //
+  //   T_intr = (2/A) (hbar^2/(4m)) V[(k_rel)^2]
+  //
+  // or, in terms of the two-body relative kinetic energy, as
+  //
+  //   T_intr = (2/A) V[T_rel]
+  //   T_rel = (hbar^2/(4m)) (k_rel)^2
   //
   // These matrix elements are calculated for oscillator length
   // parameter b_rel = 2^(1/2) in the relative coordinate.  (See "Note
@@ -91,6 +120,12 @@ namespace relative {
     );
   // Construct quadrupole operator in relative LSJT basis.
   //
+  // These matrix elements are for the relative quadrupole operator Qrel on the
+  // two-body system.  The intrinsic quadrupole operator Qintr on the A-body
+  // system is obtained as the two-body operator
+  //
+  //   Qintr = ... V[Qrel]  [TODO check coefficient]
+  //
   // These matrix elements are calculated for oscillator length
   // parameter b_rel = 2^(1/2) in the relative coordinate.  (See "Note
   // on oscillator length" at start of this header file.)
@@ -108,6 +143,82 @@ namespace relative {
   //   kinematic_operator (input): whether to construct coordinate
   //     or momentum operator (coopted from ConstructKinematicOperator)
   //   operator_type (input): operator for protons, neutrons, or both
+
+  void ConstructOrbitalAMOperator(
+      const basis::OperatorLabelsJT& operator_labels,
+      const basis::RelativeSpaceLSJT& relative_space,
+      std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
+      basis::OperatorTypePN operator_type
+    );
+  // Construct orbital angular momentum operator in relative LSJT basis.
+  //
+  // These matrix elements are for the relative orbital angular momentum
+  // operator Lrel on the two-body system.  The intrinsic orbital angular
+  // momentum operator Lintr on the A-body system is obtained as the two-body
+  // operator
+  //
+  //   Lintr = (2/A) V[Lrel]
+  //
+  // These matrix elements are independent of oscillator length.  (See "Note on
+  // oscillator length" at start of this header file.)
+  //
+  // Here the operator_type indicates protons/neutrons/both relative
+  // to *total* center of mass.
+  //
+  // TODO: implement p and n operators
+  //
+  // Arguments:
+  //   operator_labels (input) : tensorial properties of operator
+  //   relative_space (input) : target space
+  //   relative_component_sectors (output) : target sectors
+  //   relative_component_matrices (output) : target matrices
+  //   operator_type (input): operator for protons, neutrons, or both
+
+  ////////////////////////////////////////////////////////////////
+  // linear operators in coordinates and momenta
+  ////////////////////////////////////////////////////////////////
+
+  // TODO
+
+  ////////////////////////////////////////////////////////////////
+  // spin operator
+  ////////////////////////////////////////////////////////////////
+
+  void ConstructSpinAMOperator(
+      const basis::OperatorLabelsJT& operator_labels,
+      const basis::RelativeSpaceLSJT& relative_space,
+      std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
+      basis::OperatorTypePN operator_type
+    );
+  // Construct spin angular momentum operator in relative LSJT basis.
+  //
+  // These matrix elements are for the spin angular momentum operator Srel taken
+  // as a relative (Galilean-invariant) operator on the two-body system.  The
+  // spin angular momentum operator S on the A-body system is obtained as the
+  // two-body operator
+  //
+  //   S = 1/(A-1) V[Srel]
+  //
+  // These matrix elements are independent of oscillator length.  (See "Note on
+  // oscillator length" at start of this header file.)
+  //
+  // Here the operator_type indicates protons/neutrons/both as active particles
+  // in the one-body S operator.
+  //
+  // TODO: implement p and n operators
+  //
+  // Arguments:
+  //   operator_labels (input) : tensorial properties of operator
+  //   relative_space (input) : target space
+  //   relative_component_sectors (output) : target sectors
+  //   relative_component_matrices (output) : target matrices
+  //   operator_type (input): operator for protons, neutrons, or both
+
+  ////////////////////////////////////////////////////////////////
+  // Coulomb
+  ////////////////////////////////////////////////////////////////
 
   void ConstructCoulombOperator(
       const basis::OperatorLabelsJT& operator_labels,

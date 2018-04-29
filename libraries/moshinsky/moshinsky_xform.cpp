@@ -10,6 +10,9 @@
 #include "moshinsky/moshinsky_bracket.h"
 #include "moshinsky/moshinsky_xform.h"
 
+#include "am/wigner_gsl.h"
+#include "am/racah_reduction.h"
+
 // #include "cppformat/format.h"
 
 namespace moshinsky {
@@ -17,26 +20,6 @@ namespace moshinsky {
   ////////////////////////////////////////////////////////////////
   // Obtaining relative-cm matrix elements from relative
   ////////////////////////////////////////////////////////////////
-
-  double RacahReductionFactorFirstSystemGT(
-      const HalfInt& J1p, const HalfInt& J2p, const HalfInt& Jp, 
-      const HalfInt& J1, const HalfInt& J2, const HalfInt& J, 
-      const HalfInt& J0
-    )
-  {
-
-    assert(J2p==J2);
-
-    //std::cout << "Wigner6J "
-    //          << J1p << Jp << J2 << J << J1 << J0
-    //          << " " << am::Wigner6J(J1p,Jp,J2,J,J1,J0)
-    //          << std::endl;
-
-    double value = ParitySign(J1p+J2+J+J0)
-      *Hat(J1p)*Hat(J)
-      *am::Wigner6J(J1p,Jp,J2,J,J1,J0);
-    return value;
-  }
 
   Eigen::MatrixXd
   RelativeCMMatrixLSJTN(
@@ -202,14 +185,14 @@ namespace moshinsky {
                 // accumulate contribution to relative-cm matrix element
                 double contribution 
                   = am::Unitary6JZ(lrp,lc,Lp,Jp,Sp,Jrp) * am::Unitary6JZ(lr,lc,L,J,S,Jr)
-                  * RacahReductionFactorFirstSystemGT(Jrp,lc,Jp,Jr,lc,J,J0)
+                  * am::RacahReductionFactor1Rose(Jrp,lc,Jp,Jr,lc,J,J0)
                   * relative_matrix_element;
                 // std::cout << " Jrp " << Jrp << " Jr " << Jr
                 //           << " " << relative_bra_subspace.LabelStr()
                 //           << " " << relative_ket_subspace.LabelStr()
                 //           << " " << am::Unitary6JZ(lrp,lc,Lp,Jp,Sp,Jrp)
                 //           << " " <<  am::Unitary6JZ(lr,lc,L,J,S,Jr)
-                //           << " " << RacahReductionFactorFirstSystemGT(Jrp,lc,Jp,Jr,lc,J,J0)
+                //           << " " << am::RacahReductionFactor1Rose(Jrp,lc,Jp,Jr,lc,J,J0)
                 //           << " " << relative_matrix_element
                 //           << " contribution " << contribution
                 //           << std::endl;
