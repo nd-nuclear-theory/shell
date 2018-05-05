@@ -11,6 +11,7 @@ History:
     - Reorganize by operator.
     - Add jpv2rel examples.
   05/04/18 (mac): Add isovector operators.
+  05/05/18 (mac): Add dipole operator.
 
 ----------------------------------------------------------------
 
@@ -123,7 +124,12 @@ coordinate-sqr (a.k.a. kinematic):
 
 dipole:
 
-   TODO
+   - dipole_Nmax02_rel.dat: (isovector) relative quadrupole operator
+
+   Generated from SU(1,1) radial matrix element expressions, with
+   relative-gen.
+
+   Then Moshinsky transformed to give TBMEs in *_h2v15099.dat.
 
 ----------------------------------------------------------------
 

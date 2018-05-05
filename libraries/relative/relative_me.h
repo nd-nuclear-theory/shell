@@ -52,6 +52,9 @@
     - Add isovector variants of operators (L, S, Q, r^2).
     - Rename enum KinematicOperator to CoordinateType.
     - Rename ConstructKinematicOperator to ConstructCoordinateSqr.
+  + 05/05/18 (mac):
+    - Clean up internal implementation of radial SU(1,1) matrices.
+    - Implement dipole operator.
 
 ****************************************************************/
 
