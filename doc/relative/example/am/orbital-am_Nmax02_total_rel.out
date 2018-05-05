@@ -1,6 +1,6 @@
 
 relative-gen -- relative operator matrix element generation
-version: dc0b24d-dirty
+version: 40fb709-dirty
 
 Writing relative operator file...
   Filename: orbital-am_Nmax02_total_rel.dat
