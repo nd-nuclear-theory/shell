@@ -1,8 +1,0 @@
-
-relative-gen -- relative operator matrix element generation
-version: 40fb709-dirty
-
-Writing relative operator file...
-  Filename: spin-am_Nmax02_total_rel.dat
-  Operator properties: J0 1 g0 0 T0_min 0 T0_max 2 symmetry 0
-  Truncation: Nmax 2 Jmax 3

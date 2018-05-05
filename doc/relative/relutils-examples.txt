@@ -10,6 +10,7 @@ History:
     - Extract examples as relutils-examples.txt.
     - Reorganize by operator.
     - Add jpv2rel examples.
+  05/04/18 (mac): Add isovector operators.
 
 ----------------------------------------------------------------
 
@@ -107,58 +108,47 @@ a numerical radial integral) non-isoscalar relative interaction.
 
 ----------------------------------------------------------------
 
-kinematic:
+coordinate-sqr (a.k.a. kinematic):
 
-   - rsqr_Nmac06_total_rel.dat & ksqr_Nmac06_total_rel.dat: intrinsic
-     r^2 and k^2 operators, for oscillator length b=1
+   - {rsqr,ksqr}_Nmax0[26]_rel.dat: isoscalar relative r^2 and k^2 operators
 
-     Stored with all isospin components (T=0..2).
+   - {rsqr,ksqr}-1_Nmax0[26]_rel.dat: *isovector* relative r^2 and k^2 operators
 
-     Generated from SU(1,1) radial matrix element expressions, with
-     relative-gen (commit f06f17f).
+   Generated from SU(1,1) radial matrix element expressions, with relative-gen.
+   (commit f06f17f).
 
-   Input files for moshinsky (*.in), resulting standard output (*.out)
-   and resulting h2 TBME file (*_h2v15099.dat) are provided.
+   Then Moshinsky transformed to give TBMEs in *_h2v15099.dat.
 
-   - rsqr_Nmax02_total_h2v15099.{in,out,dat}: intrinsic r^2, starting
-     from Nmax06 relative matrix elements and providing tbmes through
-     2-body Nmax02
+----------------------------------------------------------------
+
+dipole:
+
+   TODO
 
 ----------------------------------------------------------------
 
 quadrupole:
 
-   - quadrupole_Nmax06_total_rel.dat: isoscalar (mass) quadrupole
-     operator, for oscillator length b=1
+   - quadruople_Nmax02_rel.dat: isoscalar relative quadrupole operator
 
-     Generated from SU(1,1) radial matrix element expressions, with
-     relative-gen.
+   - quadruople-1_Nmax02_rel.dat: *isovector* relative quadrupole operator
 
-   Input files for moshinsky (*.in), resulting standard output (*.out)
-   and resulting h2 TBME file (*_h2v15099.dat) are provided.
+   Generated from SU(1,1) radial matrix element expressions, with
+   relative-gen.
 
-   - quadrupole_Nmax02_total_h2v15099.{in,out,dat} -- relative
-     quadrupole operator, starting from Nmax02 relative matrix
-     elements and providing tbmes through 2-body Nmax02
+   Then Moshinsky transformed to give TBMEs in *_h2v15099.dat.
 
 ----------------------------------------------------------------
 
-am:
+angular momentum:
 
-   - orbital_am_Nmax02_total_rel.dat: isoscalar (mass) orbital angular momentum
-     operator
+   - {orbital,spin}-am_Nmax02_total_rel.dat: isoscalar relative L and S operators
 
-   - spin_am_Nmax02_total_rel.dat: isoscalar (mass) spin angular momentum
-     operator
+   - {orbital,spin}-am-1_Nmax02_total_rel.dat: *isovector* relative L and S operators
 
-     Generated with relative-gen.
+   Generated with relative-gen.
 
-   Input files for moshinsky (*.in), resulting standard output (*.out)
-   and resulting h2 TBME file (*_h2v15099.dat) are provided.
-
-   - quadrupole_Nmax02_total_h2v15099.{in,out,dat} -- relative
-     quadrupole operator, starting from Nmax06 relative matrix
-     elements and providing tbmes through 2-body Nmax02
+   Then Moshinsky transformed to give TBMEs in *_h2v15099.dat.
 
 ---------------------------------------------------------------
 
