@@ -10,7 +10,7 @@
 
 #include <algorithm>
 
-#include "cppformat/format.h"
+#include "fmt/format.h"
 
 void TestMappingEqual()
 {

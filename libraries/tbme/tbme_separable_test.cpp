@@ -8,7 +8,7 @@
 
 #include "tbme/tbme_separable.h"
 
-#include "cppformat/format.h"
+#include "fmt/format.h"
 
 void TestIdentity()
 {

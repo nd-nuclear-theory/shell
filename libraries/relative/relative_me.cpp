@@ -11,7 +11,7 @@
 
 #include "am/racah_reduction.h"
 #include "am/wigner_gsl.h"
-#include "cppformat/format.h"
+#include "fmt/format.h"
 #include "spline/wavefunction_class.h"
 
 namespace relative {

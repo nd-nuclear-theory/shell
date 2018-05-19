@@ -36,7 +36,7 @@
 #include "am/wigner_gsl.h"
 #include "basis/nlj_orbital.h"
 #include "basis/proton_neutron.h"
-#include "cppformat/format.h"
+#include "fmt/format.h"
 #include "radial/radial_io.h"
 
 const double kPi = 3.1415926535897;

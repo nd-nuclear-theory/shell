@@ -6,14 +6,14 @@
 
 ****************************************************************/
 
-// #include "cppformat/format.h"  // debugging
+// #include "fmt/format.h"  // debugging
 #include "moshinsky/moshinsky_bracket.h"
 #include "moshinsky/moshinsky_xform.h"
 
 #include "am/wigner_gsl.h"
 #include "am/racah_reduction.h"
 
-// #include "cppformat/format.h"
+// #include "fmt/format.h"
 
 namespace moshinsky {
 

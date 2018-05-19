@@ -14,7 +14,7 @@
 #include <sstream>
 #include <string>
 
-#include "cppformat/format.h"
+#include "fmt/format.h"
 #include "mcutils/io.h"
 #include "mcutils/parsing.h"
 
