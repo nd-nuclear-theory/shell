@@ -84,7 +84,68 @@ void InOBMEStream::ReadHeader()
   }
 
   // operator info and sector constraints
-  if (version == 2)
+  if (version == 0)
+  {
+    // operator name, l0max, Tz0, number of bra orbitals, number of ket orbitals
+    // WARNING: only l0max=0 is supported now, with implied g0=0
+    ++line_count_;
+    std::getline(stream(), line);
+    std::istringstream line_stream(line);
+    line_stream >> operator_type >> l0max >> Tz0 >> num_orbitals_bra
+        >> num_orbitals_ket;
+    ParsingCheck(line_stream, line_count_, line);
+    radial_operator_type_ = static_cast<RadialOperatorType>(operator_type);
+    radial_operator_power_ = l0max;
+    assert(l0max==0);
+    j0 = 0;
+    g0 = 0;
+  }
+  else if (version == 1)
+  {
+    // operator type, operator power
+    // WARNING: this format only supports radial matrix elements
+    {
+      ++line_count_;
+      std::getline(stream(), line);
+      std::istringstream line_stream(line);
+      line_stream >> operator_type >> radial_operator_power_;
+      ParsingCheck(line_stream, line_count_, line);
+      operator_type_ = basis::OneBodyOperatorType::kRadial;
+      radial_operator_type_ = static_cast<RadialOperatorType>(operator_type);
+    }
+
+    // constraint mode, l0max or j0 and g0, Tz0
+    // WARNING: only l0max=0 is supported now, with implied g0=0
+    {
+      char constraint_mode;
+      ++line_count_;
+      std::getline(stream(), line);
+      std::istringstream line_stream(line);
+      line_stream >> constraint_mode;
+      ParsingCheck(line_stream, line_count_, line);
+
+      if (constraint_mode == 'R') {
+        line_stream >> l0max >> Tz0;
+        assert(l0max==0);
+        j0 = 0;
+        g0 = 0;
+      } else if (constraint_mode == 'S') {
+        line_stream >> j0 >> g0 >> Tz0;
+      }
+      ParsingCheck(line_stream, line_count_, line);
+    }
+
+    // number of bra orbitals, number of ket orbitals
+    {
+      ++line_count_;
+      std::getline(stream(), line);
+      std::istringstream line_stream(line);
+      line_stream >> num_orbitals_bra >> num_orbitals_ket;
+      ParsingCheck(line_stream, line_count_, line);
+    }
+
+  }
+  else if (version == 2)
   {
     // operator type, operator power
     {
@@ -99,7 +160,6 @@ void InOBMEStream::ReadHeader()
 
     // j0, g0, and Tz0
     {
-      char constraint_mode_c;
       ++line_count_;
       std::getline(stream(), line);
       std::istringstream line_stream(line);
