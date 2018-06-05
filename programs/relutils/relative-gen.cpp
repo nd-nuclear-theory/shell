@@ -101,7 +101,7 @@
 
 #include "basis/lsjt_operator.h"
 #include "basis/proton_neutron.h"
-#include "cppformat/format.h"
+#include "fmt/format.h"
 #include "mcutils/parsing.h"
 #include "relative/relative_me.h"
 #include "spline/wavefunction_class.h"

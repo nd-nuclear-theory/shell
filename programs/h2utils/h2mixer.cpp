@@ -58,7 +58,7 @@
 #include <string>
 
 #include "basis/operator.h"
-#include "cppformat/format.h"
+#include "fmt/format.h"
 #include "mcutils/eigen.h"
 #include "mcutils/profiling.h"
 #include "radial/radial_io.h"
