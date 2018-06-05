@@ -36,7 +36,7 @@
 #include "am/halfint.h"
 #include "basis/nlj_orbital.h"
 #include "basis/proton_neutron.h"
-#include "cppformat/format.h"
+#include "fmt/format.h"
 #include "density/obdme_io.h"
 #include "obme/obme_operator.h"
 #include "obme/obme_io.h"

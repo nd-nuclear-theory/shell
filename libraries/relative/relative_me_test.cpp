@@ -8,7 +8,7 @@
 
 #include "relative/relative_me.h"
 
-#include "cppformat/format.h"
+#include "fmt/format.h"
 
 void TestQuadrupole()
 {

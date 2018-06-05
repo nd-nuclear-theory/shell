@@ -60,7 +60,7 @@
 #include "am/wigner_gsl.h"
 #include "basis/nlj_orbital.h"
 #include "basis/nlj_operator.h"
-#include "cppformat/format.h"
+#include "fmt/format.h"
 #include "mcutils/profiling.h"
 #include "obme/obme_io.h"
 #include "spline/wavefunction_class.h"

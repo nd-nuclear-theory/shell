@@ -7,7 +7,7 @@
 ****************************************************************/
 
 #include "basis/nlj_operator.h"
-#include "cppformat/format.h"  // for debugging
+#include "fmt/format.h"  // for debugging
 #include "tbme/tbme_xform.h"
 
 namespace shell {

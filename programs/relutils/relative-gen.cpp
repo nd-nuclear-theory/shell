@@ -21,24 +21,54 @@
   The operator_name line may be:
 
     zero
+
       Zero operator.
 
     identity
+
       Identity operator.
 
     ksqr
+
       Relative k^2 operator (~intrinsic kinetic energy).
+      [DEPRECATED in favor of coordinate-sqr]
 
     rsqr
+
       Relative r^2 operator (~intrinsic r^2 operator).
-      [TODO: merge with ksqr?  provide pp|nn variants?]
+      [DEPRECATED in favor of coordinate-sqr]
 
-    quadrupole r|k pp|nn|total [TODO]
+    coordinate-sqr r|k T0
 
-    coulomb pp|nn|total steps [TODO]
+      Relative r^2 or k^2 operator.
+      [TODO: implement isovector variant]
+
+    dipole r|k T0
+
+      Relative electric dipole operator.
+      [NOTE: only "r" version implemented; only T0=1 defined]
+ 
+    quadrupole r|k T0
+
+      Relative electric quadrupole operator.
+      [NOTE: only "r" version implemented]
+
+    orbital-am T0
+
+      Relative orbital angular momentum (orbital part of magnetic dipole)
+      operator.
+
+    spin-am T0
+
+      Spin operator (spin part of magnetic dipole), construed as relative two
+      body operator.
+
+    coulomb p|n|total steps
+
       Coulomb potential.
 
     symmunit T0 Np Lp Sp Jp Tp N L S J T
+
       Symmetrized unit tensor.  The labels must specify a canonical
       (upper triangle) matrix element.
 
@@ -58,19 +88,20 @@
   Mark A. Caprio
   University of Notre Dame
 
-  7/16/16 (mac): Created (writerel.cpp).
-  7/25/16 (mac): Update to use WriteRelativeOperatorLSJT.
-  10/9/16 (pjf): Rename mcpp -> mcutils.
-  3/6/17 (mac): Rough in Coulomb interaction code.
-  3/26/17 (mac): Finish implementing Coulomb.  Rename to relative-gen.cpp.
-  4/5/17 (mac): Update call to ConstructZeroOperatorRelativeLSJT.
+  07/16/16 (mac): Created (writerel.cpp).
+  07/25/16 (mac): Update to use WriteRelativeOperatorLSJT.
+  10/09/16 (pjf): Rename mcpp -> mcutils.
+  03/06/17 (mac): Rough in Coulomb interaction code.
+  03/26/17 (mac): Finish implementing Coulomb.  Rename to relative-gen.cpp.
+  04/05/17 (mac): Update call to ConstructZeroOperatorRelativeLSJT.
   11/28/17 (pjf): Print header with version.
+  05/04/17 (mac): Add support for isovector transition operators.
 
 ****************************************************************/
 
 #include "basis/lsjt_operator.h"
 #include "basis/proton_neutron.h"
-#include "cppformat/format.h"
+#include "fmt/format.h"
 #include "mcutils/parsing.h"
 #include "relative/relative_me.h"
 #include "spline/wavefunction_class.h"
@@ -95,8 +126,10 @@ struct Parameters
 
   // optional parameters for specific operators
   UnitTensorLabels unit_tensor_labels;
-  basis::OperatorTypePN operator_type;
+  basis::OperatorTypePN operator_type_pn;
+  relative::CoordinateType coordinate_type;
   int num_steps;
+  int T0;
 };
 
 void ReadParameters(Parameters& parameters)
@@ -138,9 +171,8 @@ void ReadParameters(Parameters& parameters)
   parameters.operator_parameters.symmetry_phase_mode = basis::SymmetryPhaseMode::kHermitian;
 
   // impose current limitations on tensor character
-  assert(parameters.operator_parameters.J0==0);
-  assert(parameters.operator_parameters.g0==0);
-  assert(parameters.operator_parameters.T0_min==0);
+  // assert(parameters.operator_parameters.g0==0);
+  // assert(parameters.operator_parameters.T0_min==0);
 
   // line 3: operator choice and parameters
   {
@@ -150,8 +182,58 @@ void ReadParameters(Parameters& parameters)
     line_stream >> parameters.operator_name;
     ParsingCheck(line_stream,line_count,line);
 
-    // additional operator parameters
-    if (parameters.operator_name == "symmunit")
+    // parse additional operator parameters
+
+    if (
+        (parameters.operator_name == "orbital-am")
+        || (parameters.operator_name == "spin-am")
+      )
+      // arguments: T0
+      {
+        line_stream
+          >> parameters.T0;
+        ParsingCheck(line_stream,line_count,line);
+      }
+    else if (
+        (parameters.operator_name == "coordinate-sqr")
+        || (parameters.operator_name == "dipole")
+        || (parameters.operator_name == "quadrupole")
+      )
+      // arguments: r|k T0
+      {
+        std::string coordinate_type_string;
+        line_stream
+          >> coordinate_type_string
+          >> parameters.T0;
+        ParsingCheck(line_stream,line_count,line);
+        if (coordinate_type_string=="r")
+          parameters.coordinate_type = relative::CoordinateType::kR;
+        else if (coordinate_type_string=="k")
+          parameters.coordinate_type = relative::CoordinateType::kK;
+        else
+          ParsingError(line_count,line,"invalid operator type (r/k)");
+      }
+    else if (
+        (parameters.operator_name == "coulomb")
+      )
+      // coulomb
+      {
+        std::string operator_type_pn_string;
+        line_stream
+          >> operator_type_pn_string
+          >> parameters.num_steps;
+        ParsingCheck(line_stream,line_count,line);
+        if (operator_type_pn_string=="p")
+          parameters.operator_type_pn = basis::OperatorTypePN::kP;
+        else if (operator_type_pn_string=="n")
+          parameters.operator_type_pn = basis::OperatorTypePN::kN;
+        else if (operator_type_pn_string=="total")
+          parameters.operator_type_pn = basis::OperatorTypePN::kTotal;
+        else
+          ParsingError(line_count,line,"invalid operator type (p/n/total)");
+      }
+    else if (parameters.operator_name == "symmunit")
+      // special for "symmunit"
       {
         line_stream
           >> parameters.unit_tensor_labels.T0
@@ -166,22 +248,6 @@ void ReadParameters(Parameters& parameters)
           >> parameters.unit_tensor_labels.J
           >> parameters.unit_tensor_labels.T;
         ParsingCheck(line_stream,line_count,line);
-      }
-    else if (parameters.operator_name == "coulomb")
-      {
-        std::string operator_type_string;
-        line_stream
-          >> operator_type_string
-          >> parameters.num_steps;
-        ParsingCheck(line_stream,line_count,line);
-        if (operator_type_string=="p")
-          parameters.operator_type = basis::OperatorTypePN::kP;
-        else if (operator_type_string=="n")
-          parameters.operator_type = basis::OperatorTypePN::kN;
-        else if (operator_type_string=="total")
-          parameters.operator_type = basis::OperatorTypePN::kTotal;
-        else
-          ParsingError(line_count,line,"invalid operator type (p/n/total)");
       }
   }
 
@@ -240,20 +306,65 @@ void PopulateOperator(
           relative_space,relative_component_sectors,relative_component_matrices
         );
     }
-  else if (parameters.operator_name == "rsqr")
+  else if (parameters.operator_name == "rsqr")  // DEPRECATED
     {
-      relative::ConstructKinematicOperator(
+      relative::ConstructCoordinateSqr(
           operator_parameters,
           relative_space,relative_component_sectors,relative_component_matrices,
-          relative::KinematicOperator::kRSqr
+          relative::CoordinateType::kR,
+          0  // T0
         );
     }
-  else if (parameters.operator_name == "ksqr")
+  else if (parameters.operator_name == "ksqr")  // DEPRECATED
     {
-      relative::ConstructKinematicOperator(
+      relative::ConstructCoordinateSqr(
           operator_parameters,
           relative_space,relative_component_sectors,relative_component_matrices,
-          relative::KinematicOperator::kKSqr
+          relative::CoordinateType::kK,
+          0  // T0
+        );
+    }
+  else if (parameters.operator_name == "coordinate-sqr")
+    {
+      relative::ConstructCoordinateSqr(
+          operator_parameters,
+          relative_space,relative_component_sectors,relative_component_matrices,
+          parameters.coordinate_type,
+          parameters.T0
+        );
+    }
+  else if (parameters.operator_name == "dipole")
+    {
+      relative::ConstructDipoleOperator(
+          operator_parameters,
+          relative_space,relative_component_sectors,relative_component_matrices,
+          parameters.coordinate_type,
+          parameters.T0
+        );
+    }
+  else if (parameters.operator_name == "quadrupole")
+    {
+      relative::ConstructQuadrupoleOperator(
+          operator_parameters,
+          relative_space,relative_component_sectors,relative_component_matrices,
+          parameters.coordinate_type,
+          parameters.T0
+        );
+    }
+  else if (parameters.operator_name == "orbital-am")
+    {
+      relative::ConstructOrbitalAMOperator(
+          operator_parameters,
+          relative_space,relative_component_sectors,relative_component_matrices,
+          parameters.T0
+        );
+    }
+  else if (parameters.operator_name == "spin-am")
+    {
+      relative::ConstructSpinAMOperator(
+          operator_parameters,
+          relative_space,relative_component_sectors,relative_component_matrices,
+          parameters.T0
         );
     }
   else if (parameters.operator_name == "coulomb")
@@ -262,7 +373,7 @@ void PopulateOperator(
       relative::ConstructCoulombOperator(
           operator_parameters,
           relative_space,relative_component_sectors,relative_component_matrices,
-          parameters.operator_type,
+          parameters.operator_type_pn,
           parameters.num_steps
         );
     }

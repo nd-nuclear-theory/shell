@@ -56,7 +56,7 @@ tasks = [
     for hw in hw_values
 ]
 
-pdef convert_jpv2rel(task):
+def convert_jpv2rel(task):
     """ Invoke jpv2rel.
     """
     input_lines = [

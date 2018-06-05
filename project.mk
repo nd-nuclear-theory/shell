@@ -41,7 +41,7 @@ modules += libraries/tbme libraries/obme libraries/density
 # additional libraries -- cloned as submodule
 
 modules += libraries/basis  # ordering note: basis depends on am and mcutils
-modules += libraries/am libraries/mcutils libraries/spline libraries/cppformat
+modules += libraries/am libraries/mcutils libraries/spline libraries/fmt
 
 ################################################################
 # extras -- list of extra files to be included

@@ -36,7 +36,7 @@
 #include "am/wigner_gsl.h"
 #include "basis/nlj_orbital.h"
 #include "basis/proton_neutron.h"
-#include "cppformat/format.h"
+#include "fmt/format.h"
 #include "obme/obme_operator.h"
 #include "obme/obme_io.h"
 

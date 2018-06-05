@@ -1,8 +1,0 @@
-# h2mixer_identity-big.in -- test of identity operator generation
-
-set-target-indexing-oscillator tb 16
-set-target-multipolarity 0 0 0
-set-output-format 0
-set-mass 2
-
-define-operator-source identity

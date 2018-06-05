@@ -8,7 +8,7 @@
 
 #include "am/wigner_gsl.h"
 #include "basis/nlj_operator.h"
-#include "cppformat/format.h"  // for debugging
+#include "fmt/format.h"  // for debugging
 #include "tbme/tbme_separable.h"
 
 namespace shell {
