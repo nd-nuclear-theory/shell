@@ -32,7 +32,9 @@ namespace shell {
   ////////////////////////////////////////////////////////////////
 
   basis::OperatorBlock<double>
-  UpgradeOneBodyOperatorJJJPN(basis::OneBodyOperatorLJPN ob_operator,
+  UpgradeOneBodyOperatorJJJPN(const basis::OrbitalSpaceLJPN& ob_orbital_space,
+                              const basis::OrbitalSectorsLJPN& ob_sectors,
+                              const basis::OperatorBlocks<double>& ob_matrices,
                               const basis::TwoBodySectorsJJJPN::SectorType& sector,
                               int A
                              )
@@ -46,8 +48,8 @@ namespace shell {
       basis::OperatorBlock<double>::Zero(bra_subspace_size, ket_subspace_size);
 
     // short circuit on triangle constraint
-    int j0 = ob_operator.sectors.j0();
-    int g0 = ob_operator.sectors.g0();
+    int j0 = ob_sectors.j0();
+    int g0 = ob_sectors.g0();
     if (!am::AllowedTriangle(bra_subspace.J(), ket_subspace.J(), j0))
       return matrix;
 
@@ -65,20 +67,48 @@ namespace shell {
 
         // calculate AS two-body element
         double matrix_element = 0.;
-        if (d == b && one_body_sector_allowed(ob_operator.sectors, c, a))
-          // TODO(pjf): Remove Hat() when switching to Edmonds convention
-          matrix_element += ob_operator.get_matrix_element(c, a) / Hat(a.j());
-        if (c == a && one_body_sector_allowed(ob_operator.sectors, d, b))
-        // TODO(pjf): Remove Hat() when switching to Edmonds convention
-          matrix_element += ob_operator.get_matrix_element(d, b) / Hat(b.j());
+        if (d == b && one_body_sector_allowed(ob_sectors, c, a))
+        {
+          matrix_element +=
+            am::RacahReductionFactor1Rose(
+              c.j(), d.j(), bra.J(), a.j(), b.j(), ket.J(), j0
+              )
+            * basis::MatrixElementLJPN(
+                ob_orbital_space, ob_orbital_space, ob_sectors, ob_matrices, c, a
+                )
+        }
+        if (c == a && one_body_sector_allowed(ob_sectors, d, b))
+        {
+          matrix_element +=
+            am::RacahReductionFactor2Rose(
+              c.j(), d.j(), bra.J(), a.j(), b.j(), ket.J(), j0
+              )
+            * basis::MatrixElementLJPN(
+                ob_orbital_space, ob_orbital_space, ob_sectors, ob_matrices, d, b
+                )
+        }
 
         int phase = - ParitySign(ket.J()-a.j()-b.j());
-        if (d == a && one_body_sector_allowed(ob_operator.sectors, c, b))
-        // TODO(pjf): Remove Hat() when switching to Edmonds convention
-          matrix_element += phase*ob_operator.get_matrix_element(c, b) / Hat(b.j());
-        if (c == b && one_body_sector_allowed(ob_operator.sectors, d, a))
-        // TODO(pjf): Remove Hat() when switching to Edmonds convention
-          matrix_element += phase*ob_operator.get_matrix_element(d, a) / Hat(a.j());
+        if (d == a && one_body_sector_allowed(ob_sectors, c, b))
+        {
+          matrix_element +=
+            am::RacahReductionFactor1Rose(
+              c.j(), d.j(), bra.J(), b.j(), a.j(), ket.J(), j0
+              )
+            * basis::MatrixElementLJPN(
+                ob_orbital_space, ob_orbital_space, ob_sectors, ob_matrices, c, b
+                )
+        }
+        if (c == b && one_body_sector_allowed(ob_sectors, d, a))
+        {
+          matrix_element +=
+            am::RacahReductionFactor2Rose(
+              c.j(), d.j(), bra.J(), b.j(), a.j(), ket.J(), j0
+              )
+            * basis::MatrixElementLJPN(
+                ob_orbital_space, ob_orbital_space, ob_sectors, ob_matrices, d, a
+                )
+        }
 
         // convert to NAS if needed
         if (a == b)

@@ -104,7 +104,9 @@ namespace shell {
 
   Eigen::MatrixXd
   KinematicMatrixJJJPN(
-      const shell::OneBodyOperator& one_body_operator,
+      const basis::OrbitalSpaceLJPN& radial_orbital_space,
+      const basis::OrbitalSectorsLJPN& radial_sectors,
+      const basis::OperatorBlocks<double>& radial_matrices,
       KinematicOperatorType kinematic_operator_type,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       int A
