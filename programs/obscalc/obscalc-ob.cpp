@@ -41,12 +41,24 @@
 #include "obme/obme_operator.h"
 #include "obme/obme_io.h"
 
-struct OneBodyOperator : public shell::OneBodyOperator {
-  std::string filename;
+// Store one-body operators
+struct OneBodyOperator {
+  std::string name;
+  basis::OrbitalSpaceLJPN space;
+  basis::OrbitalSectorsLJPN sectors;
+  basis::OperatorBlocks<double> matrices;
 
-  OneBodyOperator(const std::string& name_, const std::string& filename_) : filename(filename_)
-  {
-    name = name_;
+  explicit OneBodyOperator(const std::string& name__, const std::string& filename)
+      : name(name__) {
+    // read operator
+    shell::InOBMEStream is(filename);
+    is.Read(matrices);
+
+    // get indexing
+    basis::OrbitalSpaceLJPN ket_space;
+    is.SetToIndexing(space, ket_space, sectors);
+    assert(space.OrbitalInfo() == ket_space.OrbitalInfo());
+    is.Close();
   }
 };
 
@@ -171,7 +183,7 @@ void ReadParameters(RunParameters& run_parameters) {
 }
 
 double CalculateMatrixElement(const RunParameters& run_parameters,
-                              const shell::OneBodyOperator& op,
+                              const OneBodyOperator& op,
                               const OneBodyDensities& densities) {
   basis::OperatorBlocks<double> density_matrices;
   const basis::OrbitalSpaceLJPN& space = run_parameters.space;
@@ -222,17 +234,6 @@ int main(int argc, char** argv) {
                            omp_get_max_threads(), omp_get_num_procs())
             << std::endl
             << std::endl;
-
-  // read operators
-  for (auto op : run_parameters.operators)
-  {
-    shell::InOBMEStream stream(op.filename);
-    stream.GetOneBodyOperator(op);
-    stream.Close();
-
-    assert(op.bra_orbital_space.OrbitalInfo() == op.ket_orbital_space.OrbitalInfo());
-    assert(op.operator_type == basis::OneBodyOperatorType::kSpherical);
-  }
 
   // open output
   std::ios_base::openmode mode_argument = std::ios_base::trunc;

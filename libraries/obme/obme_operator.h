@@ -29,13 +29,5 @@ enum class RadialOperatorType : char {
   kGeneric = 'g'  // generic
 };
 
-/**
- * One-body operator storage
- */
-struct OneBodyOperator : public basis::OneBodyOperatorLJPN {
-  RadialOperatorType radial_operator_type;
-  int radial_operator_power;
-};
-
 }
 #endif  // OBME_OPERATOR_H_

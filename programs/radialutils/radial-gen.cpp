@@ -314,10 +314,12 @@ void BuildOperator(OperatorParameters operator_parameters) {
       int ket_l = sector.ket_subspace().l();
       if (operator_parameters.order == 1 && operator_parameters.j0 == 1)
       {
-        // see csbasis (58) and (60)
+        // see csbasis (58) and (60), Brink and Satchler Appendix VI
         matrices[sector_index] *=
-          ParitySign(ket_j - HalfInt(1,2) + 1) * Hat(bra_j) * Hat(ket_j)
+          ParitySign(ket_j - HalfInt(1,2) + 1) * Hat(ket_j)
           * am::Wigner3J(bra_j, ket_j, 1, HalfInt(1,2), HalfInt(-1,2), 0);
+        // dimension factor -- Edmonds convention
+        // matrices[sector_index] *= Hat(bra_j);
         if (operator_parameters.radial_operator == shell::RadialOperatorType::kK)
           matrices[sector_index] *= ParitySign((bra_l - ket_l - 1)/2);
           // guaranteed real by parity
@@ -325,14 +327,16 @@ void BuildOperator(OperatorParameters operator_parameters) {
       else if (operator_parameters.order == 2 && operator_parameters.j0 == 0)
       {
         // dimension factor -- Edmonds convention
-        matrices[sector_index] *= Hat(ket_j);
+        // matrices[sector_index] *= Hat(bra_j);
       }
       else if (operator_parameters.order == 2 && operator_parameters.j0 == 2)
       {
         // see Varshalovich 3.2.1 eq. 23 and Suhonen (2.57)
         matrices[sector_index] *= std::sqrt(2/3)
-          * ParitySign(ket_j - HalfInt(1, 2) + 2) * Hat(bra_j) * Hat(ket_j)
+          * ParitySign(ket_j - HalfInt(1, 2) + 2) * Hat(ket_j)
           * am::Wigner3J(bra_j, ket_j, 2, HalfInt(1, 2), HalfInt(-1, 2), 0);
+        // dimension factor -- Edmonds convention
+        // matrices[sector_index] *= Hat(bra_j);
       }
     }
   }

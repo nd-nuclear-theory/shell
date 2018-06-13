@@ -139,7 +139,6 @@ class InOBMEStream : public OBMEStreamBase {
   // If the internal bra and ket orbital spaces are equal, it is
   // safe to use the same target variable to hold both.
 
-  void GetOneBodyOperator(OneBodyOperator& one_body_operator);
   void Read(basis::OperatorBlocks<double>& matrices);
   void Close();
 

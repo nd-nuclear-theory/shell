@@ -31,15 +31,6 @@ InOBMEStream::InOBMEStream(const std::string& filename)
   ReadHeader();
 }
 
-void InOBMEStream::GetOneBodyOperator(OneBodyOperator& one_body_operator)
-{
-  one_body_operator.operator_type = operator_type();
-  one_body_operator.radial_operator_type = radial_operator_type();
-  one_body_operator.radial_operator_power = radial_operator_power();
-  SetToIndexing(one_body_operator.bra_orbital_space, one_body_operator.ket_orbital_space, one_body_operator.sectors);
-  Read(one_body_operator.matrices);
-}
-
 void InOBMEStream::SetToIndexing(basis::OrbitalSpaceLJPN& bra_orbital_space__,
                                  basis::OrbitalSpaceLJPN& ket_orbital_space__,
                                  basis::OrbitalSectorsLJPN& sectors__)
