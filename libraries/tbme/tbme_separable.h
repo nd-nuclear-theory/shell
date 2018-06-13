@@ -107,6 +107,7 @@ namespace shell {
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
       const basis::OperatorBlocks<double>& radial_matrices,
+      const RadialOperatorType& radial_operator_type,
       KinematicOperatorType kinematic_operator_type,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       int A
@@ -144,10 +145,10 @@ namespace shell {
   // Arguments:
   //   radial_orbital_space, radial_sectors, radial_matrices (...):
   //      definition of radial matrix elements (T^2 for UTSqr or T for VT1T2)
-  //   kinematic_operator_type (KinematicOperatorType): whether UTSqr or VT1T2 matrix
   //   radial_operator_type (shell::RadialOperatorType): whether
   //     coordinate (kR) or momentum (kK) space (only affects phase factor
   //     calculation)
+  //   kinematic_operator_type (KinematicOperatorType): whether UTSqr or VT1T2 matrix
   //   sector (basis::TwoBodySectorsJJJPN::SectorType) : the sector to
   //     populate
   //   A (int): atomic mass number

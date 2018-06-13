@@ -6,6 +6,7 @@
 
 ****************************************************************/
 
+#include "am/racah_reduction.h"
 #include "am/wigner_gsl.h"
 #include "basis/nlj_operator.h"
 #include "fmt/format.h"  // for debugging
@@ -75,7 +76,7 @@ namespace shell {
               )
             * basis::MatrixElementLJPN(
                 ob_orbital_space, ob_orbital_space, ob_sectors, ob_matrices, c, a
-                )
+              );
         }
         if (c == a && one_body_sector_allowed(ob_sectors, d, b))
         {
@@ -85,29 +86,29 @@ namespace shell {
               )
             * basis::MatrixElementLJPN(
                 ob_orbital_space, ob_orbital_space, ob_sectors, ob_matrices, d, b
-                )
+              );
         }
 
         int phase = - ParitySign(ket.J()-a.j()-b.j());
         if (d == a && one_body_sector_allowed(ob_sectors, c, b))
         {
-          matrix_element +=
+          matrix_element += phase *
             am::RacahReductionFactor1Rose(
               c.j(), d.j(), bra.J(), b.j(), a.j(), ket.J(), j0
               )
             * basis::MatrixElementLJPN(
                 ob_orbital_space, ob_orbital_space, ob_sectors, ob_matrices, c, b
-                )
+              );
         }
         if (c == b && one_body_sector_allowed(ob_sectors, d, a))
         {
-          matrix_element +=
+          matrix_element += phase *
             am::RacahReductionFactor2Rose(
               c.j(), d.j(), bra.J(), b.j(), a.j(), ket.J(), j0
               )
             * basis::MatrixElementLJPN(
                 ob_orbital_space, ob_orbital_space, ob_sectors, ob_matrices, d, a
-                )
+              );
         }
 
         // convert to NAS if needed
@@ -125,36 +126,17 @@ namespace shell {
   ////////////////////////////////////////////////////////////////
   // Racah reduction formula
   ////////////////////////////////////////////////////////////////
-  double RacahDotProductFormula(const basis::OneBodyOperatorLJPN& ob_operator1,
-                                const basis::OneBodyOperatorLJPN& ob_operator2,
-                                int bra_J, int ket_J,
-                                const basis::OrbitalStatePN& c, const basis::OrbitalStatePN& d,
-                                const basis::OrbitalStatePN& a, const basis::OrbitalStatePN& b
-                               )
-  {
-    // short-circuit on sector-constraint-disallowed RME
-    if (!one_body_sector_allowed(ob_operator1.sectors, c, a) || !one_body_sector_allowed(ob_operator2.sectors, d, b))
-      return 0.;
-    int operator_j0 = ob_operator1.sectors.j0();
-    // evaluate Racah reduction formula
-    double matrix_element
-      = ob_operator1.get_matrix_element(c, a) * ob_operator2.get_matrix_element(d, b);
-    // TODO(pjf): enable below Hat when converting to Edmonds convention inside h2mixer
-    // matrix_element *= Hat(bra.J())
-    matrix_element *= ParitySign(d.j()+bra_J+a.j());
-    matrix_element *= am::Wigner6J(c.j(), d.j(), bra_J, b.j(), a.j(), operator_j0);
-
-    return matrix_element;
-  }
-
   basis::OperatorBlock<double>
-  RacahReduceDotProductJJJPN(const basis::OneBodyOperatorLJPN& ob_operator1,
-                             const basis::OneBodyOperatorLJPN& ob_operator2,
+  RacahReduceDotProductJJJPN(const basis::OrbitalSpaceLJPN& ob_orbital_space,
+                             const basis::OrbitalSectorsLJPN& ob_sectors1,
+                             const basis::OperatorBlocks<double>& ob_matrices1,
+                             const basis::OrbitalSectorsLJPN& ob_sectors2,
+                             const basis::OperatorBlocks<double>& ob_matrices2,
                              const basis::TwoBodySectorsJJJPN::SectorType& sector)
   {
     // sanity check on
-    assert(ob_operator1.sectors.j0() == ob_operator2.sectors.j0());
-    int operator_j0 = ob_operator1.sectors.j0();
+    assert(ob_sectors1.j0() == ob_sectors2.j0());
+    int operator_j0 = ob_sectors1.j0();
 
     const basis::TwoBodySubspaceJJJPN& bra_subspace = sector.bra_subspace();
     const int bra_subspace_size = bra_subspace.size();
@@ -180,11 +162,28 @@ namespace shell {
         const basis::OrbitalStatePN& c = bra.GetOrbital1();
         const basis::OrbitalStatePN& d = bra.GetOrbital2();
 
-        int phase = - ParitySign(ket.J()-a.j()-b.j());  // AS phase
-        double matrix_element =
-          RacahDotProductFormula(ob_operator1, ob_operator2, bra.J(), ket.J(), c, d, a, b)
-          + phase*RacahDotProductFormula(ob_operator1, ob_operator2, bra.J(), ket.J(), c, d, b, a);
-
+        double matrix_element = 0.;
+        if (one_body_sector_allowed(ob_sectors1, c, a) && one_body_sector_allowed(ob_sectors2, d, b))
+        {
+          matrix_element += am::RacahReductionFactor12DotRose(c.j(), d.j(), bra.J(), a.j(), b.j(), ket.J(), operator_j0)
+            * basis::MatrixElementLJPN(
+                ob_orbital_space, ob_orbital_space, ob_sectors1, ob_matrices1, c, a
+              )
+            * basis::MatrixElementLJPN(
+                ob_orbital_space, ob_orbital_space, ob_sectors2, ob_matrices2, d, b
+              );
+        }
+        if (one_body_sector_allowed(ob_sectors1, c, b) && one_body_sector_allowed(ob_sectors2, d, a))
+        {
+          int phase = - ParitySign(ket.J()-a.j()-b.j());  // AS phase
+          matrix_element += phase * am::RacahReductionFactor12DotRose(c.j(), d.j(), bra.J(), b.j(), a.j(), ket.J(), operator_j0)
+            * basis::MatrixElementLJPN(
+                ob_orbital_space, ob_orbital_space, ob_sectors1, ob_matrices1, c, b
+              )
+            * basis::MatrixElementLJPN(
+                ob_orbital_space, ob_orbital_space, ob_sectors2, ob_matrices2, d, a
+              );
+        }
         // convert to NAS if needed
         if (a == b)
           matrix_element *= 1/(sqrt(2.));
@@ -196,37 +195,18 @@ namespace shell {
     return matrix;
   }
 
-  double RacahTensorProductFormula(const basis::OneBodyOperatorLJPN& ob_operator1,
-                                   const basis::OneBodyOperatorLJPN& ob_operator2,
-                                   int bra_J, int ket_J, int J0,
-                                   const basis::OrbitalStatePN& c, const basis::OrbitalStatePN& d,
-                                   const basis::OrbitalStatePN& a, const basis::OrbitalStatePN& b
-                                  )
-  {
-    int ob_operator1_j0 = ob_operator1.sectors.j0();
-    int ob_operator2_j0 = ob_operator2.sectors.j0();
-    // short-circuit on sector-constraint-disallowed RME
-    if (!one_body_sector_allowed(ob_operator1.sectors, c, a) || !one_body_sector_allowed(ob_operator2.sectors, d, b))
-      return 0.;
-    double matrix_element
-      = ob_operator1.get_matrix_element(c, a) * ob_operator2.get_matrix_element(d, b);
-    // TODO(pjf): enable below Hat when converting to Edmonds convention
-    // matrix_element *= Hat(bra_J)
-    matrix_element *= Hat(J0) * Hat(ket_J);
-    matrix_element *= am::Wigner9J(c.j(), d.j(), bra_J, a.j(), b.j(), ket_J, ob_operator1_j0, ob_operator2_j0, J0);
-
-    return matrix_element;
-  }
-
   basis::OperatorBlock<double>
-  RacahReduceTensorProductJJJPN(const basis::OneBodyOperatorLJPN ob_operator1,
-                                const basis::OneBodyOperatorLJPN ob_operator2,
+  RacahReduceTensorProductJJJPN(const basis::OrbitalSpaceLJPN& ob_orbital_space,
+                                const basis::OrbitalSectorsLJPN& ob_sectors1,
+                                const basis::OperatorBlocks<double>& ob_matrices1,
+                                const basis::OrbitalSectorsLJPN& ob_sectors2,
+                                const basis::OperatorBlocks<double>& ob_matrices2,
                                 const basis::TwoBodySectorsJJJPN::SectorType& sector,
                                 int J0
                                )
   {
     // sanity check on
-    assert(am::AllowedTriangle(ob_operator1.sectors.j0(), ob_operator2.sectors.j0(), J0));
+    assert(am::AllowedTriangle(ob_sectors1.j0(), ob_sectors2.j0(), J0));
 
     const basis::TwoBodySubspaceJJJPN& bra_subspace = sector.bra_subspace();
     const int bra_subspace_size = bra_subspace.size();
@@ -252,11 +232,39 @@ namespace shell {
         const basis::OrbitalStatePN& c = bra.GetOrbital1();
         const basis::OrbitalStatePN& d = bra.GetOrbital2();
 
+        double matrix_element = 0.;
+        if (one_body_sector_allowed(ob_sectors1, c, a) && one_body_sector_allowed(ob_sectors2, d, b))
+        {
         int phase = - ParitySign(ket.J()-a.j()-b.j());  // AS phase
-        // evaluate Racah reduction formula on AS states
-        double matrix_element =
-          RacahTensorProductFormula(ob_operator1, ob_operator2, bra.J(), ket.J(), J0, c, d, a, b)
-          + phase*RacahTensorProductFormula(ob_operator1, ob_operator2, bra.J(), ket.J(), J0, c, d, b, a);
+          matrix_element +=
+            am::RacahReductionFactor12Rose(
+              c.j(), d.j(), bra.J(),
+              a.j(), b.j(), ket.J(),
+              ob_sectors1.j0(), ob_sectors2.j0(), J0
+            )
+            * basis::MatrixElementLJPN(
+                ob_orbital_space, ob_orbital_space, ob_sectors1, ob_matrices1, c, a
+              )
+            * basis::MatrixElementLJPN(
+                ob_orbital_space, ob_orbital_space, ob_sectors2, ob_matrices2, d, b
+              );
+        }
+        if (one_body_sector_allowed(ob_sectors1, c, b) && one_body_sector_allowed(ob_sectors2, d, a))
+        {
+          int phase = - ParitySign(ket.J()-a.j()-b.j());  // AS phase
+          matrix_element += phase
+            * am::RacahReductionFactor12Rose(
+                c.j(), d.j(), bra.J(),
+                a.j(), b.j(), ket.J(),
+                ob_sectors1.j0(), ob_sectors2.j0(), J0
+              )
+            * basis::MatrixElementLJPN(
+                ob_orbital_space, ob_orbital_space, ob_sectors1, ob_matrices1, c, b
+              )
+            * basis::MatrixElementLJPN(
+                ob_orbital_space, ob_orbital_space, ob_sectors2, ob_matrices2, d, a
+              );
+        }
 
         // convert to NAS if needed
         if (a == b)
@@ -349,7 +357,10 @@ namespace shell {
 
   Eigen::MatrixXd
   KinematicMatrixJJJPN(
-      const shell::OneBodyOperator& radial_operator,
+      const basis::OrbitalSpaceLJPN& radial_orbital_space,
+      const basis::OrbitalSectorsLJPN& radial_sectors,
+      const basis::OperatorBlocks<double>& radial_matrices,
+      const RadialOperatorType& radial_operator_type,
       KinematicOperatorType kinematic_operator_type,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       int A
@@ -363,16 +374,23 @@ namespace shell {
     const basis::TwoBodySpeciesPN two_body_species = subspace.two_body_species();
     const int J = subspace.J();
     const int g = subspace.g();
-    int momentum_space_phase = ParitySign(radial_operator.radial_operator_type == shell::RadialOperatorType::kK);
+    int momentum_space_phase = ParitySign(radial_operator_type == shell::RadialOperatorType::kK);
 
     basis::OperatorBlock<double> matrix;
     if (kinematic_operator_type == KinematicOperatorType::kUTSqr)
     {
-      matrix = UpgradeOneBodyOperatorJJJPN(radial_operator, sector, A);
+      matrix = UpgradeOneBodyOperatorJJJPN(
+        radial_orbital_space, radial_sectors, radial_matrices, sector, A
+      );
     }
     else // if (kinematic_operator_type==KinematicOperatorType::kVT1T2)
     {
-      matrix = momentum_space_phase*RacahReduceDotProductJJJPN(radial_operator, radial_operator, sector);
+      matrix = momentum_space_phase*RacahReduceDotProductJJJPN(
+        radial_orbital_space,
+        radial_sectors, radial_matrices,
+        radial_sectors, radial_matrices,
+        sector
+      );
     }
 
     return matrix;

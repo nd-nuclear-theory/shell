@@ -74,7 +74,7 @@
 typedef std::tuple<shell::RadialOperatorType,int,int,int,int> RadialOperatorLabels;
 // Label for radial operator as (type,power,j0,g0,Tz0) of r, k, or o.
 
-struct RadialOperatorData : public shell::OneBodyOperator
+struct RadialOperatorData
 // Indexing and matrix elements for a radial operator or radial overlaps.
 //
 // For overlaps, the "bra" space is the source basis, and the "ket"
@@ -96,6 +96,12 @@ struct RadialOperatorData : public shell::OneBodyOperator
 
   // input filename
   std::string filename;
+
+  // operator indexing and storage
+  basis::OrbitalSpaceLJPN bra_orbital_space;
+  basis::OrbitalSpaceLJPN ket_orbital_space;
+  basis::OrbitalSectorsLJPN sectors;
+  basis::OperatorBlocks<double> matrices;
 };
 
 typedef std::map<RadialOperatorLabels,RadialOperatorData> RadialOperatorMap;
@@ -481,15 +487,19 @@ void InitializeRadialOperators(RadialOperatorMap& radial_operators)
 
       // open radial operator file
       shell::InOBMEStream radial_operator_stream(radial_operator_data.filename);
-
-      // get radial operator
-      radial_operator_stream.GetOneBodyOperator(radial_operator_data);
-
+      radial_operator_stream.SetToIndexing(
+          radial_operator_data.bra_orbital_space,
+          radial_operator_data.ket_orbital_space,
+          radial_operator_data.sectors
+        );
       assert(radial_operator_type == radial_operator_stream.radial_operator_type());
       assert(radial_operator_power == radial_operator_stream.radial_operator_power());
       assert(radial_operator_j0 == radial_operator_data.sectors.j0());
       assert(radial_operator_g0 == radial_operator_data.sectors.g0());
       assert(radial_operator_Tz0 == radial_operator_data.sectors.Tz0());
+
+      // read matrices
+      radial_operator_stream.Read(radial_operator_data.matrices);
 
       // close file
       radial_operator_stream.Close();
@@ -843,7 +853,8 @@ void GenerateOperatorSources(
           //     )
           //   << std::endl;
           operator_matrix = shell::KinematicMatrixJJJPN(
-              radial_operator_data,
+              radial_operator_data.ket_orbital_space,radial_operator_data.sectors,radial_operator_data.matrices,
+              radial_operator_type,
               kinematic_operator_type,
               target_sector,run_parameters.A
             );
