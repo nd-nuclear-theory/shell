@@ -49,7 +49,7 @@
 #include <vector>
 
 #include "basis/nlj_orbital.h"
-#include "cppformat/format.h"
+#include "fmt/format.h"
 #include "mcutils/profiling.h"
 #include "radial/radial_io.h"
 #include "spline/wavefunction_class.h"

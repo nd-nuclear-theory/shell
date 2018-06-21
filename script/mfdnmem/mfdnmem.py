@@ -93,6 +93,7 @@
     6/30/15 (mac): Initiated.
     11/23/15 (mac): Adapt to take multiple Nmax inputs.
     10/20/17 (pjf): Adapt to node/rank oriented scripting.
+    04/04/17 (pjf): Mark choices where n_p is integer multiple of n_n.
     Last modified 11/23/15.
 
 """
@@ -222,7 +223,7 @@ def tabulate_usage(params, size_range, threads, core_node, mesh):
 
     (size_min, size_max) = size_range
     template_header = "    {n_d:>4s} {n_p:>6s} {n_n:>5s}  {mem_1:>7s}  {mem_2:>7s}  {mem:>7s}  {mem_perc:>7s}"
-    template_line = "    {n_d:4d} {n_p:6d} {n_n:5d}  {mem_1:7.3f}  {mem_2:7.3f}  {mem:7.3f}  {mem_perc:7.1f}"
+    template_line = "    {n_d:4d} {n_p:6d} {n_n:5d}{even:1s} {mem_1:7.3f}  {mem_2:7.3f}  {mem:7.3f}  {mem_perc:7.1f}"
     print(template_header.format(n_d="n_d", n_p="n_p", n_n="n_n",
                                  mem_1="m1 (GB)", mem_2="m2 (GB)", mem="m (GB)",
                                  mem_perc="m (%)"))
@@ -245,8 +246,9 @@ def tabulate_usage(params, size_range, threads, core_node, mesh):
             continue
         elif size_core > size_min:
             # memory usage is in acceptable range
+            even = "*" if num_nodes % n_d == 0 else " "
             print(template_line.format(
-                n_d=params.n_d, n_p=params.n_p, n_n=num_nodes,
+                n_d=params.n_d, n_p=params.n_p, n_n=num_nodes, even=even,
                 mem_1=size_core_1 / GB, mem_2=size_core_2 / GB,
                 mem=size_core / GB, mem_perc=100 * size_core / size_max)
             )

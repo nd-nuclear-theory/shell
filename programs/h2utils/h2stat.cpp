@@ -25,7 +25,7 @@
 #include <string>
 #include <sstream>
 
-#include "cppformat/format.h"
+#include "fmt/format.h"
 #include "mcutils/eigen.h"
 #include "mcutils/profiling.h"
 #include "tbme/h2_io.h"

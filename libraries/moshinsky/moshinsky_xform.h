@@ -15,17 +15,18 @@
   11/21/15 (mac): Extract interaction I/O and manipulation functions
     to interaction_lsjt.  Allow input of generic relative interaction.
   11/26/15 (mac): Initial running version.
-  1/6/16 (mac): Documentation updates.
-  7/9/16 (mac): Overhaul:
+  01/06/16 (mac): Documentation updates.
+  07/09/16 (mac): Overhaul:
     - Revise for restructured shell directory structure.
     - Revise to use block-N structure, with updated lsjt_scheme indexing.
     - Update to group theory Wigner-Eckart convention.
     - Extract transformation routines from program file into header.
-  7/22/16 (mac): Implement isospin branching.
+  07/22/16 (mac): Implement isospin branching.
   10/25/16 (mac): Update to use TwoBodySectorsJJJPN constructor with
     explicit Tz=0.
-  9/27/17 (mac): Change normalization for TwoBodyMatrixJJJPN results from
+  09/27/17 (mac): Change normalization for TwoBodyMatrixJJJPN results from
     AS to NAS.
+  04/28/18 (mac): Extract RacahReductionFactorFirstSystemGT to am package.
 
 ****************************************************************/
 
@@ -34,7 +35,6 @@
 
 #include "eigen3/Eigen/Sparse"
 
-#include "am/wigner_gsl.h"
 #include "basis/lsjt_scheme.h"
 #include "basis/lsjt_operator.h"
 #include "basis/jjjt_scheme.h"
@@ -45,28 +45,6 @@ namespace moshinsky {
   ////////////////////////////////////////////////////////////////
   // Obtaining relative-cm matrix elements from relative
   ////////////////////////////////////////////////////////////////
-
-  double RacahReductionFactorFirstSystemGT(
-      const HalfInt& J1p, const HalfInt& J2p, const HalfInt& Jp, 
-      const HalfInt& J1, const HalfInt& J2, const HalfInt& J, 
-      const HalfInt& J0
-    );
-  // Prefactor for first-system operator in Racah two-system 
-  // reduction formula.
-  //
-  // Follows group theoretic (Rose) conventions for RME normalization:
-  //
-  //   <J1',J2;J||A_1^J0||J1,J2;J>
-  //     =(-)^(J1'+J2+J+J0)*Hat(J1')*Hat(J)*{J1',J',J2;J,J1,J0} 
-  //
-  // Note: Under Edmonds convention, the Hat(J1') would be a Hat(J').
-  //
-  // Assertion: Arguments J2p and J2 must be equal.
-  //
-  // Arguments (all HalfInt):
-  //   J1p, J2p, Jp: bra angular momenta
-  //   J1, J2, J: ket angular momenta
-  //   J0: operator angular momentum
 
   Eigen::MatrixXd
     RelativeCMMatrixLSJTN(

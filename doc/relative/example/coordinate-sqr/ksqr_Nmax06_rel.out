@@ -1,0 +1,8 @@
+
+relative-gen -- relative operator matrix element generation
+version: dc0b24d-dirty
+
+Writing relative operator file...
+  Filename: ksqr_Nmax06_rel.dat
+  Operator properties: J0 0 g0 0 T0_min 0 T0_max 0 symmetry 0
+  Truncation: Nmax 6 Jmax 7
