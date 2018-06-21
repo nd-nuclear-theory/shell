@@ -185,10 +185,11 @@ void TestTransformSimple(
         relative_space,relative_component_sectors,relative_component_matrices
       );
   else if (operator_code=='K')
-     ConstructKinematicOperator(
+     ConstructCoordinateSqr(
          operator_labels,
          relative_space,relative_component_sectors,relative_component_matrices,
-         relative::KinematicOperator::kKSqr
+         relative::CoordinateType::kK,
+         0
        );
 
   ////////////////////////////////////////////////////////////////
@@ -261,7 +262,7 @@ void TestTransformSimple(
           std::cout << std::endl;
         }
       std::cout << std::endl;
-  
+
     }
 
   ////////////////////////////////////////////////////////////////
@@ -350,7 +351,7 @@ void TestTransformSimple(
           std::cout << std::endl;
         }
       std::cout << std::endl;
-  
+
     }
 
   ////////////////////////////////////////////////////////////////
@@ -430,7 +431,7 @@ void TestTransformSimple(
         );
   std::ofstream jjjpn_stream(two_body_jjjpn_filename.c_str());
   jjjpn_stream << jjjpn_sstream.str();
-  
+
 }
 
 ////////////////////////////////////////////////////////////////
