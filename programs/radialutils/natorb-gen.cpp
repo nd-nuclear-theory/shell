@@ -33,7 +33,7 @@
 
 #include "basis/nlj_orbital.h"
 #include "density/obdme_io.h"
-#include "radial/radial_io.h"
+#include "obme/obme_io.h"
 #include "basis/operator.h"
 #include "mcutils/eigen.h"
 
@@ -248,11 +248,11 @@ int main(int argc, const char *argv[]) {
   // write xform out to file
   // TODO(pjf) construct new indexing for output
   basis::OrbitalSpaceLJPN& output_space = input_space;
-  basis::OrbitalSectorsLJPN output_sectors(input_space, output_space, 0, 0);
+  basis::OrbitalSectorsLJPN output_sectors(input_space, output_space, 0, 0, 0);
       // note hard-coded l0max=0, Tz0=0
-  shell::OutRadialStream xs(run_parameters.output_xform_file,
-                            input_space, output_space, output_sectors,
-                            shell::RadialOperatorType::kO, 0);
+  shell::OutOBMEStream xs(run_parameters.output_xform_file,
+                          input_space, output_space, output_sectors,
+                          basis::OneBodyOperatorType::kRadial, shell::RadialOperatorType::kO, 0);
   xs.Write(xform_matrices);
 
   // sort orbitals and write out

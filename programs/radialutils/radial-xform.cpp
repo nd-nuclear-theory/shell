@@ -29,7 +29,7 @@
 #include "mcutils/profiling.h"
 #include "basis/nlj_orbital.h"
 #include "basis/nlj_operator.h"
-#include "radial/radial_io.h"
+#include "obme/obme_io.h"
 
 ////////////////////////////////////////////////////////////////
 // process arguments
@@ -118,8 +118,8 @@ int main(int argc, const char *argv[]) {
   ProcessArguments(argc, argv, run_parameters);
 
   // Read input
-  shell::InRadialStream is(run_parameters.input_filename);
-  shell::InRadialStream olaps(run_parameters.olap_filename);
+  shell::InOBMEStream is(run_parameters.input_filename);
+  shell::InOBMEStream olaps(run_parameters.olap_filename);
 
   // Read orbitals
   std::ifstream orbitals(run_parameters.orbital_filename);
@@ -129,13 +129,15 @@ int main(int argc, const char *argv[]) {
   // get indexing
   basis::OrbitalSpaceLJPN source_bra_space, source_ket_space;
   basis::OrbitalSectorsLJPN source_sectors;
-  shell::RadialOperatorType source_operator_type = is.radial_operator_type();
+  basis::OneBodyOperatorType source_operator_type = is.operator_type();
+  shell::RadialOperatorType source_radial_operator_type = is.radial_operator_type();
   int source_operator_order = is.radial_operator_power();
   is.SetToIndexing(source_bra_space, source_ket_space, source_sectors);
 
   basis::OrbitalSpaceLJPN olap_bra_space, olap_ket_space;
   basis::OrbitalSectorsLJPN olap_sectors;
-  shell::RadialOperatorType olap_type = olaps.radial_operator_type();
+  basis::OneBodyOperatorType olap_operator_type = olaps.operator_type();
+  shell::RadialOperatorType olap_radial_type = olaps.radial_operator_type();
   olaps.SetToIndexing(olap_bra_space, olap_ket_space, olap_sectors);
 
   // check that operator is transformable (bra and ket spaces are the same)
@@ -152,7 +154,8 @@ int main(int argc, const char *argv[]) {
   }
 
   // check that overlaps are valid
-  if ((olap_type != shell::RadialOperatorType::kO)
+  if ((olap_operator_type != basis::OneBodyOperatorType::kRadial)
+      || (olap_radial_type != shell::RadialOperatorType::kO)
       || (source_ket_space.OrbitalInfo() != olap_bra_space.OrbitalInfo())
       || (olap_sectors.Tz0() != 0)
     )
@@ -162,19 +165,13 @@ int main(int argc, const char *argv[]) {
   }
 
   // construct new indexing
-  const shell::RadialOperatorType& target_operator_type = source_operator_type;
+  const basis::OneBodyOperatorType& target_operator_type = source_operator_type;
+  const shell::RadialOperatorType& target_radial_operator_type = source_radial_operator_type;
   const int target_operator_order = source_operator_order;
   const basis::OrbitalSpaceLJPN& target_space = olap_ket_space;
   basis::OrbitalSectorsLJPN target_sectors;
-  if (source_sectors.mode() == basis::SectorsConstraintMode::kAll) {
-    target_sectors = basis::OrbitalSectorsLJPN(target_space, target_space);
-  } else if (source_sectors.mode() == basis::SectorsConstraintMode::kRadial) {
-    target_sectors = basis::OrbitalSectorsLJPN(target_space, target_space,
-      source_sectors.l0max(), source_sectors.Tz0());
-  } else if (source_sectors.mode() == basis::SectorsConstraintMode::kSpherical) {
-    target_sectors = basis::OrbitalSectorsLJPN(target_space, target_space,
+  target_sectors = basis::OrbitalSectorsLJPN(target_space, target_space,
       source_sectors.j0(), source_sectors.g0(), source_sectors.Tz0());
-  }
 
   // Eigen initialization
   basis::OperatorBlocks<double> olap_matrices, input_matrices, output_matrices;
@@ -243,9 +240,9 @@ int main(int argc, const char *argv[]) {
 
   // write out to file
   std::cout << "INFO: Writing to file " << run_parameters.output_filename << std::endl;
-  shell::OutRadialStream os(run_parameters.output_filename,
+  shell::OutOBMEStream os(run_parameters.output_filename,
                             target_space, target_space, target_sectors,
-                            target_operator_type, target_operator_order);
+                            target_operator_type, target_radial_operator_type, target_operator_order);
   os.Write(output_matrices);
 
   is.Close();

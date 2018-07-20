@@ -1,7 +1,7 @@
 /****************************************************************
-  @file radial_io.h
+  @file obme_io.h
 
-  Defines I/O classes for radial matrix element storage.
+  Defines I/O classes for one-body matrix element storage.
 
   Language: C++11
 
@@ -14,18 +14,18 @@
    - Don't store matrices internally to streams.
    - Read() takes an empty OperatorBlocks<double>&.
    - Constructors read/write headers but not data.
-   - OutRadialStream takes an OrbitalSectorsLJPN at construction.
+   - OutOBMEStream takes an OrbitalSectorsLJPN at construction.
   + 10/29/16 (mac):
    - Add error checking on stream open.
    - Fix double close on stream destruction.
   + 10/31/16 (mac):
    - Rename RadialOperator to RadialOperatorType and similarly rename
      stream accessor to radial_operator_type().
-   - Move OutRadialStream initializations into initializer list.
+   - Move OutOBMEStream initializations into initializer list.
   + 11/2/16 (pjf): Added RadialOperatorType::kO.
-  + 11/3/16 (mac): Provide InRadialStream::SetToIndexing and hide direct
+  + 11/3/16 (mac): Provide InOBMEStream::SetToIndexing and hide direct
      indexing accessors (copies are easily invalidated).
-  + 08/11/17 (pjf): Add verbose_mode option to OutRadialStream.
+  + 08/11/17 (pjf): Add verbose_mode option to OutOBMEStream.
   + 09/20/17 (pjf): Output Tz labels in verbose_mode.
   + 10/12/17 (pjf): Add support for generic and spherically-constrained operators:
     - Create new format (version 1) of radial file.
@@ -33,8 +33,8 @@
     - Store operator power separately for monomial radial operator.
 ****************************************************************/
 
-#ifndef RADIAL_IO_H_
-#define RADIAL_IO_H_
+#ifndef OBME_IO_H_
+#define OBME_IO_H_
 
 #include <cstdlib>
 #include <fstream>
@@ -44,65 +44,51 @@
 #include "eigen3/Eigen/Core"
 
 #include "basis/nlj_orbital.h"
-#include "basis/operator.h"
+#include "obme/obme_operator.h"
 
 namespace shell {
-
-/**
- * Radial IDs
- */
-enum class RadialOperatorType : char {
-  kR = 'r',
-  kK = 'k',
-  kO = 'o',
-  kGeneric = 'g'
-};
-
 /**
  * Base stream case with common attributes for input and output radial
  * streams.
  */
-class RadialStreamBase {
+class OBMEStreamBase {
  public:
   /**
    * Default constructor -- provided since required for certain
    * purposes by STL container classes (e.g., std::vector::resize)
    */
-  RadialStreamBase() = default;
+  OBMEStreamBase() = default;
 
-  explicit RadialStreamBase(const std::string& filename)
+  explicit OBMEStreamBase(const std::string& filename)
       : filename_(filename), sector_index_(0) {}
 
-  RadialStreamBase(const std::string& filename,
-                   const basis::OrbitalSpaceLJPN& bra_space,
-                   const basis::OrbitalSpaceLJPN& ket_space,
-                   const basis::OrbitalSectorsLJPN& sectors,
-                   const RadialOperatorType radial_operator_type,
-                   int radial_operator_power)
+  OBMEStreamBase(const std::string& filename,
+                 const basis::OrbitalSpaceLJPN& bra_space,
+                 const basis::OrbitalSpaceLJPN& ket_space,
+                 const basis::OrbitalSectorsLJPN& sectors,
+                 const basis::OneBodyOperatorType operator_type,
+                 const RadialOperatorType radial_operator_type,
+                 int radial_operator_power)
       : filename_(filename),
         sector_index_(0),
         bra_orbital_space_(bra_space),
         ket_orbital_space_(ket_space),
+        operator_type_(operator_type),
         radial_operator_type_(radial_operator_type),
         radial_operator_power_(radial_operator_power),
         sectors_(sectors) {}
 
   // operator type accessor
-  const RadialOperatorType& radial_operator_type() const {
-    return radial_operator_type_;
-  }
+  const basis::OneBodyOperatorType& operator_type() const { return operator_type_; }
+  const RadialOperatorType& radial_operator_type() const { return radial_operator_type_; }
 
   // operator power accessor
   int radial_operator_power() const { return radial_operator_power_; }
 
  protected:
   // indexing accessors
-  const basis::OrbitalSpaceLJPN& bra_orbital_space() const {
-    return bra_orbital_space_;
-  }
-  const basis::OrbitalSpaceLJPN& ket_orbital_space() const {
-    return ket_orbital_space_;
-  }
+  const basis::OrbitalSpaceLJPN& bra_orbital_space() const { return bra_orbital_space_; }
+  const basis::OrbitalSpaceLJPN& ket_orbital_space() const { return ket_orbital_space_; }
   const basis::OrbitalSectorsLJPN& sectors() const { return sectors_; }
   // Warning: If you copy sectors(), caveat emptor.  This object
   // contains references to subspaces in bra_orbital_space_ and
@@ -111,6 +97,7 @@ class RadialStreamBase {
   // will point to "garbage" subspaces.
 
   // operator information
+  basis::OneBodyOperatorType operator_type_;
   RadialOperatorType radial_operator_type_;
   int radial_operator_power_;
 
@@ -129,18 +116,18 @@ class RadialStreamBase {
 /**
  * Input stream for radial matrix element file.
  */
-class InRadialStream : public RadialStreamBase {
+class InOBMEStream : public OBMEStreamBase {
  public:
   /**
    * Default constructor -- provided since required for certain
    * purposes by STL container classes (e.g., std::vector::resize)
    */
-  InRadialStream() : stream_ptr_(NULL), line_count_(0) {}
+  InOBMEStream() : stream_ptr_(NULL), line_count_(0) {}
 
-  explicit InRadialStream(const std::string& filename);
+  explicit InOBMEStream(const std::string& filename);
 
   // destructor
-  ~InRadialStream() { delete stream_ptr_; }
+  ~InOBMEStream() { delete stream_ptr_; }
 
   // I/O
   void SetToIndexing(basis::OrbitalSpaceLJPN& bra_orbital_space__,
@@ -168,45 +155,45 @@ class InRadialStream : public RadialStreamBase {
 /**
  * Output stream for radial matrix element file.
  */
-class OutRadialStream : public RadialStreamBase {
+class OutOBMEStream : public OBMEStreamBase {
  public:
   /**
-  * Default constructor -- provided since required for certain
-  * purposes by STL container classes (e.g., std::vector::resize)
-  */
-  OutRadialStream() : stream_ptr_(NULL) {}
+   * Default constructor -- provided since required for certain
+   * purposes by STL container classes (e.g., std::vector::resize)
+   */
+  OutOBMEStream() : stream_ptr_(NULL) {}
 
-  explicit OutRadialStream(const std::string& filename,
-                           const basis::OrbitalSpaceLJPN& bra_space,
-                           const basis::OrbitalSpaceLJPN& ket_space,
-                           const basis::OrbitalSectorsLJPN& sectors,
-                           const RadialOperatorType radial_operator_type,
-                           int radial_operator_power,
-                           const std::string& format_str,
-                           bool verbose_mode = false);
+  explicit OutOBMEStream(const std::string& filename,
+                         const basis::OrbitalSpaceLJPN& bra_space,
+                         const basis::OrbitalSpaceLJPN& ket_space,
+                         const basis::OrbitalSectorsLJPN& sectors,
+                         const basis::OneBodyOperatorType operator_type,
+                         const RadialOperatorType radial_operator_type,
+                         int radial_operator_power,
+                         const std::string& format_str,
+                         bool verbose_mode = false);
 
-  explicit OutRadialStream(const std::string& filename,
-                           const basis::OrbitalSpaceLJPN& bra_space,
-                           const basis::OrbitalSpaceLJPN& ket_space,
-                           const basis::OrbitalSectorsLJPN& sectors,
-                           const RadialOperatorType radial_operator_type,
-                           int radial_operator_power)
-      : OutRadialStream(filename, bra_space, ket_space, sectors,
-                        radial_operator_type, radial_operator_power, "16.8e",
-                        false) {}
+  explicit OutOBMEStream(const std::string& filename,
+                         const basis::OrbitalSpaceLJPN& bra_space,
+                         const basis::OrbitalSpaceLJPN& ket_space,
+                         const basis::OrbitalSectorsLJPN& sectors,
+                         const basis::OneBodyOperatorType operator_type,
+                         const RadialOperatorType radial_operator_type,
+                         int radial_operator_power)
+      : OutOBMEStream(filename, bra_space, ket_space, sectors, operator_type,
+                      radial_operator_type, radial_operator_power, "16.8e", false) {}
 
-  explicit OutRadialStream(const std::string& filename,
-                           const basis::OrbitalSpaceLJPN& bra_space,
-                           const basis::OrbitalSpaceLJPN& ket_space,
-                           const basis::OrbitalSectorsLJPN& sectors,
-                           const RadialOperatorType radial_operator_type,
-                           int radial_operator_power, bool verbose_mode)
-      : OutRadialStream(filename, bra_space, ket_space, sectors,
-                        radial_operator_type, radial_operator_power, "16.8e",
-                        verbose_mode) {}
+  explicit OutOBMEStream(const std::string& filename, const basis::OrbitalSpaceLJPN& bra_space,
+                         const basis::OrbitalSpaceLJPN& ket_space,
+                         const basis::OrbitalSectorsLJPN& sectors,
+                         const basis::OneBodyOperatorType operator_type,
+                         const RadialOperatorType radial_operator_type,
+                         int radial_operator_power, bool verbose_mode)
+      : OutOBMEStream(filename, bra_space, ket_space, sectors, operator_type,
+                      radial_operator_type, radial_operator_power, "16.8e", verbose_mode) {}
 
   // destructor
-  ~OutRadialStream() { delete stream_ptr_; }
+  ~OutOBMEStream() { delete stream_ptr_; }
 
   // I/O
   void Write(const basis::OperatorBlocks<double>& matrices);
@@ -227,4 +214,4 @@ class OutRadialStream : public RadialStreamBase {
 };
 
 };      // namespace shell
-#endif  // RADIAL_IO_H_
+#endif  // OBME_IO_H_

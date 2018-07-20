@@ -1,5 +1,5 @@
 /****************************************************************
-  radial_io_test.cpp
+  obme_io_test.cpp
 
   Patrick J. Fasano
   University of Notre Dame
@@ -11,7 +11,7 @@
 #include <iostream>
 #include <string>
 
-#include "radial/radial_io.h"
+#include "obme/obme_io.h"
 
 #include "eigen3/Eigen/Core"
 #include "basis/nlj_orbital.h"
@@ -49,13 +49,19 @@ basis::OperatorBlocks<double> TestRadialOut(const std::string& filename, bool ve
 
   // print sectors
   std::cout << "Sectors" << std::endl;
-  basis::OrbitalSectorsLJPN sectors(bra_space, ket_space, 2, 0);
-  std::cout << "l0max: " << sectors.l0max() << " Tz0: " << sectors.Tz0() << std::endl;
+  basis::OrbitalSectorsLJPN sectors(bra_space, ket_space, 2, 0, 0);
+  std::cout << "j0: "   << sectors.j0()
+            << "g0: "   << sectors.g0()
+            << " Tz0: " << sectors.Tz0()
+            << std::endl;
   std::cout << sectors.DebugStr();
 
   // set up output stream
   std::cout << "Output stream" << std::endl;
-  shell::OutRadialStream os(filename, bra_space, ket_space, sectors, shell::RadialOperatorType::kR, sectors.l0max());
+  shell::OutOBMEStream os(
+    filename, bra_space, ket_space, sectors,
+    basis::OneBodyOperatorType::kRadial, shell::RadialOperatorType::kR, 0
+  );
 
   // generate matrices
   basis::OperatorBlocks<double> matrices;
@@ -84,7 +90,7 @@ basis::OperatorBlocks<double> TestRadialIn(const std::string& filename) {
 
   // set up input stream
   std::cout << "Input stream" << std::endl;
-  shell::InRadialStream is(filename);
+  shell::InOBMEStream is(filename);
 
   // // show bra space
   // std::cout << "Bra space" << std::endl;

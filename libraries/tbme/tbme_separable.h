@@ -34,6 +34,8 @@
     new isospin operators.
   + 09/21/17 (pjf): Fix missing Hat() factors in Racah's reduction
     formula for isospin operators.
+  + 02/23/18 (pjf): Implement kinematic operators in terms of generic
+    Racah's reduction formula code.
 
 ****************************************************************/
 
@@ -43,7 +45,7 @@
 #include "eigen3/Eigen/Dense"
 
 #include "basis/jjjpn_scheme.h"
-#include "radial/radial_io.h"
+#include "obme/obme_io.h"
 
 namespace shell {
   ////////////////////////////////////////////////////////////////
@@ -105,8 +107,8 @@ namespace shell {
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
       const basis::OperatorBlocks<double>& radial_matrices,
+      const RadialOperatorType& radial_operator_type,
       KinematicOperatorType kinematic_operator_type,
-      shell::RadialOperatorType radial_operator_type,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       int A
     );
@@ -125,7 +127,7 @@ namespace shell {
   //
   //   Obtained by csbasis (52)-(54).
   //
-  // Case kUTSwr:
+  // Case kUTSqr:
   //
   //   Populate matrix with two-body matrix elements for the
   //   *two-body* operator V_(T1.T2) obtained from a a dot product of
@@ -143,10 +145,10 @@ namespace shell {
   // Arguments:
   //   radial_orbital_space, radial_sectors, radial_matrices (...):
   //      definition of radial matrix elements (T^2 for UTSqr or T for VT1T2)
-  //   kinematic_operator_type (KinematicOperatorType): whether UTSqr or VT1T2 matrix
   //   radial_operator_type (shell::RadialOperatorType): whether
   //     coordinate (kR) or momentum (kK) space (only affects phase factor
   //     calculation)
+  //   kinematic_operator_type (KinematicOperatorType): whether UTSqr or VT1T2 matrix
   //   sector (basis::TwoBodySectorsJJJPN::SectorType) : the sector to
   //     populate
   //   A (int): atomic mass number
