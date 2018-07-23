@@ -19,4 +19,5 @@
 	url = ../ndmakefile
 [submodule "libraries/fmt"]
 	path = libraries/fmt
+        branch = submodule
 	url = ../fmt
