@@ -100,19 +100,19 @@ namespace shell {
   // kinematic operators
   ////////////////////////////////////////////////////////////////
 
-  enum class KinematicOperatorType {kUTSqr,kVT1T2};
+  enum class CoordinateSqrOperatorType {kUTSqr,kVT1T2};
 
   Eigen::MatrixXd
-  KinematicMatrixJJJPN(
+  CoordinateSqrMatrixJJJPN(
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
       const basis::OperatorBlocks<double>& radial_matrices,
       const RadialOperatorType& radial_operator_type,
-      KinematicOperatorType kinematic_operator_type,
+      CoordinateSqrOperatorType coordinate_sqr_operator_type,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
-      int A
+      int A, int J0
     );
-  // Populate matrix with two-body matrix elements of kinematic
+  // Populate matrix with two-body matrix elements of coordinate-squared
   // operator.
   //
   // Case kUTSqr:
@@ -136,11 +136,7 @@ namespace shell {
   //
   //   Obtained by csbasis (55)-(60).
   //
-  // Precondition: It is assumed that the sector is valid for a scalar
-  // (and isoscalar and positive parity), i.e., is a diagonal sector.
-  //
-  // Only the upper triangle of the returned matrix is populated (this
-  // operator only has diagonal sectors).
+  // Precondition: It is assumed that the sector is valid for an isoscalar.
   //
   // Arguments:
   //   radial_orbital_space, radial_sectors, radial_matrices (...):
@@ -148,10 +144,11 @@ namespace shell {
   //   radial_operator_type (shell::RadialOperatorType): whether
   //     coordinate (kR) or momentum (kK) space (only affects phase factor
   //     calculation)
-  //   kinematic_operator_type (KinematicOperatorType): whether UTSqr or VT1T2 matrix
+  //   coordinate_sqr_operator_type (CoordinateSqrOperatorType): whether UTSqr or VT1T2 matrix
   //   sector (basis::TwoBodySectorsJJJPN::SectorType) : the sector to
   //     populate
   //   A (int): atomic mass number
+  //   J0 (int): two-body operator J0
   //
   // Returns:
   //   (Eigen::MatrixXd) : the matrix for this sector
@@ -161,8 +158,8 @@ namespace shell {
   ////////////////////////////////////////////////////////////////
 
   // Note: The implementation of AngularMomentumMatrixJJJPN is
-  // redundant to KinematicMatrixJJJPN and could be reimplemented more
-  // simply in terms of KinematicMatrixJJJPN by definition of
+  // redundant to CoordinateSqrMatrixJJJPN and could be reimplemented more
+  // simply in terms of CoordinateSqrMatrixJJJPN by definition of
   // appropriate "radial" matrix realizations for the various angular
   // momentum operators.
 

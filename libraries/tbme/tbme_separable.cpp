@@ -235,7 +235,6 @@ namespace shell {
         double matrix_element = 0.;
         if (one_body_sector_allowed(ob_sectors1, c, a) && one_body_sector_allowed(ob_sectors2, d, b))
         {
-        int phase = - ParitySign(ket.J()-a.j()-b.j());  // AS phase
           matrix_element +=
             am::RacahReductionFactor12Rose(
               c.j(), d.j(), bra.J(),
@@ -251,11 +250,11 @@ namespace shell {
         }
         if (one_body_sector_allowed(ob_sectors1, c, b) && one_body_sector_allowed(ob_sectors2, d, a))
         {
-          int phase = - ParitySign(ket.J()-a.j()-b.j());  // AS phase
+          int phase = - ParitySign(ket.J()-b.j()-a.j());  // AS phase
           matrix_element += phase
             * am::RacahReductionFactor12Rose(
                 c.j(), d.j(), bra.J(),
-                a.j(), b.j(), ket.J(),
+                b.j(), a.j(), ket.J(),
                 ob_sectors1.j0(), ob_sectors2.j0(), J0
               )
             * basis::MatrixElementLJPN(
@@ -356,41 +355,38 @@ namespace shell {
   ////////////////////////////////////////////////////////////////
 
   Eigen::MatrixXd
-  KinematicMatrixJJJPN(
+  CoordinateSqrMatrixJJJPN(
       const basis::OrbitalSpaceLJPN& radial_orbital_space,
       const basis::OrbitalSectorsLJPN& radial_sectors,
       const basis::OperatorBlocks<double>& radial_matrices,
       const RadialOperatorType& radial_operator_type,
-      KinematicOperatorType kinematic_operator_type,
+      CoordinateSqrOperatorType coordinate_sqr_operator_type,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
-      int A
+      int A, int J0
     )
   {
-    // set up aliases
-    assert(sector.IsDiagonal());
-    const basis::TwoBodySubspaceJJJPN& subspace = sector.ket_subspace();
-
-    // recover sector properties
-    const basis::TwoBodySpeciesPN two_body_species = subspace.two_body_species();
-    const int J = subspace.J();
-    const int g = subspace.g();
     int momentum_space_phase = ParitySign(radial_operator_type == shell::RadialOperatorType::kK);
 
     basis::OperatorBlock<double> matrix;
-    if (kinematic_operator_type == KinematicOperatorType::kUTSqr)
+    if (coordinate_sqr_operator_type == CoordinateSqrOperatorType::kUTSqr)
     {
+      assert(J0==radial_sectors.j0());
       matrix = UpgradeOneBodyOperatorJJJPN(
         radial_orbital_space, radial_sectors, radial_matrices, sector, A
       );
     }
-    else // if (kinematic_operator_type==KinematicOperatorType::kVT1T2)
+    else // if (coordinate_sqr_operator_type==CoordinateSqrOperatorType::kVT1T2)
     {
-      matrix = momentum_space_phase*RacahReduceDotProductJJJPN(
+      assert(am::AllowedTriangle(radial_sectors.j0(), radial_sectors.j0(), J0));
+      matrix = momentum_space_phase*RacahReduceTensorProductJJJPN(
         radial_orbital_space,
         radial_sectors, radial_matrices,
         radial_sectors, radial_matrices,
-        sector
+        sector, J0
       );
+      // use the dot product instead of scalar product
+      if (J0==0)
+        matrix *= ParitySign(radial_sectors.j0()) * Hat(radial_sectors.j0());
     }
 
     return matrix;

@@ -146,13 +146,18 @@ std::set<std::string> kIdentityOperatorIdSet(
     {"identity","loop-test"}
   );
 
-typedef std::tuple<shell::KinematicOperatorType,shell::RadialOperatorType,int,int,int> KinematicOperatorDefinition;
-std::map<std::string,KinematicOperatorDefinition> kKinematicOperatorDefinitions(
+// operator definitions: coordinate_sqr_operator_type,radial_operator_type,radial_operator_power,j0,g0,J0
+typedef std::tuple<shell::CoordinateSqrOperatorType,shell::RadialOperatorType,int,int,int,int> CoordinateSqrOperatorDefinition;
+std::map<std::string,CoordinateSqrOperatorDefinition> kCoordinateSqrOperatorDefinitions(
       {
-        {"Ursqr",KinematicOperatorDefinition(shell::KinematicOperatorType::kUTSqr,shell::RadialOperatorType::kR,2,0,0)},
-        {"Vr1r2",KinematicOperatorDefinition(shell::KinematicOperatorType::kVT1T2,shell::RadialOperatorType::kR,1,1,1)},
-        {"Uksqr",KinematicOperatorDefinition(shell::KinematicOperatorType::kUTSqr,shell::RadialOperatorType::kK,2,0,0)},
-        {"Vk1k2",KinematicOperatorDefinition(shell::KinematicOperatorType::kVT1T2,shell::RadialOperatorType::kK,1,1,1)}
+        {"Ursqr",CoordinateSqrOperatorDefinition(shell::CoordinateSqrOperatorType::kUTSqr,shell::RadialOperatorType::kR,2,0,0,0)},
+        {"Vr1r2",CoordinateSqrOperatorDefinition(shell::CoordinateSqrOperatorType::kVT1T2,shell::RadialOperatorType::kR,1,1,1,0)},
+        {"Uksqr",CoordinateSqrOperatorDefinition(shell::CoordinateSqrOperatorType::kUTSqr,shell::RadialOperatorType::kK,2,0,0,0)},
+        {"Vk1k2",CoordinateSqrOperatorDefinition(shell::CoordinateSqrOperatorType::kVT1T2,shell::RadialOperatorType::kK,1,1,1,0)},
+        {"Urxr",CoordinateSqrOperatorDefinition(shell::CoordinateSqrOperatorType::kUTSqr,shell::RadialOperatorType::kR,2,2,0,2)},
+        {"Vr1xr2",CoordinateSqrOperatorDefinition(shell::CoordinateSqrOperatorType::kVT1T2,shell::RadialOperatorType::kR,1,1,1,2)},
+        {"Ukxk",CoordinateSqrOperatorDefinition(shell::CoordinateSqrOperatorType::kUTSqr,shell::RadialOperatorType::kK,2,2,0,2)},
+        {"Vk1xk2",CoordinateSqrOperatorDefinition(shell::CoordinateSqrOperatorType::kVT1T2,shell::RadialOperatorType::kK,1,1,1,2)}
       }
     );
 
@@ -406,7 +411,7 @@ void ReadParameters(
 
               if (!(
                       kIdentityOperatorIdSet.count(id)
-                      || kKinematicOperatorDefinitions.count(id)
+                      || kCoordinateSqrOperatorDefinitions.count(id)
                       || kAngularMomentumOperatorDefinitions.count(id)
                       || kIsospinOperatorDefinitions.count(id)
                     ))
@@ -783,11 +788,9 @@ void GenerateInputSources(
       // The full square matrix must be populated before remapping.
       //
       // Caution: We naively assume a symmetric matrix.  This is
-      // appropriate for scalar operators, but this may need to change
-      // to a more general phase relation for two-body nonscalar
+      // appropriate for isoscalar operators, but this may need to change
+      // to a more general phase relation for two-body nonisoscalar
       // operators.
-      assert(input_channel.stream_ptr->sectors().J0()==0);
-      assert(input_channel.stream_ptr->sectors().g0()==0);
       assert(input_channel.stream_ptr->sectors().Tz0()==0);
       if (input_sector.IsDiagonal())
         mcutils::CompleteLowerTriangle(input_matrix);
@@ -833,18 +836,19 @@ void GenerateOperatorSources(
         {
           operator_matrix = shell::TimingTestMatrixJJJPN(target_sector,true,true);
         }
-      else if (kKinematicOperatorDefinitions.count(operator_channel.id))
+      else if (kCoordinateSqrOperatorDefinitions.count(operator_channel.id))
         // kinematic
         {
-          shell::KinematicOperatorType kinematic_operator_type;
+          shell::CoordinateSqrOperatorType coordinate_sqr_operator_type;
           shell::RadialOperatorType radial_operator_type;
           int radial_operator_power;
-          int j0, g0;
+          int j0, g0, J0;
           int Tz0 = 0;
-          std::tie(kinematic_operator_type,radial_operator_type,radial_operator_power,j0,g0)
-            = kKinematicOperatorDefinitions.at(operator_channel.id);
+          std::tie(coordinate_sqr_operator_type,radial_operator_type,radial_operator_power,j0,g0,J0)
+            = kCoordinateSqrOperatorDefinitions.at(operator_channel.id);
           RadialOperatorLabels radial_operator_labels = RadialOperatorLabels(radial_operator_type,radial_operator_power,j0,g0,Tz0);
           const RadialOperatorData& radial_operator_data = radial_operators[radial_operator_labels];
+          assert(J0==run_parameters.J0);
 
           // std::cout
           //   << fmt::format(
@@ -852,11 +856,11 @@ void GenerateOperatorSources(
           //       target_sector.bra_subspace().LabelStr(),target_sector.ket_subspace().LabelStr()
           //     )
           //   << std::endl;
-          operator_matrix = shell::KinematicMatrixJJJPN(
+          operator_matrix = shell::CoordinateSqrMatrixJJJPN(
               radial_operator_data.ket_orbital_space,radial_operator_data.sectors,radial_operator_data.matrices,
               radial_operator_type,
-              kinematic_operator_type,
-              target_sector,run_parameters.A
+              coordinate_sqr_operator_type,
+              target_sector,run_parameters.A,J0
             );
         }
       else if (kAngularMomentumOperatorDefinitions.count(operator_channel.id))
