@@ -21,3 +21,4 @@
 	path = libraries/fmt
         branch = submodule
 	url = ../fmt
+        shallow = true
