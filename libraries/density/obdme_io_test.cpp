@@ -17,12 +17,12 @@
 // test code
 ////////////////////////////////////////////////////////////////
 
-void TestInfoRead(const std::string& info_filename, const basis::OrbitalSpaceLJPN orbital_space)
+void TestMultiFileRead(const std::string& data_filename, const std::string& info_filename, const basis::OrbitalSpaceLJPN& orbital_space)
 {
+  std::cout << "Reading obdme data" << std::endl;
 
-  std::cout << "Reading obdme info file" << std::endl;
-
-  shell::InOBDMEReader reader(info_filename, orbital_space);
+  std::cout << "  constructing reader" << std::endl;
+  shell::InOBDMEStreamMulti reader(info_filename, data_filename, orbital_space);
 
   for (auto& info_line : reader.obdme_info()) {
     std::cout << "bra labels: " << std::endl;
@@ -41,22 +41,31 @@ void TestInfoRead(const std::string& info_filename, const basis::OrbitalSpaceLJP
 
     std::cout << "Multipole: " << info_line.multipole << std::endl << std::endl;
   }
-}
-
-void TestMatrixRead(const std::string& data_filename, const std::string& info_filename, const basis::OrbitalSpaceLJPN orbital_space)
-{
-  std::cout << "Reading obdme data" << std::endl;
-
-  std::cout << "  constructing reader" << std::endl;
-  shell::InOBDMEReader reader(info_filename, orbital_space);
-
   std::cout << "  reading multipole 0" << std::endl;
   basis::OperatorBlocks<double> matrices;
-  reader.ReadMultipole(data_filename, 0, matrices);
+  basis::OrbitalSectorsLJPN sectors;
+  reader.GetMultipole(0, sectors, matrices);
 
   for (auto& matrix : matrices) {
     std::cout << mcutils::FormatMatrix(matrix, "16.8e") << std::endl;
   }
+}
+
+void TestSingleFileRead(const std::string& filename, const basis::OrbitalSpaceLJPN& orbital_space)
+{
+  std::cout << "Reading single-file OBDMEs" << std::endl;
+
+  shell::InOBDMEStreamSingle stream(filename, orbital_space);
+
+  std::cout << "  reading multipole 2" << std::endl;
+  basis::OperatorBlocks<double> matrices;
+  basis::OrbitalSectorsLJPN sectors;
+  stream.GetMultipole(2, sectors, matrices);
+
+  for (auto& matrix : matrices) {
+    std::cout << mcutils::FormatMatrix(matrix, "16.8e") << std::endl << std::endl;
+  }
+
 }
 
 ////////////////////////////////////////////////////////////////
@@ -73,10 +82,15 @@ int main(int argc, char **argv)
     basis::ParseOrbitalPNStream(is, true);
 
   std::string info_filename("test/mfdn.rppobdme.info");
-  TestInfoRead(info_filename, input_orbitals);
-
   std::string data_filename("test/mfdn.statrobdme.seq001.2J00.n01.2T00");
-  TestMatrixRead(data_filename, info_filename, input_orbitals);
+  TestMultiFileRead(data_filename, info_filename, input_orbitals);
+
+  orbital_filename = std::string("test/Nmax4-orbitals.dat");
+  is = std::ifstream(orbital_filename);
+  input_orbitals =
+    basis::ParseOrbitalPNStream(is, true);
+  std::string filename("test/mfdn.robdme");
+  TestSingleFileRead(filename, input_orbitals);
 
   // termination
   return 0;
