@@ -17,6 +17,7 @@
   + 11/28/17 (pjf): Print header with version.
   + 12/29/17 (pjf): Use input orbital indexing for output orbitals.
   + 12/30/17 (pjf): Ensure orbital file is properly sorted.
+  + 07/27/18 (pjf): Update for new OBDME input routines.
 
 ******************************************************************************/
 
@@ -207,12 +208,11 @@ int main(int argc, const char *argv[]) {
 
   // Get OBDMEs
   basis::OperatorBlocks<double> density_matrices;
-  shell::InOBDMEReader obdme_reader(run_parameters.robdme_info, input_space);
-  obdme_reader.ReadMultipole(run_parameters.robdme_stat, 0, density_matrices);
+  shell::InOBDMEStreamMulti obdme_reader(run_parameters.robdme_info, run_parameters.robdme_stat, input_space);
 
-  // Get sectors
+  // Get sectors and blocks
   basis::OrbitalSectorsLJPN sectors;
-  obdme_reader.SetToIndexing(0, sectors);
+  obdme_reader.GetMultipole(0, sectors, density_matrices);
 
   // Here we loop through the density matrices and diagonalize each sector.
   basis::OperatorBlocks<double> xform_matrices;

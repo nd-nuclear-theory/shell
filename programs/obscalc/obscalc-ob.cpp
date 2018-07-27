@@ -23,6 +23,7 @@
   + 10/23/17 (pjf): Rewrite for reading/writing many observables at one time.
   + 10/25/17 (pjf): Make robdme info filename global to run.
   + 11/28/17 (pjf): Include version in header.
+  + 07/27/18 (pjf): Update for new OBDME input routines.
 
 ******************************************************************************/
 
@@ -185,13 +186,13 @@ void ReadParameters(RunParameters& run_parameters) {
 double CalculateMatrixElement(const RunParameters& run_parameters,
                               const OneBodyOperator& op,
                               const OneBodyDensities& densities) {
+  basis::OrbitalSectorsLJPN density_sectors;
   basis::OperatorBlocks<double> density_matrices;
   const basis::OrbitalSpaceLJPN& space = run_parameters.space;
-  const basis::OrbitalSectorsLJPN& sectors = op.sectors;
+  const basis::OrbitalSectorsLJPN sectors = op.sectors;
   const basis::OperatorBlocks<double>& operator_matrices = op.matrices;
-  shell::InOBDMEReader obdme_reader(run_parameters.robdme_info_filename, space, 0, 0);
-  obdme_reader.ReadMultipole(densities.robdme_filename, op.sectors.j0(),
-                             density_matrices);
+  shell::InOBDMEStreamMulti obdme_reader(run_parameters.robdme_info_filename, densities.robdme_filename, space, 0, 0);
+  obdme_reader.GetMultipole(op.sectors.j0(), density_sectors, density_matrices);
 
   // loop and sum over \sum_{a,b} rho_{ab} T_{ba}
   double value = 0;
@@ -250,14 +251,14 @@ int main(int argc, char** argv) {
 
   // static observables
   out_stream << "[Static one-body observables]" << std::endl;
-  out_stream << fmt::format("# {:>2} {:>2} {:>2} ", "J", "g", "n");
+  out_stream << fmt::format("# {:>4} {:>2} {:>2} ", "J", "g", "n");
   for (const auto& op : run_parameters.operators) {
     out_stream << fmt::format(" {:>15}", op.name);
   }
-  out_stream << std::endl;
+  out_stream << std::endl << std::flush;
 
   for (const auto& densities : run_parameters.static_densities) {
-    out_stream << fmt::format("  {:2d} {:2d} {:2d} ", float(densities.Jf),
+    out_stream << fmt::format("  {:4.1f} {:2d} {:2d} ", float(densities.Jf),
                               densities.gf, densities.nf);
 
     for (const auto& op : run_parameters.operators) {
@@ -270,7 +271,7 @@ int main(int argc, char** argv) {
 
   // transition observables
   out_stream << "[Transition one-body observables]" << std::endl;
-  out_stream << fmt::format("# {:>3} {:>3} {:>3}  {:>3} {:>3} {:>3} ", "Jf",
+  out_stream << fmt::format("# {:>4} {:>3} {:>3}  {:>4} {:>3} {:>3} ", "Jf",
                             "gf", "nf", "Ji", "gi", "ni");
   for (const auto& op : run_parameters.operators) {
     out_stream << fmt::format(" {:>15}", op.name);
@@ -278,7 +279,7 @@ int main(int argc, char** argv) {
   out_stream << std::endl;
 
   for (const auto& densities : run_parameters.transition_densities) {
-    out_stream << fmt::format("  {:3d} {:3d} {:3d}  {:3d} {:3d} {:3d} ",
+    out_stream << fmt::format("  {:4.1f} {:3d} {:3d}  {:4.1f} {:3d} {:3d} ",
                               float(densities.Jf),
                               densities.gf,
                               densities.nf,
