@@ -4,15 +4,16 @@
   generate MFDn v15 orbital files
 
   Syntax:
-    + orbital-gen --oscillator Nmax output_file
+    + orbital-gen --Nmax Nmax output_file
     + orbital-gen --triangular weight_max a b output_file
       - weight = a*n + b*l
 
   Patrick J. Fasano
   University of Notre Dame
 
-  + 11/6/16 (pjf): Created, based on radial-gen.
+  + 11/06/16 (pjf): Created, based on radial-gen.
   + 11/28/17 (pjf): Print header with version.
+  + 07/27/18 (pjf): Rename "oscillator" truncation to "Nmax"
 
 ******************************************************************************/
 
@@ -29,11 +30,7 @@
 // process arguments
 /////////////////////////////////////////////////////////////////
 
-enum class AnalyticBasisType : int {
-  kOscillator = 0, kLaguerre = 1
-};
-
-enum class TruncationMode {kOscillator, kTriangular};
+enum class TruncationMode {kNmax, kTriangular};
 
 // Stores simple parameters for run
 struct RunParameters {
@@ -47,12 +44,12 @@ struct RunParameters {
 
   /** default constructor */
   RunParameters()
-    : output_filename(""), mode(TruncationMode::kOscillator), weight_max(0), a(0), b(0) {}
+    : output_filename(""), mode(TruncationMode::kNmax), weight_max(0), a(0), b(0) {}
 };
 
 void PrintUsage(const char **argv) {
   std::cout << "Usage: " << argv[0]
-            << " --oscillator Nmax output_file"
+            << " --Nmax Nmax output_file"
             << std::endl;
   std::cout << "       " << argv[0]
             << " --triangular weight_max a b output_file"
@@ -73,8 +70,8 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
   // operation mode
   {
     std::istringstream parameter_stream(argv[arg++]);
-    if (parameter_stream.str() == "--oscillator") {
-      run_parameters.mode = TruncationMode::kOscillator;
+    if (parameter_stream.str() == "--Nmax") {
+      run_parameters.mode = TruncationMode::kNmax;
     } else if (parameter_stream.str() == "--triangular") {
       run_parameters.mode = TruncationMode::kTriangular;
     } else {
@@ -85,7 +82,7 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
   }
 
   // mode-specific options
-  if (run_parameters.mode == TruncationMode::kOscillator) {
+  if (run_parameters.mode == TruncationMode::kNmax) {
     // check number of arguments
     if (argc-1 != 3) {
       PrintUsage(argv);
@@ -170,7 +167,7 @@ int main(int argc, const char *argv[]) {
   ProcessArguments(argc, argv, run_parameters);
   std::vector<basis::OrbitalPNInfo> orbitals;
 
-  if (run_parameters.mode == TruncationMode::kOscillator) {
+  if (run_parameters.mode == TruncationMode::kNmax) {
     orbitals = basis::OrbitalSpacePN(static_cast<int>(run_parameters.weight_max)).OrbitalInfo();
   } else if (run_parameters.mode == TruncationMode::kTriangular) {
     double& a = run_parameters.a;
