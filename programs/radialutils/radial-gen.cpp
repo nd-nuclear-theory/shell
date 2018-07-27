@@ -332,7 +332,7 @@ void BuildOperator(OperatorParameters operator_parameters) {
       else if (operator_parameters.order == 2 && operator_parameters.j0 == 2)
       {
         // see Varshalovich 3.2.1 eq. 23 and Suhonen (2.57)
-        matrices[sector_index] *= std::sqrt(2/3)
+        matrices[sector_index] *= std::sqrt(2./3.)
           * ParitySign(ket_j - HalfInt(1, 2) + 2) * Hat(ket_j)
           * am::Wigner3J(bra_j, ket_j, 2, HalfInt(1, 2), HalfInt(-1, 2), 0);
         // dimension factor -- Edmonds convention
