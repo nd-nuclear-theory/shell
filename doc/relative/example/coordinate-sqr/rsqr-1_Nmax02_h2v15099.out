@@ -1,6 +1,6 @@
 
 moshinsky -- Moshinsky transformation of general relative operator
-version: 40fb709-dirty
+version: 0.0.1-1-g5f42aeb-dirty
 
 Parameters
   rank 2 cutoff 2
@@ -9,17 +9,17 @@ Read relative operator...
   Nmax 2 Jmax 3
   Allocated matrix elements: 10
 Augment to relative-cm LSJTN...
-  Time: 0
+  Time: 7.9229e-05
   Allocated matrix elements: 76
 Transform to two-body LSJTN...
-  Time: 0
+  Time: 7.6303e-05
   Allocated matrix elements: 76
 Recouple to two-body JJJTN...
-  Time: 0.0156
+  Time: 0.000761242
 Gather to two-body JJJT...
-  Time: 0
+  Time: 2.1052e-05
 Branch to two-body JJJPN...
-  Time: 0
+  Time: 5.9837e-05
 Output stream
   File: rsqr-1_Nmax02_h2v15099.dat
   Format: 15099 (text)

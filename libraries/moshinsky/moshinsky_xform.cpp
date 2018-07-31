@@ -31,7 +31,7 @@ namespace moshinsky {
       basis::SymmetryPhaseMode symmetry_phase_mode
     )
   {
-  
+
     // initialize matrix
     Eigen::MatrixXd relative_cm_matrix = Eigen::MatrixXd::Zero(
         relative_cm_sector.bra_subspace().size(),
@@ -39,18 +39,18 @@ namespace moshinsky {
       );
 
     // extract relative-cm target subspace labels
-    // int Np = relative_cm_sector.ket_subspace().N();
-    // int Lp = relative_cm_sector.ket_subspace().L();
-    // int Sp = relative_cm_sector.ket_subspace().S();
-    // int Jp = relative_cm_sector.ket_subspace().J();
-    // int Tp = relative_cm_sector.ket_subspace().T();
-    // int gp = relative_cm_sector.ket_subspace().g();
-    // int N = relative_cm_sector.bra_subspace().N();
-    // int L = relative_cm_sector.bra_subspace().L();
-    // int S = relative_cm_sector.bra_subspace().S();
-    // int J = relative_cm_sector.bra_subspace().J();
-    // int T = relative_cm_sector.bra_subspace().T();
-    // int g = relative_cm_sector.bra_subspace().g();
+    // int N_bra = relative_cm_sector.ket_subspace().N();
+    // int L_bra = relative_cm_sector.ket_subspace().L();
+    // int S_bra = relative_cm_sector.ket_subspace().S();
+    // int J_bra = relative_cm_sector.ket_subspace().J();
+    // int T_bra = relative_cm_sector.ket_subspace().T();
+    // int g_bra = relative_cm_sector.ket_subspace().g();
+    // int N_ket = relative_cm_sector.bra_subspace().N();
+    // int L_ket = relative_cm_sector.bra_subspace().L();
+    // int S_ket = relative_cm_sector.bra_subspace().S();
+    // int J_ket = relative_cm_sector.bra_subspace().J();
+    // int T_ket = relative_cm_sector.bra_subspace().T();
+    // int g_ket = relative_cm_sector.bra_subspace().g();
 
     // iterate over spurious relative (target) matrix elements
     for (int relative_cm_bra_index=0; relative_cm_bra_index<relative_cm_sector.bra_subspace().size(); ++relative_cm_bra_index)
@@ -71,31 +71,31 @@ namespace moshinsky {
 
           // extract needed relative-cm state labels
           basis::RelativeCMStateLSJTN relative_cm_bra(relative_cm_sector.bra_subspace(),relative_cm_bra_index);
-          int Nrp = relative_cm_bra.Nr();
-          int lrp = relative_cm_bra.lr();
-          int Ncp = relative_cm_bra.Nc();
-          int lcp = relative_cm_bra.lc();
-          int Lp = relative_cm_bra.L();
-          int Sp = relative_cm_bra.S();
-          int Jp = relative_cm_bra.J();
-          int Tp = relative_cm_bra.T();
+          int Nr_bra = relative_cm_bra.Nr();
+          int lr_bra = relative_cm_bra.lr();
+          int Nc_bra = relative_cm_bra.Nc();
+          int lc_bra = relative_cm_bra.lc();
+          int L_bra = relative_cm_bra.L();
+          int S_bra = relative_cm_bra.S();
+          int J_bra = relative_cm_bra.J();
+          int T_bra = relative_cm_bra.T();
 
           basis::RelativeCMStateLSJTN relative_cm_ket(relative_cm_sector.ket_subspace(),relative_cm_ket_index);
-          int Nr = relative_cm_ket.Nr();
-          int lr = relative_cm_ket.lr();
-          int Nc = relative_cm_ket.Nc();
-          int lc = relative_cm_ket.lc();
-          int L = relative_cm_ket.L();
-          int S = relative_cm_ket.S();
-          int J = relative_cm_ket.J();
-          int T = relative_cm_ket.T();
+          int Nr_ket = relative_cm_ket.Nr();
+          int lr_ket = relative_cm_ket.lr();
+          int Nc_ket = relative_cm_ket.Nc();
+          int lc_ket = relative_cm_ket.lc();
+          int L_ket = relative_cm_ket.L();
+          int S_ket = relative_cm_ket.S();
+          int J_ket = relative_cm_ket.J();
+          int T_ket = relative_cm_ket.T();
 
           // short circuit if cm motion not conserved
-          if (!((Ncp==Nc)&&(lcp==lc)))
+          if (!((Nc_bra==Nc_ket)&&(lc_bra==lc_ket)))
             continue;
 
           // check for adequate relative N truncation on source interaction
-          assert(std::max(Nrp,Nr)<=relative_space.Nmax());
+          assert(std::max(Nr_bra,Nr_ket)<=relative_space.Nmax());
 
           // determine relative (source) angular momenta
           //   by triangle selection between relative and cm motion
@@ -110,13 +110,13 @@ namespace moshinsky {
 
           // sum relative angular momentum contributions
           double relative_cm_matrix_element = 0;
-          for (int Jrp=int(relative_bra_Jr_range.first); Jrp<=int(relative_bra_Jr_range.second); ++Jrp)
-            for (int Jr=int(relative_ket_Jr_range.first); Jr<=int(relative_ket_Jr_range.second); ++Jr)
+          for (int Jr_bra=int(relative_bra_Jr_range.first); Jr_bra<=int(relative_bra_Jr_range.second); ++Jr_bra)
+            for (int Jr_ket=int(relative_ket_Jr_range.first); Jr_ket<=int(relative_ket_Jr_range.second); ++Jr_ket)
               {
 
                 // short circuit if relative J truncation on source
                 // interaction eliminates this source sector
-                if (!(std::max(Jrp,Jr)<=relative_space.Jmax()))
+                if (!(std::max(Jr_bra,Jr_ket)<=relative_space.Jmax()))
                   continue;
 
                 // short circuit if relative J values are not triangular
@@ -125,17 +125,17 @@ namespace moshinsky {
                 // the relative parity condition will be satisfied
                 // (grp+g0+gr~0), given that the relative_cm parity
                 // condition is presumed satisfied as a precondition.
-                if (!(am::AllowedTriangle(Jrp,J0,Jr)))
+                if (!(am::AllowedTriangle(Jr_bra,J0,Jr_ket)))
                   continue;
 
                 // look up relative subspace indices
-                int grp = lrp%2;
+                int gr_bra = lr_bra%2;
                 int relative_subspace_index_bra = relative_space.LookUpSubspaceIndex(
-                    basis::RelativeSubspaceLSJT::SubspaceLabelsType(lrp,Sp,Jrp,Tp,grp)
+                    basis::RelativeSubspaceLSJT::SubspaceLabelsType(lr_bra,S_bra,Jr_bra,T_bra,gr_bra)
                   );
-                int gr = lr%2;
+                int gr_ket = lr_ket%2;
                 int relative_subspace_index_ket = relative_space.LookUpSubspaceIndex(
-                    basis::RelativeSubspaceLSJT::SubspaceLabelsType(lr,S,Jr,T,gr)
+                    basis::RelativeSubspaceLSJT::SubspaceLabelsType(lr_ket,S_ket,Jr_ket,T_ket,gr_ket)
                   );
 
                 // look up relative matrix element indices
@@ -146,10 +146,10 @@ namespace moshinsky {
                     relative_subspace_index_ket
                   );
                 int relative_state_index_bra = relative_bra_subspace.LookUpStateIndex(
-                    basis::RelativeStateLSJT::StateLabelsType(Nrp)
+                    basis::RelativeStateLSJT::StateLabelsType(Nr_bra)
                   );
                 int relative_state_index_ket = relative_ket_subspace.LookUpStateIndex(
-                    basis::RelativeStateLSJT::StateLabelsType(Nr)
+                    basis::RelativeStateLSJT::StateLabelsType(Nr_ket)
                   );
                 // std::cout << relative_bra_subspace.LabelStr() << relative_ket_subspace.LabelStr() << std::endl;
 
@@ -181,24 +181,25 @@ namespace moshinsky {
                   * relative_matrices[relative_sector_index](
                       canonical_relative_state_index_bra, canonical_relative_state_index_ket
                     );
-              
+
                 // accumulate contribution to relative-cm matrix element
-                double contribution 
-                  = am::Unitary6JZ(lrp,lc,Lp,Jp,Sp,Jrp) * am::Unitary6JZ(lr,lc,L,J,S,Jr)
-                  * am::RacahReductionFactor1Rose(Jrp,lc,Jp,Jr,lc,J,J0)
+                double contribution
+                  = am::Unitary6JZ(lr_bra,lc_bra,L_bra,J_bra,S_bra,Jr_bra)
+                  * am::Unitary6JZ(lr_ket,lc_ket,L_ket,J_ket,S_ket,Jr_ket)
+                  * am::RacahReductionFactor1Rose(Jr_bra,lc_bra,J_bra,Jr_ket,lc_ket,J_ket,J0)
                   * relative_matrix_element;
-                // std::cout << " Jrp " << Jrp << " Jr " << Jr
+                // std::cout << " Jr_bra " << Jr_bra << " Jr_ket " << Jr_ket
                 //           << " " << relative_bra_subspace.LabelStr()
                 //           << " " << relative_ket_subspace.LabelStr()
-                //           << " " << am::Unitary6JZ(lrp,lc,Lp,Jp,Sp,Jrp)
-                //           << " " <<  am::Unitary6JZ(lr,lc,L,J,S,Jr)
-                //           << " " << am::RacahReductionFactor1Rose(Jrp,lc,Jp,Jr,lc,J,J0)
+                //           << " " << am::Unitary6JZ(lr_bra,lc_bra,L_bra,J_bra,S_bra,Jr_bra)
+                //           << " " << am::Unitary6JZ(lr_ket,lc_ket,L_ket,J_ket,S_ket,Jr_ket)
+                //           << " " << am::RacahReductionFactor1Rose(Jr_bra,lc_bra,J_bra,Jr_ket,lc_ket,J_ket,J0)
                 //           << " " << relative_matrix_element
                 //           << " contribution " << contribution
                 //           << std::endl;
                 relative_cm_matrix_element += contribution;
 
-              }	
+              }
 
           // save matrix element
           relative_cm_matrix(relative_cm_bra_index,relative_cm_ket_index) = relative_cm_matrix_element;
@@ -295,7 +296,7 @@ namespace moshinsky {
           // evaluate bracket
           matrix(index_relative_cm,index_two_body)
             = sqrt(2.)*moshinsky::MoshinskyBracket(nr,lr,nc,lc,n1,l1,n2,l2,L);
-				  
+
         }
 
     // return matrix
@@ -348,7 +349,7 @@ namespace moshinsky {
         // enumerate target sectors
         two_body_lsjtn_component_sectors[T0]
           = basis::TwoBodySectorsLSJTN(two_body_lsjtn_space,operator_labels.J0,T0,operator_labels.g0);
-         
+
         // std::cout << " T0 " << T0
         //           << " sectors " << two_body_lsjtn_component_sectors[T0].size()
         //           << std::endl;
@@ -540,7 +541,7 @@ namespace moshinsky {
     return connected;
   }
 
-  Eigen::MatrixXd 
+  Eigen::MatrixXd
     TwoBodyMatrixJJJTN(
         const basis::TwoBodySpaceLSJTN& two_body_lsjtn_space,
         const basis::TwoBodySectorsLSJTN& two_body_lsjtn_sectors,
@@ -588,7 +589,7 @@ namespace moshinsky {
         two_body_jjjtn_sector.bra_subspace().size(),
         two_body_jjjtn_sector.ket_subspace().size()
       );
-    //std::cout << fmt::format("target {}x{}",matrix.rows(),matrix.cols()) << std::endl; 
+    //std::cout << fmt::format("target {}x{}",matrix.rows(),matrix.cols()) << std::endl;
 
     // identify source subspaces which contribute (and collect their
     // transformation matrices)
@@ -655,7 +656,7 @@ namespace moshinsky {
           const basis::TwoBodySubspaceLSJTN& ket_two_body_lsjtn_subspace = two_body_lsjtn_space.GetSubspace(ket_two_body_lsjtn_subspace_index);
           Eigen::SparseMatrix<double>& ket_transformation_matrix = ket_transformation_matrices[ket_subspace_metaindex];
 
-          //std::cout << fmt::format("  source {}x{}",bra_two_body_lsjtn_subspace.size(),ket_two_body_lsjtn_subspace.size()) << std::endl; 
+          //std::cout << fmt::format("  source {}x{}",bra_two_body_lsjtn_subspace.size(),ket_two_body_lsjtn_subspace.size()) << std::endl;
 
           // identify source sector
 
@@ -703,7 +704,7 @@ namespace moshinsky {
     return matrix;
 
 
-    
+
   }
 
   void TransformOperatorTwoBodyLSJTNToTwoBodyJJJTN(
@@ -736,7 +737,7 @@ namespace moshinsky {
             // make references to isospin component of source operator
             const basis::TwoBodySectorsLSJTN& two_body_lsjtn_sectors = two_body_lsjtn_component_sectors[T0];
             const basis::OperatorBlocks<double>& two_body_lsjtn_matrices = two_body_lsjtn_component_matrices[T0];
-         
+
             // transform
             Eigen::MatrixXd& matrix = two_body_jjjtn_component_matrices[T0][sector_index];
             matrix = TwoBodyMatrixJJJTN(
@@ -755,7 +756,7 @@ namespace moshinsky {
   // branching to jjJpn scheme
   ////////////////////////////////////////////////////////////////
 
-  Eigen::MatrixXd 
+  Eigen::MatrixXd
     TwoBodyMatrixJJJPN(
         const basis::OperatorLabelsJT& operator_labels,
         const basis::TwoBodySpaceJJJT& two_body_jjjt_space,
@@ -788,7 +789,7 @@ namespace moshinsky {
     //
     //   where We have listed Tz sectors in the order pp/nn/pn to
     //   match the TwoBodySpecies enum ordering.
-    static Eigen::Matrix3d kIsospinCoefficientMatrixTToTzForT1;  // 
+    static Eigen::Matrix3d kIsospinCoefficientMatrixTToTzForT1;  //
     kIsospinCoefficientMatrixTToTzForT1
       << +1, +std::sqrt(1/2.), +std::sqrt(1/10.),
       +1,-std::sqrt(1/2.),+std::sqrt(1/10.),
@@ -802,27 +803,27 @@ namespace moshinsky {
 
     // extract sector labels
     basis::TwoBodySpeciesPN two_body_species = two_body_jjjpn_sector.bra_subspace().two_body_species();
-    int Jp = two_body_jjjpn_sector.bra_subspace().J();
-    int J = two_body_jjjpn_sector.ket_subspace().J();
+    int J_bra = two_body_jjjpn_sector.bra_subspace().J();
+    int J_ket = two_body_jjjpn_sector.ket_subspace().J();
 
     // scan source sectors
     for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
       // for each isospin component
       {
-        for (int Tp=0; Tp<=1; ++Tp)
+        for (int T_bra=0; T_bra<=1; ++T_bra)
           // for bra isospin
-          for (int T=0; T<=1; ++T)
+          for (int T_ket=0; T_ket<=1; ++T_ket)
             // for ket isospin
             {
               // impose isospin triangularity
-              if (!am::AllowedTriangle(Tp,T0,T))
+              if (!am::AllowedTriangle(T_bra,T0,T_ket))
                 continue;
 
               // impose isospin sufficient for current sector two-body
               // species
               if (!(
                       (two_body_species==basis::TwoBodySpeciesPN::kPN)
-                      || ((Tp==1)&&(T==1))
+                      || ((T_bra==1)&&(T_ket==1))
                     ))
                 continue;
 
@@ -830,7 +831,7 @@ namespace moshinsky {
               int two_body_jjjt_subspace_index_bra = two_body_jjjt_space.LookUpSubspaceIndex(
                   basis::TwoBodySubspaceJJJTLabels(
                       two_body_jjjpn_sector.bra_subspace().J(),
-                      Tp,
+                      T_bra,
                       two_body_jjjpn_sector.bra_subspace().g()
                     )
                 );
@@ -839,7 +840,7 @@ namespace moshinsky {
               int two_body_jjjt_subspace_index_ket = two_body_jjjt_space.LookUpSubspaceIndex(
                   basis::TwoBodySubspaceJJJTLabels(
                       two_body_jjjpn_sector.ket_subspace().J(),
-                      T,
+                      T_ket,
                       two_body_jjjpn_sector.ket_subspace().g()
                     )
                 );
@@ -905,22 +906,22 @@ namespace moshinsky {
               // identify isospin Clebsch-Gordan coefficient to apply
               // to this source sector
               double isospin_coefficient;
-              if ((Tp==1)&&(T==1))
+              if ((T_bra==1)&&(T_ket==1))
                 isospin_coefficient = kIsospinCoefficientMatrixTToTzForT1(int(two_body_species),T0);
-              else if ((Tp==0)&&(T==1))
+              else if ((T_bra==0)&&(T_ket==1))
                 isospin_coefficient = kIsospinCoefficientTToTzForT01;
-              else if ((Tp==1)&&(T==0))
+              else if ((T_bra==1)&&(T_ket==0))
                 isospin_coefficient = kIsospinCoefficientTToTzForT10;
-              else if ((Tp==0)&&(T==0))
+              else if ((T_bra==0)&&(T_ket==0))
                 isospin_coefficient = kIsospinCoefficientTToTzForT0;
-              
+
 
               // accumulate contributions to target sector matrix elements
               for (int bra_index = 0; bra_index < two_body_jjjpn_sector.bra_subspace().size(); ++bra_index)
                 for (int ket_index = 0; ket_index < two_body_jjjpn_sector.ket_subspace().size(); ++ket_index)
                   // for each target matrix element
                   {
-                
+
                     // ensure target matrix element is canonical, if
                     // diagonal sector
                     if (two_body_jjjpn_sector.IsDiagonal())
@@ -932,18 +933,18 @@ namespace moshinsky {
                     basis::TwoBodyStateJJJPN two_body_jjjpn_ket(two_body_jjjpn_sector.ket_subspace(),ket_index);
 
                     // std::cout << " JJJPN target states "
-                    //           << two_body_jjjpn_bra.LabelStr() 
+                    //           << two_body_jjjpn_bra.LabelStr()
                     //           << two_body_jjjpn_ket.LabelStr() << std::endl;
-                
+
                     // verify source states allowed by antisymmetry
                     //
                     // Recall jjJT antisymmetry constraint:
-                    //   J+T~1 if (N1,j1)==(N2,j2)   
+                    //   J+T~1 if (N1,j1)==(N2,j2)
                     if (two_body_jjjpn_bra.index1()==two_body_jjjpn_bra.index2())
-                      if (!((Jp+Tp)%2==1))
+                      if (!((J_bra+T_bra)%2==1))
                         continue;
                     if (two_body_jjjpn_ket.index1()==two_body_jjjpn_ket.index2())
-                      if (!((J+T)%2==1))
+                      if (!((J_ket+T_ket)%2==1))
                         continue;
 
                     // retrieve source state indices
@@ -989,7 +990,7 @@ namespace moshinsky {
                     else
                       // state is non-canonical
                       {
-                        canonicalization_factor_bra = ParitySign(int(j1_bra+j2_bra)+Jp+Tp);
+                        canonicalization_factor_bra = ParitySign(int(j1_bra+j2_bra)+J_bra+T_bra);
                         two_body_jjjt_state_labels_bra = basis::TwoBodyStateJJJTLabels(
                             N2_bra,j2_bra,N1_bra,j1_bra
                           );
@@ -1021,7 +1022,7 @@ namespace moshinsky {
                     else
                       // state is non-canonical
                       {
-                        canonicalization_factor_ket = ParitySign(int(j1_ket+j2_ket)+Jp+Tp);
+                        canonicalization_factor_ket = ParitySign(int(j1_ket+j2_ket)+J_ket+T_ket);
                         two_body_jjjt_state_labels_ket = basis::TwoBodyStateJJJTLabels(
                             N2_ket,j2_ket,N1_ket,j1_ket
                           );
