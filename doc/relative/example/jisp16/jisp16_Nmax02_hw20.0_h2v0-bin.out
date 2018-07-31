@@ -1,3 +1,7 @@
+
+moshinsky -- Moshinsky transformation of general relative operator
+version: 0.0.1-1-g5f42aeb
+
 Parameters
   rank 2 cutoff 2
 Read relative operator...
@@ -5,17 +9,17 @@ Read relative operator...
   Nmax 20 Jmax 4
   Allocated matrix elements: 2035
 Augment to relative-cm LSJTN...
-  Time: 0
+  Time: 0.000177084
   Allocated matrix elements: 74
 Transform to two-body LSJTN...
-  Time: 0
+  Time: 0.000147175
   Allocated matrix elements: 74
 Recouple to two-body JJJTN...
-  Time: 0
+  Time: 0.00284224
 Gather to two-body JJJT...
-  Time: 0
+  Time: 4.1027e-05
 Branch to two-body JJJPN...
-  Time: 0
+  Time: 0.000128917
 Output stream
   File: jisp16_Nmax02_hw20.0_h2v0.bin
   Format: 0 (binary)
