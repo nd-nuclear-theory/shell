@@ -24,11 +24,12 @@
   Mark A. Caprio
   University of Notre Dame
 
-  7/16/16 (mac): Created.
-  8/16/16 (mac): Add diagnostic output of relative-cm matrix elements.
-  10/9/16 (pjf): Rename mcpp -> mcutils.
-  10/25/16 (mac): Update use of ParsingError.
-  11/28/17 (pjf): Print header with version.
+  + 07/16/16 (mac): Created.
+  + 08/16/16 (mac): Add diagnostic output of relative-cm matrix elements.
+  + 10/09/16 (pjf): Rename mcpp -> mcutils.
+  + 10/25/16 (mac): Update use of ParsingError.
+  + 11/28/17 (pjf): Print header with version.
+  + 07/31/18 (pjf): Call ChopMatrix before final write, for simple comparison.
 
 ****************************************************************/
 
@@ -39,6 +40,7 @@
 #include "basis/jjjt_operator.h"
 #include "basis/jjjpn_scheme.h"
 #include "basis/jjjpn_operator.h"
+#include "mcutils/eigen.h"
 #include "mcutils/parsing.h"
 #include "mcutils/profiling.h"
 #include "tbme/h2_io.h"
@@ -379,11 +381,14 @@ void WriteTwoBodyH2(
   std::cout << output_stream.DiagnosticStr();
   std::cout << std::endl;
 
-  // iterate over sectors
+  // iterate over sectors and write out
   for (int sector_index = 0; sector_index < output_stream.num_sectors(); ++sector_index)
     {
+      // "neaten" output by eliminating near-zero values
+      basis::OperatorBlock<double> matrix = two_body_jjjpn_matrices[sector_index];
+      mcutils::ChopMatrix(matrix);
       output_stream.WriteSector(
-          two_body_jjjpn_matrices[sector_index],
+          matrix,
           basis::NormalizationConversion::kASToNAS
         );
       std::cout << "." << std::flush;
