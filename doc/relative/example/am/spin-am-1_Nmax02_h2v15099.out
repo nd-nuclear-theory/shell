@@ -1,6 +1,6 @@
 
 moshinsky -- Moshinsky transformation of general relative operator
-version: 40fb709-dirty
+version: 0.0.1-1-g5f42aeb-dirty
 
 Parameters
   rank 2 cutoff 2
@@ -9,17 +9,17 @@ Read relative operator...
   Nmax 2 Jmax 3
   Allocated matrix elements: 19
 Augment to relative-cm LSJTN...
-  Time: 0
+  Time: 0.000185198
   Allocated matrix elements: 170
 Transform to two-body LSJTN...
-  Time: 0
+  Time: 0.000117515
   Allocated matrix elements: 170
 Recouple to two-body JJJTN...
-  Time: 0
+  Time: 0.000829487
 Gather to two-body JJJT...
-  Time: 0
+  Time: 3.5548e-05
 Branch to two-body JJJPN...
-  Time: 0
+  Time: 9.4601e-05
 Output stream
   File: spin-am-1_Nmax02_h2v15099.dat
   Format: 15099 (text)
