@@ -7,26 +7,30 @@
   See notes "Moshinsky xform for operators" (2015) for derivation.
 
   Language: C++11
-                                 
+
   Mark A. Caprio
   University of Notre Dame
 
-  11/13/15 (mac): Created (as program moshinsky.cpp).
-  11/21/15 (mac): Extract interaction I/O and manipulation functions
+  + 11/13/15 (mac): Created (as program moshinsky.cpp).
+  + 11/21/15 (mac): Extract interaction I/O and manipulation functions
     to interaction_lsjt.  Allow input of generic relative interaction.
-  11/26/15 (mac): Initial running version.
-  01/06/16 (mac): Documentation updates.
-  07/09/16 (mac): Overhaul:
+  + 11/26/15 (mac): Initial running version.
+  + 01/06/16 (mac): Documentation updates.
+  + 07/09/16 (mac): Overhaul:
     - Revise for restructured shell directory structure.
     - Revise to use block-N structure, with updated lsjt_scheme indexing.
     - Update to group theory Wigner-Eckart convention.
     - Extract transformation routines from program file into header.
-  07/22/16 (mac): Implement isospin branching.
-  10/25/16 (mac): Update to use TwoBodySectorsJJJPN constructor with
+  + 07/22/16 (mac): Implement isospin branching.
+  + 10/25/16 (mac): Update to use TwoBodySectorsJJJPN constructor with
     explicit Tz=0.
-  09/27/17 (mac): Change normalization for TwoBodyMatrixJJJPN results from
+  + 09/27/17 (mac): Change normalization for TwoBodyMatrixJJJPN results from
     AS to NAS.
-  04/28/18 (mac): Extract RacahReductionFactorFirstSystemGT to am package.
+  + 04/28/18 (mac): Extract RacahReductionFactorFirstSystemGT to am package.
+  + 07/31/18 (pjf):
+    - Fix ket phase in branching to jjJpn scheme.
+    - Sanitize naming convention for quantum numbers; rename Jp->J_bra and
+      J->J_ket, etc.
 
 ****************************************************************/
 
@@ -88,9 +92,9 @@ namespace moshinsky {
   // Arguments:
   //   relative_space (basis::RelativeSpaceLSJT) : relative space
   //     on which relative operator is defined
-  //   relative_sectors (basis::RelativeSectorsLSJT) : source sectors 
+  //   relative_sectors (basis::RelativeSectorsLSJT) : source sectors
   //     on which relative operator is defined
-  //   relative_matrices (basis::OperatorBlocks<double>) : source matrix elements 
+  //   relative_matrices (basis::OperatorBlocks<double>) : source matrix elements
   //     defining relative operator
   //   relative_cm_sector (basis::RelativeCMSectorsLSJTN::SectorType) : target sector
   //     for relative-cm operator
@@ -156,7 +160,7 @@ namespace moshinsky {
   // Returns:
   //   (matrix) : the transformation brackets
 
-  Eigen::MatrixXd 
+  Eigen::MatrixXd
     TwoBodyMatrixLSJTN(
         const basis::RelativeCMSectorsLSJTN::SectorType& relative_cm_sector,
         const basis::TwoBodySectorsLSJTN::SectorType& two_body_sector,
@@ -251,7 +255,7 @@ namespace moshinsky {
   // Returns:
   //   (sparse matrix) : the transformation brackets
 
-  Eigen::MatrixXd 
+  Eigen::MatrixXd
     TwoBodyMatrixJJJTN(
         const basis::TwoBodySpaceLSJTN& two_body_lsjtn_space,
         const basis::TwoBodySectorsLSJTN& two_body_lsjtn_sectors,
@@ -313,7 +317,7 @@ namespace moshinsky {
   // branching to jjJpn scheme
   ////////////////////////////////////////////////////////////////
 
-  Eigen::MatrixXd 
+  Eigen::MatrixXd
     TwoBodyMatrixJJJPN(
         const basis::OperatorLabelsJT& operator_labels,
         const basis::TwoBodySpaceJJJT& two_body_jjjt_space,
