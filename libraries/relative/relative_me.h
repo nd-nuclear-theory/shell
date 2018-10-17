@@ -35,7 +35,7 @@
   represented.
 
   Language: C++11
-                                 
+
   Mark A. Caprio
   University of Notre Dame
 
@@ -55,6 +55,7 @@
   + 05/05/18 (mac):
     - Clean up internal implementation of radial SU(1,1) matrices.
     - Implement dipole operator.
+  + 08/08/18 (pjf): Use analytic and spline wrapper functions for radial me.
 
 ****************************************************************/
 
