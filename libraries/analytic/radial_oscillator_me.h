@@ -10,6 +10,7 @@
   University of Notre Dame
 
   + 08/07/18 (pjf): Created.
+  + 10/17/18 (pjf): Fix signs on k matrix elements.
 ****************************************************************/
 
 #ifndef RADIAL_OSCILLATOR_ME_H_
@@ -56,15 +57,15 @@ inline double CoordinateOscillatorMatrixElement(
   double matrix_element = 0.;
   if (delta_N == +1) {
     if (delta_l == +1) {
-      matrix_element =  operator_sign * std::sqrt((N + l + 3) / 2.);
+      matrix_element = std::sqrt((N + l + 3) / 2.);
     } else if (delta_l == -1) {
       matrix_element = -operator_sign * std::sqrt((N - l + 2) / 2.);
     }
   } else if (delta_N == -1) {
     if (delta_l == +1) {
-      matrix_element = -std::sqrt((N - l) / 2.);
+      matrix_element = -operator_sign * std::sqrt((N - l) / 2.);
     } else if (delta_l == -1) {
-      matrix_element =  std::sqrt((N + l + 1) / 2.);
+      matrix_element = std::sqrt((N + l + 1) / 2.);
     }
   }
 
@@ -118,27 +119,27 @@ inline double CoordinateSqrOscillatorMatrixElement(
   double matrix_element = 0.;
   if (delta_N == +2) {
     if (delta_l == +2) {
-      matrix_element =  operator_sign * 0.5 * std::sqrt((N + l + 5) * (N + l + 3));
+      matrix_element =  0.5 * std::sqrt((N + l + 5) * (N + l + 3));
     } else if (delta_l == 0) {
       matrix_element = -operator_sign * 0.5 * std::sqrt((N + l + 3) * (N - l + 2));
     } else if (delta_l == -2) {
-      matrix_element =  operator_sign * 0.5 * std::sqrt((N - l + 2) * (N - l + 4));
+      matrix_element =  0.5 * std::sqrt((N - l + 2) * (N - l + 4));
     }
   } else if (delta_N == 0) {
     if (delta_l == +2) {
-      matrix_element = -std::sqrt((N - l) * (N + l + 3));
+      matrix_element = -operator_sign * std::sqrt((N - l) * (N + l + 3));
     } else if (delta_l == 0) {
       matrix_element = N + 1.5;
     } else if (delta_l == -2) {
-      matrix_element = -std::sqrt((N - l + 2) * (N + l + 1));
+      matrix_element = -operator_sign * std::sqrt((N - l + 2) * (N + l + 1));
     }
   } else if (delta_N == -2) {
     if (delta_l == +2) {
-      matrix_element =  operator_sign * 0.5 * std::sqrt((N - l - 2) * (N - l));
+      matrix_element =  0.5 * std::sqrt((N - l - 2) * (N - l));
     } else if (delta_l == 0) {
       matrix_element = -operator_sign * 0.5 * std::sqrt((N - l) * (N + l + 1));
     } else if (delta_l == -2) {
-      matrix_element =  operator_sign * 0.5 * std::sqrt((N + l + 1) * (N + l - 1));
+      matrix_element =  0.5 * std::sqrt((N + l + 1) * (N + l - 1));
     }
   }
 
