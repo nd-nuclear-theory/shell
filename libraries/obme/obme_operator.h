@@ -29,5 +29,14 @@ enum class RadialOperatorType : char {
   kGeneric = 'g'  // generic
 };
 
+/**
+ * Radial IDs
+ */
+enum class RadialBasisType : char {
+  kGeneric = 'g',     // general
+  kOscillator = 'o',  // harmonic oscillator
+  kLaguerre = 'l'     // Laguerre
+};
+
 }
 #endif  // OBME_OPERATOR_H_
