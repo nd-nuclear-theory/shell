@@ -14,14 +14,16 @@
   transformation is concerned.)
 
   Symmetrization convention: The full square matrix is populated on
-  diagonal sectors. 
+  diagonal sectors.
 
   Mark A. Caprio
   University of Notre Dame
 
   - 10/30/16 (mac): Created.  Supplants code from h2xform.cpp.
   - 11/6/16 (mac): Finish implementing TwoBodyTransformedMatrix.
-     
+  - 10/20/18 (pjf): Generalize TwoBodyTransformedMatrix for
+      nonscalar operators.
+
 ****************************************************************/
 
 #ifndef TBME_XFORM_H_
