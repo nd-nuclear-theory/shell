@@ -48,6 +48,7 @@
     - Store pn-overlaps by including Tz0 in radial_operator_data.
   + 10/12/17 (pjf): Update for changes to radial_io.
   + 11/28/17 (pjf): Include version in header.
+  + 10/20/18 (pjf): Relax restrictions on nonscalar operators.
 
 ******************************************************************************/
 
@@ -775,11 +776,9 @@ void GenerateInputSources(
       // The full square matrix must be populated before remapping.
       //
       // Caution: We naively assume a symmetric matrix.  This is
-      // appropriate for scalar operators, but this may need to change
-      // to a more general phase relation for two-body nonscalar
+      // appropriate for isoscalar operators, but this may need to change
+      // to a more general phase relation for two-body nonisoscalar
       // operators.
-      assert(input_channel.stream_ptr->sectors().J0()==0);
-      assert(input_channel.stream_ptr->sectors().g0()==0);
       assert(input_channel.stream_ptr->sectors().Tz0()==0);
       if (input_sector.IsDiagonal())
         mcutils::CompleteLowerTriangle(input_matrix);
@@ -935,11 +934,9 @@ void GenerateXformSources(
       // The full square matrix must be populated before remapping.
       //
       // Caution: We naively assume a symmetric matrix.  This is
-      // appropriate for scalar operators, but this may need to change
-      // to a more general phase relation for two-body nonscalar
+      // appropriate for isoscalar operators, but this may need to change
+      // to a more general phase relation for two-body nonisoscalar
       // operators.
-      assert(xform_channel.stream_ptr->sectors().J0()==0);
-      assert(xform_channel.stream_ptr->sectors().g0()==0);
       assert(xform_channel.stream_ptr->sectors().Tz0()==0);
       if (input_sector.IsDiagonal())
         mcutils::CompleteLowerTriangle(input_matrix);
