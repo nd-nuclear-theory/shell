@@ -11,6 +11,10 @@
 
   + 08/07/18 (pjf): Created.
   + 10/17/18 (pjf): Fix signs on k matrix elements.
+  + 01/11/19 (pjf):
+    - Define k_sqrt_2.
+    - Move ladder oscillator matrix element functions to top and define
+      coordinate matrix elements in terms of them.
 ****************************************************************/
 
 #ifndef RADIAL_OSCILLATOR_ME_H_
@@ -21,6 +25,62 @@
 
 namespace analytic
 {
+constexpr double k_sqrt_2 = 1.414213562373095;
+
+inline double CDaggerOscillatorMatrixElement(int bra_N, int bra_l, int ket_N, int ket_l)
+// Calculate matrix elements of $C^\dagger$ operator in oscillator radial basis.
+//
+// Arguments:
+//   bra_N, ket_N (input): bra and ket N(=2n+l) quantum numbers
+//   bra_l, ket_l (input): bra and ket angular momentum quantum numbers
+//
+// Returns:
+//   radial matrix element
+{
+  const int delta_l = bra_l - ket_l;
+  const int delta_N = bra_N - ket_N;
+  // cast to double to ensure floating-point arithmetic
+  const double N = ket_N;
+  const double l = ket_l;
+  double matrix_element = 0.;
+  if (delta_N == +1) {
+    if (delta_l == +1) {
+      matrix_element = std::sqrt(N + l + 3);
+    } else if (delta_l == -1) {
+      matrix_element = -std::sqrt(N - l + 2);
+    }
+  }
+
+  return matrix_element;
+}
+
+inline double COscillatorMatrixElement(int bra_N, int bra_l, int ket_N, int ket_l)
+// Calculate matrix elements of $c$ (lowering) operator in oscillator radial basis.
+//
+// Arguments:
+//   bra_N, ket_N (input): bra and ket N(=2n+l) quantum numbers
+//   bra_l, ket_l (input): bra and ket angular momentum quantum numbers
+//
+// Returns:
+//   radial matrix element
+{
+  const int delta_l = bra_l - ket_l;
+  const int delta_N = bra_N - ket_N;
+  // cast to double to ensure floating-point arithmetic
+  const double N = ket_N;
+  const double l = ket_l;
+  double matrix_element = 0.;
+  if (delta_N == -1) {
+    if (delta_l == +1) {
+      matrix_element = -std::sqrt(N - l);
+    } else if (delta_l == -1) {
+      matrix_element = std::sqrt(N + l + 1);
+    }
+  }
+
+  return matrix_element;
+}
+
 inline double CoordinateOscillatorMatrixElement(
     int bra_N, int bra_l, int ket_N, int ket_l, int operator_sign)
 // Calculate matrix elements for r and ik operator in oscillator radial basis.
@@ -55,19 +115,9 @@ inline double CoordinateOscillatorMatrixElement(
   assert((delta_l == -1) || (delta_l == +1));
 
   double matrix_element = 0.;
-  if (delta_N == +1) {
-    if (delta_l == +1) {
-      matrix_element = std::sqrt((N + l + 3) / 2.);
-    } else if (delta_l == -1) {
-      matrix_element = -operator_sign * std::sqrt((N - l + 2) / 2.);
-    }
-  } else if (delta_N == -1) {
-    if (delta_l == +1) {
-      matrix_element = -operator_sign * std::sqrt((N - l) / 2.);
-    } else if (delta_l == -1) {
-      matrix_element = std::sqrt((N + l + 1) / 2.);
-    }
-  }
+  matrix_element =
+    (operator_sign*CDaggerOscillatorMatrixElement(bra_N, bra_l, ket_N, ket_l)
+    + COscillatorMatrixElement(bra_N, bra_l, ket_N, ket_l))/k_sqrt_2;
 
   return matrix_element;
 }
@@ -140,60 +190,6 @@ inline double CoordinateSqrOscillatorMatrixElement(
       matrix_element = -operator_sign * 0.5 * std::sqrt((N - l) * (N + l + 1));
     } else if (delta_l == -2) {
       matrix_element =  0.5 * std::sqrt((N + l + 1) * (N + l - 1));
-    }
-  }
-
-  return matrix_element;
-}
-
-inline double BDaggerOscillatorMatrixElement(int bra_N, int bra_l, int ket_N, int ket_l)
-// Calculate matrix elements of $b^\dagger$ operator in oscillator radial basis.
-//
-// Arguments:
-//   bra_N, ket_N (input): bra and ket N(=2n+l) quantum numbers
-//   bra_l, ket_l (input): bra and ket angular momentum quantum numbers
-//
-// Returns:
-//   radial matrix element
-{
-  const int delta_l = bra_l - ket_l;
-  const int delta_N = bra_N - ket_N;
-  // cast to double to ensure floating-point arithmetic
-  const double N = ket_N;
-  const double l = ket_l;
-  double matrix_element = 0.;
-  if (delta_N == +1) {
-    if (delta_l == +1) {
-      matrix_element =  std::sqrt(N + l + 3);
-    } else if (delta_l == -1) {
-      matrix_element = -std::sqrt(N - l + 2);
-    }
-  }
-
-  return matrix_element;
-}
-
-inline double BTildeOscillatorMatrixElement(int bra_N, int bra_l, int ket_N, int ket_l)
-// Calculate matrix elements of $\tilde{b}$ operator in oscillator radial basis.
-//
-// Arguments:
-//   bra_N, ket_N (input): bra and ket N(=2n+l) quantum numbers
-//   bra_l, ket_l (input): bra and ket angular momentum quantum numbers
-//
-// Returns:
-//   radial matrix element
-{
-  const int delta_l = bra_l - ket_l;
-  const int delta_N = bra_N - ket_N;
-  // cast to double to ensure floating-point arithmetic
-  const double N = ket_N;
-  const double l = ket_l;
-  double matrix_element = 0.;
-  if (delta_N == -1) {
-    if (delta_l == +1) {
-      matrix_element = -std::sqrt(N - l);
-    } else if (delta_l == -1) {
-      matrix_element = -std::sqrt(N + l + 1);
     }
   }
 
