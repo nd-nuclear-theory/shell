@@ -36,6 +36,13 @@
     formula for isospin operators.
   + 02/23/18 (pjf): Implement kinematic operators in terms of generic
     Racah's reduction formula code.
+  + 12/10/18 (pjf): Deprecate AngularMomentumOperatorFamily and
+    AngularMomentumOperatorSpecies in favor of am::AngularMomentumOperatorType
+    and basis::OperatorTypePN, respectively.
+  + 01/24/19 (pjf):
+    - Rewrite UpgradeOneBodyOperatorJJJPN and RacahReduceTensorProductJJJPN
+      for generic nonscalar operators.
+    - Remove RacahReduceDotProductJJJPN (redundant to RacahReduceTensorProductJJJPN).
 
 ****************************************************************/
 
@@ -44,12 +51,83 @@
 
 #include "eigen3/Eigen/Dense"
 
+#include "am/rme.h"
 #include "basis/jjjpn_scheme.h"
+#include "basis/proton_neutron.h"
+#include "mcutils/deprecated.h"
 #include "obme/obme_io.h"
 
 namespace shell {
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
+
+  ////////////////////////////////////////////////////////////////
+  // upgrade one-body operator
+  ////////////////////////////////////////////////////////////////
+
+  basis::OperatorBlock<double>
+  UpgradeOneBodyOperatorJJJPN(
+      const basis::OrbitalSpaceLJPN& ob_orbital_space,
+      const basis::OrbitalSectorsLJPN& ob_sectors,
+      const basis::OperatorBlocks<double>& ob_matrices,
+      const basis::TwoBodySectorsJJJPN::SectorType& sector,
+      int A
+    );
+  // Populate matrix (for a given JJJPN sector) with two-body matrix
+  // elements for the A-body "upgraded" one-body operator.
+  //
+  // See intrinsic equation (TBD).
+  //
+  // Arguments:
+  //   ob_orbital_space (basis::OrbitalSpaceLJPN) : orbital space for
+  //     one-body operator
+  //   ob_sectors (basis::OrbitalSectorsLJPN) : sectors for one-body
+  //     operator
+  //   ob_matrices (basis::OperatorBlocks) : matrices for one-body
+  //     operator
+  //   sector (basis::TwoBodySectorsJJJPN::SectorType) : the sector to
+  //     populate
+  //   A (int): atomic mass number
+  //
+  // Returns:
+  //   (basis::OperatorBlock<double>) : the matrix for this sector
+
+  ////////////////////////////////////////////////////////////////
+  // two-system tensor product
+  ////////////////////////////////////////////////////////////////
+
+  basis::OperatorBlock<double>
+  RacahReduceTensorProductJJJPN(
+      const basis::OrbitalSpaceLJPN& ob_orbital_space,
+      const basis::OrbitalSectorsLJPN& ob_sectors1,
+      const basis::OperatorBlocks<double>& ob_matrices1,
+      const basis::OrbitalSectorsLJPN& ob_sectors2,
+      const basis::OperatorBlocks<double>& ob_matrices2,
+      const basis::TwoBodySectorsJJJPN::SectorType& sector,
+      int J0
+    );
+  // Populate matrix (for a given JJJPN sector) with two-body matrix
+  // elements for the symmetrized tensor-product of two one-body operators.
+  //
+  // See intrinsic equation (TBD).
+  //
+  // Arguments:
+  //   ob_orbital_space (basis::OrbitalSpaceLJPN) : orbital space for
+  //     one-body operator
+  //   ob_sectors1 (basis::OrbitalSectorsLJPN) : sectors for one-body
+  //     operator 1
+  //   ob_matrices1 (basis::OperatorBlocks) : matrices for one-body
+  //     operator 1
+  //   ob_sectors2 (basis::OrbitalSectorsLJPN) : sectors for one-body
+  //     operator 2
+  //   ob_matrices2 (basis::OperatorBlocks) : matrices for one-body
+  //     operator 2
+  //   sector (basis::TwoBodySectorsJJJPN::SectorType) : the sector to
+  //     populate
+  //   J0 (int): angular momentum of coupled operator
+  //
+  // Returns:
+  //   (basis::OperatorBlock<double>) : the matrix for this sector
 
   ////////////////////////////////////////////////////////////////
   // two-body identity operator
@@ -163,13 +241,17 @@ namespace shell {
   // appropriate "radial" matrix realizations for the various angular
   // momentum operators.
 
-  enum class AngularMomentumOperatorFamily {kOrbital,kSpin,kTotal};
-  enum class AngularMomentumOperatorSpecies {kP,kN,kTotal};
+  // enum class AngularMomentumOperatorFamily {kOrbital,kSpin,kTotal};
+  DEPRECATED("use am::AngularMomentumOperatorType instead")
+  typedef am::AngularMomentumOperatorType AngularMomentumOperatorFamily;
+  // enum class AngularMomentumOperatorSpecies {kP,kN,kTotal};
+  DEPRECATED("use basis::OperatorTypePN instead")
+  typedef basis::OperatorTypePN AngularMomentumOperatorSpecies ;
 
   Eigen::MatrixXd
   AngularMomentumMatrixJJJPN(
-      shell::AngularMomentumOperatorFamily operator_family,
-      shell::AngularMomentumOperatorSpecies operator_species,
+      am::AngularMomentumOperatorType operator_family,
+      basis::OperatorTypePN operator_species,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
       int A
     );
