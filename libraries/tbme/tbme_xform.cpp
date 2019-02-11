@@ -227,20 +227,32 @@ namespace shell {
     // Note: For a diagonal sector, the bra and ket xform matrices are
     // identical (to within transposition).  For a scalar operator, only
     // diagonal sectors are involved.  So this is always the case when
-    // considering Hamiltonian-like operators.  We assume diagonal
-    // sectors for now, in the interest of efficiency, but we retain
-    // some of the framework for later full generality.
-    assert(source_sector.IsDiagonal());
-    assert(target_sector.IsDiagonal());
+    // considering Hamiltonian-like operators.  We exploit this symmetry
+    // in the interest of efficiency, but we retain full generality for
+    // nonscalar operators.
     Eigen::MatrixXd ket_xform_matrix = TwoBodyTransformationMatrix(
       radial_source_orbital_space,radial_target_orbital_space,radial_sectors,radial_matrices,
       source_sector.ket_subspace(),target_sector.ket_subspace()
       );
-    const Eigen::MatrixXd& bra_xform_matrix = ket_xform_matrix;
+    Eigen::MatrixXd target_matrix;
 
+    if (source_sector.IsDiagonal())
+    {
+      const Eigen::MatrixXd& bra_xform_matrix = ket_xform_matrix;
 
-    // carry out xform
-    Eigen::MatrixXd target_matrix = bra_xform_matrix.transpose() * source_matrix * ket_xform_matrix;
+      // carry out xform
+      target_matrix = bra_xform_matrix.transpose() * source_matrix * ket_xform_matrix;
+    }
+    else
+    {
+      Eigen::MatrixXd bra_xform_matrix = TwoBodyTransformationMatrix(
+        radial_source_orbital_space,radial_target_orbital_space,radial_sectors,radial_matrices,
+        source_sector.bra_subspace(),target_sector.bra_subspace()
+        );
+
+      // carry out xform
+      target_matrix = bra_xform_matrix.transpose() * source_matrix * ket_xform_matrix;
+    }
 
     // diagonstics for inspecting unitary transformations
     //
