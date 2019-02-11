@@ -33,7 +33,7 @@ modules += programs/obscalc
 ################
 
 modules += libraries/relative libraries/moshinsky
-modules += libraries/tbme libraries/obme libraries/density
+modules += libraries/tbme libraries/obme libraries/density libraries/analytic
 
 # legacy libraries -- DEPRECATED
 ##modules += libraries/no libraries/legacy

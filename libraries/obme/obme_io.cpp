@@ -62,13 +62,9 @@ void InOBMEStream::ReadHeader()
   int l0max, j0, g0, Tz0;
   int num_orbitals_bra, num_orbitals_ket;
 
-  // version -- but first gobble any comment lines
-  while (std::getline(stream(), line), line[0] == '#')
+  // version
   {
-    ++line_count_;
-  }
-  {
-    ++line_count_;
+    mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> version;
     ParsingCheck(line_stream, line_count_, line);
@@ -79,8 +75,7 @@ void InOBMEStream::ReadHeader()
   {
     // operator name, l0max, Tz0, number of bra orbitals, number of ket orbitals
     // WARNING: only l0max=0 is supported now, with implied g0=0
-    ++line_count_;
-    std::getline(stream(), line);
+    mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> operator_type >> l0max >> Tz0 >> num_orbitals_bra
         >> num_orbitals_ket;
@@ -96,8 +91,7 @@ void InOBMEStream::ReadHeader()
     // operator type, operator power
     // WARNING: this format only supports radial matrix elements
     {
-      ++line_count_;
-      std::getline(stream(), line);
+      mcutils::GetLine(stream(), line, line_count_);
       std::istringstream line_stream(line);
       line_stream >> operator_type >> radial_operator_power_;
       ParsingCheck(line_stream, line_count_, line);
@@ -109,8 +103,7 @@ void InOBMEStream::ReadHeader()
     // WARNING: only l0max=0 is supported now, with implied g0=0
     {
       char constraint_mode;
-      ++line_count_;
-      std::getline(stream(), line);
+      mcutils::GetLine(stream(), line, line_count_);
       std::istringstream line_stream(line);
       line_stream >> constraint_mode;
       ParsingCheck(line_stream, line_count_, line);
@@ -128,8 +121,7 @@ void InOBMEStream::ReadHeader()
 
     // number of bra orbitals, number of ket orbitals
     {
-      ++line_count_;
-      std::getline(stream(), line);
+      mcutils::GetLine(stream(), line, line_count_);
       std::istringstream line_stream(line);
       line_stream >> num_orbitals_bra >> num_orbitals_ket;
       ParsingCheck(line_stream, line_count_, line);
@@ -140,8 +132,7 @@ void InOBMEStream::ReadHeader()
   {
     // operator type, operator power
     {
-      ++line_count_;
-      std::getline(stream(), line);
+      mcutils::GetLine(stream(), line, line_count_);
       std::istringstream line_stream(line);
       line_stream >> operator_type >> radial_operator_type >> radial_operator_power_;
       ParsingCheck(line_stream, line_count_, line);
@@ -151,8 +142,7 @@ void InOBMEStream::ReadHeader()
 
     // j0, g0, and Tz0
     {
-      ++line_count_;
-      std::getline(stream(), line);
+      mcutils::GetLine(stream(), line, line_count_);
       std::istringstream line_stream(line);
       line_stream >> j0 >> g0 >> Tz0;
       ParsingCheck(line_stream, line_count_, line);
@@ -160,20 +150,11 @@ void InOBMEStream::ReadHeader()
 
     // number of bra orbitals, number of ket orbitals
     {
-      ++line_count_;
-      std::getline(stream(), line);
+      mcutils::GetLine(stream(), line, line_count_);
       std::istringstream line_stream(line);
       line_stream >> num_orbitals_bra >> num_orbitals_ket;
       ParsingCheck(line_stream, line_count_, line);
     }
-  }
-
-  // blank line
-  {
-    ++line_count_;
-    std::getline(stream(), line);
-    std::istringstream line_stream(line);
-    assert(line.size() == 0);
   }
 
   // bra orbital definitions
@@ -182,8 +163,7 @@ void InOBMEStream::ReadHeader()
   for (int bra_orbital_count = 0; bra_orbital_count < num_orbitals_bra; ++bra_orbital_count)
   {
     // set up for parsing
-    getline(stream(), line);
-    ++line_count_;
+    mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
     if (line.size() == 0) continue;
 
@@ -194,23 +174,12 @@ void InOBMEStream::ReadHeader()
     bra_states.push_back(state);
   }
 
-  // blank line
-  {
-    ++line_count_;
-    std::getline(stream(), line);
-    std::istringstream line_stream(line);
-    assert(line.size() == 0);
-  }
-
   // ket orbital definitions
   std::vector<basis::OrbitalPNInfo> ket_states;
   for (int ket_orbital_count = 0; ket_orbital_count < num_orbitals_ket; ++ket_orbital_count)
   {
-    getline(stream(), line);
-    // count line
-    ++line_count_;
-
     // set up for parsing
+    mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
     if (line.size() == 0) continue;
 
@@ -219,14 +188,6 @@ void InOBMEStream::ReadHeader()
     ParsingCheck(line_stream, line_count_, line);
 
     ket_states.push_back(state);
-  }
-
-  // final header line: blank
-  {
-    ++line_count_;
-    std::getline(stream(), line);
-    std::istringstream line_stream(line);
-    assert(line.size() == 0);
   }
 
   // set up indexing
@@ -248,10 +209,8 @@ Eigen::MatrixXd InOBMEStream::ReadNextSector()
   std::string line;
   for (int j = 0; j < sector.bra_subspace().size(); ++j)
   {
-    ++line_count_;
-    std::getline(stream(), line);
+    mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
-    if (line_stream.peek() == '#') continue;
 
     // read columns from line
     for (int k = 0; k < sector.ket_subspace().size(); ++k)
@@ -259,14 +218,6 @@ Eigen::MatrixXd InOBMEStream::ReadNextSector()
       line_stream >> sector_matrix(j, k);
     }
     ParsingCheck(line_stream, line_count_, line);
-  }
-
-  // enforce blank line at end of sector
-  {
-    ++line_count_;
-    std::getline(stream(), line);
-    std::istringstream line_stream(line);
-    assert(line.size() == 0);
   }
 
   // return matrix

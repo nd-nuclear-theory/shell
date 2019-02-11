@@ -12,7 +12,8 @@
 #include "am/racah_reduction.h"
 #include "am/wigner_gsl.h"
 #include "fmt/format.h"
-#include "spline/wavefunction_class.h"
+#include "analytic/radial_oscillator_me.h"
+#include "spline/spline_me.h"
 
 namespace relative {
 
@@ -22,37 +23,12 @@ namespace relative {
 
 
   basis::OperatorBlock<double> RadialCoordinateSqrMatrix(
-      int bra_dim, int ket_dim, 
+      int bra_dim, int ket_dim,
       int L, int delta_L,
-      int operator_sign
+      int operator_sign=+1
     )
   // Construct radial matrices for r^2 and k^2 operators in oscillator radial
   // basis.
-  //
-  // For r^2: Calculated from SU(1,1) algebraic expression in (39) of
-  // D. J. Rowe, JPA 38, 10181 (2005), but with phase converted to "positive at
-  // origin" convention on the radial wave functions.  We use lambda=v+N/2 for
-  // oscillator functions, with N=3 and v=l in three dimensions.
-  //
-  // - for (delta L)=0, use (delta l)=0 matrix elements of r^2
-  //   directly from (39)
-  //
-  // - for (delta L)=2, use resolution of identity over
-  //   intermediate L space, by double application of the (delta
-  //   l)=1 matrix elements of r from (64)&(65)
-  //
-  // For k^2: This is the "reduced" kinetic energy operatator, or k^2=-del^2
-  // operator, where p = hbar * k.  Calculated from SU(1,1) algebraic expression
-  // in (48) [making use of (41) and (47)] of D. J. Rowe, JPA 38, 10181 (2005),
-  // but with phase converted to "positive at origin" convention on the radial
-  // wave functions.  Note that the last term, or 1/r^2 term, of (48) drops out
-  // since lambda=v+N/2 for oscillator functions.  We use lambda=v+N/2 for
-  // oscillator functions, with N=3 and v=l in three dimensions.
-  //
-  // While Rowe uses "positive at infinity" convention for the radial wave
-  // functions, we commonly use "positive at origin" convention.  Conversion
-  // introduces a factor (-)^(bra_n+ket_n), i.e., adding a (-) sign on the
-  // bra_n=ket_n+1 or ket_n-1 terms.
   //
   // Arguments:
   //   bra_dim, ket_dim (input): dimensions of radial subspaces
@@ -107,8 +83,9 @@ namespace relative {
     // bra L 2 n 1 ; ket L 0 n 4 : analytic      0.00000000 numerical      0.00000000
     // ...
 
-    // TODO: need to fill in appropriate signs for L-changing k^2 matrix elements
+    // TODO: need to check signs for L-changing k^2 matrix elements
     assert((delta_L==0)||(operator_sign==+1));
+    const int ket_L = L, bra_L = L+delta_L;
 
     // set up matrix
     basis::OperatorBlock<double> matrix = basis::OperatorBlock<double>::Zero(bra_dim,ket_dim);
@@ -116,6 +93,7 @@ namespace relative {
     // populate nonzero entries
     for (int ket_n=0; ket_n<ket_dim; ++ket_n)
       {
+        const int ket_N = 2*ket_n + ket_L;
 
         // restricted loop over bra indices
         int bra_n_min, bra_n_max;
@@ -138,37 +116,11 @@ namespace relative {
         bra_n_max=std::min(bra_n_max,bra_dim-1);
         for (int bra_n=bra_n_min; bra_n<=bra_n_max; ++bra_n)
           {
-
-            const int n = ket_n;
-            double matrix_element;
-            if (delta_L==-2)
-              {
-                if (bra_n==ket_n)
-                  matrix_element = std::sqrt((L+n-0.5)*(L+n+0.5));
-                else if (bra_n==ket_n+1)
-                  matrix_element = -2*std::sqrt((n+1)*(L+n+0.5));
-                else if (bra_n==ket_n+2)
-                  matrix_element = std::sqrt((n+2)*(n+1));
-              }
-            else if (delta_L==0)
-              {
-                if (bra_n==ket_n-1)
-                  matrix_element = -operator_sign*std::sqrt((L+n+0.5)*n);
-                else if (bra_n==ket_n)
-                  matrix_element = (L+2*n+1.5);
-                else if (bra_n==ket_n+1)
-                  matrix_element = -operator_sign*std::sqrt((L+n+1.5)*(n+1));
-              }
-            else if (delta_L==+2)
-              {
-                if (bra_n==ket_n-2)
-                  matrix_element = std::sqrt((n-1)*n);
-                else if (bra_n==ket_n-1)
-                  matrix_element = -2*std::sqrt(n*(L+n+1.5));
-                else if (bra_n==ket_n)
-                  matrix_element = std::sqrt((L+n+2.5)*(L+n+1.5));
-              }
-
+            const int bra_N = 2*bra_n + bra_L;
+            double matrix_element =
+              analytic::CoordinateSqrOscillatorMatrixElement(
+                bra_N, bra_L, ket_N, ket_L, operator_sign
+              );
             // // numerical validation code
             // spline::WaveFunction bra_wavefunction(bra_n,bra.L(),1,spline::Basis::HC);
             // spline::WaveFunction ket_wavefunction(ket_n,ket.L(),1,spline::Basis::HC);
@@ -190,8 +142,9 @@ namespace relative {
   }
 
   basis::OperatorBlock<double> RadialCoordinateMatrix(
-      int bra_dim, int ket_dim, 
-      int L, int delta_L
+      int bra_dim, int ket_dim,
+      int L, int delta_L,
+      int operator_sign=+1
     )
   // Construct radial matrix for r operator in oscillator radial basis.
   //
@@ -219,6 +172,7 @@ namespace relative {
 
     // validate arguments
     assert((delta_L==-1)||(delta_L==+1));
+    const int ket_L = L, bra_L = L+delta_L;
 
     // set up matrix
     basis::OperatorBlock<double> matrix = basis::OperatorBlock<double>::Zero(bra_dim,ket_dim);
@@ -226,6 +180,7 @@ namespace relative {
     // populate nonzero entries
     for (int ket_n=0; ket_n<ket_dim; ++ket_n)
       {
+        const int ket_N = 2*ket_n + ket_L;
 
         // restricted loop over bra indices
         int bra_n_min, bra_n_max;
@@ -243,23 +198,11 @@ namespace relative {
         bra_n_max=std::min(bra_n_max,bra_dim-1);
         for (int bra_n=bra_n_min; bra_n<=bra_n_max; ++bra_n)
           {
-
-            const int n = ket_n;
-            double matrix_element;
-            if (delta_L==-1)
-              {
-                if (bra_n==ket_n)
-                  matrix_element = std::sqrt(L+n+0.5);
-                else if (bra_n==ket_n+1)
-                  matrix_element = -std::sqrt(n+1);
-              }
-            else if (delta_L==+1)
-              {
-                if (bra_n==ket_n-1)
-                  matrix_element = -std::sqrt(n);
-                else if (bra_n==ket_n)
-                  matrix_element = std::sqrt((L+n+1.5));
-              }
+            const int bra_N = 2*bra_n + bra_L;
+            double matrix_element =
+              analytic::CoordinateOscillatorMatrixElement(
+                bra_N, bra_L, ket_N, ket_L, operator_sign
+              );
 
             matrix(bra_n,ket_n) = matrix_element;
           }
@@ -452,7 +395,7 @@ namespace relative {
               am::RacahReductionFactor2Rose(half,half,bra_T,half,half,ket_T,1)
             );
 
-        // orbital angular RME 
+        // orbital angular RME
         int L = ket_L;
         int delta_L = bra_L-ket_L;
         if (delta_L==-1)
@@ -635,7 +578,7 @@ namespace relative {
     basis::ConstructZeroOperatorRelativeLSJT(
         operator_labels,relative_space,relative_component_sectors,relative_component_matrices
       );
-    
+
     // select T0 component
     const basis::RelativeSectorsLSJT& sectors = relative_component_sectors[T0];
     basis::OperatorBlocks<double>& matrices = relative_component_matrices[T0];
@@ -701,7 +644,7 @@ namespace relative {
         //
         // We make use of the known indexing scheme for a
         // RelativeLSJT basis, that the radial quantum number n is
-        // just the 0-based state index.  
+        // just the 0-based state index.
         //
         // The (LSJ') and (LSJ) subspaces are the same size, so this is a
         // square block, and the block is simply proportional to the
@@ -772,7 +715,7 @@ namespace relative {
                 && am::AllowedTriangle(bra_subspace.T(),T0,ket_subspace.T())
               )
             ||
-            (T0==0)&&!(bra_subspace.S()==ket_subspace.S())
+            ((T0==0)&&!(bra_subspace.S()==ket_subspace.S()))
           )
           continue;
 
@@ -816,7 +759,7 @@ namespace relative {
         //
         // We make use of the known indexing scheme for a
         // RelativeLSJT basis, that the radial quantum number n is
-        // just the 0-based state index.  
+        // just the 0-based state index.
         //
         // The (LSJ') and (LSJ) subspaces are the same size, so this is a
         // square block, and the block is simply proportional to the
@@ -834,7 +777,7 @@ namespace relative {
 
       }
   }
-  
+
   ////////////////////////////////////////////////////////////////
   // Coulomb
   ////////////////////////////////////////////////////////////////
@@ -941,18 +884,19 @@ namespace relative {
               for (int ket_n=0; ket_n<=nmax; ++ket_n)
                 {
 
-                  // get bra and ket states
-                  spline::WaveFunction bra_wavefunction(bra_n,L,1,spline::Basis::HC);
-                  spline::WaveFunction ket_wavefunction(ket_n,L,1,spline::Basis::HC);
-            
                   // evaluate radial integral
                   const int num_size = num_steps+1;
-                  double radial_integral = bra_wavefunction.MatrixElement(num_size,ket_wavefunction,-1);
+                  double radial_integral =
+                    spline::RadialMatrixElement(
+                      bra_n, L, 1, spline::BasisType::kOscillator,
+                      ket_n, L, 1, spline::BasisType::kOscillator,
+                      spline::OperatorType::kR, -1,
+                      num_size
+                    );
 
                   // relative coordinate dilation factor
                   //
                   // See "Note on oscillator length" at start of header file.
-
                   const double relative_oscillator_scale_factor = 1/std::sqrt(2.);
 
                   // impose isospin factors

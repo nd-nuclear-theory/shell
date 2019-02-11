@@ -9,6 +9,7 @@
   University of Notre Dame
 
   + 02/20/18 (pjf): Created.
+  + 12/11/18 (pjf): Add LadderOperatorType enum.
 ****************************************************************/
 
 #ifndef OBME_OPERATOR_H_
@@ -27,6 +28,23 @@ enum class RadialOperatorType : char {
   kK = 'k',       // momentum
   kO = 'o',       // overlaps
   kGeneric = 'g'  // generic
+};
+
+/**
+ * Ladder IDs
+ */
+enum class LadderOperatorType {
+  kRaising,
+  kLowering,
+};
+
+/**
+ * Basis IDs
+ */
+enum class RadialBasisType : char {
+  kGeneric = 'g',     // general
+  kOscillator = 'o',  // harmonic oscillator
+  kLaguerre = 'l'     // Laguerre
 };
 
 }

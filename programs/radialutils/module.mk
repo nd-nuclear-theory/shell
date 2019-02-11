@@ -7,9 +7,9 @@ $(eval $(begin-module))
 module_units_h :=
 module_units_cpp-h :=
 # module_units_f :=
-module_programs_cpp := orbital-gen radial-gen radial-scale
+module_programs_cpp := orbital-gen radial-gen
 module_programs_cpp += radial-xform natorb-gen radial-compose
-module_programs_cpp += radial-stat
+# module_programs_cpp += radial-scale radial-stat
 
 # module_programs_f :=
 # module_generated :=

@@ -31,6 +31,7 @@
     - Create new format (version 1) of radial file.
     - Separate operator type from operator truncation; add generic RadialOperatorType.
     - Store operator power separately for monomial radial operator.
+  + 8/10/18 (pjf): Use mcutils::GetLine for more robust I/O.
 ****************************************************************/
 
 #ifndef OBME_IO_H_
@@ -171,7 +172,7 @@ class OutOBMEStream : public OBMEStreamBase {
                          const RadialOperatorType radial_operator_type,
                          int radial_operator_power,
                          const std::string& format_str,
-                         bool verbose_mode = false);
+                         bool verbose_mode = true);
 
   explicit OutOBMEStream(const std::string& filename,
                          const basis::OrbitalSpaceLJPN& bra_space,
@@ -181,7 +182,7 @@ class OutOBMEStream : public OBMEStreamBase {
                          const RadialOperatorType radial_operator_type,
                          int radial_operator_power)
       : OutOBMEStream(filename, bra_space, ket_space, sectors, operator_type,
-                      radial_operator_type, radial_operator_power, "16.8e", false) {}
+                      radial_operator_type, radial_operator_power, "16.8e", true) {}
 
   explicit OutOBMEStream(const std::string& filename, const basis::OrbitalSpaceLJPN& bra_space,
                          const basis::OrbitalSpaceLJPN& ket_space,
