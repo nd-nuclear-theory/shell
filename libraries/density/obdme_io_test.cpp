@@ -80,17 +80,18 @@ int main(int argc, char **argv)
   std::ifstream is(orbital_filename);
   std::vector<basis::OrbitalPNInfo> input_orbitals =
     basis::ParseOrbitalPNStream(is, true);
+  basis::OrbitalSpaceLJPN space(input_orbitals);
 
   std::string info_filename("test/mfdn.rppobdme.info");
   std::string data_filename("test/mfdn.statrobdme.seq001.2J00.n01.2T00");
-  TestMultiFileRead(data_filename, info_filename, input_orbitals);
+  TestMultiFileRead(data_filename, info_filename, space);
 
   orbital_filename = std::string("test/Nmax4-orbitals.dat");
   is = std::ifstream(orbital_filename);
   input_orbitals =
     basis::ParseOrbitalPNStream(is, true);
   std::string filename("test/mfdn.robdme");
-  TestSingleFileRead(filename, input_orbitals);
+  TestSingleFileRead(filename, space);
 
   // termination
   return 0;
