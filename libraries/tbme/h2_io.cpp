@@ -93,9 +93,8 @@ namespace shell {
         const typename basis::TwoBodySectorsJJJPN::SubspaceType& bra_subspace = sector.bra_subspace();
         const typename basis::TwoBodySectorsJJJPN::SubspaceType& ket_subspace = sector.ket_subspace();
 
-        // characterize pp/nn/pn type for sector
-        assert(bra_subspace.two_body_species()==ket_subspace.two_body_species());  // operator Tz=0
-        basis::TwoBodySpeciesPN two_body_species = bra_subspace.two_body_species();
+        // characterize ket pp/nn/pn type for sector
+        basis::TwoBodySpeciesPN two_body_species = ket_subspace.two_body_species();
 
         // count sector
         ++num_sectors_by_type[int(two_body_species)];
@@ -108,8 +107,9 @@ namespace shell {
             int dimension = ket_subspace.size();
             sector_entries = dimension*(dimension+1)/2;
           }
-        else if (sector.IsUpperTriangle())
+        else if (sector.IsUpperTriangle() || (sectors.Tz0()!=0))
           // upper triangle sector (but not diagonal)
+          // NOTE(pjf): Tz0!=0 sectors can live below the diagonal
           {
             int bra_dimension = bra_subspace.size();
             int ket_dimension = ket_subspace.size();
@@ -131,9 +131,9 @@ namespace shell {
   {
     if (filename.length() < 4 )
       {
-	// prevent compare on underlength string
-	std::cerr << "H2 file I/O: No extension found (too short) in filename " << filename << std::endl;
-	exit(EXIT_FAILURE);
+        // prevent compare on underlength string
+        std::cerr << "H2 file I/O: No extension found (too short) in filename " << filename << std::endl;
+        exit(EXIT_FAILURE);
       }
     else if ( ! filename.compare(filename.length()-4,4,".dat") )
       return H2Mode::kText;
@@ -143,8 +143,8 @@ namespace shell {
       return H2Mode::kBinary;
     else
       {
-	std::cerr << "H2 file I/O: Extension unrecognized in filename " << filename << std::endl;
-	exit(EXIT_FAILURE);
+        std::cerr << "H2 file I/O: Extension unrecognized in filename " << filename << std::endl;
+        exit(EXIT_FAILURE);
       }
   }
 
@@ -225,7 +225,7 @@ namespace shell {
           ++line_count_;
           std::getline(stream(),line);
           std::istringstream line_stream(line);
-          line_stream >> h2_format_; 
+          line_stream >> h2_format_;
           ParsingCheck(line_stream,line_count_,line);
         }
       }
@@ -257,7 +257,7 @@ namespace shell {
         mcutils::WriteBinary<int>(stream(),h2_format());
         mcutils::WriteBinary<int>(stream(),bytes);
       }
-    
+
     StreamCheck(bool(stream()),filename_,"Failure while writing H2 file version code");
 
   }
@@ -369,7 +369,7 @@ namespace shell {
     orbital_space_ = orbital_space;
     space_ = space;
     sectors_ = sectors;
-      
+
     // store counts by type
     EvaluateJmaxByType(space_,Jmax_by_type_);
     EvaluateCountsByType(sectors_,num_sectors_by_type_,size_by_type_);
@@ -400,7 +400,7 @@ namespace shell {
       }
     StreamCheck(bool(stream()),filename_,"Failure while writing H2 file header");
   }
-  
+
   void OutH2Stream::WriteSector(
       const Eigen::MatrixXd& matrix,
       basis::NormalizationConversion conversion_mode

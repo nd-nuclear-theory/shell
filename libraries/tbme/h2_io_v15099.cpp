@@ -50,7 +50,7 @@ namespace shell {
           ++line_count_;
           std::getline(stream(),line);
           std::istringstream line_stream(line);
-          line_stream >> J0 >> g0 >> Tz0; 
+          line_stream >> J0 >> g0 >> Tz0;
           ParsingCheck(line_stream,line_count_,line);
         }
 
@@ -59,7 +59,7 @@ namespace shell {
           ++line_count_;
           std::getline(stream(),line);
           std::istringstream line_stream(line);
-          line_stream >> wp >> wn; 
+          line_stream >> wp >> wn;
           ParsingCheck(line_stream,line_count_,line);
         }
 
@@ -68,7 +68,7 @@ namespace shell {
           ++line_count_;
           std::getline(stream(),line);
           std::istringstream line_stream(line);
-          line_stream >> wpp >> wnn >> wpn; 
+          line_stream >> wpp >> wnn >> wpn;
           ParsingCheck(line_stream,line_count_,line);
         }
 
@@ -77,16 +77,16 @@ namespace shell {
           ++line_count_;
           std::getline(stream(),line);
           std::istringstream line_stream(line);
-          line_stream >> twice_Jmax_pp >> twice_Jmax_nn >> twice_Jmax_pn; 
+          line_stream >> twice_Jmax_pp >> twice_Jmax_nn >> twice_Jmax_pn;
           ParsingCheck(line_stream,line_count_,line);
         }
-        
+
         // header line 5: matrix size
         {
           ++line_count_;
           std::getline(stream(),line);
           std::istringstream line_stream(line);
-          line_stream >> size_pp >> size_nn >> size_pn; 
+          line_stream >> size_pp >> size_nn >> size_pn;
           ParsingCheck(line_stream,line_count_,line);
         }
       }
@@ -171,7 +171,7 @@ namespace shell {
                 int twice_j = orbitals_twice_j[orbital_index];
                 double weight = orbitals_weight[orbital_index];
                 HalfInt j = HalfInt(twice_j,2);
-                
+
                 orbitals.push_back(basis::OrbitalPNInfo(orbital_species,n,l,j,weight));
              }
           }
@@ -331,8 +331,8 @@ namespace shell {
             for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
               mcutils::WriteBinary<float>(stream(),orbitals[orbital_index].weight);
             mcutils::WriteBinary<int>(stream(),num_orbitals*kFloatSize);
-          }         
-        
+          }
+
         // two-body indexing
 
         // header line 1: operator properties
@@ -343,7 +343,7 @@ namespace shell {
         mcutils::WriteBinary<int>(stream(),sectors().g0());
         mcutils::WriteBinary<int>(stream(),sectors().Tz0());
         mcutils::WriteBinary<int>(stream(),bytes);
-        
+
         // header line 2: 1-body basis limit
         num_fields=2;
         bytes = num_fields * kFloatSize;
@@ -394,8 +394,8 @@ namespace shell {
     //
     // This is a check that the caller's sector construction
     // followed the specification that only "upper triangle"
-    // sectors are stored.
-    assert(sector.IsUpperTriangle());
+    // sectors are stored, or that Tz0 is nonzero.
+    assert(sector.IsUpperTriangle() || (sectors().Tz0()!=0));
 
     // allocate matrix
     if (store)
@@ -447,7 +447,7 @@ namespace shell {
               ParsingCheck(line_stream,line_count_,line);
 
               // validate input fields against expected values
-              bool inputs_as_expected = ( 
+              bool inputs_as_expected = (
                   (input_i1==bra.index1()+1) && (input_i2==bra.index2()+1)
                   && (input_i3==ket.index1()+1) && (input_i4==ket.index2()+1)
                   && (input_twice_J_bra == 2*bra.J())
@@ -491,8 +491,8 @@ namespace shell {
     //
     // This is a check that the caller's sector construction
     // followed the specification that only "upper triangle"
-    // sectors are stored.
-    assert(sector.IsUpperTriangle());
+    // sectors are stored, or that Tz0 is nonzero.
+    assert(sector.IsUpperTriangle() || (sectors().Tz0()!=0));
 
     // write FORTRAN record beginning delimiter
     if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
@@ -556,7 +556,7 @@ namespace shell {
               mcutils::WriteBinary<float>(stream(),output_matrix_element);
             }
         }
-			
+
     // write FORTRAN record ending delimiter
     if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
       {

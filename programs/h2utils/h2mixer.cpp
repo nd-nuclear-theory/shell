@@ -61,6 +61,7 @@
     - Add support for generating generic "upgraded operator" two-body operators.
     - Implement *breaking changes* to input format.
     - Use polymorphism for supporting new variety of channel types.
+  + 02/12/19 (pjf): Relax constraints on non-isoscalar operators.
 
 ******************************************************************************/
 
@@ -1428,9 +1429,18 @@ void InitializeTargetIndexing(
     }
 
   // set up sectors
+  //
+  /// impose upper triangularity for isoscalar only
+  basis::SectorDirection sector_direction;
+  if (run_parameters.Tz0==0)
+    sector_direction = basis::SectorDirection::kCanonical;
+  else
+    sector_direction = basis::SectorDirection::kBoth;
+
   target_indexing.sectors = basis::TwoBodySectorsJJJPN(
       target_indexing.space,
-      run_parameters.J0,run_parameters.g0,run_parameters.Tz0
+      run_parameters.J0,run_parameters.g0,run_parameters.Tz0,
+      sector_direction
     );
 }
 
@@ -1554,15 +1564,23 @@ void XformChannel::InitializeChannel(
   //
   // preserves input orbitals but builds two-body space with
   // user-specified truncation
+  //
+  // impose upper-triangularity for isoscalar only
   pre_xform_two_body_indexing.orbital_space = stream_ptr->orbital_space();
   pre_xform_two_body_indexing.space
     = basis::TwoBodySpaceJJJPN(
         pre_xform_two_body_indexing.orbital_space,
         pre_xform_weight_max
       );
+  basis::SectorDirection sector_direction;
+  if (run_parameters.Tz0==0)
+    sector_direction = basis::SectorDirection::kCanonical;
+  else
+    sector_direction = basis::SectorDirection::kBoth;
   pre_xform_two_body_indexing.sectors = basis::TwoBodySectorsJJJPN(
       pre_xform_two_body_indexing.space,
-      run_parameters.J0,run_parameters.g0,run_parameters.Tz0
+      run_parameters.J0,run_parameters.g0,run_parameters.Tz0,
+      sector_direction
     );
   pre_xform_two_body_mapping = shell::TwoBodyMapping(
       stream_ptr->orbital_space(),
@@ -1684,12 +1702,6 @@ void InputChannel::PopulateSourceMatrix(
   // fill in lower triangle of matrix
   //
   // The full square matrix must be populated before remapping.
-  //
-  // Caution: We naively assume a symmetric matrix.  This is
-  // appropriate for isoscalar operators, but this may need to change
-  // to a more general phase relation for two-body nonisoscalar
-  // operators.
-  assert(stream_ptr->sectors().Tz0()==0);
   if (input_sector.IsDiagonal())
     mcutils::CompleteLowerTriangle(input_matrix);
 
@@ -1844,12 +1856,6 @@ void XformChannel::PopulateSourceMatrix(
   // fill in lower triangle of matrix
   //
   // The full square matrix must be populated before remapping.
-  //
-  // Caution: We naively assume a symmetric matrix.  This is
-  // appropriate for isoscalar operators, but this may need to change
-  // to a more general phase relation for two-body nonisoscalar
-  // operators.
-  assert(stream_ptr->sectors().Tz0()==0);
   if (input_sector.IsDiagonal())
     mcutils::CompleteLowerTriangle(input_matrix);
 

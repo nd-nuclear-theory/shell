@@ -1,5 +1,5 @@
 /****************************************************************
-  h2_io.h                       
+  h2_io.h
 
   Defines I/O class for MFDn H2 interaction file formats.
 
@@ -12,29 +12,30 @@
   Symmetrization convention: The full square matrix is *not* populated
   on diagonal sectors.  For these sectors, the lower triangle is
   zero-initialized on input and ignored on output.
-                                  
+
   Mark A. Caprio
   University of Notre Dame
 
-  8/31/12 (mac): Adapted from mfdn_io.h (as mfdn_h2).  
-     -- Converted I/O to class, from functions acting on stream
-     argument.
-     -- Added support for binary I/O and format code.
-  1/28/13 (mac): Complete implementation.
-  7/25/14 (mac): Add matrix (".mat") format for H2 files.
-  4/25/15 (mac): Reformat source file.
+  08/31/12 (mac): Adapted from mfdn_io.h (as mfdn_h2).
+     - Converted I/O to class, from functions acting on stream
+       argument.
+     - Added support for binary I/O and format code.
+  01/28/13 (mac): Complete implementation.
+  07/25/14 (mac): Add matrix (".mat") format for H2 files.
+  04/25/15 (mac): Reformat source file.
   10/11/16 (mac,pjf):
-    -- Rename to h2_io.
-    -- Integrate into shell project build.
+    - Rename to h2_io.
+    - Integrate into shell project build.
   10/19/16 (mac): Complete implementation for H2 Version0.
   10/25/16 (mac): Add InH2Stream::SeekToSector.
-  11/1/16 (mac):
+  11/01/16 (mac):
     - Convert from AS to NAS storage.
   11/13/16 (mac): Implement H2 Version15099 binary output.
   11/28/16 (mac): Add Tz0 to h2 format 15099 output header.
   10/19/17 (mac): Add optional on-the-fly conversion from AS to
     NAS matrix elements on output.
-  1/22/18 (mac): Begin implementing nonzero Tz0.
+  01/22/18 (mac): Begin implementing nonzero Tz0.
+  02/12/19 (pjf): Finish implementing nonzero Tz0.
 ****************************************************************/
 
 #ifndef H2_IO_H_
@@ -80,7 +81,7 @@ namespace shell {
   // Use of these arrays requires conversion of the H2Mode to int.
   extern const std::array<const char*,3> kH2ModeDescription; // ({"text","binary","matrix"});
   extern const std::array<const char*,3> kH2ModeExtension; // ({".dat",".bin",".mat"});
-  
+
   H2Mode DeducedIOMode(const std::string& filename);
   // Deduce h2 file mode from filename extension.
   //
@@ -313,7 +314,7 @@ namespace shell {
 
     // convenience accessor (for internal use)
     std::ofstream& stream() const {return *stream_ptr_;}
-    
+
     // format-specific implementation methods
     void WriteVersion();
 
