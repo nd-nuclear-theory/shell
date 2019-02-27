@@ -1,9 +1,11 @@
 # MFDn H2 data format notes (v15099) #
 
-Mark A. Caprio
+Mark A. Caprio, Patrick J. Fasano
 
-  + 2/12/18 (mac): Created.
-  + 4/25/18 (mac): Add information on header format.
+  + 02/12/18 (mac): Created.
+  + 04/25/18 (mac): Add information on header format.
+  + 02/21/19 (pjf): Fix typos.
+  + 02/27/19 (pjf): Impose restriction to Tz0=0.
 
 ----------------------------------------------------------------
 
@@ -81,7 +83,7 @@ Syntax:
 
   * J0 (int): J for operator
   * g0 (int): parity grade for operator (g=0,1; P=(-)^g)
-  * Tz0 (int): Tz for operator (HEP "up quark is up" convention, i.e., positive for proton)
+  * Tz0 (int): RESERVED, must be zero
 
 Example:
 
@@ -121,7 +123,7 @@ Example:
 
 ### Header line 4: 2-body basis a.m. limit ###
 
-Maximum 2*J values on each 2-body subspace (pp, nn, pn).  These are purely 
+Maximum 2*J values on each 2-body subspace (pp, nn, pn).  These are purely
 informational, at least currently, not used as a separate truncation parameter.
 
 Syntax:
@@ -165,13 +167,13 @@ Syntax:
 
   * matrix_element (float): reduced matrix element (RME)
 
-    * This is the RME <i1 i2 J_bra || T || i2 i4 J_ket>_species.
+    * This is the RME <i1 i2 J_bra || T || i3 i4 J_ket>_species.
 
     * The RME follows the group theory (=Rose) normalization and phase
     convention for the Wigner-Eckart theorem.  Thus, for scalar operators, it is
     simply the M-independent matrix element
 
-        <i1 i2 J || T_0 || i2 i4 J> = <i1 i2 J M || T_0 || i2 i4 J M>
+        <i1 i2 J || T_0 || i2 i4 J> = <i1 i2 J M || T_0 || i3 i4 J M>
 
     This matrix element differs by a factor of J_bra-hat from the RME under the
     Edmonds (=Suhonen=Varshalovich) convention for the Wigner-Eckart theorem.
@@ -202,7 +204,7 @@ Example:
 In binary format, the basic data content is the same as in text mode.  All
 integers are stored as 4-byte integers, and all floating point values are stored
 as 4-byte IEEE single-precision floating point values.
- 
+
 ### FORTRAN record structure ###
 
 The complication is that MFDn uses standard FORTRAN binary I/O, which
@@ -243,7 +245,7 @@ The header data fields are grouped into FORTRAN writes as follows:
   * Header line 4: 2-body basis a.m. limit
 
   * Header line 5: matrix size
- 
+
 
 ### Matrix elements ###
 
@@ -301,7 +303,7 @@ To examine the matrix elements, we can re-parse the file as 4-byte floats, using
 
 ### Overview ###
 
-   The ordering of sectors, and then of matrix elements within a sector, is 
+   The ordering of sectors, and then of matrix elements within a sector, is
 governed by the indexing scheme for the two-body basis, which is defined in the initial
 comments in `basis/jjjpn_scheme.h`.
 
@@ -360,29 +362,12 @@ loop of the form:
          if selection rules satisfied
             append sector (bra_subspace_index,ket_subspace_index)
 
-However, for Tz-changing operators, we cannot impose this restriction, as
-canonical order would "miss" certain needed sectors (e.g., we would never see
-the matrix elements from an nn subspace to a pn subspace, <pn|O|nn>).  We thus
-must relax the canonical ordering constraint:
-
-    # Tz0!=0 sector ordering
-    for each bra_subspace_index
-      for each ket_subspace_index
-         if selection rules satisfied
-            append sector (bra_subspace_index,ket_subspace_index)
-
    The selection rules between subspaces depend on the quantum numbers of the
 operator (Tz0,J0,g0):
 
     - Tz selection:
 
-          bra_Tz == Tz0 + ket_Tz
-
-      Note that, for a two-body operator, Tz0 can be -2,-1,0,+1,+2.  To
-      interpret this selection rule, it is important to know the sign convention
-      for Tz: we follow the particle-physics convention that Tz=+1/2 for proton
-      and -1/2 for neutron ("up quark is isospin up").  Thus, e.g., beta-minus
-      decay turns a neutron into a proton, so it carries Tz0=+1.
+          bra_Tz == ket_Tz
 
     - angular momentum selection:
 
