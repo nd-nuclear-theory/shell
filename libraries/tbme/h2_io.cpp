@@ -107,9 +107,8 @@ namespace shell {
             int dimension = ket_subspace.size();
             sector_entries = dimension*(dimension+1)/2;
           }
-        else if (sector.IsUpperTriangle() || (sectors.Tz0()!=0))
+        else if (sector.IsUpperTriangle())
           // upper triangle sector (but not diagonal)
-          // NOTE(pjf): Tz0!=0 sectors can live below the diagonal
           {
             int bra_dimension = bra_subspace.size();
             int ket_dimension = ket_subspace.size();

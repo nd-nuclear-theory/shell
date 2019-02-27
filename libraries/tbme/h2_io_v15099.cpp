@@ -394,8 +394,8 @@ namespace shell {
     //
     // This is a check that the caller's sector construction
     // followed the specification that only "upper triangle"
-    // sectors are stored, or that Tz0 is nonzero.
-    assert(sector.IsUpperTriangle() || (sectors().Tz0()!=0));
+    // sectors are stored.
+    assert(sector.IsUpperTriangle());
 
     // allocate matrix
     if (store)
@@ -491,8 +491,8 @@ namespace shell {
     //
     // This is a check that the caller's sector construction
     // followed the specification that only "upper triangle"
-    // sectors are stored, or that Tz0 is nonzero.
-    assert(sector.IsUpperTriangle() || (sectors().Tz0()!=0));
+    // sectors are stored.
+    assert(sector.IsUpperTriangle());
 
     // write FORTRAN record beginning delimiter
     if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())

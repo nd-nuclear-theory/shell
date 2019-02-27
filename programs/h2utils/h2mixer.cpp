@@ -1429,18 +1429,9 @@ void InitializeTargetIndexing(
     }
 
   // set up sectors
-  //
-  /// impose upper triangularity for isoscalar only
-  basis::SectorDirection sector_direction;
-  if (run_parameters.Tz0==0)
-    sector_direction = basis::SectorDirection::kCanonical;
-  else
-    sector_direction = basis::SectorDirection::kBoth;
-
   target_indexing.sectors = basis::TwoBodySectorsJJJPN(
       target_indexing.space,
-      run_parameters.J0,run_parameters.g0,run_parameters.Tz0,
-      sector_direction
+      run_parameters.J0,run_parameters.g0,run_parameters.Tz0
     );
 }
 
@@ -1564,23 +1555,15 @@ void XformChannel::InitializeChannel(
   //
   // preserves input orbitals but builds two-body space with
   // user-specified truncation
-  //
-  // impose upper-triangularity for isoscalar only
   pre_xform_two_body_indexing.orbital_space = stream_ptr->orbital_space();
   pre_xform_two_body_indexing.space
     = basis::TwoBodySpaceJJJPN(
         pre_xform_two_body_indexing.orbital_space,
         pre_xform_weight_max
       );
-  basis::SectorDirection sector_direction;
-  if (run_parameters.Tz0==0)
-    sector_direction = basis::SectorDirection::kCanonical;
-  else
-    sector_direction = basis::SectorDirection::kBoth;
   pre_xform_two_body_indexing.sectors = basis::TwoBodySectorsJJJPN(
       pre_xform_two_body_indexing.space,
-      run_parameters.J0,run_parameters.g0,run_parameters.Tz0,
-      sector_direction
+      run_parameters.J0,run_parameters.g0,run_parameters.Tz0
     );
   pre_xform_two_body_mapping = shell::TwoBodyMapping(
       stream_ptr->orbital_space(),
