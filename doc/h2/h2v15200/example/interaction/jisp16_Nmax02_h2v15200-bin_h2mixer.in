@@ -1,0 +1,10 @@
+# jisp16_Nmax02_h2v15200-bin_h2mixer.in -- copy jisp16
+
+set-target-indexing-oscillator tb 2
+set-target-multipolarity 0 0 0
+set-output-format 15200
+set-mass 2
+
+define-tb-source input VNN run0164-JISP16-tb-20/JISP16-tb-20-20.bin
+define-target jisp16_Nmax02_h2v15200.bin
+  add-source VNN 1.0

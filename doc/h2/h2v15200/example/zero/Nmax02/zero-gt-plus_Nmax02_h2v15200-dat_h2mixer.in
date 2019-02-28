@@ -1,0 +1,9 @@
+# zero-gt-plus_Nmax02_h2v15200-dat_h2mixer.in -- make zero operator with Gamow-Teller Tz0=+1 selection
+
+set-target-indexing-oscillator tb 2
+set-target-multipolarity 1 0 +1
+set-output-format 15200
+set-mass 2
+
+define-target zero-gt-plus_Nmax02_h2v15200.dat
+
