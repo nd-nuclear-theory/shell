@@ -13,7 +13,7 @@
     set-target-multipolarity <J0> <g0> <Tz0>
     set-mass <A>
     set-output-format <version>
-      version = 0|15099
+      version = 0|15099|15200
     define-xform <id> <xform_filename>
     define-ob-source <mode> <id> ...
       define-ob-source input <id> <obme_filename> <j0> <g0> <tz0>
@@ -62,6 +62,7 @@
     - Implement *breaking changes* to input format.
     - Use polymorphism for supporting new variety of channel types.
   + 02/12/19 (pjf): Relax constraints on non-isoscalar operators.
+  + 02/21/19 (pjf): Add H2 Version15200 support.
 
 ******************************************************************************/
 
@@ -703,7 +704,8 @@ struct TargetChannel
 
   // matrix generation
   void GenerateTargetMatrix(
-      OperatorBlockMap& source_matrices,
+      const OperatorBlockMap& source_matrices,
+      int target_sector_index,
       const typename basis::TwoBodySectorsJJJPN::SectorType& target_sector
     );
 
@@ -1412,12 +1414,18 @@ void InitializeTargetIndexing(
   )
 {
 
+  // space ordering
+  basis::TwoBodySpaceJJJPNOrdering space_ordering =
+    shell::kH2SpaceOrdering.at(run_parameters.output_h2_format);
+
   // set up basis
   if (run_parameters.truncation_cutoff >= 0)
     // oscillator-like indexing
     {
       target_indexing.orbital_space = basis::OrbitalSpacePN(run_parameters.truncation_cutoff);
-      target_indexing.space = basis::TwoBodySpaceJJJPN(target_indexing.orbital_space,run_parameters.weight_max);
+      target_indexing.space = basis::TwoBodySpaceJJJPN(
+          target_indexing.orbital_space, run_parameters.weight_max, space_ordering
+        );
     }
   else
     // generic indexing
@@ -1425,7 +1433,9 @@ void InitializeTargetIndexing(
       std::ifstream orbital_file(run_parameters.orbital_filename);
       basis::OrbitalPNList orbital_info = basis::ParseOrbitalPNStream(orbital_file,true);
       target_indexing.orbital_space = basis::OrbitalSpacePN(orbital_info);
-      target_indexing.space = basis::TwoBodySpaceJJJPN(target_indexing.orbital_space,run_parameters.weight_max);
+      target_indexing.space = basis::TwoBodySpaceJJJPN(
+          target_indexing.orbital_space, run_parameters.weight_max, space_ordering
+        );
     }
 
   // set up sectors
@@ -1556,10 +1566,13 @@ void XformChannel::InitializeChannel(
   // preserves input orbitals but builds two-body space with
   // user-specified truncation
   pre_xform_two_body_indexing.orbital_space = stream_ptr->orbital_space();
+  basis::TwoBodySpaceJJJPNOrdering pre_xform_space_ordering =
+    shell::kH2SpaceOrdering.at(stream_ptr->h2_format());
   pre_xform_two_body_indexing.space
     = basis::TwoBodySpaceJJJPN(
         pre_xform_two_body_indexing.orbital_space,
-        pre_xform_weight_max
+        pre_xform_weight_max,
+        pre_xform_space_ordering
       );
   pre_xform_two_body_indexing.sectors = basis::TwoBodySectorsJJJPN(
       pre_xform_two_body_indexing.space,
@@ -1679,8 +1692,7 @@ void InputChannel::PopulateSourceMatrix(
 
   // read matrix for sector
   basis::OperatorBlock<double> input_matrix;
-  stream_ptr->SeekToSector(input_sector_index);
-  stream_ptr->ReadSector(input_matrix);
+  stream_ptr->ReadSector(input_sector_index, input_matrix);
 
   // fill in lower triangle of matrix
   //
@@ -1833,8 +1845,7 @@ void XformChannel::PopulateSourceMatrix(
 
   // read matrix for sector
   basis::OperatorBlock<double> input_matrix;
-  stream_ptr->SeekToSector(input_sector_index);
-  stream_ptr->ReadSector(input_matrix);
+  stream_ptr->ReadSector(input_sector_index, input_matrix);
 
   // fill in lower triangle of matrix
   //
@@ -1882,7 +1893,8 @@ void XformChannel::PopulateSourceMatrix(
 }
 
 void TargetChannel::GenerateTargetMatrix(
-    OperatorBlockMap& source_matrices,
+    const OperatorBlockMap& source_matrices,
+    int target_sector_index,
     const typename basis::TwoBodySectorsJJJPN::SectorType& target_sector
   )
 {
@@ -1909,7 +1921,7 @@ void TargetChannel::GenerateTargetMatrix(
 
   // write target matrix
   mcutils::ChopMatrix(target_matrix);  // "neaten" output by eliminating near-zero values
-  stream_ptr->WriteSector(target_matrix);
+  stream_ptr->WriteSector(target_sector_index, target_matrix);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -2053,7 +2065,7 @@ int main(int argc, char **argv)
       for (auto& two_body_channel_ptr : target_channels)
       {
         two_body_channel_ptr->GenerateTargetMatrix(
-            source_matrices, target_sector
+            source_matrices, sector_index, target_sector
           );
       }
 

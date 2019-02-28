@@ -18,6 +18,7 @@
       "jjjpn" -- two-body jjJpn-coupled matrix elements
       "h2v0" -- two-body jjJpn-coupled matrix elements (h2 version 0)
       "h2v15099" -- two-body jjJpn-coupled matrix elements (h2 version 15099)
+      "h2v15200" -- two-body jjJpn-coupled matrix elements (h2 version 15200)
 
   Language: C++11
 
@@ -30,6 +31,7 @@
   + 10/25/16 (mac): Update use of ParsingError.
   + 11/28/17 (pjf): Print header with version.
   + 07/31/18 (pjf): Call ChopMatrix before final write, for simple comparison.
+  + 02/21/19 (pjf): Add H2 Version15200 support.
 
 ****************************************************************/
 
@@ -127,6 +129,11 @@ void ReadParameters(Parameters& parameters)
       {
         parameters.coupling = Coupling::kJJJPN;
         parameters.output_h2_format = 15099;
+      }
+    else if (coupling_code == "h2v15200")
+      {
+        parameters.coupling = Coupling::kJJJPN;
+        parameters.output_h2_format = 15200;
       }
     else
       ParsingError(line_count,line,"unrecognized coupling scheme code");
@@ -388,6 +395,7 @@ void WriteTwoBodyH2(
       basis::OperatorBlock<double> matrix = two_body_jjjpn_matrices[sector_index];
       mcutils::ChopMatrix(matrix);
       output_stream.WriteSector(
+          sector_index,
           matrix,
           basis::NormalizationConversion::kASToNAS
         );
@@ -582,9 +590,12 @@ int main(int argc, char **argv)
 
   // define space and operator containers
   basis::OrbitalSpacePN orbital_space(N1max);
+  basis::TwoBodySpaceJJJPNOrdering two_body_jjjpn_space_ordering =
+    shell::kH2SpaceOrdering.at(parameters.output_h2_format);
   basis::TwoBodySpaceJJJPN two_body_jjjpn_space(
       orbital_space,
-      basis::WeightMax(parameters.truncation_rank,parameters.truncation_cutoff)
+      basis::WeightMax(parameters.truncation_rank,parameters.truncation_cutoff),
+      two_body_jjjpn_space_ordering
     );
   basis::TwoBodySectorsJJJPN two_body_jjjpn_sectors;
   basis::OperatorBlocks<double> two_body_jjjpn_matrices;
