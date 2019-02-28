@@ -16,26 +16,29 @@
   Mark A. Caprio
   University of Notre Dame
 
-  08/31/12 (mac): Adapted from mfdn_io.h (as mfdn_h2).
+  + 08/31/12 (mac): Adapted from mfdn_io.h (as mfdn_h2).
      - Converted I/O to class, from functions acting on stream
        argument.
      - Added support for binary I/O and format code.
-  01/28/13 (mac): Complete implementation.
-  07/25/14 (mac): Add matrix (".mat") format for H2 files.
-  04/25/15 (mac): Reformat source file.
-  10/11/16 (mac,pjf):
+  + 01/28/13 (mac): Complete implementation.
+  + 07/25/14 (mac): Add matrix (".mat") format for H2 files.
+  + 04/25/15 (mac): Reformat source file.
+  + 10/11/16 (mac,pjf):
     - Rename to h2_io.
     - Integrate into shell project build.
-  10/19/16 (mac): Complete implementation for H2 Version0.
-  10/25/16 (mac): Add InH2Stream::SeekToSector.
-  11/01/16 (mac):
+  + 10/19/16 (mac): Complete implementation for H2 Version0.
+  + 10/25/16 (mac): Add InH2Stream::SeekToSector.
+  + 11/01/16 (mac):
     - Convert from AS to NAS storage.
-  11/13/16 (mac): Implement H2 Version15099 binary output.
-  11/28/16 (mac): Add Tz0 to h2 format 15099 output header.
-  10/19/17 (mac): Add optional on-the-fly conversion from AS to
+  + 11/13/16 (mac): Implement H2 Version15099 binary output.
+  + 11/28/16 (mac): Add Tz0 to h2 format 15099 output header.
+  + 10/19/17 (mac): Add optional on-the-fly conversion from AS to
     NAS matrix elements on output.
-  01/22/18 (mac): Begin implementing nonzero Tz0.
-  02/12/19 (pjf): Finish implementing nonzero Tz0.
+  + 01/22/18 (mac): Begin implementing nonzero Tz0.
+  + 02/12/19 (pjf): Finish implementing nonzero Tz0.
+  + 02/21/19 (pjf):
+    - Remove Tz0!=0 support from h2v15099.
+    - Implement H2 Version15200.
 ****************************************************************/
 
 #ifndef H2_IO_H_
@@ -45,6 +48,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <vector>
+#include <memory>
 
 #include "eigen3/Eigen/Core"
 
@@ -62,13 +67,14 @@ namespace shell {
   //   0: oscillator-like sp indexing, used with MFDn v14
   //   15000: Pieter's preliminary general orbitals test format for MFDn v15 beta00 (not supported)
   //   15099: general orbitals specification (June 2016)
-  //   15100: add support for nonzero Tz0 (January 2018) -- WIP
+  //   15200: add support for nonzero Tz0 (February 2019) -- WIP
 
   typedef int H2Format;
-  const int kVersion0=0;
-  const int kVersion15099=15099;
+  constexpr H2Format kVersion0=0;
+  constexpr H2Format kVersion15099=15099;
+  constexpr H2Format kVersion15200=15200;
   // enum class H2Format
-  // {kVersion0=0,kVersion15000=15000,kVersion15099=15099};
+  // {kVersion0=0,kVersion15000=15000,kVersion15099=15099,kVersion15200=15200};
 
   enum class H2Mode {kText,kBinary,kMatrix};
   // text/binary mode
@@ -81,6 +87,10 @@ namespace shell {
   // Use of these arrays requires conversion of the H2Mode to int.
   extern const std::array<const char*,3> kH2ModeDescription; // ({"text","binary","matrix"});
   extern const std::array<const char*,3> kH2ModeExtension; // ({".dat",".bin",".mat"});
+
+  extern const std::unordered_map<H2Format,basis::TwoBodySpaceJJJPNOrdering> kH2SpaceOrdering;
+    // {{kVersion0,kPN},{kVersion15099,kPN},{kVersion15200,kTz}}
+  // space ordering
 
   H2Mode DeducedIOMode(const std::string& filename);
   // Deduce h2 file mode from filename extension.
@@ -174,11 +184,6 @@ namespace shell {
     {
       return Jmax_by_type_;
     }
-    bool SectorIsFirstOfType() const;
-    // Determine if current sector is first of its pp/nn/pn type.
-    bool SectorIsLastOfType() const;
-    // Determine if current sector is last of its pp/nn/pn type.
-
     // diagnostics
     std::string DiagnosticStr() const;
 
@@ -203,6 +208,12 @@ namespace shell {
 
     // current pointer
     int sector_index_;
+
+    bool SectorIsFirstOfType() const;
+    // Determine if sector_index is first of its pp/nn/pn type.
+    bool SectorIsLastOfType() const;
+    // Determine if sector_index is last of its pp/nn/pn type.
+
   };
 
   ////////////////////////////////////////////////////////////////
@@ -217,7 +228,7 @@ namespace shell {
 
     // constructors
 
-    InH2Stream() : stream_ptr_(NULL) {};
+    InH2Stream() : stream_ptr_(nullptr) {};
     // default constructor -- provided since required for certain
     // purposes by STL container classes (e.g., std::vector::resize)
 
@@ -227,20 +238,12 @@ namespace shell {
     ~InH2Stream ()
       {
         Close();
-        delete stream_ptr_;
       };
 
     // I/O
 
-    void ReadSector(Eigen::MatrixXd& matrix);
+    void ReadSector(int sector_index, Eigen::MatrixXd& matrix);
     // Read current sector.
-
-    void SkipSector();
-    // Skip (read but do not store) current sector.
-
-    void SeekToSector(int seek_index);
-    // Skip (read but do not store) through sectors until arriving at
-    // given sector.
 
     void Close();
 
@@ -248,24 +251,33 @@ namespace shell {
 
     // format-specific implementation methods
     void ReadVersion();
-    void ReadOrSkipSector(Eigen::MatrixXd& matrix,bool store);
+    void SkipSector();
+    // Skip (read but do not store) current sector.
+
+    void SeekToSector(int seek_index);
+    // Skip (read but do not store) through sectors until arriving at
+    // given sector.
 
     // ... Version0
     void ReadHeader_Version0();
-    void ReadSector_Version0(Eigen::MatrixXd& matrix, bool store);
+    void ReadSector_Version0(Eigen::MatrixXd& matrix);
+    void SkipSector_Version0();
 
     // ... Version15099
     void ReadHeader_Version15099();
-    void ReadSector_Version15099(Eigen::MatrixXd& matrix, bool store);
+    void ReadSector_Version15099(Eigen::MatrixXd& matrix);
+    void SkipSector_Version15099();
 
-    // ... Version15100
-    void ReadHeader_Version15100();
-    void ReadSector_Version15100(Eigen::MatrixXd& matrix, bool store);
+    // ... Version15200
+    void ReadHeader_Version15200();
+    void ReadSector_Version15200(Eigen::MatrixXd& matrix);
+    void SkipSector_Version15200();
 
     // file stream
     std::ifstream& stream() const {return *stream_ptr_;}  // alias for convenience
-    std::ifstream* stream_ptr_;
+    std::unique_ptr<std::ifstream> stream_ptr_;
     int line_count_;  // for text mode input
+    std::vector<std::ifstream::pos_type> stream_sector_positions_;
 
   };
 
@@ -281,7 +293,7 @@ namespace shell {
 
     // constructors
 
-    OutH2Stream() : stream_ptr_(NULL) {};
+    OutH2Stream() : stream_ptr_(nullptr) {};
     // default constructor -- provided since required for certain
     // purposes by STL container classes (e.g., std::vector::resize)
 
@@ -297,11 +309,11 @@ namespace shell {
     ~OutH2Stream()
       {
         Close();
-        delete stream_ptr_;
       };
 
     // I/O
     void WriteSector(
+        int sector_index,
         const Eigen::MatrixXd& matrix,
         basis::NormalizationConversion conversion_mode = basis::NormalizationConversion::kNone
       );
@@ -327,12 +339,12 @@ namespace shell {
     void WriteSector_Version15099(const Eigen::MatrixXd& matrix, basis::NormalizationConversion conversion_mode);
 
     // ... Version15100
-    void WriteHeader_Version15100();
-    void WriteSector_Version15100(const Eigen::MatrixXd& matrix, basis::NormalizationConversion conversion_mode);
+    void WriteHeader_Version15200();
+    void WriteSector_Version15200(const Eigen::MatrixXd& matrix, basis::NormalizationConversion conversion_mode);
 
     // file stream
     // std::ofstream& stream() const {return *stream_ptr_;}  // alias for convenience
-    std::ofstream* stream_ptr_;
+    std::unique_ptr<std::ofstream> stream_ptr_;
 
   };
 

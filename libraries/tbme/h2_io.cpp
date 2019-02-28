@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <memory>
 
 #include "fmt/format.h"
 #include "mcutils/io.h"
@@ -25,8 +26,20 @@ namespace shell {
   ////////////////////////////////////////////////////////////////
 
   // code assumes int and float are both 4-byte
-  const int kIntegerSize = 4;
-  const int kFloatSize = 4;
+  constexpr int kIntegerSize = 4;
+  static_assert(sizeof(int)==kIntegerSize, "Integers are not 4 bytes.");
+  constexpr int kFloatSize = 4;
+  static_assert(sizeof(float)==kFloatSize, "Floats are not 4 bytes.");
+
+  ////////////////////////////////////////////////////////////////
+  // space ordering
+  ////////////////////////////////////////////////////////////////
+
+  const std::unordered_map<H2Format,basis::TwoBodySpaceJJJPNOrdering> kH2SpaceOrdering({
+      {kVersion0,     basis::TwoBodySpaceJJJPNOrdering::kPN},
+      {kVersion15099, basis::TwoBodySpaceJJJPNOrdering::kPN},
+      {kVersion15200, basis::TwoBodySpaceJJJPNOrdering::kTz},
+    });
 
   ////////////////////////////////////////////////////////////////
   // pp/nn/pn matrix size counting
@@ -89,12 +102,12 @@ namespace shell {
       {
 
         // extract sector
-        const typename basis::TwoBodySectorsJJJPN::SectorType& sector = sectors.GetSector(sector_index);
-        const typename basis::TwoBodySectorsJJJPN::SubspaceType& bra_subspace = sector.bra_subspace();
-        const typename basis::TwoBodySectorsJJJPN::SubspaceType& ket_subspace = sector.ket_subspace();
+        const auto& sector = sectors.GetSector(sector_index);
+        const auto& bra_subspace = sector.bra_subspace();
+        const auto& ket_subspace = sector.ket_subspace();
 
-        // characterize ket pp/nn/pn type for sector
-        basis::TwoBodySpeciesPN two_body_species = ket_subspace.two_body_species();
+        // characterize bra pp/nn/pn type for sector
+        basis::TwoBodySpeciesPN two_body_species = bra_subspace.two_body_species();
 
         // count sector
         ++num_sectors_by_type[int(two_body_species)];
@@ -153,29 +166,33 @@ namespace shell {
 
   bool H2StreamBase::SectorIsFirstOfType() const
   {
-    const typename basis::TwoBodySectorsJJJPN::SectorType& sector = sectors().GetSector(sector_index_);
-    int current_type_index = int(sector.ket_subspace().two_body_species());
+    assert((sector_index_>=0) && (sector_index_<sectors().size()));
+    // short-circuit on first sector overall
+    if (sector_index_ == 0)
+      return true;
+    const auto& current_sector = sectors().GetSector(sector_index_);
+    auto current_type = current_sector.bra_subspace().two_body_species();
 
-    // count sectors of prior types (exclusive)
-    int prior_type_sectors = 0;
-    for (int type_index=0; type_index<current_type_index;++type_index)
-      prior_type_sectors+=num_sectors_by_type()[type_index];
+    const auto& prev_sector = sectors().GetSector(sector_index_-1);
+    auto prev_type = prev_sector.bra_subspace().two_body_species();
 
-    bool is_first_of_type = (sector_index_==prior_type_sectors);
+    bool is_first_of_type = (current_type!=prev_type);
     return is_first_of_type;
   }
 
   bool H2StreamBase::SectorIsLastOfType() const
   {
-    const typename basis::TwoBodySectorsJJJPN::SectorType& sector = sectors().GetSector(sector_index_);
-    int current_type_index = int(sector.ket_subspace().two_body_species());
+    assert((sector_index_>=0) && (sector_index_<sectors().size()));
+    // short-circuit on first sector overall
+    if (sector_index_ == sectors().size()-1)
+      return true;
+    const auto& current_sector = sectors().GetSector(sector_index_);
+    auto current_type = current_sector.bra_subspace().two_body_species();
 
-    // count sectors of prior types (inclusive)
-    int prior_type_sectors = 0;
-    for (int type_index=0; type_index<=current_type_index;++type_index)
-      prior_type_sectors+=num_sectors_by_type()[type_index];
+    const auto& next_sector = sectors().GetSector(sector_index_+1);
+    auto next_type = next_sector.bra_subspace().two_body_species();
 
-    bool is_last_of_type = (sector_index_+1==prior_type_sectors);
+    bool is_last_of_type = (current_type!=next_type);
     return is_last_of_type;
   }
 
@@ -269,7 +286,7 @@ namespace shell {
   InH2Stream::InH2Stream(
       const std::string& filename
     )
-    : H2StreamBase(filename), line_count_(0)
+    : H2StreamBase(filename), line_count_(0), stream_sector_positions_()
   {
 
     // determine mode
@@ -279,7 +296,7 @@ namespace shell {
     std::ios_base::openmode mode_argument = std::ios_base::in;
     if (h2_mode_==H2Mode::kBinary)
       mode_argument |= std::ios_base::binary;
-    stream_ptr_ = new std::ifstream(filename_,mode_argument);
+    stream_ptr_ = std::unique_ptr<std::ifstream>(new std::ifstream(filename_,mode_argument));
     StreamCheck(bool(stream()),filename_,"Failure opening H2 file for input");
 
     // read format version and header and set up indexing
@@ -288,6 +305,8 @@ namespace shell {
       ReadHeader_Version0();
     else if (h2_format()==kVersion15099)
       ReadHeader_Version15099();
+    else if (h2_format()==kVersion15200)
+      ReadHeader_Version15200();
     else
       {
         std::cerr << "Unsupported version encountered when opening H2 file " << filename_ << std::endl;
@@ -301,13 +320,18 @@ namespace shell {
   };
 
 
-  void InH2Stream::ReadOrSkipSector(Eigen::MatrixXd& matrix, bool store)
+  void InH2Stream::ReadSector(int sector_index, Eigen::MatrixXd& matrix)
   {
+    // jump to correct sector
+    SeekToSector(sector_index);
+
     // read sector
     if (h2_format()==kVersion0)
-      ReadSector_Version0(matrix,store);
+      ReadSector_Version0(matrix);
     else if (h2_format()==kVersion15099)
-      ReadSector_Version15099(matrix,store);
+      ReadSector_Version15099(matrix);
+    else if (h2_format()==kVersion15200)
+      ReadSector_Version15200(matrix);
     else
       // format version was already checked when reading header, so we should
       // never get here, unless perhaps someday we implement header-only support
@@ -323,30 +347,57 @@ namespace shell {
     // increment to next sector
     sector_index_++;
 
-  }
-
-  void InH2Stream::ReadSector(Eigen::MatrixXd& matrix)
-  {
-    bool store = true;
-    ReadOrSkipSector(matrix,store);
+    // store next sector location if not seen before
+    if (sector_index_ > stream_sector_positions_.size()-1)
+      stream_sector_positions_.push_back(stream().tellg());
   }
 
   void InH2Stream::SkipSector()
   {
-    // Note that matrix object is still needed as dummy, to use
-    // ReadSector machinery, even though matrix is not used
-    Eigen::MatrixXd matrix;
+    // skip sector
+    if (h2_format()==kVersion0)
+      SkipSector_Version0();
+    else if (h2_format()==kVersion15099)
+      SkipSector_Version15099();
+    else if (h2_format()==kVersion15200)
+      SkipSector_Version15200();
+    else
+      // format version was already checked when reading header, so we should
+      // never get here, unless perhaps someday we implement header-only support
+      // for some file format version
+      {
+        std::cerr << "Unsupported version encountered when reading H2 file " << filename_ << std::endl;
+        std::exit(EXIT_FAILURE);
+      }
 
-    bool store = false;
-    ReadOrSkipSector(matrix,store);
+    // validate status
+    StreamCheck(bool(stream()),filename_,"Failure while reading H2 file sector");
+
+    // increment to next sector
+    sector_index_++;
+
+    // store next sector location if not seen before
+    if (sector_index_ > stream_sector_positions_.size()-1)
+      stream_sector_positions_.push_back(stream().tellg());
   }
 
   void InH2Stream::SeekToSector(int seek_index)
   {
     assert(seek_index!=basis::kNone);
     assert(seek_index<sectors().size());
-    while (sector_index_<seek_index)
-      SkipSector();
+    // check if we can seek directly to file pointer position
+    if (seek_index <= stream_sector_positions_.size()-1)
+      // sector has already been encountered in file scan
+      {
+        stream().seekg(stream_sector_positions_.at(seek_index));
+        sector_index_ = seek_index;
+      }
+    else
+      // need to seek forward to new part of file
+      {
+        while (sector_index_<seek_index)
+          SkipSector();
+      }
   }
 
 
@@ -381,7 +432,7 @@ namespace shell {
     std::ios_base::openmode mode_argument = std::ios_base::out;
     if (h2_mode_==H2Mode::kBinary)
       mode_argument |= std::ios_base::binary;
-    stream_ptr_ = new std::ofstream(filename_,mode_argument);
+    stream_ptr_ = std::unique_ptr<std::ofstream>(new std::ofstream(filename_,mode_argument));
     StreamCheck(bool(stream()),filename_,"Failure opening H2 file for output");
 
     // write version
@@ -392,6 +443,8 @@ namespace shell {
       WriteHeader_Version0();
     else if (h2_format_==kVersion15099)
       WriteHeader_Version15099();
+    else if (h2_format_==kVersion15200)
+      WriteHeader_Version15200();
     else
       {
         std::cerr << "Unsupported version encountered when opening H2 file " << filename_ << std::endl;
@@ -401,14 +454,16 @@ namespace shell {
   }
 
   void OutH2Stream::WriteSector(
+      int sector_index,
       const Eigen::MatrixXd& matrix,
       basis::NormalizationConversion conversion_mode
     )
   {
     // validate matrix dimensions
-    const typename basis::TwoBodySectorsJJJPN::SectorType& sector = sectors().GetSector(sector_index_);
-    const typename basis::TwoBodySectorsJJJPN::SubspaceType& bra_subspace = sector.bra_subspace();
-    const typename basis::TwoBodySectorsJJJPN::SubspaceType& ket_subspace = sector.ket_subspace();
+    const auto& sector = sectors().GetSector(sector_index_);
+    const auto& bra_subspace = sector.bra_subspace();
+    const auto& ket_subspace = sector.ket_subspace();
+    assert(sector_index==sector_index_);
     assert((matrix.rows()==sector.bra_subspace().size())&&(matrix.cols()==sector.ket_subspace().size()));
 
     // validate output as NAS
@@ -422,6 +477,8 @@ namespace shell {
       WriteSector_Version0(matrix,conversion_mode);
     else if (h2_format()==kVersion15099)
       WriteSector_Version15099(matrix,conversion_mode);
+    else if (h2_format()==kVersion15200)
+      WriteSector_Version15200(matrix,conversion_mode);
     else
       assert(false);  // format version was already checked when writing header
 
@@ -451,5 +508,6 @@ namespace shell {
 
 #include "h2_io_v0.cpp"
 #include "h2_io_v15099.cpp"
+#include "h2_io_v15200.cpp"
 
 

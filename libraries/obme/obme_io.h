@@ -32,6 +32,8 @@
     - Separate operator type from operator truncation; add generic RadialOperatorType.
     - Store operator power separately for monomial radial operator.
   + 8/10/18 (pjf): Use mcutils::GetLine for more robust I/O.
+  + 02/20/19 (pjf): Use ParseOrbitalStream() and OrbitalDefinitionStr() for
+      orbital I/O.
 ****************************************************************/
 
 #ifndef OBME_IO_H_

@@ -158,41 +158,39 @@ void InOBMEStream::ReadHeader()
   }
 
   // bra orbital definitions
-  std::vector<basis::OrbitalPNInfo> bra_states;
+  std::string orbital_info_str;
+  for (int orbital_line_count=0; orbital_line_count < num_orbitals_bra; ++orbital_line_count)
+    {
+      mcutils::GetLine(stream(), line, line_count_);
+      orbital_info_str.append(line);
+      orbital_info_str.append("\n");  // need to restore newline to input line
+    }
+  std::istringstream orbital_info_stream(orbital_info_str);
+  basis::OrbitalPNList bra_orbitals = basis::ParseOrbitalPNStream(
+      orbital_info_stream,
+      /*standalone=*/false,
+      basis::MFDnOrbitalFormat::kVersion15099
+    );
 
-  for (int bra_orbital_count = 0; bra_orbital_count < num_orbitals_bra; ++bra_orbital_count)
-  {
-    // set up for parsing
-    mcutils::GetLine(stream(), line, line_count_);
-    std::istringstream line_stream(line);
-    if (line.size() == 0) continue;
+  // bra orbital definitions
+  orbital_info_str = std::string();
+  for (int orbital_line_count=0; orbital_line_count < num_orbitals_ket; ++orbital_line_count)
+    {
+      mcutils::GetLine(stream(), line, line_count_);
+      orbital_info_str.append(line);
+      orbital_info_str.append("\n");  // need to restore newline to input line
+    }
+  orbital_info_stream = std::istringstream(orbital_info_str);
+  basis::OrbitalPNList ket_orbitals = basis::ParseOrbitalPNStream(
+      orbital_info_stream,
+      /*standalone=*/false,
+      basis::MFDnOrbitalFormat::kVersion15099
+    );
 
-    basis::OrbitalPNInfo state;
-    line_stream >> state;
-    ParsingCheck(line_stream, line_count_, line);
-
-    bra_states.push_back(state);
-  }
-
-  // ket orbital definitions
-  std::vector<basis::OrbitalPNInfo> ket_states;
-  for (int ket_orbital_count = 0; ket_orbital_count < num_orbitals_ket; ++ket_orbital_count)
-  {
-    // set up for parsing
-    mcutils::GetLine(stream(), line, line_count_);
-    std::istringstream line_stream(line);
-    if (line.size() == 0) continue;
-
-    basis::OrbitalPNInfo state;
-    line_stream >> state;
-    ParsingCheck(line_stream, line_count_, line);
-
-    ket_states.push_back(state);
-  }
 
   // set up indexing
-  bra_orbital_space_ = basis::OrbitalSpaceLJPN(bra_states);
-  ket_orbital_space_ = basis::OrbitalSpaceLJPN(ket_states);
+  bra_orbital_space_ = basis::OrbitalSpaceLJPN(bra_orbitals);
+  ket_orbital_space_ = basis::OrbitalSpaceLJPN(ket_orbitals);
   sectors_ = basis::OrbitalSectorsLJPN(bra_orbital_space_, ket_orbital_space_, j0, g0, Tz0);
 }
 
@@ -307,11 +305,12 @@ void OutOBMEStream::WriteHeader()
     stream() << "# bra space orbitals" << std::endl;
     ++line_count_;
   }
-  for (auto&& state : bra_orbitals)
-  {
-    stream() << state << std::endl;
-    ++line_count_;
-  }
+  stream() << basis::OrbitalDefinitionStr(
+      bra_orbitals,
+      /*standalone=*/false,
+      basis::MFDnOrbitalFormat::kVersion15200
+    );
+  line_count_ += bra_orbitals.size();
 
   // blank line separating bras from kets
   stream() << std::endl;
@@ -323,11 +322,13 @@ void OutOBMEStream::WriteHeader()
     stream() << "# ket space orbitals" << std::endl;
     ++line_count_;
   }
-  for (auto&& state : ket_orbitals)
-  {
-    stream() << state << std::endl;
-    ++line_count_;
-  }
+  stream() << basis::OrbitalDefinitionStr(
+      ket_orbitals,
+      /*standalone=*/false,
+      basis::MFDnOrbitalFormat::kVersion15200
+    );
+  line_count_ += ket_orbitals.size();
+
 
   // blank line between kets and body of file
   stream() << std::endl;
