@@ -19,6 +19,8 @@
       define-ob-source input <id> <obme_filename> <j0> <g0> <tz0>
       define-ob-source builtin <id> <orbital_filename>
         id = l|l2|s|s2|j|j2|t2|tz|t+|t-|c+|c
+      define-ob-source linear-combination <id>
+        add-ob-source <id> <coefficient>
       define-ob-source tensor-product <id> <ob_factor_a_id> <ob_factor_b_id> <j0> <scale_factor>
       define-ob-source xform <id> <ob_source_id> <xform_id>
     define-tb-source <mode> <id> ...
