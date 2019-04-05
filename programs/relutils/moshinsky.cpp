@@ -7,11 +7,12 @@
   relative operator file format.
 
   Standard input:
-    ob|tb truncation_cutoff coupling
-    relative_filename
-    two_body_filename
+    ob|tb truncation_cutoff
+    source_filename coupling
+    target_filename coupling
 
-    coupling : target coupling scheme or h2 version
+    coupling : source/target coupling scheme or h2 version
+      "rel" -- relative matrix elements
       "rcmlsjt" -- relative-cm matrix elements
       "lsjt" -- two-body LSJT-coupled matrix elements
       "jjjt" -- two-body jjJT-coupled matrix elements
@@ -19,6 +20,8 @@
       "h2v0" -- two-body jjJpn-coupled matrix elements (h2 version 0)
       "h2v15099" -- two-body jjJpn-coupled matrix elements (h2 version 15099)
       "h2v15200" -- two-body jjJpn-coupled matrix elements (h2 version 15200)
+
+  Note: Currently supported source couplings are "rel" and "rcmlsjt".
 
   Language: C++11
 
@@ -28,10 +31,12 @@
   + 07/16/16 (mac): Created.
   + 08/16/16 (mac): Add diagnostic output of relative-cm matrix elements.
   + 10/09/16 (pjf): Rename mcpp -> mcutils.
-  + 10/25/16 (mac): Update use of ParsingError.
+  + 10/25/16 (mac): Update use of mcutils::ParsingError.
   + 11/28/17 (pjf): Print header with version.
   + 07/31/18 (pjf): Call ChopMatrix before final write, for simple comparison.
+  + 12/21/18 (pjf): Add support for reading relative-cm files.
   + 02/21/19 (pjf): Add H2 Version15200 support.
+  + 03/28/19 (pjf): Allow input of relative-cm (rcmlsjt) matrix elements.
 
 ****************************************************************/
 
@@ -54,25 +59,39 @@
 // parameter input
 ////////////////////////////////////////////////////////////////
 
-enum class Coupling {
-  kRelativeCMLSJT, kLSJT, kJJJT, kJJJPN
-    };
+enum class Coupling : int {
+    kRelative = 0, kRelativeCMLSJT = 1, kLSJT = 2, kJJJT = 3, kJJJPN = 4
+  };
+
+std::unordered_map<std::string,std::pair<Coupling,shell::H2Format>>
+kCouplingDefinitions =
+  {
+    {"rel",      {Coupling::kRelative,       basis::kNone}},
+    {"rcmlsjt",  {Coupling::kRelativeCMLSJT, basis::kNone}},
+    {"lsjt",     {Coupling::kLSJT,           basis::kNone}},
+    {"jjjt",     {Coupling::kJJJT,           basis::kNone}},
+    {"jjjpn",    {Coupling::kJJJPN,          basis::kNone}},
+    {"h2v0",     {Coupling::kJJJPN,          shell::kVersion0}},
+    {"h2v15099", {Coupling::kJJJPN,          shell::kVersion15099}},
+    {"h2v15200", {Coupling::kJJJPN,          shell::kVersion15200}}
+  };
 
 struct Parameters
 // Container for run input parameters.
 {
 
   // input
-  std::string relative_filename;
+  std::string input_filename;
 
   // transformation
   basis::Rank truncation_rank;
   int truncation_cutoff;
-  Coupling coupling;
+  Coupling source_coupling;
+  Coupling target_coupling;
 
   // output
   shell::H2Format output_h2_format;
-  std::string two_body_filename;
+  std::string output_filename;
 
 };
 
@@ -94,11 +113,10 @@ void ReadParameters(Parameters& parameters)
     ++line_count;
     std::getline(std::cin,line);
     std::istringstream line_stream(line);
-    std::string truncation_rank_code, coupling_code;
+    std::string truncation_rank_code;
     line_stream >> truncation_rank_code
-                >> parameters.truncation_cutoff
-                >> coupling_code;
-    ParsingCheck(line_stream,line_count,line);
+                >> parameters.truncation_cutoff;
+    mcutils::ParsingCheck(line_stream,line_count,line);
 
     // process truncation rank code
     if (truncation_rank_code == "ob")
@@ -106,37 +124,7 @@ void ReadParameters(Parameters& parameters)
     else if (truncation_rank_code == "tb")
       parameters.truncation_rank = basis::Rank::kTwoBody;
     else
-      ParsingError(line_count,line,"unrecognized truncation rank code");
-
-    // process coupling
-    if (coupling_code == "rcmlsjt")
-      parameters.coupling = Coupling::kRelativeCMLSJT;
-    else if (coupling_code == "lsjt")
-      parameters.coupling = Coupling::kLSJT;
-    else if (coupling_code == "jjjt")
-      parameters.coupling = Coupling::kJJJT;
-    else if (coupling_code == "jjjpn")
-      {
-        parameters.coupling = Coupling::kJJJPN;
-        parameters.output_h2_format = basis::kNone;
-      }
-    else if (coupling_code == "h2v0")
-      {
-        parameters.coupling = Coupling::kJJJPN;
-        parameters.output_h2_format = 0;
-      }
-    else if (coupling_code == "h2v15099")
-      {
-        parameters.coupling = Coupling::kJJJPN;
-        parameters.output_h2_format = 15099;
-      }
-    else if (coupling_code == "h2v15200")
-      {
-        parameters.coupling = Coupling::kJJJPN;
-        parameters.output_h2_format = 15200;
-      }
-    else
-      ParsingError(line_count,line,"unrecognized coupling scheme code");
+      mcutils::ParsingError(line_count,line,"unrecognized truncation rank code");
 
 
   }
@@ -146,8 +134,14 @@ void ReadParameters(Parameters& parameters)
     ++line_count;
     std::getline(std::cin,line);
     std::istringstream line_stream(line);
-    line_stream >> parameters.relative_filename;
-    ParsingCheck(line_stream,line_count,line);
+    std::string source_coupling_code;
+    line_stream >> parameters.input_filename >> source_coupling_code;
+    mcutils::ParsingCheck(line_stream,line_count,line);
+    if (kCouplingDefinitions.count(source_coupling_code))
+      std::tie(parameters.source_coupling, std::ignore) =
+        kCouplingDefinitions.at(source_coupling_code);
+    else
+      mcutils::ParsingError(line_count,line,"unrecognized coupling scheme code");
   }
 
   // line 3: two-body (target) filename
@@ -155,80 +149,15 @@ void ReadParameters(Parameters& parameters)
     ++line_count;
     std::getline(std::cin,line);
     std::istringstream line_stream(line);
-    line_stream >> parameters.two_body_filename;
-    ParsingCheck(line_stream,line_count,line);
+    std::string target_coupling_code;
+    line_stream >> parameters.output_filename >> target_coupling_code;
+    mcutils::ParsingCheck(line_stream,line_count,line);
+    if (kCouplingDefinitions.count(target_coupling_code))
+      std::tie(parameters.target_coupling, parameters.output_h2_format) =
+        kCouplingDefinitions.at(target_coupling_code);
+    else
+      mcutils::ParsingError(line_count,line,"unrecognized coupling scheme code");
   }
-}
-
-////////////////////////////////////////////////////////////////
-// relative operator input
-////////////////////////////////////////////////////////////////
-
-void ReadRelative(
-    const std::string& relative_filename,
-    basis::RelativeSpaceLSJT& relative_space,
-    basis::OperatorLabelsJT& operator_labels,
-    std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-    std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices
-  )
-// Set up and read relative operator.
-//
-// Arguments:
-//   parameters (Parameters) : includes tensorial properties of operator
-//      choice of operator to use
-//   relative_space (..., output) : target space
-//   relative_component_sectors (..., output) : target sectors
-//   relative_component_matrices (..., output) : target matrices
-{
-  std::cout << "Read relative operator..." << std::endl;
-
-  // set up stream for readback
-  std::ifstream is(relative_filename.c_str());
-
-  // read header parameters
-  basis::RelativeOperatorParametersLSJT operator_parameters;
-  basis::ReadRelativeOperatorParametersLSJT(is,operator_parameters);
-  operator_labels = static_cast<basis::OperatorLabelsJT>(operator_parameters);
-  std::cout
-    << " "
-    << " J0 " << operator_parameters.J0
-    << " g0 " << operator_parameters.g0
-    << " T0_min " << operator_parameters.T0_min
-    << " T0_max " << operator_parameters.T0_max
-    << " symmetry " << int(operator_parameters.symmetry_phase_mode)
-    << std::endl
-    << " "
-    << " Nmax " << operator_parameters.Nmax
-    << " Jmax " << operator_parameters.Jmax
-    << std::endl;
-
-  // set up relative space
-  relative_space = basis::RelativeSpaceLSJT(
-      operator_parameters.Nmax,operator_parameters.Jmax
-    );
-
-  // populate sectors and matrices
-  for (int T0=operator_parameters.T0_min; T0<=operator_parameters.T0_max; ++T0)
-    // for each isospin component
-    {
-      // enumerate sectors
-      relative_component_sectors[T0]
-        = basis::RelativeSectorsLSJT(relative_space,operator_labels.J0,T0,operator_labels.g0);
-
-      // read matrices
-      basis::ReadRelativeOperatorComponentLSJT(
-          is,
-          T0,
-          relative_component_sectors[T0],relative_component_matrices[T0]
-        );
-    }
-
-  // write diagnostics
-  std::cout << "  Allocated matrix elements:";
-  for (int T0=operator_parameters.T0_min; T0<=operator_parameters.T0_max; ++T0)
-    std::cout << " " << basis::AllocatedEntries(relative_component_matrices[T0]);
-  std::cout << std::endl;
-
 }
 
 ////////////////////////////////////////////////////////////////
@@ -265,18 +194,16 @@ void GatherAndWriteRelativeCM(
   // write
 
   std::cout << "Write relative-cm LSJT..." << std::endl;
-  std::ostringstream lsjt_sstream;
-  for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
-    {
-      basis::WriteRelativeCMOperatorComponentLSJT(
-          lsjt_sstream,
-          T0,
-          relative_cm_lsjt_component_sectors[T0],relative_cm_lsjt_component_matrices[T0]
-        );
-    }
-  std::ofstream lsjt_stream(output_filename);
-  lsjt_stream << lsjt_sstream.str();
-
+  mcutils::SteadyTimer write_relative_cm_lsjt_timer;
+  write_relative_cm_lsjt_timer.Start();
+  basis::WriteRelativeCMOperatorLSJT(
+      output_filename,
+      relative_cm_lsjt_space,
+      operator_labels,relative_cm_lsjt_component_sectors,relative_cm_lsjt_component_matrices,
+      true
+    );
+  write_relative_cm_lsjt_timer.Stop();
+  std::cout << "  Time: " << write_relative_cm_lsjt_timer.ElapsedTime() << std::endl;
 }
 
 void GatherAndWriteTwoBodyLSJT(
@@ -381,7 +308,7 @@ void WriteTwoBodyH2(
   // stream initialization
   std::cout << "Output stream" << std::endl;
   shell::OutH2Stream output_stream(
-      parameters.two_body_filename,
+      parameters.output_filename,
       orbital_space,two_body_jjjpn_space,two_body_jjjpn_sectors,
       parameters.output_h2_format
     );
@@ -402,6 +329,52 @@ void WriteTwoBodyH2(
       std::cout << "." << std::flush;
     }
   std::cout << std::endl;
+}
+
+////////////////////////////////////////////////////////////////
+// reading and scattering intermediate couplings
+////////////////////////////////////////////////////////////////
+
+void ReadAndScatterRelativeCM(
+    const std::string& input_filename,
+    basis::OperatorLabelsJT& operator_labels,
+    basis::RelativeCMSpaceLSJTN& relative_cm_lsjtn_space,
+    std::array<basis::RelativeCMSectorsLSJTN,3>& relative_cm_lsjtn_component_sectors,
+    std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_matrices
+  )
+{
+  // define space and operator containers
+  basis::RelativeCMOperatorParametersLSJT operator_parameters;
+  basis::RelativeCMSpaceLSJT relative_cm_lsjt_space;
+  std::array<basis::RelativeCMSectorsLSJT,3> relative_cm_lsjt_component_sectors;
+  std::array<basis::OperatorBlocks<double>,3> relative_cm_lsjt_component_matrices;
+
+  // read
+  mcutils::SteadyTimer read_relative_cm_lsjt_timer;
+  read_relative_cm_lsjt_timer.Start();
+  basis::ReadRelativeCMOperatorLSJT(
+      input_filename,
+      relative_cm_lsjt_space,
+      operator_parameters,relative_cm_lsjt_component_sectors,relative_cm_lsjt_component_matrices,
+      true
+    );
+  read_relative_cm_lsjt_timer.Stop();
+  std::cout << "  Time: " << read_relative_cm_lsjt_timer.ElapsedTime() << std::endl;
+
+  // construct scattered operator
+  std::cout << "Scatter relative-cm LSJTN..." << std::endl;
+  mcutils::SteadyTimer relative_cm_lsjtn_timer;
+  relative_cm_lsjtn_timer.Start();
+  relative_cm_lsjtn_space = basis::RelativeCMSpaceLSJTN(operator_parameters.Nmax);
+  operator_labels = operator_parameters;
+  basis::ScatterOperatorRelativeCMLSJTToRelativeCMLSJTN(
+      operator_labels,
+      relative_cm_lsjt_space,relative_cm_lsjt_component_sectors,relative_cm_lsjt_component_matrices,
+      relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_matrices
+    );
+  relative_cm_lsjtn_timer.Stop();
+  std::cout << "  Time: " << relative_cm_lsjtn_timer.ElapsedTime() << std::endl;
+
 }
 
 ////////////////////////////////////////////////////////////////
@@ -427,61 +400,106 @@ int main(int argc, char **argv)
             << std::endl;
 
 
+  // check sanity of requested recoupling
+  if (parameters.source_coupling == parameters.target_coupling)
+    {
+      std::cout << "Source coupling and target coupling are the same. "
+                << "Nothing to do, exiting."
+                << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+  if (parameters.source_coupling > parameters.target_coupling)
+    {
+      std::cout << "Inverse Moshinsky transformation not supported, exiting."
+                << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
   // process truncation cutoff
   int N1max, N2max;
   std::tie(N1max,N2max) = basis::TwoBodyCutoffs(parameters.truncation_rank,parameters.truncation_cutoff);
 
+  // operator tensorial character
+  basis::OperatorLabelsJT operator_labels;
+
+
   ////////////////////////////////////////////////////////////////
-  // read relative operator
+  // relative LSJT
   ////////////////////////////////////////////////////////////////
 
-  // set up operator
+  // declare relative space and operator containers
   basis::RelativeSpaceLSJT relative_space;
-  basis::OperatorLabelsJT operator_labels;
   std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
   std::array<basis::OperatorBlocks<double>,3> relative_component_matrices;
-  ReadRelative(
-      parameters.relative_filename,
-      relative_space,
-      operator_labels,relative_component_sectors,relative_component_matrices
-    );
+
+  // read space and operator
+  if (parameters.source_coupling == Coupling::kRelative)
+    {
+      mcutils::SteadyTimer read_relative_lsjt_timer;
+      read_relative_lsjt_timer.Start();
+      basis::RelativeOperatorParametersLSJT operator_parameters;
+      basis::ReadRelativeOperatorLSJT(
+          parameters.input_filename,
+          relative_space,
+          operator_parameters,relative_component_sectors,relative_component_matrices,
+          true
+        );
+      read_relative_lsjt_timer.Stop();
+      std::cout << "  Time: " << read_relative_lsjt_timer.ElapsedTime() << std::endl;
+      operator_labels = operator_parameters;
+    }
 
 
   ////////////////////////////////////////////////////////////////
-  // augment to relative-cm LSJTN
+  // relative-cm LSJTN
   ////////////////////////////////////////////////////////////////
 
-  std::cout << "Augment to relative-cm LSJTN..." << std::endl;
-
-  // define space and operator containers
-  basis::RelativeCMSpaceLSJTN relative_cm_lsjtn_space(N2max);
+  // declare relative-cm space and operator containers
+  basis::RelativeCMSpaceLSJTN relative_cm_lsjtn_space;
   std::array<basis::RelativeCMSectorsLSJTN,3> relative_cm_lsjtn_component_sectors;
   std::array<basis::OperatorBlocks<double>,3> relative_cm_lsjtn_component_matrices;
 
-  // do transformation
-  mcutils::SteadyTimer relative_cm_lsjtn_timer;
-  relative_cm_lsjtn_timer.Start();
-  moshinsky::TransformOperatorRelativeLSJTToRelativeCMLSJTN(
-      operator_labels,
-      relative_space,relative_component_sectors,relative_component_matrices,
-      relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_matrices
-    );
-  relative_cm_lsjtn_timer.Stop();
-  std::cout << "  Time: " << relative_cm_lsjtn_timer.ElapsedTime() << std::endl;
+  if (parameters.source_coupling < Coupling::kRelativeCMLSJT)
+    {
+      std::cout << "Augment to relative-cm LSJTN..." << std::endl;
 
-  // write diagnostics
-  std::cout << "  Allocated matrix elements:";
-  for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
-    std::cout << " " << basis::AllocatedEntries(relative_cm_lsjtn_component_matrices[T0]);
-  std::cout << std::endl;
+      // do transformation
+      mcutils::SteadyTimer relative_cm_lsjtn_timer;
+      relative_cm_lsjtn_timer.Start();
+      relative_cm_lsjtn_space = basis::RelativeCMSpaceLSJTN(N2max);
+      moshinsky::TransformOperatorRelativeLSJTToRelativeCMLSJTN(
+          operator_labels,
+          relative_space,relative_component_sectors,relative_component_matrices,
+          relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_matrices
+        );
+      relative_cm_lsjtn_timer.Stop();
+      std::cout << "  Time: " << relative_cm_lsjtn_timer.ElapsedTime() << std::endl;
+    }
+  else if (parameters.source_coupling == Coupling::kRelativeCMLSJT)
+    {
+      ReadAndScatterRelativeCM(
+          parameters.input_filename,
+          operator_labels,
+          relative_cm_lsjtn_space, relative_cm_lsjtn_component_sectors, relative_cm_lsjtn_component_matrices
+        );
+    }
+
+  if (parameters.source_coupling <= Coupling::kRelativeCMLSJT)
+    {
+      // write diagnostics
+      std::cout << "  Allocated matrix elements:";
+      for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+        std::cout << " " << basis::AllocatedEntries(relative_cm_lsjtn_component_matrices[T0]);
+      std::cout << std::endl;
+    }
 
   // gather and write
-  if (parameters.coupling == Coupling::kRelativeCMLSJT)
+  if (parameters.target_coupling == Coupling::kRelativeCMLSJT)
     {
       GatherAndWriteRelativeCM(
-          N2max,operator_labels,
+          N2max, operator_labels,
           relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_matrices,
-          parameters.two_body_filename
+          parameters.output_filename
         );
       std::exit(EXIT_SUCCESS);
     }
@@ -490,38 +508,50 @@ int main(int argc, char **argv)
   // Moshinsky transform to two-body LSJTN
   ////////////////////////////////////////////////////////////////
 
-  std::cout << "Transform to two-body LSJTN..." << std::endl;
-
-  // define space and operator containers
-  basis::TwoBodySpaceLSJTN two_body_lsjtn_space(parameters.truncation_rank,parameters.truncation_cutoff);
+  // declare space and operator containers
+  basis::TwoBodySpaceLSJTN two_body_lsjtn_space;
   std::array<basis::TwoBodySectorsLSJTN,3> two_body_lsjtn_component_sectors;
   std::array<basis::OperatorBlocks<double>,3> two_body_lsjtn_component_matrices;
 
-  // do transformation
-  mcutils::SteadyTimer two_body_lsjtn_timer;
-  two_body_lsjtn_timer.Start();
-  moshinsky::TransformOperatorRelativeCMLSJTNToTwoBodyLSJTN(
-      operator_labels,
-      relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_matrices,
-      two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_matrices
-    );
-  two_body_lsjtn_timer.Stop();
-  std::cout << "  Time: " << two_body_lsjtn_timer.ElapsedTime() << std::endl;
+  if (parameters.source_coupling < Coupling::kLSJT)
+    {
+      std::cout << "Transform to two-body LSJTN..." << std::endl;
+
+      // do transformation
+      mcutils::SteadyTimer two_body_lsjtn_timer;
+      two_body_lsjtn_timer.Start();
+      two_body_lsjtn_space = basis::TwoBodySpaceLSJTN(parameters.truncation_rank,parameters.truncation_cutoff);
+      moshinsky::TransformOperatorRelativeCMLSJTNToTwoBodyLSJTN(
+          operator_labels,
+          relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_matrices,
+          two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_matrices
+        );
+      two_body_lsjtn_timer.Stop();
+      std::cout << "  Time: " << two_body_lsjtn_timer.ElapsedTime() << std::endl;
+    }
+  else if (parameters.source_coupling == Coupling::kLSJT)
+    {
+      std::cerr << "ERROR: lsjt input not yet implemented" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
 
   // write diagnostics
-  std::cout << "  Allocated matrix elements:";
-  for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
-    std::cout << " " << basis::AllocatedEntries(two_body_lsjtn_component_matrices[T0]);
-  std::cout << std::endl;
+  if (parameters.source_coupling <= Coupling::kLSJT)
+    {
+      std::cout << "  Allocated matrix elements:";
+      for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+        std::cout << " " << basis::AllocatedEntries(two_body_lsjtn_component_matrices[T0]);
+      std::cout << std::endl;
+    }
 
-  if (parameters.coupling == Coupling::kLSJT)
+  if (parameters.target_coupling == Coupling::kLSJT)
     {
       GatherAndWriteTwoBodyLSJT(
           parameters,operator_labels,
           two_body_lsjtn_space,
           two_body_lsjtn_component_sectors,
           two_body_lsjtn_component_matrices,
-          parameters.two_body_filename
+          parameters.output_filename
         );
       std::exit(EXIT_SUCCESS);
     }
@@ -530,54 +560,67 @@ int main(int argc, char **argv)
   // recouple to two-body JJJTN
   ////////////////////////////////////////////////////////////////
 
-  std::cout << "Recouple to two-body JJJTN..." << std::endl;
-
-  // define space and operator containers
-  basis::TwoBodySpaceJJJTN two_body_jjjtn_space(parameters.truncation_rank,parameters.truncation_cutoff);
+  // declare JJJTN space and operator containers
+  basis::TwoBodySpaceJJJTN two_body_jjjtn_space;
   std::array<basis::TwoBodySectorsJJJTN,3> two_body_jjjtn_component_sectors;
   std::array<basis::OperatorBlocks<double>,3> two_body_jjjtn_component_matrices;
 
-  // do recoupling
-  mcutils::SteadyTimer two_body_jjjtn_timer;
-  two_body_jjjtn_timer.Start();
-  moshinsky::TransformOperatorTwoBodyLSJTNToTwoBodyJJJTN(
-      operator_labels,
-      two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_matrices,
-      two_body_jjjtn_space,two_body_jjjtn_component_sectors,two_body_jjjtn_component_matrices
-    );
-  two_body_jjjtn_timer.Stop();
-  std::cout << "  Time: " << two_body_jjjtn_timer.ElapsedTime() << std::endl;
+  if (parameters.source_coupling < Coupling::kJJJT)
+    {
+      std::cout << "Recouple to two-body JJJTN..." << std::endl;
+
+      // do recoupling
+      mcutils::SteadyTimer two_body_jjjtn_timer;
+      two_body_jjjtn_timer.Start();
+      two_body_jjjtn_space = basis::TwoBodySpaceJJJTN(parameters.truncation_rank,parameters.truncation_cutoff);
+      moshinsky::TransformOperatorTwoBodyLSJTNToTwoBodyJJJTN(
+          operator_labels,
+          two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_matrices,
+          two_body_jjjtn_space,two_body_jjjtn_component_sectors,two_body_jjjtn_component_matrices
+        );
+      two_body_jjjtn_timer.Stop();
+      std::cout << "  Time: " << two_body_jjjtn_timer.ElapsedTime() << std::endl;
+    }
 
   ////////////////////////////////////////////////////////////////
   // gather to two-body JJJT
   ////////////////////////////////////////////////////////////////
 
-  std::cout << "Gather to two-body JJJT..." << std::endl;
-
-  // define space and operator containers
-  basis::TwoBodySpaceJJJT two_body_jjjt_space(parameters.truncation_rank,parameters.truncation_cutoff);
+  // declare JJJT space and operator containers
+  basis::TwoBodySpaceJJJT two_body_jjjt_space;
   std::array<basis::TwoBodySectorsJJJT,3> two_body_jjjt_component_sectors;
   std::array<basis::OperatorBlocks<double>,3> two_body_jjjt_component_matrices;
 
-  // construct gathered operator
-  mcutils::SteadyTimer two_body_jjjt_timer;
-  two_body_jjjt_timer.Start();
-  basis::GatherOperatorTwoBodyJJJTNToTwoBodyJJJT(
-      operator_labels,
-      two_body_jjjtn_space,two_body_jjjtn_component_sectors,two_body_jjjtn_component_matrices,
-      two_body_jjjt_space,two_body_jjjt_component_sectors,two_body_jjjt_component_matrices
-    );
-  two_body_jjjt_timer.Stop();
-  std::cout << "  Time: " << two_body_jjjt_timer.ElapsedTime() << std::endl;
+  if (parameters.source_coupling < Coupling::kJJJT)
+    {
+      std::cout << "Gather to two-body JJJT..." << std::endl;
 
-  if (parameters.coupling == Coupling::kJJJT)
+      // construct gathered operator
+      mcutils::SteadyTimer two_body_jjjt_timer;
+      two_body_jjjt_timer.Start();
+      two_body_jjjt_space = basis::TwoBodySpaceJJJT(parameters.truncation_rank,parameters.truncation_cutoff);
+      basis::GatherOperatorTwoBodyJJJTNToTwoBodyJJJT(
+          operator_labels,
+          two_body_jjjtn_space,two_body_jjjtn_component_sectors,two_body_jjjtn_component_matrices,
+          two_body_jjjt_space,two_body_jjjt_component_sectors,two_body_jjjt_component_matrices
+        );
+      two_body_jjjt_timer.Stop();
+      std::cout << "  Time: " << two_body_jjjt_timer.ElapsedTime() << std::endl;
+    }
+  else if (parameters.source_coupling == Coupling::kJJJT)
+    {
+      std::cerr << "ERROR: jjjt input not yet implemented" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
+  if (parameters.target_coupling == Coupling::kJJJT)
     {
       WriteTwoBodyJJJT(
           operator_labels,
           two_body_jjjt_space,
           two_body_jjjt_component_sectors,
           two_body_jjjt_component_matrices,
-          parameters.two_body_filename
+          parameters.output_filename
         );
       std::exit(EXIT_SUCCESS);
     }
@@ -618,7 +661,7 @@ int main(int argc, char **argv)
           two_body_jjjpn_space,
           two_body_jjjpn_sectors,
           two_body_jjjpn_matrices,
-          parameters.two_body_filename
+          parameters.output_filename
         );
     }
   else
