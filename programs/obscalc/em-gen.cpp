@@ -22,6 +22,7 @@
   + 10/24/17 (pjf): Rewritten, generating E/Dl/Ds, with multiple operators
       generated in one invocation.
   + 11/28/17 (pjf): Print header with version.
+  + 04/04/19 (pjf): Write matrix elements in Rose convention, for consistency.
 
 ******************************************************************************/
 
@@ -241,8 +242,8 @@ double CalculatePrefactorE(double scale_factor,
   // factor *= ((a.l() + b.l() + lambda) % 2 == 0);
 
   // Racah reduction formula
-  factor *= Hat(a.j()) * Hat(b.j()) * Hat(lambda)
-            * am::Wigner3J(a.j(), b.j(), lambda, HalfInt(1, 2), -HalfInt(1, 2), 0);
+  factor *= Hat(a.j()) * Hat(lambda)
+    * am::Wigner3J(a.j(), b.j(), lambda, HalfInt(1, 2), -HalfInt(1, 2), 0);
 
   return factor;
 }
@@ -264,8 +265,8 @@ double CalculatePrefactorM(double scale_factor,
   // factor *= ((a.l() + b.l() + lambda + 1) % 2 == 0);
 
   // Racah reduction formula
-  factor *= Hat(a.j()) * Hat(b.j()) * Hat(lambda)
-            * am::Wigner3J(a.j(), b.j(), lambda, HalfInt(1, 2), -HalfInt(1, 2), 0);
+  factor *= Hat(a.j()) * Hat(lambda)
+    * am::Wigner3J(a.j(), b.j(), lambda, HalfInt(1, 2), -HalfInt(1, 2), 0);
 
   double kappa = double(
       ParitySign(a.l() + a.j() + HalfInt(1, 2)) * (a.j() + HalfInt(1, 2))

@@ -4,6 +4,8 @@
   Calculate one-body observable from one-body operator matrix elements and
   one-body density matrix elements.
 
+  Note: Output RMEs are in Edmonds convention, in order to match MFDn's output.
+
   Syntax:
     + obscalc-ob
 
@@ -11,10 +13,9 @@
 
     set-output-file output_filename
     set-indexing orbital_filename
-    set-robdme-info robdme_info_filename
     define-operator name operator_filename
-    define-static-densities 2J g n robdme_filename
-    define-transition-densities 2Jf gf nf 2Ji gi fi robdme_filename
+    define-static-densities 2J g n robdme_filename [robdme_info_filename]
+    define-transition-densities 2Jf gf nf 2Ji gi ni robdme_filename [robdme_info_filename]
 
   Patrick J. Fasano
   University of Notre Dame
@@ -24,6 +25,9 @@
   + 10/25/17 (pjf): Make robdme info filename global to run.
   + 11/28/17 (pjf): Include version in header.
   + 07/27/18 (pjf): Update for new OBDME input routines.
+  + 03/30/19 (pjf): Add support for single-file ROBDME formats.
+  + 04/03/19 (pjf): Do all calculations in Rose convention, *except for final
+    output*.
 
 ******************************************************************************/
 
@@ -50,7 +54,8 @@ struct OneBodyOperator {
   basis::OperatorBlocks<double> matrices;
 
   explicit OneBodyOperator(const std::string& name__, const std::string& filename)
-      : name(name__) {
+      : name(name__)
+  {
     // read operator
     shell::InOBMEStream is(filename);
     is.Read(matrices);
@@ -67,6 +72,7 @@ struct OneBodyDensities {
   HalfInt Ji, Jf;
   int gi, gf, ni, nf;
   std::string robdme_filename;
+  std::string robdme_info_filename;
 };
 
 // Stores parameters for run
@@ -74,7 +80,6 @@ struct RunParameters {
   // filenames
   std::string output_filename;
   basis::OrbitalSpaceLJPN space;
-  std::string robdme_info_filename;
   std::vector<OneBodyOperator> operators;
   std::vector<OneBodyDensities> static_densities;
   std::vector<OneBodyDensities> transition_densities;
@@ -100,7 +105,7 @@ void ReadParameters(RunParameters& run_parameters) {
     // select action based on keyword
     if (keyword == "set-output-file") {
       line_stream >> run_parameters.output_filename;
-      ParsingCheck(line_stream, line_count, line);
+      mcutils::ParsingCheck(line_stream, line_count, line);
       struct stat st;
       if (stat(run_parameters.output_filename.c_str(), &st) == 0) {
         std::cerr << "WARN: overwriting file " << run_parameters.output_filename
@@ -109,7 +114,7 @@ void ReadParameters(RunParameters& run_parameters) {
     } else if (keyword == "set-indexing") {
       std::string orbital_filename;
       line_stream >> orbital_filename;
-      ParsingCheck(line_stream, line_count, line);
+      mcutils::ParsingCheck(line_stream, line_count, line);
       struct stat st;
       if (stat(orbital_filename.c_str(), &st) != 0) {
         std::cerr << "ERROR: file " << orbital_filename << " does not exist!"
@@ -121,38 +126,24 @@ void ReadParameters(RunParameters& run_parameters) {
       std::vector<basis::OrbitalPNInfo> input_orbitals =
           basis::ParseOrbitalPNStream(orbital_stream, true);
       run_parameters.space = basis::OrbitalSpaceLJPN(input_orbitals);
-    } else if (keyword == "set-robdme-info") {
-        std::string robdme_info_filename;
-        line_stream >> robdme_info_filename;
-        ParsingCheck(line_stream, line_count, line);
-        struct stat st;
-        if (stat(robdme_info_filename.c_str(), &st) != 0) {
-          std::cerr << "ERROR: file " << robdme_info_filename
-                    << " does not exist!" << std::endl;
-          std::exit(EXIT_FAILURE);
-        }
-        run_parameters.robdme_info_filename = robdme_info_filename;
     } else if (keyword == "define-operator") {
       std::string name, filename;
       line_stream >> name >> filename;
-      ParsingCheck(line_stream, line_count, line);
-      struct stat st;
-      if (stat(filename.c_str(), &st) != 0) {
-        std::cerr << "ERROR: file " << filename << " does not exist!" << std::endl;
-        std::exit(EXIT_FAILURE);
-      }
+      mcutils::ParsingCheck(line_stream, line_count, line);
+      mcutils::FileExistCheck(filename, true, false);
       run_parameters.operators.emplace_back(name, filename);
     } else if (keyword == "define-static-densities") {
       OneBodyDensities densities;
       int twiceJ, g, n;
-      std::string robdme_filename;
+      std::string robdme_filename, robdme_info_filename="";
       line_stream >> twiceJ >> g >> n >> robdme_filename;
-      ParsingCheck(line_stream, line_count, line);
-      struct stat st;
-      if (stat(robdme_filename.c_str(), &st) != 0) {
-        std::cerr << "ERROR: file " << robdme_filename << " does not exist!"
-                  << std::endl;
-        std::exit(EXIT_FAILURE);
+      mcutils::ParsingCheck(line_stream, line_count, line);
+      mcutils::FileExistCheck(robdme_filename, true, false);
+
+      if (line_stream.good()) {
+        line_stream >> robdme_info_filename;
+        mcutils::ParsingCheck(line_stream, line_count, line);
+        mcutils::FileExistCheck(robdme_info_filename, true, false);
       }
       densities.Jf = densities.Ji = HalfInt(twiceJ, 2);
       densities.gf = densities.gi = g;
@@ -162,15 +153,16 @@ void ReadParameters(RunParameters& run_parameters) {
     } else if (keyword == "define-transition-densities") {
       OneBodyDensities densities;
       int twiceJf, gf, nf, twiceJi, gi, ni;
-      std::string robdme_filename;
+      std::string robdme_filename, robdme_info_filename="";
       line_stream >> twiceJf >> gf >> nf >> twiceJi >> gi >> ni >> robdme_filename;
-      ParsingCheck(line_stream, line_count, line);
-      struct stat st;
-      if (stat(robdme_filename.c_str(), &st) != 0) {
-        std::cerr << "ERROR: file " << robdme_filename << " does not exist!"
-                  << std::endl;
-        std::exit(EXIT_FAILURE);
+      mcutils::ParsingCheck(line_stream, line_count, line);
+      mcutils::FileExistCheck(robdme_filename, true, false);
+      if (line_stream.good()) {
+        line_stream >> robdme_info_filename;
+        mcutils::ParsingCheck(line_stream, line_count, line);
+        mcutils::FileExistCheck(robdme_info_filename, true, false);
       }
+
       densities.Jf = HalfInt(twiceJf, 2);
       densities.gf = gf;
       densities.nf = nf;
@@ -178,6 +170,7 @@ void ReadParameters(RunParameters& run_parameters) {
       densities.gi = gi;
       densities.ni = ni;
       densities.robdme_filename = robdme_filename;
+      densities.robdme_info_filename = robdme_info_filename;
       run_parameters.transition_densities.push_back(densities);
     }
   }
@@ -191,8 +184,17 @@ double CalculateMatrixElement(const RunParameters& run_parameters,
   const basis::OrbitalSpaceLJPN& space = run_parameters.space;
   const basis::OrbitalSectorsLJPN sectors = op.sectors;
   const basis::OperatorBlocks<double>& operator_matrices = op.matrices;
-  shell::InOBDMEStreamMulti obdme_reader(run_parameters.robdme_info_filename, densities.robdme_filename, space, 0, 0);
-  obdme_reader.GetMultipole(op.sectors.j0(), density_sectors, density_matrices);
+  shell::InOBDMEStream obdme_s;
+  if (densities.robdme_info_filename == "")
+  {
+    // TODO(pjf): check that density quantum numbers match input quantum numbers
+    obdme_s = shell::InOBDMEStreamSingle(densities.robdme_filename, space);
+  }
+  else
+  {
+    obdme_s = shell::InOBDMEStreamMulti(densities.robdme_info_filename, densities.robdme_filename, space, 0, 0);
+  }
+  obdme_s.GetMultipole(op.sectors.j0(), density_sectors, density_matrices);
 
   // loop and sum over \sum_{a,b} rho_{ab} T_{ba}
   double value = 0;
@@ -206,17 +208,18 @@ double CalculateMatrixElement(const RunParameters& run_parameters,
           sectors.LookUpSectorIndex(subspace_index_a, subspace_index_b);
       if (sector_index == basis::kNone) continue;
 
-      for (int state_index_a = 0; state_index_a < subspace_a.size();
-           ++state_index_a) {
-        for (int state_index_b = 0; state_index_b < subspace_b.size();
-             ++state_index_b) {
-          value += operator_matrices[sector_index](state_index_a, state_index_b)
+      // dimension factor only present in Rose convention
+      double dimension_factor = double(2*subspace_b.j()+1);
+
+      for (int state_index_a = 0; state_index_a < subspace_a.size(); ++state_index_a) {
+        for (int state_index_b = 0; state_index_b < subspace_b.size(); ++state_index_b) {
+          value += dimension_factor * operator_matrices[sector_index](state_index_a, state_index_b)
                    * density_matrices[sector_index](state_index_a, state_index_b);
         }
       }
     }
   }
-  return (1./Hat(op.sectors.j0())) * value;
+  return value/Hat(op.sectors.j0());
 }
 
 int main(int argc, char** argv) {
