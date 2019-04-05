@@ -61,6 +61,7 @@ void InOBMEStream::ReadHeader()
   char operator_type, radial_operator_type;
   int l0max, j0, g0, Tz0;
   int num_orbitals_bra, num_orbitals_ket;
+  basis::MFDnOrbitalFormat orbital_format;
 
   // version
   {
@@ -80,6 +81,7 @@ void InOBMEStream::ReadHeader()
     line_stream >> operator_type >> l0max >> Tz0 >> num_orbitals_bra
         >> num_orbitals_ket;
     ParsingCheck(line_stream, line_count_, line);
+    orbital_format = basis::MFDnOrbitalFormat::kVersion15099;
     radial_operator_type_ = static_cast<RadialOperatorType>(operator_type);
     radial_operator_power_ = l0max;
     assert(l0max==0);
@@ -125,6 +127,7 @@ void InOBMEStream::ReadHeader()
       std::istringstream line_stream(line);
       line_stream >> num_orbitals_bra >> num_orbitals_ket;
       ParsingCheck(line_stream, line_count_, line);
+      orbital_format = basis::MFDnOrbitalFormat::kVersion15099;
     }
 
   }
@@ -154,6 +157,7 @@ void InOBMEStream::ReadHeader()
       std::istringstream line_stream(line);
       line_stream >> num_orbitals_bra >> num_orbitals_ket;
       ParsingCheck(line_stream, line_count_, line);
+      orbital_format = basis::MFDnOrbitalFormat::kVersion15200;
     }
   }
 
@@ -162,6 +166,9 @@ void InOBMEStream::ReadHeader()
   for (int orbital_line_count=0; orbital_line_count < num_orbitals_bra; ++orbital_line_count)
     {
       mcutils::GetLine(stream(), line, line_count_);
+      // older versions (0 and 1) did not store an orbital index
+      if ((version==0)||(version==1))
+        orbital_info_str.append(std::to_string(orbital_line_count));
       orbital_info_str.append(line);
       orbital_info_str.append("\n");  // need to restore newline to input line
     }
@@ -169,7 +176,7 @@ void InOBMEStream::ReadHeader()
   basis::OrbitalPNList bra_orbitals = basis::ParseOrbitalPNStream(
       orbital_info_stream,
       /*standalone=*/false,
-      basis::MFDnOrbitalFormat::kVersion15099
+      orbital_format
     );
 
   // bra orbital definitions
@@ -184,7 +191,7 @@ void InOBMEStream::ReadHeader()
   basis::OrbitalPNList ket_orbitals = basis::ParseOrbitalPNStream(
       orbital_info_stream,
       /*standalone=*/false,
-      basis::MFDnOrbitalFormat::kVersion15099
+      orbital_format
     );
 
 

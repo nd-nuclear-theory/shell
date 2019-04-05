@@ -34,6 +34,9 @@
   + 8/10/18 (pjf): Use mcutils::GetLine for more robust I/O.
   + 02/20/19 (pjf): Use ParseOrbitalStream() and OrbitalDefinitionStr() for
       orbital I/O.
+  + 04/03/19 (pjf):
+    - Use correct orbital formats for older files.
+    - Prepend orbital index for orbitals in version 0 and 1 files.
 ****************************************************************/
 
 #ifndef OBME_IO_H_
