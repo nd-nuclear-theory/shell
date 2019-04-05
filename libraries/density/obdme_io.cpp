@@ -21,6 +21,8 @@
 
 namespace shell {
 
+constexpr double k_sqrt_4pi = 3.54490770181103205459633496668229;
+
 void InOBDMEStream::GetMultipole(int K, basis::OrbitalSectorsLJPN& sectors, basis::OperatorBlocks<double>& matrices) const {
   assert((K >= min_K_) && (K <= max_K_));
   sectors = sectors_[K-min_K_];
@@ -282,8 +284,14 @@ void InOBDMEStreamMulti::ReadData() {
     assert(bra_index != basis::kNone);
     assert(ket_index != basis::kNone);
 
-    // store matrix element -- multiply by sqrt(4*pi) to fix MFDn bug
-    matrices_[info_line.multipole][sector_index](bra_index,ket_index) = temp_matrix_element * 3.54490770181103205459633496668229;
+    // multiply by sqrt(4*pi) to fix MFDn bug
+    temp_matrix_element *= k_sqrt_4pi;
+
+    // convert to Rose convention (divide by Hat(j_b))
+    temp_matrix_element /= Hat(std::get<3>(info_line.ket_labels));
+
+    // store matrix element
+    matrices_[info_line.multipole][sector_index](bra_index,ket_index) = temp_matrix_element;
   }
 
   data_stream.close();
@@ -396,116 +404,131 @@ void InOBDMEStreamSingle::ReadHeader() {
 
   // line 1: version
   {
-    ++line_count_;
-    std::getline(stream(), line);
+    mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> version_number_;
     ParsingCheck(line_stream, line_count_, line);
   }
 
-  if (version_number_ == 1600) {
-    ReadHeader1600();
+  if (version_number_ == 1520) {
+    ReadHeader1520();
   } else {
     std::cerr << "ERROR: Unknown OBDME file version " << version_number_ << std::endl;
     std::exit(EXIT_FAILURE);
   }
 }
 
-void InOBDMEStreamSingle::ReadHeader1600() {
+void InOBDMEStreamSingle::ReadHeader1520() {
   std::string line;
 
   // make sure we didn't get here by mistake
-  assert(version_number_ == 1600);
+  assert(version_number_ == 1520);
 
-  // line 2: min K in multipole expansion
+  // line 2: bra quantum numbers
   {
-    ++line_count_;
-    std::getline(stream(), line);
+    int parity_bra;
+    mcutils::GetLine(stream(), line, line_count_);
+    std::istringstream line_stream(line);
+    line_stream >> Z_bra_ >> N_bra_ >> seq_bra_ >> TwiceJ_bra_ >> TwiceM_bra_
+                >> parity_bra >> n_bra_ >> T_bra_ >> E_bra_;
+    assert((parity_bra==+1)||(parity_bra==-1));
+    g_bra_ = (parity_bra==-1);
+  }
+
+  // line 3: ket quantum numbers
+  {
+    int parity_ket;
+    mcutils::GetLine(stream(), line, line_count_);
+    std::istringstream line_stream(line);
+    line_stream >> Z_ket_ >> N_ket_ >> seq_ket_ >> TwiceJ_ket_ >> TwiceM_ket_
+                >> parity_ket >> n_ket_ >> T_ket_ >> E_ket_;
+    assert((parity_ket==+1)||(parity_ket==-1));
+    g_ket_ = (parity_ket==-1);
+  }
+
+  g0_ = (g_bra()-g_ket())%2;
+  assert((Tz_bra()-Tz_ket()).IsInteger());
+  Tz0_ = static_cast<int>(Tz_bra()-Tz_ket());
+
+  // line 4: min K in multipole expansion
+  {
+    mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> min_K_;
     ParsingCheck(line_stream, line_count_, line);
   }
 
-  // line 3: max K in multipole expansion
+  // line 5: max K in multipole expansion
   {
-    ++line_count_;
-    std::getline(stream(), line);
+    mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> max_K_;
     ParsingCheck(line_stream, line_count_, line);
   }
 
-  // line 4: parity of multipole expansion
+  // line 6: number of p and n orbitals
+  int num_orbitals_p, num_orbitals_n;
   {
-    int parity;
-    ++line_count_;
-    std::getline(stream(), line);
+    mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
-    line_stream >> parity;
-    ParsingCheck(line_stream, line_count_, line);
-
-    g0_ = (parity == -1);
-  }
-
-  // hard-coded Tz0
-  Tz0_ = 0;
-
-  // line 5: number of p and n orbitals
-  {
-    int num_proton_orbitals, num_neutron_orbitals;
-    ++line_count_;
-    std::getline(stream(), line);
-    std::istringstream line_stream(line);
-    line_stream >> num_proton_orbitals >> num_neutron_orbitals;
+    line_stream >> num_orbitals_p >> num_orbitals_n;
     ParsingCheck(line_stream, line_count_, line);
 
     // this is a silly way to check that the correct number of orbitals exist
     basis::OrbitalSpacePN pn_space(orbital_space().OrbitalInfo());
-    assert(pn_space.GetSubspace(0).size() == num_proton_orbitals);
-    assert(pn_space.GetSubspace(1).size() == num_neutron_orbitals);
+    assert(pn_space.GetSubspace(0).size() == num_orbitals_p);
+    assert(pn_space.GetSubspace(1).size() == num_orbitals_n);
   }
 
-  // line 6: number of p and n OBDMEs
+  // line 7: number of p and n OBDMEs
   {
-    ++line_count_;
-    std::getline(stream(), line);
+    mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> num_proton_obdme_ >> num_neutron_obdme_;
     ParsingCheck(line_stream, line_count_, line);
   }
 
-  // line 7-8: comment line
+  // orbital listing body
   {
-    ++line_count_;
-    std::getline(stream(), line);
-    ++line_count_;
-    std::getline(stream(), line);
+    int num_orbitals = num_orbitals_p + num_orbitals_n;
+    std::string orbital_info_str;
+    for (int orbital_line_count=0; orbital_line_count < num_orbitals; ++orbital_line_count)
+      {
+        mcutils::GetLine(stream(), line, line_count_);
+        orbital_info_str.append(line);
+        orbital_info_str.append("\n");  // need to restore newline to input line
+      }
+    std::istringstream orbital_info_stream(orbital_info_str);
+    orbital_list_ = basis::ParseOrbitalPNStream(
+        orbital_info_stream,
+        /*standalone=*/false,
+        basis::MFDnOrbitalFormat::kVersion15200
+      );
   }
 }
 
 void InOBDMEStreamSingle::ReadData() {
-  if (version_number_ == 1600) {
-    ReadData1600();
+  if (version_number_ == 1520) {
+    ReadData1520();
   } else {
     std::cerr << "ERROR: Unknown OBDME file version " << version_number_ << std::endl;
     std::exit(EXIT_FAILURE);
   }
 }
 
-void InOBDMEStreamSingle::ReadData1600() {
+void InOBDMEStreamSingle::ReadData1520() {
   std::string line;
-  while (!std::getline(stream(), line).eof()) {
-    ++line_count_;
-    int index, ia, na, la, twoja, ib, nb, lb, twojb, K, cls;
+  while (!mcutils::GetLine(stream(), line, line_count_).eof()) {
+    int ia, ib, K;
     double matrix_element;
 
     std::istringstream line_stream(line);
-    line_stream >> index >> ia >> na >> la >> twoja >> ib >> nb >> lb >> twojb >> K >> cls >> matrix_element;
+    line_stream >> ia >> ib >> K >> matrix_element;
     ParsingCheck(line_stream, line_count_, line);
 
     // get location of matrix element
-    basis::FullOrbitalLabels orbital_a(basis::OrbitalSpeciesPN(cls-1), na, la, HalfInt(twoja,2));
-    basis::FullOrbitalLabels orbital_b(basis::OrbitalSpeciesPN(cls-1), nb, lb, HalfInt(twojb,2));
+    basis::FullOrbitalLabels orbital_a = orbital_list_.at(ia-1);
+    basis::FullOrbitalLabels orbital_b = orbital_list_.at(ib-1);
     int sector_index, bra_index, ket_index;
     std::tie(sector_index, bra_index, ket_index) = basis::MatrixElementIndicesLJPN(
       orbital_space(), orbital_space(), sectors_[K-min_K_], orbital_a, orbital_b
@@ -513,6 +536,9 @@ void InOBDMEStreamSingle::ReadData1600() {
     assert(sector_index != basis::kNone);
     assert(bra_index != basis::kNone);
     assert(ket_index != basis::kNone);
+
+    // convert to Rose convention (divide by Hat(j_b))
+    matrix_element /= Hat(std::get<3>(orbital_b));
 
     // store matrix element
     matrices_[K-min_K_][sector_index](bra_index,ket_index) = matrix_element;

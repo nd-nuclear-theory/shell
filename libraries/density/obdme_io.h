@@ -22,6 +22,11 @@
       formats (v1405/v1500) and single-file formats (v1600)
       share a common storage scheme.
     - Store all OBDMEs for a single data file.
+  + 04/03/19 (pjf):
+    - Use mcutils::GetLine for input.
+    - Modify reading from version 1520 OBDME files (formerly known as 1600).
+    - Convert to Rose convention on input, for consistency with other
+      one-body operators.
 
 
 ****************************************************************/
@@ -173,6 +178,27 @@ class InOBDMEStreamSingle : public InOBDMEStream {
     );
   // Construct a reader by parsing an info file.
 
+  // accessors
+  int Z_bra() const { return Z_bra_; }
+  int N_bra() const { return N_bra_; }
+  HalfInt J_bra() const { return HalfInt(TwiceJ_bra_, 2); }
+  HalfInt M_bra() const { return HalfInt(TwiceM_bra_, 2); }
+  HalfInt Tz_bra() const { return HalfInt(Z_bra_-N_bra_, 2); }
+  int g_bra() const { return g_bra_; }
+  int n_bra() const { return n_bra_; }
+  double T_bra() const { return T_bra_; }
+  double E_bra() const { return E_bra_; }
+
+  int Z_ket() const { return Z_ket_; }
+  int N_ket() const { return N_ket_; }
+  HalfInt J_ket() const { return HalfInt(TwiceJ_ket_, 2); }
+  HalfInt M_ket() const { return HalfInt(TwiceM_ket_, 2); }
+  HalfInt Tz_ket() const { return HalfInt(Z_ket_-N_ket_, 2); }
+  int g_ket() const { return g_ket_; }
+  int n_ket() const { return n_ket_; }
+  double T_ket() const { return T_ket_; }
+  double E_ket() const { return E_ket_; }
+
   // destructor
   ~InOBDMEStreamSingle() {
     if (stream_ptr_)
@@ -183,11 +209,11 @@ private:
 
   // read info header
   void ReadHeader();
-  void ReadHeader1600();
+  void ReadHeader1520();
 
   // read data
   void ReadData();
-  void ReadData1600();
+  void ReadData1520();
 
   // filename
   std::string filename_;
@@ -199,8 +225,14 @@ private:
 
   // file header
   int version_number_;
+  int Z_bra_, N_bra_, seq_bra_, TwiceJ_bra_, TwiceM_bra_, g_bra_, n_bra_;
+  float T_bra_, E_bra_;
+  int Z_ket_, N_ket_, seq_ket_, TwiceJ_ket_, TwiceM_ket_, g_ket_, n_ket_;
+  float T_ket_, E_ket_;
+
   int num_proton_obdme_;
   int num_neutron_obdme_;
+  basis::OrbitalPNList orbital_list_;
 
 };
 
