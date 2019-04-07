@@ -6,6 +6,7 @@ Mark A. Caprio, Patrick J. Fasano
   + 04/25/18 (mac): Add information on header format.
   + 02/21/19 (pjf): Fix typos.
   + 02/27/19 (pjf): Impose restriction to Tz0=0.
+  + 04/07/19 (pjf): Typographical corrections.
 
 ----------------------------------------------------------------
 
@@ -83,7 +84,7 @@ Syntax:
 
   * J0 (int): J for operator
   * g0 (int): parity grade for operator (g=0,1; P=(-)^g)
-  * Tz0 (int): RESERVED, must be zero
+  * Tz0 (int): RESERVED, MUST be zero
 
 Example:
 
@@ -161,9 +162,6 @@ Syntax:
   * i1 i2 i3 i4 (int): single particle orbital indices
   * twice_J_bra twice_J_ket (int): 2*J for bra and ket
   * two_body_species_code (int): 11 for pp, 22 for nn, 12 for pn
-
-     * For Tz-changing operators, this is specifically the label for pp/nn/pn
-     label for the *ket*.
 
   * matrix_element (float): reduced matrix element (RME)
 
@@ -367,7 +365,7 @@ operator (Tz0,J0,g0):
 
     - Tz selection:
 
-          bra_Tz == ket_Tz
+          bra_Tz == Tz0 + ket_Tz
 
     - angular momentum selection:
 
