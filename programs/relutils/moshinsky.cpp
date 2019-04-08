@@ -13,7 +13,7 @@
 
     coupling : source/target coupling scheme or h2 version
       "rel" -- relative matrix elements
-      "rcmlsjt" -- relative-cm matrix elements
+      "relcm" -- relative-cm matrix elements
       "lsjt" -- two-body LSJT-coupled matrix elements
       "jjjt" -- two-body jjJT-coupled matrix elements
       "jjjpn" -- two-body jjJpn-coupled matrix elements
@@ -21,7 +21,7 @@
       "h2v15099" -- two-body jjJpn-coupled matrix elements (h2 version 15099)
       "h2v15200" -- two-body jjJpn-coupled matrix elements (h2 version 15200)
 
-  Note: Currently supported source couplings are "rel" and "rcmlsjt".
+  Note: Currently supported source couplings are "rel" and "relcm".
 
   Language: C++11
 
@@ -37,6 +37,7 @@
   + 12/21/18 (pjf): Add support for reading relative-cm files.
   + 02/21/19 (pjf): Add H2 Version15200 support.
   + 03/28/19 (pjf): Allow input of relative-cm (rcmlsjt) matrix elements.
+  + 04/07/19 (pjf): Change keyword for relative-cm from rcmlsjt to relcm.
 
 ****************************************************************/
 
@@ -67,7 +68,7 @@ std::unordered_map<std::string,std::pair<Coupling,shell::H2Format>>
 kCouplingDefinitions =
   {
     {"rel",      {Coupling::kRelative,       basis::kNone}},
-    {"rcmlsjt",  {Coupling::kRelativeCMLSJT, basis::kNone}},
+    {"relcm",    {Coupling::kRelativeCMLSJT, basis::kNone}},
     {"lsjt",     {Coupling::kLSJT,           basis::kNone}},
     {"jjjt",     {Coupling::kJJJT,           basis::kNone}},
     {"jjjpn",    {Coupling::kJJJPN,          basis::kNone}},
