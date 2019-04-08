@@ -1,3 +1,3 @@
-tb 2 h2v15099
-rsqr_Nmax02_rel.dat
-rsqr_Nmax02_h2v15099.dat
+tb 2
+rsqr_Nmax02_rel.dat rel
+rsqr_Nmax02_h2v15099.dat h2v15099
