@@ -180,9 +180,7 @@ matrix elements, the two basic rules to remember are that we always
 
    (2) restrict attention to the "upper triangle".
 
-### Figure ###
-
-_[A new figure for version 15200 has not yet been drawn.]_
+### Indexing listing ###
 
 You can also get detailed listings of the indexing for various h2 files by
 running h2stat on them, with the "--indexing" option.  For example:
