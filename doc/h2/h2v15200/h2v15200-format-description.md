@@ -5,7 +5,7 @@ Patrick J. Fasano, Mark A. Caprio
   + 02/12/19 (pjf): Created, duplicated from h2v15099-format-description-180425.md.
   + 02/21/19 (pjf): Updated, with minor revisions from pm.
   + 04/07/19 (pjf): Updated, with additional revisions from pm and mac.
-
+  + 04/25/19 (mac): Typographical and formatting corrections.
 ----------------------------------------------------------------
 
 ## Text vs. binary ##
@@ -23,7 +23,7 @@ The data stored in binary format are essentially identical.  We thus first
 describe the text format in detail, then, for binary format, we need only
 describe the technicalities of binary representation.
 
-## File formatting: text ##
+## File formatting: Text ##
 
 Here we summarize the syntax for each part of the text-format h2 file.  The
 examples are taken from:
@@ -77,7 +77,7 @@ Example:
        ...
       30   0   4   9  -1   4.00000000
 
-### Header line 1: operator properties ###
+### Header line 1: Operator properties ###
 
 Syntax:
 
@@ -110,10 +110,10 @@ Example:
 
     4.000000e+00 4.000000e+00 4.000000e+00
 
-### Header line 3: matrix size ###
+### Header line 3: Matrix size ###
 
 Total number of TBMEs within each 2-body *sector* (pp=+1, pn=0, nn=-1).  For
-Tz-changing operators, this is specifically the label for pp/nn/pn label for the
+Tz-changing operators, this is specifically the pp/nn/pn label for the
 *bra*.
 
 Syntax:
@@ -145,7 +145,7 @@ Syntax:
     convention for the Wigner-Eckart theorem.  Thus, for scalar operators, it is
     simply the M-independent matrix element
 
-        <i1 i2 J || T_0 || i2 i4 J> = <i1 i2 J M || T_0 || i3 i4 J M>
+          <i1 i2 J || T_0 || i3 i4 J> = <i1 i2 J M || T_0 || i3 i4 J M>
 
     This matrix element differs by a factor of J_bra-hat from the RME under the
     Edmonds (=Suhonen=Varshalovich) convention for the Wigner-Eckart theorem.
@@ -278,21 +278,19 @@ governed by the indexing scheme for the two-body basis, which is defined in the 
 comments in `basis/jjjpn_scheme.h`.
 
 Then, to translate this indexing for the basis into an ordering for sectors and
-matrix elements, the two basic rules to remember are that we
+matrix elements, the two basic rules to remember are that we always
 
-   (1) always run in lexicographic order by (bra,ket), i.e., row-major order,
+   (1) run in lexicographic order by (bra,ket), i.e., row-major order,
    and
 
-   (2) we restrict attention to the "upper triangle".
+   (2) restrict attention to the "upper triangle".
 
-### Figure ###
-
-A new figure for version 15200 has not yet been drawn.
+### Indexing listing ###
 
 You can also get detailed listings of the indexing for various h2 files by
 running h2stat on them, with the "--indexing" option.  For example:
 
-   ~~~~
+   ~~~~sh
    cd shell/doc/h2/h2v15200/example/zero
    h2stat --indexing zero-e0_Nmax04_h2v15200.dat
    h2stat --indexing zero-m1_Nmax04_h2v15200.dat
@@ -323,7 +321,7 @@ antisymmetry.
    Now to traverse the sectors, we must just enumerate pairs of subspaces, which
 we traverse in lexicographic order by (bra_subspace,ket_subspace).  We only
 include sectors in the "upper triangle" of the operator matrix, that is, where
-the subspace indices are in canonical order(bra_subspace_index<=ket_subspace_index).
+the subspace indices are in canonical order (bra_subspace_index<=ket_subspace_index).
 Matrix elements in the remaining sectors can be deduced by symmetry.  This sector
 ordering can be enumerated by a loop of the form:
 
@@ -336,19 +334,19 @@ ordering can be enumerated by a loop of the form:
    The selection rules between subspaces depend on the quantum numbers of the
 operator (Tz0,J0,g0):
 
-    - Tz selection:
+   * Tz selection:
 
-          ket_Tz = bra_Tz - Tz0
+         ket_Tz = bra_Tz - Tz0
 
-      Note that, for a two-body operator, Tz0 is restricted to be 0,+1,+2.
+     Note that, for a two-body operator, Tz0 is restricted to be 0,+1,+2.
 
-    - angular momentum selection:
+   * A momentum selection:
 
-          triangle(ket_J,J0,bra_J)
+         triangle(ket_J,J0,bra_J)
 
-    - parity selection:
+   * Parity selection:
 
-          ket_g = g0 + bra_g (modulo 2)
+         ket_g = g0 + bra_g (modulo 2)
 
 ### Matrix elements within a sector ###
 
