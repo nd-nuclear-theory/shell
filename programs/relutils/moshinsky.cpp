@@ -171,7 +171,7 @@ void GatherAndWriteRelativeCM(
     const basis::OperatorLabelsJT& operator_labels,
     const basis::RelativeCMSpaceLSJTN& relative_cm_lsjtn_space,
     const std::array<basis::RelativeCMSectorsLSJTN,3>& relative_cm_lsjtn_component_sectors,
-    const std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_matrices,
+    const std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_blocks,
     const std::string& output_filename
   )
 {
@@ -180,15 +180,15 @@ void GatherAndWriteRelativeCM(
   // define space and operator containers
   basis::RelativeCMSpaceLSJT relative_cm_lsjt_space(N2max);
   std::array<basis::RelativeCMSectorsLSJT,3> relative_cm_lsjt_component_sectors;
-  std::array<basis::OperatorBlocks<double>,3> relative_cm_lsjt_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_cm_lsjt_component_blocks;
 
   // construct gathered operator
   mcutils::SteadyTimer relative_cm_lsjt_timer;
   relative_cm_lsjt_timer.Start();
   basis::GatherOperatorRelativeCMLSJTNToRelativeCMLSJT(
       operator_labels,
-      relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_matrices,
-      relative_cm_lsjt_space,relative_cm_lsjt_component_sectors,relative_cm_lsjt_component_matrices
+      relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_blocks,
+      relative_cm_lsjt_space,relative_cm_lsjt_component_sectors,relative_cm_lsjt_component_blocks
     );
   relative_cm_lsjt_timer.Stop();
   std::cout << "  Time: " << relative_cm_lsjt_timer.ElapsedTime() << std::endl;
@@ -201,7 +201,7 @@ void GatherAndWriteRelativeCM(
   basis::WriteRelativeCMOperatorLSJT(
       output_filename,
       relative_cm_lsjt_space,
-      operator_labels,relative_cm_lsjt_component_sectors,relative_cm_lsjt_component_matrices,
+      operator_labels,relative_cm_lsjt_component_sectors,relative_cm_lsjt_component_blocks,
       true
     );
   write_relative_cm_lsjt_timer.Stop();
@@ -213,7 +213,7 @@ void GatherAndWriteTwoBodyLSJT(
     const basis::OperatorLabelsJT& operator_labels,
     const basis::TwoBodySpaceLSJTN& two_body_lsjtn_space,
     const std::array<basis::TwoBodySectorsLSJTN,3>& two_body_lsjtn_component_sectors,
-    const std::array<basis::OperatorBlocks<double>,3>& two_body_lsjtn_component_matrices,
+    const std::array<basis::OperatorBlocks<double>,3>& two_body_lsjtn_component_blocks,
     const std::string& output_filename
   )
 {
@@ -222,15 +222,15 @@ void GatherAndWriteTwoBodyLSJT(
   // define space and operator containers
   basis::TwoBodySpaceLSJT two_body_lsjt_space(parameters.truncation_rank,parameters.truncation_cutoff);
   std::array<basis::TwoBodySectorsLSJT,3> two_body_lsjt_component_sectors;
-  std::array<basis::OperatorBlocks<double>,3> two_body_lsjt_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> two_body_lsjt_component_blocks;
 
   // construct gathered operator
   mcutils::SteadyTimer two_body_lsjt_timer;
   two_body_lsjt_timer.Start();
   basis::GatherOperatorTwoBodyLSJTNToTwoBodyLSJT(
       operator_labels,
-      two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_matrices,
-      two_body_lsjt_space,two_body_lsjt_component_sectors,two_body_lsjt_component_matrices
+      two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_blocks,
+      two_body_lsjt_space,two_body_lsjt_component_sectors,two_body_lsjt_component_blocks
     );
   two_body_lsjt_timer.Stop();
   std::cout << "  Time: " << two_body_lsjt_timer.ElapsedTime() << std::endl;
@@ -244,7 +244,7 @@ void GatherAndWriteTwoBodyLSJT(
       basis::WriteTwoBodyOperatorComponentLSJT(
           lsjt_sstream,
           T0,
-          two_body_lsjt_component_sectors[T0],two_body_lsjt_component_matrices[T0],
+          two_body_lsjt_component_sectors[T0],two_body_lsjt_component_blocks[T0],
           basis::NormalizationConversion::kASToNAS
         );
     }
@@ -257,7 +257,7 @@ void WriteTwoBodyJJJT(
     const basis::OperatorLabelsJT& operator_labels,
     const basis::TwoBodySpaceJJJT& two_body_jjjt_space,
     const std::array<basis::TwoBodySectorsJJJT,3>& two_body_jjjt_component_sectors,
-    const std::array<basis::OperatorBlocks<double>,3>& two_body_jjjt_component_matrices,
+    const std::array<basis::OperatorBlocks<double>,3>& two_body_jjjt_component_blocks,
     const std::string& output_filename
   )
 {
@@ -268,7 +268,7 @@ void WriteTwoBodyJJJT(
       basis::WriteTwoBodyOperatorComponentJJJT(
           jjjt_sstream,
           T0,
-          two_body_jjjt_component_sectors[T0],two_body_jjjt_component_matrices[T0],
+          two_body_jjjt_component_sectors[T0],two_body_jjjt_component_blocks[T0],
           basis::NormalizationConversion::kASToNAS
         );
     }
@@ -280,7 +280,7 @@ void WriteTwoBodyJJJPN(
     const basis::OperatorLabelsJT& operator_labels,
     const basis::TwoBodySpaceJJJPN& two_body_jjjpn_space,
     const basis::TwoBodySectorsJJJPN& two_body_jjjpn_sectors,
-    const basis::OperatorBlocks<double> two_body_jjjpn_matrices,
+    const basis::OperatorBlocks<double> two_body_jjjpn_blocks,
     const std::string& output_filename
   )
 {
@@ -290,7 +290,7 @@ void WriteTwoBodyJJJPN(
   std::ostringstream jjjpn_sstream;
   basis::WriteTwoBodyOperatorJJJPN(
       jjjpn_sstream,
-      two_body_jjjpn_sectors,two_body_jjjpn_matrices,
+      two_body_jjjpn_sectors,two_body_jjjpn_blocks,
       basis::NormalizationConversion::kASToNAS,
       1
     );
@@ -304,7 +304,7 @@ void WriteTwoBodyH2(
     const basis::OrbitalSpacePN& orbital_space,
     const basis::TwoBodySpaceJJJPN& two_body_jjjpn_space,
     const basis::TwoBodySectorsJJJPN& two_body_jjjpn_sectors,
-    const basis::OperatorBlocks<double> two_body_jjjpn_matrices
+    const basis::OperatorBlocks<double> two_body_jjjpn_blocks
   )
 {
   // stream initialization
@@ -321,7 +321,7 @@ void WriteTwoBodyH2(
   for (std::size_t sector_index = 0; sector_index < output_stream.num_sectors(); ++sector_index)
     {
       // "neaten" output by eliminating near-zero values
-      basis::OperatorBlock<double> matrix = two_body_jjjpn_matrices[sector_index];
+      basis::OperatorBlock<double> matrix = two_body_jjjpn_blocks[sector_index];
       mcutils::ChopMatrix(matrix);
       output_stream.WriteSector(
           sector_index,
@@ -342,14 +342,14 @@ void ReadAndScatterRelativeCM(
     basis::OperatorLabelsJT& operator_labels,
     basis::RelativeCMSpaceLSJTN& relative_cm_lsjtn_space,
     std::array<basis::RelativeCMSectorsLSJTN,3>& relative_cm_lsjtn_component_sectors,
-    std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_matrices
+    std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_blocks
   )
 {
   // define space and operator containers
   basis::RelativeCMOperatorParametersLSJT operator_parameters;
   basis::RelativeCMSpaceLSJT relative_cm_lsjt_space;
   std::array<basis::RelativeCMSectorsLSJT,3> relative_cm_lsjt_component_sectors;
-  std::array<basis::OperatorBlocks<double>,3> relative_cm_lsjt_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_cm_lsjt_component_blocks;
 
   // read
   mcutils::SteadyTimer read_relative_cm_lsjt_timer;
@@ -357,7 +357,7 @@ void ReadAndScatterRelativeCM(
   basis::ReadRelativeCMOperatorLSJT(
       input_filename,
       relative_cm_lsjt_space,
-      operator_parameters,relative_cm_lsjt_component_sectors,relative_cm_lsjt_component_matrices,
+      operator_parameters,relative_cm_lsjt_component_sectors,relative_cm_lsjt_component_blocks,
       true
     );
   read_relative_cm_lsjt_timer.Stop();
@@ -371,8 +371,8 @@ void ReadAndScatterRelativeCM(
   operator_labels = operator_parameters;
   basis::ScatterOperatorRelativeCMLSJTToRelativeCMLSJTN(
       operator_labels,
-      relative_cm_lsjt_space,relative_cm_lsjt_component_sectors,relative_cm_lsjt_component_matrices,
-      relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_matrices
+      relative_cm_lsjt_space,relative_cm_lsjt_component_sectors,relative_cm_lsjt_component_blocks,
+      relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_blocks
     );
   relative_cm_lsjtn_timer.Stop();
   std::cout << "  Time: " << relative_cm_lsjtn_timer.ElapsedTime() << std::endl;
@@ -432,7 +432,7 @@ int main(int argc, char **argv)
   // declare relative space and operator containers
   basis::RelativeSpaceLSJT relative_space;
   std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
-  std::array<basis::OperatorBlocks<double>,3> relative_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_component_blocks;
 
   // read space and operator
   if (parameters.source_coupling == Coupling::kRelative)
@@ -443,7 +443,7 @@ int main(int argc, char **argv)
       basis::ReadRelativeOperatorLSJT(
           parameters.input_filename,
           relative_space,
-          operator_parameters,relative_component_sectors,relative_component_matrices,
+          operator_parameters,relative_component_sectors,relative_component_blocks,
           true
         );
       read_relative_lsjt_timer.Stop();
@@ -459,7 +459,7 @@ int main(int argc, char **argv)
   // declare relative-cm space and operator containers
   basis::RelativeCMSpaceLSJTN relative_cm_lsjtn_space;
   std::array<basis::RelativeCMSectorsLSJTN,3> relative_cm_lsjtn_component_sectors;
-  std::array<basis::OperatorBlocks<double>,3> relative_cm_lsjtn_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_cm_lsjtn_component_blocks;
 
   if (parameters.source_coupling < Coupling::kRelativeCMLSJT)
     {
@@ -471,8 +471,8 @@ int main(int argc, char **argv)
       relative_cm_lsjtn_space = basis::RelativeCMSpaceLSJTN(N2max);
       moshinsky::TransformOperatorRelativeLSJTToRelativeCMLSJTN(
           operator_labels,
-          relative_space,relative_component_sectors,relative_component_matrices,
-          relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_matrices
+          relative_space,relative_component_sectors,relative_component_blocks,
+          relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_blocks
         );
       relative_cm_lsjtn_timer.Stop();
       std::cout << "  Time: " << relative_cm_lsjtn_timer.ElapsedTime() << std::endl;
@@ -482,7 +482,7 @@ int main(int argc, char **argv)
       ReadAndScatterRelativeCM(
           parameters.input_filename,
           operator_labels,
-          relative_cm_lsjtn_space, relative_cm_lsjtn_component_sectors, relative_cm_lsjtn_component_matrices
+          relative_cm_lsjtn_space, relative_cm_lsjtn_component_sectors, relative_cm_lsjtn_component_blocks
         );
     }
 
@@ -491,7 +491,7 @@ int main(int argc, char **argv)
       // write diagnostics
       std::cout << "  Allocated matrix elements:";
       for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
-        std::cout << " " << basis::AllocatedEntries(relative_cm_lsjtn_component_matrices[T0]);
+        std::cout << " " << basis::AllocatedEntries(relative_cm_lsjtn_component_blocks[T0]);
       std::cout << std::endl;
     }
 
@@ -500,7 +500,7 @@ int main(int argc, char **argv)
     {
       GatherAndWriteRelativeCM(
           N2max, operator_labels,
-          relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_matrices,
+          relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_blocks,
           parameters.output_filename
         );
       std::exit(EXIT_SUCCESS);
@@ -513,7 +513,7 @@ int main(int argc, char **argv)
   // declare space and operator containers
   basis::TwoBodySpaceLSJTN two_body_lsjtn_space;
   std::array<basis::TwoBodySectorsLSJTN,3> two_body_lsjtn_component_sectors;
-  std::array<basis::OperatorBlocks<double>,3> two_body_lsjtn_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> two_body_lsjtn_component_blocks;
 
   if (parameters.source_coupling < Coupling::kLSJT)
     {
@@ -525,8 +525,8 @@ int main(int argc, char **argv)
       two_body_lsjtn_space = basis::TwoBodySpaceLSJTN(parameters.truncation_rank,parameters.truncation_cutoff);
       moshinsky::TransformOperatorRelativeCMLSJTNToTwoBodyLSJTN(
           operator_labels,
-          relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_matrices,
-          two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_matrices
+          relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_blocks,
+          two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_blocks
         );
       two_body_lsjtn_timer.Stop();
       std::cout << "  Time: " << two_body_lsjtn_timer.ElapsedTime() << std::endl;
@@ -542,7 +542,7 @@ int main(int argc, char **argv)
     {
       std::cout << "  Allocated matrix elements:";
       for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
-        std::cout << " " << basis::AllocatedEntries(two_body_lsjtn_component_matrices[T0]);
+        std::cout << " " << basis::AllocatedEntries(two_body_lsjtn_component_blocks[T0]);
       std::cout << std::endl;
     }
 
@@ -552,7 +552,7 @@ int main(int argc, char **argv)
           parameters,operator_labels,
           two_body_lsjtn_space,
           two_body_lsjtn_component_sectors,
-          two_body_lsjtn_component_matrices,
+          two_body_lsjtn_component_blocks,
           parameters.output_filename
         );
       std::exit(EXIT_SUCCESS);
@@ -565,7 +565,7 @@ int main(int argc, char **argv)
   // declare JJJTN space and operator containers
   basis::TwoBodySpaceJJJTN two_body_jjjtn_space;
   std::array<basis::TwoBodySectorsJJJTN,3> two_body_jjjtn_component_sectors;
-  std::array<basis::OperatorBlocks<double>,3> two_body_jjjtn_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> two_body_jjjtn_component_blocks;
 
   if (parameters.source_coupling < Coupling::kJJJT)
     {
@@ -577,8 +577,8 @@ int main(int argc, char **argv)
       two_body_jjjtn_space = basis::TwoBodySpaceJJJTN(parameters.truncation_rank,parameters.truncation_cutoff);
       moshinsky::TransformOperatorTwoBodyLSJTNToTwoBodyJJJTN(
           operator_labels,
-          two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_matrices,
-          two_body_jjjtn_space,two_body_jjjtn_component_sectors,two_body_jjjtn_component_matrices
+          two_body_lsjtn_space,two_body_lsjtn_component_sectors,two_body_lsjtn_component_blocks,
+          two_body_jjjtn_space,two_body_jjjtn_component_sectors,two_body_jjjtn_component_blocks
         );
       two_body_jjjtn_timer.Stop();
       std::cout << "  Time: " << two_body_jjjtn_timer.ElapsedTime() << std::endl;
@@ -591,7 +591,7 @@ int main(int argc, char **argv)
   // declare JJJT space and operator containers
   basis::TwoBodySpaceJJJT two_body_jjjt_space;
   std::array<basis::TwoBodySectorsJJJT,3> two_body_jjjt_component_sectors;
-  std::array<basis::OperatorBlocks<double>,3> two_body_jjjt_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> two_body_jjjt_component_blocks;
 
   if (parameters.source_coupling < Coupling::kJJJT)
     {
@@ -603,8 +603,8 @@ int main(int argc, char **argv)
       two_body_jjjt_space = basis::TwoBodySpaceJJJT(parameters.truncation_rank,parameters.truncation_cutoff);
       basis::GatherOperatorTwoBodyJJJTNToTwoBodyJJJT(
           operator_labels,
-          two_body_jjjtn_space,two_body_jjjtn_component_sectors,two_body_jjjtn_component_matrices,
-          two_body_jjjt_space,two_body_jjjt_component_sectors,two_body_jjjt_component_matrices
+          two_body_jjjtn_space,two_body_jjjtn_component_sectors,two_body_jjjtn_component_blocks,
+          two_body_jjjt_space,two_body_jjjt_component_sectors,two_body_jjjt_component_blocks
         );
       two_body_jjjt_timer.Stop();
       std::cout << "  Time: " << two_body_jjjt_timer.ElapsedTime() << std::endl;
@@ -621,7 +621,7 @@ int main(int argc, char **argv)
           operator_labels,
           two_body_jjjt_space,
           two_body_jjjt_component_sectors,
-          two_body_jjjt_component_matrices,
+          two_body_jjjt_component_blocks,
           parameters.output_filename
         );
       std::exit(EXIT_SUCCESS);
@@ -643,15 +643,15 @@ int main(int argc, char **argv)
       two_body_jjjpn_space_ordering
     );
   basis::TwoBodySectorsJJJPN two_body_jjjpn_sectors;
-  basis::OperatorBlocks<double> two_body_jjjpn_matrices;
+  basis::OperatorBlocks<double> two_body_jjjpn_blocks;
 
   // do branching
   mcutils::SteadyTimer two_body_jjjpn_timer;
   two_body_jjjpn_timer.Start();
   moshinsky::TransformOperatorTwoBodyJJJTToTwoBodyJJJPN(
       operator_labels,
-      two_body_jjjt_space,two_body_jjjt_component_sectors,two_body_jjjt_component_matrices,
-      two_body_jjjpn_space,two_body_jjjpn_sectors,two_body_jjjpn_matrices
+      two_body_jjjt_space,two_body_jjjt_component_sectors,two_body_jjjt_component_blocks,
+      two_body_jjjpn_space,two_body_jjjpn_sectors,two_body_jjjpn_blocks
     );
   two_body_jjjpn_timer.Stop();
   std::cout << "  Time: " << two_body_jjjpn_timer.ElapsedTime() << std::endl;
@@ -662,7 +662,7 @@ int main(int argc, char **argv)
           operator_labels,
           two_body_jjjpn_space,
           two_body_jjjpn_sectors,
-          two_body_jjjpn_matrices,
+          two_body_jjjpn_blocks,
           parameters.output_filename
         );
     }
@@ -675,7 +675,7 @@ int main(int argc, char **argv)
           orbital_space,
           two_body_jjjpn_space,
           two_body_jjjpn_sectors,
-          two_body_jjjpn_matrices
+          two_body_jjjpn_blocks
         );
     }
 
