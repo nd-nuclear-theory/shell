@@ -14,6 +14,7 @@
   + 11/4/16 (pjf): Created, based on radial-gen.cpp.
   + 10/12/17 (pjf): Update for changes to radial_io.
   + 11/28/17 (pjf): Print header with version.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ******************************************************************************/
 
@@ -152,9 +153,9 @@ int main(int argc, char **argv) {
   is.Read(matrices);
 
   // main loop
-  const int sectors_size = sectors.size();
+  const std::size_t sectors_size = sectors.size();
   #pragma omp parallel for
-  for (int sector_index=0; sector_index < sectors_size; ++sector_index) {
+  for (std::size_t sector_index=0; sector_index < sectors_size; ++sector_index) {
     if (sectors.GetSector(sector_index).bra_subspace().orbital_species() == basis::OrbitalSpeciesPN::kP) {
       matrices[sector_index] *= proton_scale_factor;
     } else if (sectors.GetSector(sector_index).bra_subspace().orbital_species() == basis::OrbitalSpeciesPN::kN) {

@@ -43,9 +43,9 @@ namespace shell {
                              )
   {
     const basis::TwoBodySubspaceJJJPN& bra_subspace = sector.bra_subspace();
-    const int bra_subspace_size = bra_subspace.size();
+    const std::size_t bra_subspace_size = bra_subspace.size();
     const basis::TwoBodySubspaceJJJPN& ket_subspace = sector.ket_subspace();
-    const int ket_subspace_size = ket_subspace.size();
+    const std::size_t ket_subspace_size = ket_subspace.size();
 
     basis::OperatorBlock<double> matrix =
       basis::OperatorBlock<double>::Zero(bra_subspace_size, ket_subspace_size);
@@ -57,8 +57,8 @@ namespace shell {
       return matrix;
 
     // build sector matrix
-    for (int bra_index = 0; bra_index < bra_subspace_size; ++bra_index)
-      for (int ket_index = 0; ket_index < ket_subspace_size; ++ket_index)
+    for (std::size_t bra_index = 0; bra_index < bra_subspace_size; ++bra_index)
+      for (std::size_t ket_index = 0; ket_index < ket_subspace_size; ++ket_index)
       {
         // construct states
         const basis::TwoBodyStateJJJPN bra(bra_subspace, bra_index);
@@ -204,9 +204,9 @@ namespace shell {
     assert(am::AllowedTriangle(ob_sectors1.j0(), ob_sectors2.j0(), J0));
 
     const basis::TwoBodySubspaceJJJPN& bra_subspace = sector.bra_subspace();
-    const int bra_subspace_size = bra_subspace.size();
+    const std::size_t bra_subspace_size = bra_subspace.size();
     const basis::TwoBodySubspaceJJJPN& ket_subspace = sector.ket_subspace();
-    const int ket_subspace_size = ket_subspace.size();
+    const std::size_t ket_subspace_size = ket_subspace.size();
 
     basis::OperatorBlock<double> matrix =
       basis::OperatorBlock<double>::Zero(bra_subspace_size, ket_subspace_size);
@@ -216,8 +216,8 @@ namespace shell {
       return matrix;
 
     // build sector matrix
-    for (int bra_index = 0; bra_index < bra_subspace_size; ++bra_index)
-      for (int ket_index = 0; ket_index < ket_subspace_size; ++ket_index)
+    for (std::size_t bra_index = 0; bra_index < bra_subspace_size; ++bra_index)
+      for (std::size_t ket_index = 0; ket_index < ket_subspace_size; ++ket_index)
       {
         // construct states
         const basis::TwoBodyStateJJJPN bra(bra_subspace, bra_index);
@@ -414,10 +414,10 @@ namespace shell {
     if (loop)
       {
         // for upper-triangular pairs of states in sector
-        const int subspace_size = subspace.size();
+        const std::size_t subspace_size = subspace.size();
 #pragma omp parallel for collapse(2) if (0)  // disabled until have chance to profile
-        for (int bra_index = 0; bra_index < subspace_size; ++bra_index)
-          for (int ket_index = 0; ket_index < subspace_size; ++ket_index)
+        for (std::size_t bra_index = 0; bra_index < subspace_size; ++bra_index)
+          for (std::size_t ket_index = 0; ket_index < subspace_size; ++ket_index)
             {
 
               // diagonal sector: restrict to upper triangle
@@ -727,10 +727,10 @@ namespace shell {
     const int g = subspace.g();
 
     // for upper-triangular pairs of states in sector
-    const int subspace_size = subspace.size();
+    const std::size_t subspace_size = subspace.size();
 #pragma omp parallel for collapse(2) if (0)  // disabled until have chance to profile
-    for (int bra_index = 0; bra_index < subspace_size; ++bra_index)
-      for (int ket_index = 0; ket_index < subspace_size; ++ket_index)
+    for (std::size_t bra_index = 0; bra_index < subspace_size; ++bra_index)
+      for (std::size_t ket_index = 0; ket_index < subspace_size; ++ket_index)
         {
 
           // diagonal sector: restrict to upper triangle
@@ -1028,7 +1028,7 @@ namespace shell {
     const int g = ket_subspace.g();
 
     // for upper-triangular pairs of states in sector
-    const int bra_subspace_size = bra_subspace.size();
+    const std::size_t bra_subspace_size = bra_subspace.size();
     const int ket_subspace_size = ket_subspace.size();
     #pragma omp parallel for collapse(2) if (0)  // disabled until have chance to profile
     for (int bra_index = 0; bra_index < bra_subspace_size; ++bra_index) {

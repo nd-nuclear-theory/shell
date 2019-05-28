@@ -14,6 +14,7 @@
     - AngularMomentumOneBodyOperator
     - AngularMomentumSquaredOneBodyOperator
     - IsospinOneBodyOperator
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 ****************************************************************/
 
 #ifndef OBME_OBME_H_

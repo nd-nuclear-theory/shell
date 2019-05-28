@@ -46,7 +46,7 @@ void InOBMEStream::SetToIndexing(basis::OrbitalSpaceLJPN& bra_orbital_space__,
 
 void InOBMEStream::Read(basis::OperatorBlocks<double>& matrices)
 {
-  for (int sector_index = 0; sector_index < sectors_.size(); ++sector_index)
+  for (std::size_t sector_index = 0; sector_index < sectors_.size(); ++sector_index)
   {
     matrices.push_back(ReadNextSector());
   }
@@ -60,7 +60,7 @@ void InOBMEStream::ReadHeader()
   int version;
   char operator_type, radial_operator_type;
   int l0max, j0, g0, Tz0;
-  int num_orbitals_bra, num_orbitals_ket;
+  std::size_t num_orbitals_bra, num_orbitals_ket;
   basis::MFDnOrbitalFormat orbital_format;
 
   // version
@@ -212,13 +212,13 @@ Eigen::MatrixXd InOBMEStream::ReadNextSector()
 
   // Read in one row per line
   std::string line;
-  for (int j = 0; j < sector.bra_subspace().size(); ++j)
+  for (std::size_t j = 0; j < sector.bra_subspace().size(); ++j)
   {
     mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
 
     // read columns from line
-    for (int k = 0; k < sector.ket_subspace().size(); ++k)
+    for (std::size_t k = 0; k < sector.ket_subspace().size(); ++k)
     {
       line_stream >> sector_matrix(j, k);
     }

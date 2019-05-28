@@ -13,6 +13,7 @@
   University of Notre Dame
 
   + 03/04/19 (pjf): Created, based on radial-plot.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ******************************************************************************/
 
@@ -107,17 +108,17 @@ int main(int argc, const char *argv[]) {
   std::ofstream os(run_parameters.output_file);
 
   // loop over space
-  for (int subspace_index=0; subspace_index<ket_space.size(); ++subspace_index)
+  for (std::size_t subspace_index=0; subspace_index<ket_space.size(); ++subspace_index)
   {
     // get indexing
     const auto& subspace = ket_space.GetSubspace(subspace_index);
-    const int bra_subspace_index = bra_space.LookUpSubspaceIndex(subspace.labels());
+    const std::size_t bra_subspace_index = bra_space.LookUpSubspaceIndex(subspace.labels());
     const auto& bra_subspace = bra_space.GetSubspace(bra_subspace_index);
-    const int sector_index = sectors.LookUpSectorIndex(bra_subspace_index, subspace_index);
+    const std::size_t sector_index = sectors.LookUpSectorIndex(bra_subspace_index, subspace_index);
     const auto& xform_matrix = xform_matrices[sector_index];
 
     // output state information
-    for (int state_index=0; state_index<subspace.size(); ++state_index)
+    for (std::size_t state_index=0; state_index<subspace.size(); ++state_index)
     {
       const basis::OrbitalStateLJPN state(subspace, state_index);
 
@@ -125,7 +126,7 @@ int main(int argc, const char *argv[]) {
           " {:4d} {:4d} {:4.1f} {:4.1f} {:6d}",
           state.n(), state.l(), double(state.j()), double(state.Tz()), bra_subspace.size()
         );
-      for (int bra_state_index=0; bra_state_index<bra_subspace.size(); ++bra_state_index)
+      for (std::size_t bra_state_index=0; bra_state_index<bra_subspace.size(); ++bra_state_index)
         os << fmt::format(" {:16.8e}", xform_matrix(bra_state_index, state_index));
       os << std::endl;
     }

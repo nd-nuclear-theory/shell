@@ -37,6 +37,7 @@
   + 04/03/19 (pjf):
     - Use correct orbital formats for older files.
     - Prepend orbital index for orbitals in version 0 and 1 files.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 ****************************************************************/
 
 #ifndef OBME_IO_H_
@@ -113,7 +114,7 @@ class OBMEStreamBase {
   basis::OrbitalSectorsLJPN sectors_;
 
   // current pointer
-  int sector_index_;
+  std::size_t sector_index_;
 
   // filename
   std::string filename_;

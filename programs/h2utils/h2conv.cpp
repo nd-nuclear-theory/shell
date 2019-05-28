@@ -12,6 +12,7 @@
   + 10/22/16 (mac): Update syntax.
   + 11/28/17 (pjf): Include version in header.
   + 02/21/19 (pjf): Add H2 Version15200 support.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ******************************************************************************/
 
@@ -122,18 +123,18 @@ int main(int argc, char **argv)
   ////////////////////////////////////////////////////////////////
 
   // iterate over sectors
-  for (int sector_index = 0; sector_index < input_stream.num_sectors(); ++sector_index)
+  for (std::size_t sector_index = 0; sector_index < input_stream.num_sectors(); ++sector_index)
     {
       Eigen::MatrixXd matrix;
       // construct target sector
       const auto& sector = sectors.GetSector(sector_index);
       // locate corresponding input sector
-      int input_bra_subspace_index
+      std::size_t input_bra_subspace_index
         = input_space.LookUpSubspaceIndex(sector.bra_subspace().labels());
-      int input_ket_subspace_index
+      std::size_t input_ket_subspace_index
         = input_space.LookUpSubspaceIndex(sector.ket_subspace().labels());
       // Note: We cannot simply look up by target_sector's Key, since that uses target subspace indices.
-      int input_sector_index
+      std::size_t input_sector_index
         = input_sectors.LookUpSectorIndex(input_bra_subspace_index,input_ket_subspace_index);
       input_stream.ReadSector(input_sector_index, matrix);
       output_stream.WriteSector(sector_index, matrix);

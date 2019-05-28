@@ -31,6 +31,7 @@
     - Fix ket phase in branching to jjJpn scheme.
     - Sanitize naming convention for quantum numbers; rename Jp->J_bra and
       J->J_ket, etc.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ****************************************************************/
 

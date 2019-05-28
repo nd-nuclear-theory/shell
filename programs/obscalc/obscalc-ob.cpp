@@ -28,6 +28,7 @@
   + 03/30/19 (pjf): Add support for single-file ROBDME formats.
   + 04/03/19 (pjf): Do all calculations in Rose convention, *except for final
     output*.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ******************************************************************************/
 
@@ -198,9 +199,9 @@ double CalculateMatrixElement(const RunParameters& run_parameters,
 
   // loop and sum over \sum_{a,b} rho_{ab} T_{ba}
   double value = 0;
-  for (int subspace_index_a = 0; subspace_index_a < space.size();
+  for (std::size_t subspace_index_a = 0; subspace_index_a < space.size();
        ++subspace_index_a) {
-    for (int subspace_index_b = 0; subspace_index_b < space.size();
+    for (std::size_t subspace_index_b = 0; subspace_index_b < space.size();
          ++subspace_index_b) {
       const auto subspace_a = space.GetSubspace(subspace_index_a);
       const auto subspace_b = space.GetSubspace(subspace_index_b);
@@ -211,8 +212,8 @@ double CalculateMatrixElement(const RunParameters& run_parameters,
       // dimension factor only present in Rose convention
       double dimension_factor = double(2*subspace_b.j()+1);
 
-      for (int state_index_a = 0; state_index_a < subspace_a.size(); ++state_index_a) {
-        for (int state_index_b = 0; state_index_b < subspace_b.size(); ++state_index_b) {
+      for (std::size_t state_index_a = 0; state_index_a < subspace_a.size(); ++state_index_a) {
+        for (std::size_t state_index_b = 0; state_index_b < subspace_b.size(); ++state_index_b) {
           value += dimension_factor * operator_matrices[sector_index](state_index_a, state_index_b)
                    * density_matrices[sector_index](state_index_a, state_index_b);
         }

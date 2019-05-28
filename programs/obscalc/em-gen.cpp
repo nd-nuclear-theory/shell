@@ -23,6 +23,7 @@
       generated in one invocation.
   + 11/28/17 (pjf): Print header with version.
   + 04/04/19 (pjf): Write matrix elements in Rose convention, for consistency.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ******************************************************************************/
 
@@ -311,14 +312,14 @@ void GenerateTarget(const RunParameters& run_parameters,
   basis::OperatorBlocks<double> output_matrices;
 
   // loop over blocks and apply factor
-  for (int sector_index = 0; sector_index < output_sectors.size(); ++sector_index) {
+  for (std::size_t sector_index = 0; sector_index < output_sectors.size(); ++sector_index) {
     const auto& output_sector = output_sectors.GetSector(sector_index);
     const auto& bra_subspace = output_sector.bra_subspace();
     const auto& ket_subspace = output_sector.ket_subspace();
 
-    const int bra_subspace_index = output_sector.bra_subspace_index();
-    const int ket_subspace_index = output_sector.ket_subspace_index();
-    int radial_sector_index = radial_operator_data.sectors.LookUpSectorIndex(
+    const std::size_t bra_subspace_index = output_sector.bra_subspace_index();
+    const std::size_t ket_subspace_index = output_sector.ket_subspace_index();
+    std::size_t radial_sector_index = radial_operator_data.sectors.LookUpSectorIndex(
         bra_subspace_index, ket_subspace_index);
     assert(radial_sector_index != basis::kNone);
 

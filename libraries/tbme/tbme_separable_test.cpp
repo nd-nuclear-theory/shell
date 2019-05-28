@@ -21,7 +21,7 @@ void TestIdentity()
   const basis::TwoBodySpaceJJJPN space(orbital_space,basis::WeightMax(basis::Rank::kTwoBody,Nmax));
   const basis::TwoBodySectorsJJJPN sectors(space,0,0,0);
 
-  for (int sector_index=0; sector_index<sectors.size(); ++sector_index)
+  for (std::size_t sector_index=0; sector_index<sectors.size(); ++sector_index)
     {
 
       // extract sector
@@ -37,7 +37,7 @@ void TestIdentity()
         << std::endl
         << matrix << std::endl
         << std::endl;
-        
+
     }
 }
 
@@ -58,14 +58,14 @@ void TestAngularMomentum()
   int A = 2;
 
 
-  for (int sector_index=0; sector_index<sectors.size(); ++sector_index)
+  for (std::size_t sector_index=0; sector_index<sectors.size(); ++sector_index)
     {
 
       // extract sector
       const typename basis::TwoBodySectorsJJJPN::SectorType& sector = sectors.GetSector(sector_index);
       assert(sector.IsDiagonal());
       const basis::TwoBodySubspaceJJJPN& subspace = sector.ket_subspace();
-    
+
       // populate sector
       Eigen::MatrixXd matrix = shell::AngularMomentumMatrixJJJPN(operator_family,operator_species,sector,A);
 
@@ -76,7 +76,7 @@ void TestAngularMomentum()
         << std::endl
         << matrix << std::endl
         << std::endl;
-        
+
     }
 }
 

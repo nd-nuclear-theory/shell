@@ -43,6 +43,7 @@
     - Rewrite UpgradeOneBodyOperatorJJJPN and RacahReduceTensorProductJJJPN
       for generic nonscalar operators.
     - Remove RacahReduceDotProductJJJPN (redundant to RacahReduceTensorProductJJJPN).
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ****************************************************************/
 

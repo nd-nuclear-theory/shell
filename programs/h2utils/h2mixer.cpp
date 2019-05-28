@@ -65,6 +65,7 @@
     - Use polymorphism for supporting new variety of channel types.
   + 02/12/19 (pjf): Relax constraints on non-isoscalar operators.
   + 02/21/19 (pjf): Add H2 Version15200 support.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ******************************************************************************/
 
@@ -707,7 +708,7 @@ struct TargetChannel
   // matrix generation
   void GenerateTargetMatrix(
       const OperatorBlockMap& source_matrices,
-      int target_sector_index,
+      std::size_t target_sector_index,
       const typename basis::TwoBodySectorsJJJPN::SectorType& target_sector
     );
 
@@ -1669,12 +1670,12 @@ void InputChannel::PopulateSourceMatrix(
   )
 {
   // locate corresponding input sector
-  int input_bra_subspace_index
+  std::size_t input_bra_subspace_index
     = stream_ptr->space().LookUpSubspaceIndex(target_sector.bra_subspace().labels());
-  int input_ket_subspace_index
+  std::size_t input_ket_subspace_index
     = stream_ptr->space().LookUpSubspaceIndex(target_sector.ket_subspace().labels());
   // Note: We cannot simply look up by target_sector's Key, since that uses target subspace indices.
-  int input_sector_index
+  std::size_t input_sector_index
     = stream_ptr->sectors().LookUpSectorIndex(input_bra_subspace_index,input_ket_subspace_index);
   // std::cout << fmt::format("Input channel {} index {}...",input_channel.id,input_sector_index) << std::endl;
 
@@ -1818,19 +1819,19 @@ void XformChannel::PopulateSourceMatrix(
   )
 {
   // locate corresponding input sector
-  int input_bra_subspace_index
+  std::size_t input_bra_subspace_index
     = stream_ptr->space().LookUpSubspaceIndex(target_sector.bra_subspace().labels());
-  int input_ket_subspace_index
+  std::size_t input_ket_subspace_index
     = stream_ptr->space().LookUpSubspaceIndex(target_sector.ket_subspace().labels());
-  int input_sector_index
+  std::size_t input_sector_index
     = stream_ptr->sectors().LookUpSectorIndex(input_bra_subspace_index,input_ket_subspace_index);
 
   // locate corresponding intermediate pre-xform (truncated) sector
-  int pre_xform_bra_subspace_index
+  std::size_t pre_xform_bra_subspace_index
     = pre_xform_two_body_indexing.space.LookUpSubspaceIndex(target_sector.bra_subspace().labels());
-  int pre_xform_ket_subspace_index
+  std::size_t pre_xform_ket_subspace_index
     = pre_xform_two_body_indexing.space.LookUpSubspaceIndex(target_sector.ket_subspace().labels());
-  int pre_xform_sector_index
+  std::size_t pre_xform_sector_index
     = pre_xform_two_body_indexing.sectors.LookUpSectorIndex(pre_xform_bra_subspace_index,pre_xform_ket_subspace_index);
 
   // short circuit if no corresponding input or intermediate sectors
@@ -1896,7 +1897,7 @@ void XformChannel::PopulateSourceMatrix(
 
 void TargetChannel::GenerateTargetMatrix(
     const OperatorBlockMap& source_matrices,
-    int target_sector_index,
+    std::size_t target_sector_index,
     const typename basis::TwoBodySectorsJJJPN::SectorType& target_sector
   )
 {
@@ -2047,7 +2048,7 @@ int main(int argc, char **argv)
   ////////////////////////////////////////////////////////////////
 
   // iterate over sectors
-  for (int sector_index = 0; sector_index < target_indexing.sectors.size(); ++sector_index)
+  for (std::size_t sector_index = 0; sector_index < target_indexing.sectors.size(); ++sector_index)
     {
       // alias sector
       const auto& target_sector = target_indexing.sectors.GetSector(sector_index);

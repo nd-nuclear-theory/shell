@@ -167,11 +167,11 @@ namespace shell {
     const basis::TwoBodySpeciesPN two_body_species = bra_subspace.two_body_species();
 
     // for all pairs of states in sector
-    const int bra_subspace_size = bra_subspace.size();
-    const int ket_subspace_size = ket_subspace.size();
+    const std::size_t bra_subspace_size = bra_subspace.size();
+    const std::size_t ket_subspace_size = ket_subspace.size();
     // #pragma omp parallel for collapse(2)
-    for (int bra_index = 0; bra_index < bra_subspace_size; ++bra_index)
-      for (int ket_index = 0; ket_index < ket_subspace_size; ++ket_index)
+    for (std::size_t bra_index = 0; bra_index < bra_subspace_size; ++bra_index)
+      for (std::size_t ket_index = 0; ket_index < ket_subspace_size; ++ket_index)
         {
 
           // construct states

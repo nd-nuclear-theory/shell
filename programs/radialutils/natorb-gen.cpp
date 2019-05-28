@@ -18,6 +18,7 @@
   + 12/29/17 (pjf): Use input orbital indexing for output orbitals.
   + 12/30/17 (pjf): Ensure orbital file is properly sorted.
   + 07/27/18 (pjf): Update for new OBDME input routines.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ******************************************************************************/
 
@@ -162,13 +163,13 @@ void SortEigensystem(Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>& eigensolver
                      Eigen::MatrixXd& eigenvectors)
 {
   // initialize Eigen objects
-  int dimension = eigensolver.eigenvalues().size();
+  std::size_t dimension = eigensolver.eigenvalues().size();
   eigenvalues.resize(dimension);
   Eigen::MatrixXd permutation_matrix = Eigen::MatrixXd::Zero(dimension, dimension);
   // generate a vector of pairs (sortable by std::sort) which keeps track of
   // the eigenvalue and the eigenvalue's original index
-  std::vector<std::pair<double,int>> eigenvalue_keys;
-  for (int i=0; i < dimension; ++i) {
+  std::vector<std::pair<double,std::size_t>> eigenvalue_keys;
+  for (std::size_t i=0; i < dimension; ++i) {
     eigenvalue_keys.emplace_back(eigensolver.eigenvalues()(i), i);
   }
 
@@ -180,7 +181,7 @@ void SortEigensystem(Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>& eigensolver
   std::sort(eigenvalue_keys.rbegin(), eigenvalue_keys.rend());
   #endif
 
-  for (int i=0; i<dimension; ++i) {
+  for (std::size_t i=0; i<dimension; ++i) {
     eigenvalues(i) = eigenvalue_keys[i].first;
     permutation_matrix(eigenvalue_keys[i].second, i) = 1;
   }
@@ -218,7 +219,7 @@ int main(int argc, const char *argv[]) {
   basis::OperatorBlocks<double> xform_matrices;
   // TODO(pjf) generalize to use eigenvalues for orbital weights
   // std::vector<basis::OrbitalPNInfo> output_orbitals;
-  for (int sector_index = 0; sector_index < sectors.size(); ++sector_index) {
+  for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index) {
     // get next sector
     const basis::OrbitalSectorsLJPN::SectorType sector = sectors.GetSector(sector_index);
     basis::OrbitalSpeciesPN species = sector.bra_subspace().orbital_species();

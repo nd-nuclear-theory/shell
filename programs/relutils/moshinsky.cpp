@@ -38,6 +38,7 @@
   + 02/21/19 (pjf): Add H2 Version15200 support.
   + 03/28/19 (pjf): Allow input of relative-cm (rcmlsjt) matrix elements.
   + 04/07/19 (pjf): Change keyword for relative-cm from rcmlsjt to relcm.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ****************************************************************/
 
@@ -317,7 +318,7 @@ void WriteTwoBodyH2(
   std::cout << std::endl;
 
   // iterate over sectors and write out
-  for (int sector_index = 0; sector_index < output_stream.num_sectors(); ++sector_index)
+  for (std::size_t sector_index = 0; sector_index < output_stream.num_sectors(); ++sector_index)
     {
       // "neaten" output by eliminating near-zero values
       basis::OperatorBlock<double> matrix = two_body_jjjpn_matrices[sector_index];

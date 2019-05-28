@@ -15,6 +15,7 @@
   University of Notre Dame
 
   + 09/25/18 (pjf): Created, based on natorb-gen.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ******************************************************************************/
 
@@ -176,11 +177,11 @@ int main(int argc, const char *argv[]) {
   // get subspace for desired quantum numbers
   const basis::OrbitalSubspaceLJPNLabels subspace_labels =
     {run_parameters.species, run_parameters.l, run_parameters.j};
-  const int subspace_index = bra_space.LookUpSubspaceIndex(subspace_labels);
+  const std::size_t subspace_index = bra_space.LookUpSubspaceIndex(subspace_labels);
   const auto subspace = bra_space.GetSubspace(subspace_index);
 
   // get xform matrix for desired quantum numbers
-  const int sector_index = sectors.LookUpSectorIndex(subspace_index, subspace_index);
+  const std::size_t sector_index = sectors.LookUpSectorIndex(subspace_index, subspace_index);
 
   // get spline wave function type
   spline::Basis basis_type;
@@ -193,7 +194,7 @@ int main(int argc, const char *argv[]) {
   // construct matrix representation of analytic basis
   auto r_values = Eigen::VectorXd::LinSpaced(run_parameters.num_points, 0, run_parameters.r_max);
   Eigen::MatrixXd wf_values(run_parameters.num_points, subspace.size());
-  for (int state_index = 0; state_index < subspace.size(); ++state_index)
+  for (std::size_t state_index = 0; state_index < subspace.size(); ++state_index)
   {
     basis::OrbitalStateLJPN state(subspace, state_index);
     spline::WaveFunction wavefunction(state.n(), state.l(), run_parameters.scale, basis_type);

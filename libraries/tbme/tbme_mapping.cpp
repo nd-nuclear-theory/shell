@@ -36,7 +36,7 @@ namespace shell {
     orbital_mapping.resize(2);
 
     // iterate over orbital subspaces
-    for (int orbital_subspace_index=0; orbital_subspace_index<2; ++orbital_subspace_index)
+    for (std::size_t orbital_subspace_index=0; orbital_subspace_index<2; ++orbital_subspace_index)
       {
         // set up subspace aliases
         const basis::OrbitalSubspacePN& source_orbital_subspace
@@ -49,13 +49,13 @@ namespace shell {
 
         // find mappings for source orbitals
         for (
-            int source_orbital_index=0;
+            std::size_t source_orbital_index=0;
             source_orbital_index<source_orbital_subspace.size();
             ++source_orbital_index
           )
           {
             // look up corresponding target state index -- old version for OrDie lookup
-            // int target_orbital_index = TwoBodyMapping::kNone;
+            // std::size_t target_orbital_index = TwoBodyMapping::kNone;
             // const typename basis::OrbitalSubspacePN::StateLabelsType state_labels
             //   = source_orbital_subspace.GetStateLabels(source_orbital_index);
             // bool target_orbital_found = target_orbital_subspace.ContainsState(state_labels);
@@ -66,7 +66,7 @@ namespace shell {
             //
             // The target index value will be basis::kNone if no
             // target matches the source labels.
-            int target_orbital_index = target_orbital_subspace.LookUpStateIndex(
+            std::size_t target_orbital_index = target_orbital_subspace.LookUpStateIndex(
               source_orbital_subspace.GetStateLabels(source_orbital_index)
               );
             orbital_mapping[orbital_subspace_index][source_orbital_index] = target_orbital_index;
@@ -76,10 +76,10 @@ namespace shell {
     // set up two_body mapping
     subspace_mapping.resize(source_space.size());
     state_mapping.resize(source_space.size());
-    int num_target_subspaces_found = 0;  // used to track range coverage
+    std::size_t num_target_subspaces_found = 0;  // used to track range coverage
 
     // iterate over two-body subspaces
-    for (int source_subspace_index=0; source_subspace_index<source_space.size(); ++source_subspace_index)
+    for (std::size_t source_subspace_index=0; source_subspace_index<source_space.size(); ++source_subspace_index)
       {
         // set up source subspace alias
         const basis::TwoBodySubspaceJJJPN& source_subspace = source_space.GetSubspace(source_subspace_index);
@@ -92,14 +92,14 @@ namespace shell {
         //     orbital_mapping.emplace_back();
         //     continue;
         //   }
-        // int target_subspace_index = target_space.LookUpSubspaceIndex(source_subspace.labels());
+        // std::size_t target_subspace_index = target_space.LookUpSubspaceIndex(source_subspace.labels());
         // const basis::TwoBodySubspaceJJJPN& target_subspace = source_space.GetSubspace(target_subspace_index);
 
         // look up corresponding target subspace index
         //
         // The target index value will be basis::kNone if no
         // target matches the source labels.
-        int target_subspace_index = target_space.LookUpSubspaceIndex(source_subspace.labels());
+        std::size_t target_subspace_index = target_space.LookUpSubspaceIndex(source_subspace.labels());
         subspace_mapping[source_subspace_index] = target_subspace_index;
         // std::cout << fmt::format("Subspace {} -> {}",source_subspace_index,target_subspace_index) << std::endl;
 
@@ -121,11 +121,11 @@ namespace shell {
 
         // set up vector to hold index mappings for this subspace
         state_mapping[source_subspace_index].resize(source_subspace.size());
-        int num_target_states_found = 0;  // used to track range coverage
+        std::size_t num_target_states_found = 0;  // used to track range coverage
 
         // find mappings for source two-body states
         for (
-            int source_state_index=0;
+            std::size_t source_state_index=0;
             source_state_index<source_subspace.size();
             ++source_state_index
           )
@@ -134,9 +134,9 @@ namespace shell {
             const basis::TwoBodyStateJJJPN source_state(source_subspace,source_state_index);
             const basis::OrbitalStatePN source_orbital1 = source_state.GetOrbital1();
             const basis::OrbitalStatePN source_orbital2 = source_state.GetOrbital2();
-            int target_orbital1_index =
+            std::size_t target_orbital1_index =
               orbital_mapping[static_cast<int>(source_orbital1.orbital_species())][source_orbital1.index()];
-            int target_orbital2_index =
+            std::size_t target_orbital2_index =
               orbital_mapping[static_cast<int>(source_orbital2.orbital_species())][source_orbital2.index()];
 
             // canonicalize orbital indices for new space
@@ -162,11 +162,11 @@ namespace shell {
             // look up corresponding target state index
             //
             // "Missing" target orbitals will be indexed by basis::kNone.
-            int target_state_index = target_subspace.LookUpStateIndex(target_state_labels);
+            std::size_t target_state_index = target_subspace.LookUpStateIndex(target_state_labels);
             if (target_state_index==basis::kNone)
               relative_phase = 0;
             state_mapping[source_subspace_index][source_state_index]
-              = std::tuple<int,int>(target_state_index, relative_phase);
+              = std::tuple<std::size_t,int>(target_state_index, relative_phase);
 
             // do diagnostic record keeping
             if (target_state_index==basis::kNone)
@@ -198,14 +198,14 @@ namespace shell {
 
     // dump orbital mapping
     os << "Orbitals" << std::endl;
-    for (int orbital_subspace_index=0; orbital_subspace_index<2; ++orbital_subspace_index)
+    for (std::size_t orbital_subspace_index=0; orbital_subspace_index<2; ++orbital_subspace_index)
         for (
-            int source_orbital_index=0;
+            std::size_t source_orbital_index=0;
             source_orbital_index<orbital_mapping[orbital_subspace_index].size();
             ++source_orbital_index
           )
           {
-            int target_orbital_index = orbital_mapping[orbital_subspace_index][source_orbital_index];
+            std::size_t target_orbital_index = orbital_mapping[orbital_subspace_index][source_orbital_index];
             os << fmt::format(
                 "  subspace {:3} source {:3} target {:3}",
                 orbital_subspace_index,source_orbital_index,target_orbital_index
@@ -215,10 +215,10 @@ namespace shell {
 
     // dump two-body state mapping
     os << "Two-body states" << std::endl;
-    for (int source_subspace_index=0; source_subspace_index<state_mapping.size(); ++source_subspace_index)
+    for (std::size_t source_subspace_index=0; source_subspace_index<state_mapping.size(); ++source_subspace_index)
       {
         // indicate subspace mapping
-        int target_subspace_index = subspace_mapping[source_subspace_index];
+        std::size_t target_subspace_index = subspace_mapping[source_subspace_index];
         os << fmt::format(
             "  subspace {:3} => {:3}",
             source_subspace_index,target_subspace_index
@@ -231,12 +231,13 @@ namespace shell {
 
         // dump mappings within subspace
         for (
-            int source_state_index=0;
+            std::size_t source_state_index=0;
             source_state_index<state_mapping[source_subspace_index].size();
             ++source_state_index
           )
           {
-            int target_state_index, relative_phase;
+            std::size_t target_state_index;
+            int relative_phase;
             std::tie(target_state_index, relative_phase)
               = state_mapping[source_subspace_index][source_state_index];
             os << fmt::format(
@@ -277,16 +278,18 @@ RemappedMatrixJJJPN(
     =Eigen::MatrixXd::Zero(target_sector.bra_subspace().size(),target_sector.ket_subspace().size());
 
   // copy matrix elements
-  for (int source_bra_index=0; source_bra_index<source_sector.bra_subspace().size(); ++source_bra_index)
-    for (int source_ket_index=0; source_ket_index<source_sector.ket_subspace().size(); ++source_ket_index)
+  for (std::size_t source_bra_index=0; source_bra_index<source_sector.bra_subspace().size(); ++source_bra_index)
+    for (std::size_t source_ket_index=0; source_ket_index<source_sector.ket_subspace().size(); ++source_ket_index)
           {
             // look up target matrix entry indices
-            int remapped_bra_index, bra_relative_phase;
+            std::size_t remapped_bra_index;
+            int bra_relative_phase;
             std::tie(remapped_bra_index, bra_relative_phase)
               = two_body_mapping.state_mapping[source_sector.bra_subspace_index()][source_bra_index];
             if (remapped_bra_index == basis::kNone)
               continue;
-            int remapped_ket_index, ket_relative_phase;
+            std::size_t remapped_ket_index;
+            int ket_relative_phase;
             std::tie(remapped_ket_index, ket_relative_phase)
               = two_body_mapping.state_mapping[source_sector.ket_subspace_index()][source_ket_index];
             if (remapped_ket_index == basis::kNone)

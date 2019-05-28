@@ -102,7 +102,7 @@ void InOBDMEStreamMulti::ReadInfoHeader1405() {
 
   // line 2: number of sp orbitals
   {
-    int num_sp_orbitals;
+    std::size_t num_sp_orbitals;
     ++line_count_;
     std::getline(info_stream(), line);
     std::istringstream line_stream(line);
@@ -163,7 +163,7 @@ void InOBDMEStreamMulti::ReadInfoHeader1500() {
 
   // line 3: number of p and n orbitals
   {
-    int num_proton_orbitals, num_neutron_orbitals;
+    std::size_t num_proton_orbitals, num_neutron_orbitals;
     ++line_count_;
     std::getline(info_stream(), line);
     std::istringstream line_stream(line);
@@ -211,7 +211,7 @@ void InOBDMEStreamMulti::ReadInfo1405() {
   assert(version_number_ == 1405);
 
   // loop through lines and put them into obdme_info_
-  for (int i=0; i < num_proton_obdme_; ++i) {
+  for (std::size_t i=0; i < num_proton_obdme_; ++i) {
     std::string line;
     int index, na, la, twoja, nb, lb, twojb, K;
 
@@ -229,7 +229,7 @@ void InOBDMEStreamMulti::ReadInfo1405() {
 
   // version 1405 only stores one set of info for both species
   // run through and copy the InfoLines changing only the class
-  for (int i=0; i < num_neutron_obdme_; ++i) {
+  for (std::size_t i=0; i < num_neutron_obdme_; ++i) {
     InfoLine fake_line = obdme_info_[i];
     std::get<0>(fake_line.bra_labels) = basis::OrbitalSpeciesPN::kN;
     std::get<0>(fake_line.ket_labels) = basis::OrbitalSpeciesPN::kN;
@@ -242,7 +242,7 @@ void InOBDMEStreamMulti::ReadInfo1500() {
   assert(version_number_ == 1500);
 
   // loop through lines and put them into obdme_info_
-  for (int i=0; i < num_proton_obdme_ + num_neutron_obdme_; ++i) {
+  for (std::size_t i=0; i < num_proton_obdme_ + num_neutron_obdme_; ++i) {
     std::string line;
     int index, ia, na, la, twoja, ib, nb, lb, twojb, K, cls;
 
@@ -276,7 +276,7 @@ void InOBDMEStreamMulti::ReadData() {
     data_stream >> temp_matrix_element;
 
     // get location of matrix element
-    int sector_index, bra_index, ket_index;
+    std::size_t sector_index, bra_index, ket_index;
     std::tie(sector_index, bra_index, ket_index) = basis::MatrixElementIndicesLJPN(
       orbital_space(), orbital_space(), sectors_[info_line.multipole], info_line.bra_labels, info_line.ket_labels
     );
@@ -299,7 +299,7 @@ void InOBDMEStreamMulti::ReadData() {
 
 void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_line_count) const {
   std::string line;
-  int num_protons, num_neutrons;
+  std::size_t num_protons, num_neutrons;
   int bra_seq, ket_seq, bra_n, ket_n;
   HalfInt bra_J, ket_J, bra_T, ket_T;
   int version;
@@ -352,22 +352,22 @@ void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_li
 
   // line 5: number of OBDMEs
   if (version == 1405) {
-    int proton_obdmes, neutron_obdmes;
+    std::size_t num_proton_obdmes, num_neutron_obdmes;
     ++data_line_count;
     std::getline(data_stream, line);
     std::istringstream line_stream(line);
-    line_stream >> proton_obdmes >> neutron_obdmes;
+    line_stream >> num_proton_obdmes >> num_neutron_obdmes;
     ParsingCheck(line_stream, data_line_count, line);
-    assert(proton_obdmes == num_proton_obdme_);
-    assert(neutron_obdmes == num_neutron_obdme_);
+    assert(num_proton_obdmes == num_proton_obdme_);
+    assert(num_neutron_obdmes == num_neutron_obdme_);
   } else if (version == 1500) {
-    int total_obdmes;
+    std::size_t num_obdmes;
     ++data_line_count;
     std::getline(data_stream, line);
     std::istringstream line_stream(line);
-    line_stream >> total_obdmes;
+    line_stream >> num_obdmes;
     ParsingCheck(line_stream, data_line_count, line);
-    assert(total_obdmes == (num_proton_obdme_ + num_neutron_obdme_));
+    assert(num_obdmes == (num_proton_obdme_ + num_neutron_obdme_));
   }
 
 }
@@ -467,7 +467,7 @@ void InOBDMEStreamSingle::ReadHeader1520() {
   }
 
   // line 6: number of p and n orbitals
-  int num_orbitals_p, num_orbitals_n;
+  std::size_t num_orbitals_p, num_orbitals_n;
   {
     mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
@@ -490,7 +490,7 @@ void InOBDMEStreamSingle::ReadHeader1520() {
 
   // orbital listing body
   {
-    int num_orbitals = num_orbitals_p + num_orbitals_n;
+    std::size_t num_orbitals = num_orbitals_p + num_orbitals_n;
     std::string orbital_info_str;
     for (int orbital_line_count=0; orbital_line_count < num_orbitals; ++orbital_line_count)
       {
@@ -529,7 +529,7 @@ void InOBDMEStreamSingle::ReadData1520() {
     // get location of matrix element
     basis::FullOrbitalLabels orbital_a = orbital_list_.at(ia-1);
     basis::FullOrbitalLabels orbital_b = orbital_list_.at(ib-1);
-    int sector_index, bra_index, ket_index;
+    std::size_t sector_index, bra_index, ket_index;
     std::tie(sector_index, bra_index, ket_index) = basis::MatrixElementIndicesLJPN(
       orbital_space(), orbital_space(), sectors_[K-min_K_], orbital_a, orbital_b
     );

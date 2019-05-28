@@ -47,7 +47,7 @@
 
       Relative electric dipole operator.
       [NOTE: only "r" version implemented; only T0=1 defined]
- 
+
     quadrupole r|k T0
 
       Relative electric quadrupole operator.
@@ -88,14 +88,15 @@
   Mark A. Caprio
   University of Notre Dame
 
-  07/16/16 (mac): Created (writerel.cpp).
-  07/25/16 (mac): Update to use WriteRelativeOperatorLSJT.
-  10/09/16 (pjf): Rename mcpp -> mcutils.
-  03/06/17 (mac): Rough in Coulomb interaction code.
-  03/26/17 (mac): Finish implementing Coulomb.  Rename to relative-gen.cpp.
-  04/05/17 (mac): Update call to ConstructZeroOperatorRelativeLSJT.
-  11/28/17 (pjf): Print header with version.
-  05/04/17 (mac): Add support for isovector transition operators.
+  + 07/16/16 (mac): Created (writerel.cpp).
+  + 07/25/16 (mac): Update to use WriteRelativeOperatorLSJT.
+  + 10/09/16 (pjf): Rename mcpp -> mcutils.
+  + 03/06/17 (mac): Rough in Coulomb interaction code.
+  + 03/26/17 (mac): Finish implementing Coulomb.  Rename to relative-gen.cpp.
+  + 04/05/17 (mac): Update call to ConstructZeroOperatorRelativeLSJT.
+  + 11/28/17 (pjf): Print header with version.
+  + 05/04/17 (mac): Add support for isovector transition operators.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ****************************************************************/
 
@@ -390,7 +391,7 @@ void PopulateOperator(
 
       // look up subspace indices
       int gp = unit_tensor_labels.Lp%2;
-      int relative_subspace_index_bra = relative_space.LookUpSubspaceIndex(
+      std::size_t relative_subspace_index_bra = relative_space.LookUpSubspaceIndex(
           basis::RelativeSubspaceLSJTLabels(
               unit_tensor_labels.Lp,
               unit_tensor_labels.Sp,
@@ -406,7 +407,7 @@ void PopulateOperator(
                 << " -> index " << relative_subspace_index_bra
                 << std::endl;
       int g = unit_tensor_labels.L%2;
-      int relative_subspace_index_ket = relative_space.LookUpSubspaceIndex(
+      std::size_t relative_subspace_index_ket = relative_space.LookUpSubspaceIndex(
           basis::RelativeSubspaceLSJTLabels(
               unit_tensor_labels.L,
               unit_tensor_labels.S,
@@ -423,7 +424,7 @@ void PopulateOperator(
                 << std::endl;
 
       // look up state indices
-      int relative_state_index_bra = relative_subspace_bra.LookUpStateIndex(
+      std::size_t relative_state_index_bra = relative_subspace_bra.LookUpStateIndex(
           basis::RelativeStateLSJT::StateLabelsType(
               unit_tensor_labels.Np
             )
@@ -432,7 +433,7 @@ void PopulateOperator(
                 << " " << unit_tensor_labels.Np
                 << " -> index " << relative_state_index_bra
                 << std::endl;
-      int relative_state_index_ket = relative_subspace_ket.LookUpStateIndex(
+      std::size_t relative_state_index_ket = relative_subspace_ket.LookUpStateIndex(
           basis::RelativeStateLSJT::StateLabelsType(
               unit_tensor_labels.N
             )
@@ -447,7 +448,7 @@ void PopulateOperator(
       basis::OperatorBlocks<double>& relative_matrices = relative_component_matrices[unit_tensor_labels.T0];
 
       // look up sector
-      int relative_sector_index
+      std::size_t relative_sector_index
         = relative_sectors.LookUpSectorIndex(
             relative_subspace_index_bra,
             relative_subspace_index_ket

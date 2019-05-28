@@ -10,6 +10,7 @@
 
   + 06/15/18 (pjf): Created.
   + 02/01/19 (pjf): Add documentation.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 ****************************************************************/
 
 #ifndef OBME_RADIAL_H_
@@ -81,7 +82,7 @@ void ComposeRadialOperators(
   );
 // Generate product of two radial operators.
 //
-// Calculates a.b product as effective matrix-matrix multiplication, 
+// Calculates a.b product as effective matrix-matrix multiplication,
 // with appropriate adaptation to sparse (by sector) storage.
 //
 // Arguments:

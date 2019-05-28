@@ -60,7 +60,7 @@ namespace shell {
     Jmax_by_type = std::array<int,3>({0,0,0});
 
     // scan subspaces for Jmax
-    for (int subspace_index=0; subspace_index<space.size(); ++subspace_index)
+    for (std::size_t subspace_index=0; subspace_index<space.size(); ++subspace_index)
       {
         // extract subspace
         const basis::TwoBodySubspaceJJJPN& subspace = space.GetSubspace(subspace_index);
@@ -76,8 +76,8 @@ namespace shell {
 
   void EvaluateCountsByType(
       const basis::TwoBodySectorsJJJPN& sectors,
-      std::array<int,3>& num_sectors_by_type,
-      std::array<int,3>& size_by_type
+      std::array<std::size_t,3>& num_sectors_by_type,
+      std::array<std::size_t,3>& size_by_type
     )
   // Count sectors and matrix elements in the upper triangular portion
   // of a set of pp/nn/pn sectors.
@@ -89,16 +89,16 @@ namespace shell {
   //
   // Arguments:
   //   sectors (..., input) : container for sectors
-  //   num_sectors_by_type (std::array<int,3>, output) : number of sectors
-  //   size_by_type (std::array<int,3>, output) : number of matrix elements
+  //   num_sectors_by_type (std::array<std::size_t,3>, output) : number of sectors
+  //   size_by_type (std::array<std::size_t,3>, output) : number of matrix elements
   {
 
     // initialize
-    num_sectors_by_type = std::array<int,3>({0,0,0});
-    size_by_type = std::array<int,3>({0,0,0});
+    num_sectors_by_type = std::array<std::size_t,3>({0,0,0});
+    size_by_type = std::array<std::size_t,3>({0,0,0});
 
     // count over sectors
-    for (int sector_index=0; sector_index<sectors.size(); ++sector_index)
+    for (std::size_t sector_index=0; sector_index<sectors.size(); ++sector_index)
       {
 
         // extract sector
@@ -113,18 +113,18 @@ namespace shell {
         ++num_sectors_by_type[int(two_body_species)];
 
         // count sector entries
-        int sector_entries = 0;
+        std::size_t sector_entries = 0;
         if (sector.IsDiagonal())
           // diagonal sector
           {
-            int dimension = ket_subspace.size();
+            std::size_t dimension = ket_subspace.size();
             sector_entries = dimension*(dimension+1)/2;
           }
         else if (sector.IsUpperTriangle())
           // upper triangle sector (but not diagonal)
           {
-            int bra_dimension = bra_subspace.size();
-            int ket_dimension = ket_subspace.size();
+            std::size_t bra_dimension = bra_subspace.size();
+            std::size_t ket_dimension = ket_subspace.size();
             sector_entries = bra_dimension*ket_dimension;
           }
         size_by_type[int(two_body_species)] += sector_entries;
@@ -320,7 +320,7 @@ namespace shell {
   };
 
 
-  void InH2Stream::ReadSector(int sector_index, Eigen::MatrixXd& matrix)
+  void InH2Stream::ReadSector(std::size_t sector_index, Eigen::MatrixXd& matrix)
   {
     // jump to correct sector
     SeekToSector(sector_index);
@@ -381,7 +381,7 @@ namespace shell {
       stream_sector_positions_.push_back(stream().tellg());
   }
 
-  void InH2Stream::SeekToSector(int seek_index)
+  void InH2Stream::SeekToSector(std::size_t seek_index)
   {
     assert(seek_index!=basis::kNone);
     assert(seek_index<sectors().size());
@@ -454,7 +454,7 @@ namespace shell {
   }
 
   void OutH2Stream::WriteSector(
-      int sector_index,
+      std::size_t sector_index,
       const Eigen::MatrixXd& matrix,
       basis::NormalizationConversion conversion_mode
     )

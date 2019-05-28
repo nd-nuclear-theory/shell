@@ -247,7 +247,7 @@ namespace relative {
     basis::OperatorBlocks<double>& matrices = relative_component_matrices[T0];
 
     // iterate over sectors
-    for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+    for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
       {
 
         // set us aliases -- for sector and subspaces
@@ -315,7 +315,7 @@ namespace relative {
         // We make use of the known indexing scheme for a
         // RelativeLSJT basis, that the radial quantum number n is
         // just the 0-based state index.
-        int dim = ket_subspace.size();
+        std::size_t dim = ket_subspace.size();
         int L = ket_L;
         int delta_L = 0;
         matrix = angular_factor * relative_oscillator_scale_factor
@@ -348,7 +348,7 @@ namespace relative {
     basis::OperatorBlocks<double>& matrices = relative_component_matrices[T0];
 
     // iterate over sectors
-    for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+    for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
       {
 
         // set us aliases -- for sector and subspaces
@@ -422,8 +422,8 @@ namespace relative {
         // RelativeLSJT basis, that the radial quantum number n is
         // just the 0-based state index.
 
-        int bra_subspace_size = bra_subspace.size();
-        int ket_subspace_size = ket_subspace.size();
+        std::size_t bra_subspace_size = bra_subspace.size();
+        std::size_t ket_subspace_size = ket_subspace.size();
 
         matrix = angular_factor * relative_oscillator_scale_factor
           *relative::RadialCoordinateMatrix(bra_subspace_size,ket_subspace_size,ket_L,delta_L);
@@ -466,7 +466,7 @@ namespace relative {
     basis::OperatorBlocks<double>& matrices = relative_component_matrices[T0];
 
     // iterate over sectors
-    for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+    for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
       {
 
         // set us aliases -- for sector and subspaces
@@ -550,8 +550,8 @@ namespace relative {
         // basis, that the radial quantum number n is just the 0-based state
         // index.
 
-        int bra_subspace_size = bra_subspace.size();
-        int ket_subspace_size = ket_subspace.size();
+        std::size_t bra_subspace_size = bra_subspace.size();
+        std::size_t ket_subspace_size = ket_subspace.size();
         int delta_L = bra_L-ket_L;
         matrix = angular_factor * relative_oscillator_scale_factor
           *relative::RadialCoordinateSqrMatrix(bra_subspace_size,ket_subspace_size,ket_L,delta_L,operator_sign);
@@ -584,7 +584,7 @@ namespace relative {
     basis::OperatorBlocks<double>& matrices = relative_component_matrices[T0];
 
     // iterate over sectors
-    for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+    for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
       {
 
         // set us aliases -- for sector and subspaces
@@ -650,13 +650,13 @@ namespace relative {
         // square block, and the block is simply proportional to the
         // identity matrix.
 
-        int bra_subspace_size = bra_subspace.size();
-        int ket_subspace_size = ket_subspace.size();
+        std::size_t bra_subspace_size = bra_subspace.size();
+        std::size_t ket_subspace_size = ket_subspace.size();
         assert(bra_subspace_size==ket_subspace_size);  // (LSJ') and (LSJ) subspaces same size
         // matrix = angular_factor*basis::OperatorBlock<double>:Identity(bra_subspace.size(),ket_subspace.size());
-        for (int ket_n=0; ket_n<ket_subspace_size; ++ket_n)
+        for (std::size_t ket_n=0; ket_n<ket_subspace_size; ++ket_n)
           {
-            int bra_n = ket_n;
+            std::size_t bra_n = ket_n;
             matrix(bra_n,ket_n) = angular_factor;
           }
 
@@ -692,7 +692,7 @@ namespace relative {
     basis::OperatorBlocks<double>& matrices = relative_component_matrices[T0];
 
     // iterate over sectors
-    for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+    for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
       {
         // set us aliases -- for sector and subspaces
         const basis::RelativeSectorsLSJT::SectorType& sector = sectors.GetSector(sector_index);
@@ -765,13 +765,13 @@ namespace relative {
         // square block, and the block is simply proportional to the
         // identity matrix.
 
-        int bra_subspace_size = bra_subspace.size();
-        int ket_subspace_size = ket_subspace.size();
+        std::size_t bra_subspace_size = bra_subspace.size();
+        std::size_t ket_subspace_size = ket_subspace.size();
         assert(bra_subspace_size==ket_subspace_size);  // (LSJ') and (LSJ) subspaces same size
         // matrix = angular_factor*basis::OperatorBlock<double>:Identity(bra_subspace.size(),ket_subspace.size());
-        for (int ket_n=0; ket_n<ket_subspace_size; ++ket_n)
+        for (std::size_t ket_n=0; ket_n<ket_subspace_size; ++ket_n)
           {
-            int bra_n = ket_n;
+            std::size_t bra_n = ket_n;
             matrix(bra_n,ket_n) = angular_factor;
           }
 
@@ -824,7 +824,7 @@ namespace relative {
         basis::OperatorBlocks<double>& matrices = relative_component_matrices[T0];
 
         // iterate over sectors
-        for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+        for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
           {
 
             // extract sector

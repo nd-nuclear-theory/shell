@@ -42,7 +42,7 @@ void TestRelativeCM()
   basis::SetOperatorToIdentity(relative_sectors,relative_matrices);
 
   // inspect relative identity operator (sanity check)
-  for (int sector_index=0; sector_index<relative_sectors.size(); ++sector_index)
+  for (std::size_t sector_index=0; sector_index<relative_sectors.size(); ++sector_index)
     {
       const basis::RelativeSectorsLSJT::SectorType& relative_sector = relative_sectors.GetSector(sector_index);
       std::cout << " sector " << sector_index << " diagonal " << relative_sector.IsDiagonal() << std::endl;
@@ -63,7 +63,7 @@ void TestRelativeCM()
   basis::OperatorBlocks<double> relative_cm_matrices;
   relative_cm_matrices.resize(relative_cm_sectors.size());
 
-  for (int sector_index=0; sector_index<relative_cm_sectors.size(); ++sector_index)
+  for (std::size_t sector_index=0; sector_index<relative_cm_sectors.size(); ++sector_index)
     {
       const basis::RelativeCMSectorsLSJTN::SectorType& relative_cm_sector = relative_cm_sectors.GetSector(sector_index);
 
@@ -243,7 +243,7 @@ void TestTransformSimple(
 
   std::cout << "writing two-body LSJTN matrices" << std::endl;
   for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
-    for (int sector_index=0; sector_index<two_body_lsjtn_component_sectors[T0].size(); ++sector_index)
+    for (std::size_t sector_index=0; sector_index<two_body_lsjtn_component_sectors[T0].size(); ++sector_index)
       {
       const basis::TwoBodySectorsLSJTN::SectorType& two_body_lsjtn_sector
         = two_body_lsjtn_component_sectors[T0].GetSector(sector_index);
@@ -333,7 +333,7 @@ void TestTransformSimple(
 
   std::cout << "writing two-body JJJTN matrices" << std::endl;
   for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
-    for (int sector_index=0; sector_index<two_body_jjjtn_component_sectors[T0].size(); ++sector_index)
+    for (std::size_t sector_index=0; sector_index<two_body_jjjtn_component_sectors[T0].size(); ++sector_index)
       {
       const basis::TwoBodySectorsJJJTN::SectorType& two_body_jjjtn_sector
         = two_body_jjjtn_component_sectors[T0].GetSector(sector_index);

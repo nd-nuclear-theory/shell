@@ -19,10 +19,11 @@
   Mark A. Caprio
   University of Notre Dame
 
-  - 10/30/16 (mac): Created.  Supplants code from h2xform.cpp.
-  - 11/6/16 (mac): Finish implementing TwoBodyTransformedMatrix.
-  - 10/20/18 (pjf): Generalize TwoBodyTransformedMatrix for
+  + 10/30/16 (mac): Created.  Supplants code from h2xform.cpp.
+  + 11/6/16 (mac): Finish implementing TwoBodyTransformedMatrix.
+  + 10/20/18 (pjf): Generalize TwoBodyTransformedMatrix for
       nonscalar operators.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ****************************************************************/
 
