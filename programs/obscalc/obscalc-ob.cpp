@@ -29,6 +29,7 @@
   + 04/03/19 (pjf): Do all calculations in Rose convention, *except for final
     output*.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 05/28/19 (pjf): Output zero matrix element if densities missing from file.
 
 ******************************************************************************/
 
@@ -195,6 +196,8 @@ double CalculateMatrixElement(const RunParameters& run_parameters,
   {
     obdme_s = shell::InOBDMEStreamMulti(densities.robdme_info_filename, densities.robdme_filename, space, 0, 0);
   }
+  if ((op.sectors.j0() < obdme_s.j0_min()) || (op.sectors.j0() > obdme_s.j0_max()))
+    return 0.;
   obdme_s.GetMultipole(op.sectors.j0(), density_sectors, density_matrices);
 
   // loop and sum over \sum_{a,b} rho_{ab} T_{ba}
