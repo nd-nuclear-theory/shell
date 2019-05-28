@@ -66,7 +66,8 @@
   + 02/12/19 (pjf): Relax constraints on non-isoscalar operators.
   + 02/21/19 (pjf): Add H2 Version15200 support.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
-
+  + 05/28/19 (mac/pjf): Allow copy construction of OneBodyOperatorData and
+    XformData.
 ******************************************************************************/
 
 #include <omp.h>
@@ -141,19 +142,12 @@ struct XformData
 //
 // The "bra" space is the source basis, and the "ket"
 // space is the target basis.
-//
-// Caveat: Just "copying" indexing in here is not good enough, since
-// then sectors can be left pointing to deleted temporaries for the
-// orbital subspaces. The copy constructor is deleted for this reason.
 {
   XformData() = default;
 
   XformData(const std::string& id_, const std::string& filename_)
     : id(id_), filename(filename_)
   {}
-
-  XformData(const XformData&) = delete;
-  XformData& operator=(const XformData&) = delete;
 
   // xform identification
   std::string id;
@@ -177,10 +171,6 @@ typedef std::unordered_map<std::string,XformData> XformMap;
 
 struct OneBodyOperatorData
 // Indexing and matrix elements for a one-body operator.
-//
-// Caveat: Just "copying" indexing in here is not good enough, since
-// then sectors can be left pointing to deleted temporaries for the
-// orbital subspaces. The copy constructor is deleted for this reason.
 {
 
   OneBodyOperatorData() = default;
@@ -188,9 +178,6 @@ struct OneBodyOperatorData
   OneBodyOperatorData(const std::string& id_)
     : id(id_)
   {}
-
-  OneBodyOperatorData(const OneBodyOperatorData&) = delete;
-  OneBodyOperatorData& operator=(const OneBodyOperatorData&) = delete;
 
   // operator identification
   std::string id;
