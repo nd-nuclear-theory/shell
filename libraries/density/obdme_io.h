@@ -28,7 +28,12 @@
     - Convert to Rose convention on input, for consistency with other
       one-body operators.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
-
+  + 05/28/19 (pjf):
+    + Rename K->j0, max_K->j0_max, and min_K->j0_min.
+    + Deprecate max_K() and min_K() accessors.
+    + Modify access specifications and provide accessors for matrices and
+      sectors as a function of j0.
+    + Fix indexing problems for j0_min != 0.
 
 ****************************************************************/
 
@@ -53,11 +58,30 @@ namespace shell {
 class InOBDMEStream {
  public:
   InOBDMEStream() = default;
-  void GetMultipole(int K, basis::OrbitalSectorsLJPN& sectors, basis::OperatorBlocks<double>& matrices) const;
-  int min_K() const { return min_K_; }
-  int max_K() const { return max_K_; }
-  int g0()    const { return g0_; }
-  int Tz0()   const { return Tz0_; }
+  void GetMultipole(
+      int j0,
+      basis::OrbitalSectorsLJPN& sectors,
+      basis::OperatorBlocks<double>& matrices
+    ) const;
+  int j0_min() const { return j0_min_; }
+  int j0_max() const { return j0_max_; }
+  int g0()     const { return g0_;     }
+  int Tz0()    const { return Tz0_;    }
+  DEPRECATED("use j0_min() instead") inline int min_K() const { return j0_min_; }
+  DEPRECATED("use j0_max() instead") inline int max_K() const { return j0_max_; }
+
+  // indexing accessors
+  const basis::OrbitalSpaceLJPN& orbital_space() const { return orbital_space_; }
+
+  const basis::OrbitalSectorsLJPN& sectors(int j0) const {
+    assert((j0 >= j0_min()) && (j0 <= j0_max()));
+    return sectors_.at(j0-j0_min());
+  }
+
+  const basis::OperatorBlocks<double>& matrices(int j0) const {
+    assert((j0 >= j0_min()) && (j0 <= j0_max()));
+    return matrices_.at(j0-j0_min());
+  }
 
  protected:
   InOBDMEStream(
@@ -72,12 +96,20 @@ class InOBDMEStream {
   // indexing information
   basis::OrbitalSpaceLJPN orbital_space_;
   int g0_, Tz0_;
-  int min_K_, max_K_;
+  int j0_min_, j0_max_;
 
   // indexing accessors
-  const basis::OrbitalSpaceLJPN& orbital_space() const {
-   return orbital_space_;
+  basis::OrbitalSectorsLJPN& sectors(int j0) {
+    assert((j0 >= j0_min()) && (j0 <= j0_max()));
+    return sectors_.at(j0-j0_min());
   }
+
+  basis::OperatorBlocks<double>& matrices(int j0) {
+    assert((j0 >= j0_min()) && (j0 <= j0_max()));
+    return matrices_.at(j0-j0_min());
+  }
+
+  private:
 
   // matrix element storage
   std::vector<basis::OrbitalSectorsLJPN> sectors_;
