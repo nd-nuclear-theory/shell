@@ -522,9 +522,6 @@ void InOBDMEStreamSingle::ReadData() {
 
 void InOBDMEStreamSingle::ReadData1520() {
   std::string line;
-
-  std::cout << filename_ << std::endl;
-
   while (!mcutils::GetLine(stream(), line, line_count_).eof()) {
     int ia, ib, j0;
     double matrix_element;
@@ -532,7 +529,6 @@ void InOBDMEStreamSingle::ReadData1520() {
     std::istringstream line_stream(line);
     line_stream >> ia >> ib >> j0 >> matrix_element;
     ParsingCheck(line_stream, line_count_, line);
-    std::cout << ia << " " << ib << " " << K << " " << matrix_element << std::endl;
 
     // get location of matrix element
     basis::FullOrbitalLabels orbital_a = orbital_list_.at(ia-1);
