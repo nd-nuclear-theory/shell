@@ -37,6 +37,7 @@
 #include "fmt/format.h"
 #include "mcutils/parsing.h"
 #include "relative/relative_me.h"
+#include <fstream> // added by J.H.
 
 ////////////////////////////////////////////////////////////////
 // parameter input
@@ -64,11 +65,15 @@ void ReadParameters(Parameters& parameters)
   // set up line counter for use in error messages
   std::string line;
   int line_count = 0;
+  
+  // declaration of a stream object associated with the input file
+  std::ifstream myfile ("relative-filter.in"); // added by J.H.
 
   // line 1: operator filenames
   {
     ++line_count;
-    std::getline(std::cin,line);
+//    std::getline(std::cin,line); // commented out by J.H.
+    getline (myfile,line); // added by J.H.
     std::istringstream line_stream(line);
     line_stream >> parameters.source_filename
                 >> parameters.target_filename;
@@ -76,8 +81,15 @@ void ReadParameters(Parameters& parameters)
   }
 
   // line 2: filtering parameters
-  // TODO
+  // beginning of a block added by J.H.
+    ++line_count;
+    getline (myfile,line);
+    std::istringstream line_stream(line);
+    line_stream >> parameters.filter_name
+	        >> parameters.cutoff;
 
+     myfile.close();
+  // end of the block added by J.H.
 }
 
 ////////////////////////////////////////////////////////////////
@@ -95,7 +107,12 @@ void FilterOperator(
   )
 // Copy and filter operator.
 //
-// TODO define filtering operations
+// Filtering operations:
+//   If the filter name is "identity", no filtering is performed (the file is just copied).
+//   If the filter name is "Nrelmax", the RMEs for which the number of oscillator quanta of relative motion (Nrel)
+//     carried by the bra or ket state is greater than the cutoff parameter are zeroed out.
+//   If the filter name is "N0max", the RMEs for which the number of oscillator quanta carried by the
+//     operator, i.e. |Nrel_bra - Nrel_ket|, is greater than the cutoff parameter are zeroed out.
 //
 // Arguments:
 //   parameters (input): includes tensorial properties of operator
@@ -144,8 +161,20 @@ void FilterOperator(
               // bra.N(), etc.  See basis/lsjt_scheme.h "relative states in LSJT
               // scheme" for a full list of quantum numbers.
 
-              target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
-
+              if(parameters.filter_name=="identity") // added by J.H.
+	        target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
+	      // beginning of a block added by J.H.
+	      else if(parameters.filter_name=="Nrelmax")
+                if((bra.N()<=parameters.cutoff)&&(ket.N()<=parameters.cutoff))
+                  target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
+	        else
+                  target_block(bra_index,ket_index) = 0.0;
+	      else if(parameters.filter_name=="N0max")
+		if(abs(bra.N()-ket.N())<=parameters.cutoff)
+                  target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
+	        else
+	          target_block(bra_index,ket_index) = 0.0;
+              // end of the block added by J.H.
             }
 
         // diagnostics
