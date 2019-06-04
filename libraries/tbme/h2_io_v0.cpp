@@ -359,6 +359,7 @@ namespace shell {
     if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
       {
         std::size_t entries = size_by_type()[int(ket_subspace.two_body_species())];
+        assert(static_cast<long int>(entries*kIntegerSize) < kMaxRecordLength);
         mcutils::WriteBinary<int>(stream(),entries*kIntegerSize);
       }
 

@@ -40,6 +40,9 @@
     - Remove Tz0!=0 support from h2v15099.
     - Implement H2 Version15200.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 05/10/19 (pjf): Ensure Fortran records aren't larger than allowed.
+  + 05/30/19 (pjf): Use long int/integer(kind=8) for number of matrix elements
+    in header of binary file.
 ****************************************************************/
 
 #ifndef H2_IO_H_

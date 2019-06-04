@@ -8,6 +8,8 @@
 
 #include "tbme/h2_io.h"
 
+#include <cstddef>
+#include <limits>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -28,8 +30,14 @@ namespace shell {
   // code assumes int and float are both 4-byte
   constexpr int kIntegerSize = 4;
   static_assert(sizeof(int)==kIntegerSize, "Integers are not 4 bytes.");
+  constexpr int kLongIntegerSize = 8;
+  static_assert(sizeof(long int)==kLongIntegerSize, "Long integers are not 8 bytes.");
   constexpr int kFloatSize = 4;
   static_assert(sizeof(float)==kFloatSize, "Floats are not 4 bytes.");
+
+  // Fortran allows a maximum record length of (2**31-1) minus the bytes
+  // for record overhead
+  constexpr long int kMaxRecordLength = (long int)2147483647 - 2*kIntegerSize;
 
   ////////////////////////////////////////////////////////////////
   // space ordering
@@ -74,6 +82,27 @@ namespace shell {
       }
   }
 
+  std::size_t GetSectorCount(const basis::TwoBodySectorsJJJPN::SectorType& sector)
+  {
+    const auto& bra_subspace = sector.bra_subspace();
+    const auto& ket_subspace = sector.ket_subspace();
+    std::size_t sector_entries = 0;
+    if (sector.IsDiagonal())
+      // diagonal sector
+      {
+        std::size_t dimension = ket_subspace.size();
+        sector_entries = dimension*(dimension+1)/2;
+      }
+    else if (sector.IsUpperTriangle())
+      // upper triangle sector (but not diagonal)
+      {
+        std::size_t bra_dimension = bra_subspace.size();
+        std::size_t ket_dimension = ket_subspace.size();
+        sector_entries = bra_dimension*ket_dimension;
+      }
+    return sector_entries;
+  }
+
   void EvaluateCountsByType(
       const basis::TwoBodySectorsJJJPN& sectors,
       std::array<std::size_t,3>& num_sectors_by_type,
@@ -94,8 +123,8 @@ namespace shell {
   {
 
     // initialize
-    num_sectors_by_type = std::array<std::size_t,3>({0,0,0});
-    size_by_type = std::array<std::size_t,3>({0,0,0});
+    num_sectors_by_type = {0,0,0};
+    size_by_type = {0,0,0};
 
     // count over sectors
     for (std::size_t sector_index=0; sector_index<sectors.size(); ++sector_index)
@@ -113,21 +142,7 @@ namespace shell {
         ++num_sectors_by_type[int(two_body_species)];
 
         // count sector entries
-        std::size_t sector_entries = 0;
-        if (sector.IsDiagonal())
-          // diagonal sector
-          {
-            std::size_t dimension = ket_subspace.size();
-            sector_entries = dimension*(dimension+1)/2;
-          }
-        else if (sector.IsUpperTriangle())
-          // upper triangle sector (but not diagonal)
-          {
-            std::size_t bra_dimension = bra_subspace.size();
-            std::size_t ket_dimension = ket_subspace.size();
-            sector_entries = bra_dimension*ket_dimension;
-          }
-        size_by_type[int(two_body_species)] += sector_entries;
+        size_by_type[int(two_body_species)] += GetSectorCount(sector);
       }
   }
 
