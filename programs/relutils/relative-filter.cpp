@@ -37,7 +37,6 @@
 #include "fmt/format.h"
 #include "mcutils/parsing.h"
 #include "relative/relative_me.h"
-#include <fstream> // added by J.H.
 
 ////////////////////////////////////////////////////////////////
 // parameter input
@@ -66,30 +65,26 @@ void ReadParameters(Parameters& parameters)
   std::string line;
   int line_count = 0;
   
-  // declaration of a stream object associated with the input file
-  std::ifstream myfile ("relative-filter.in"); // added by J.H.
-
   // line 1: operator filenames
   {
     ++line_count;
-//    std::getline(std::cin,line); // commented out by J.H.
-    getline (myfile,line); // added by J.H.
+    std::getline(std::cin,line); // commented out by J.H.
     std::istringstream line_stream(line);
     line_stream >> parameters.source_filename
                 >> parameters.target_filename;
-    ParsingCheck(line_stream,line_count,line);
+    mcutils::ParsingCheck(line_stream,line_count,line);
   }
 
   // line 2: filtering parameters
-  // beginning of a block added by J.H.
+  {
     ++line_count;
-    getline (myfile,line);
+    std::getline(std::cin,line);
     std::istringstream line_stream(line);
     line_stream >> parameters.filter_name
-	        >> parameters.cutoff;
+                >> parameters.cutoff;
+    mcutils::ParsingCheck(line_stream,line_count,line);
+  }
 
-     myfile.close();
-  // end of the block added by J.H.
 }
 
 ////////////////////////////////////////////////////////////////
@@ -138,9 +133,9 @@ void FilterOperator(
 
         // retrieve source block
         const basis::OperatorBlock<double>& source_block = source_component_blocks[T0][sector_index];
-        
+
         // allocate target block
-        basis::OperatorBlock<double> target_block = Eigen::MatrixXd::Zero(bra_subspace.size(),ket_subspace.size());
+        basis::OperatorBlock<double> target_block = basis::OperatorBlock<double>::Zero(bra_subspace.size(),ket_subspace.size());
         
         // copy matrix elements
         for (int bra_index = 0; bra_index < bra_subspace.size(); ++bra_index)
@@ -157,13 +152,8 @@ void FilterOperator(
 
               // copy matrix element
 
-              // TODO restrict this to provide filtering, making use of ket.N(),
-              // bra.N(), etc.  See basis/lsjt_scheme.h "relative states in LSJT
-              // scheme" for a full list of quantum numbers.
-
-              if(parameters.filter_name=="identity") // added by J.H.
+              if(parameters.filter_name=="identity")
 	        target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
-	      // beginning of a block added by J.H.
 	      else if(parameters.filter_name=="Nrelmax")
                 if((bra.N()<=parameters.cutoff)&&(ket.N()<=parameters.cutoff))
                   target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
@@ -174,7 +164,6 @@ void FilterOperator(
                   target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
 	        else
 	          target_block(bra_index,ket_index) = 0.0;
-              // end of the block added by J.H.
             }
 
         // diagnostics
