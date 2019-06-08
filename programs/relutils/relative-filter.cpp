@@ -29,6 +29,7 @@
   University of Notre Dame
 
   05/15/19 (mac/jh): Created, absorbing code in relative-gen.cpp.
+     06/19 (jh): Filtering ability added.
 
 ****************************************************************/
 
@@ -68,7 +69,7 @@ void ReadParameters(Parameters& parameters)
   // line 1: operator filenames
   {
     ++line_count;
-    std::getline(std::cin,line); // commented out by J.H.
+    std::getline(std::cin,line);
     std::istringstream line_stream(line);
     line_stream >> parameters.source_filename
                 >> parameters.target_filename;
@@ -104,10 +105,12 @@ void FilterOperator(
 //
 // Filtering operations:
 //   If the filter name is "identity", no filtering is performed (the file is just copied).
-//   If the filter name is "Nrelmax", the RMEs for which the number of oscillator quanta of relative motion (Nrel)
-//     carried by the bra or ket state is greater than the cutoff parameter are zeroed out.
-//   If the filter name is "N0max", the RMEs for which the number of oscillator quanta carried by the
-//     operator, i.e. |Nrel_bra - Nrel_ket|, is greater than the cutoff parameter are zeroed out.
+//   If the filter name is "Nrelmax", the RMEs for which the number of oscillator quanta of
+//     relative motion (Nrel) carried by the bra or ket state is less than or equal to the
+//     cutoff parameter are kept (the remaining RMEs are zeroed out).
+//   If the filter name is "N0max", the RMEs for which the number of oscillator quanta
+//     carried by the operator, i.e. |Nrel_bra - Nrel_ket|, is less than or equal to the
+//     cutoff parameter are kept (the remaining RMEs are zeroed out).
 //
 // Arguments:
 //   parameters (input): includes tensorial properties of operator
@@ -155,15 +158,15 @@ void FilterOperator(
               if(parameters.filter_name=="identity")
 	        target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
 	      else if(parameters.filter_name=="Nrelmax")
-                if((bra.N()<=parameters.cutoff)&&(ket.N()<=parameters.cutoff))
-                  target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
-	        else
-                  target_block(bra_index,ket_index) = 0.0;
+	        {
+                 if((bra.N()<=parameters.cutoff)&&(ket.N()<=parameters.cutoff))
+                   target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
+		}
 	      else if(parameters.filter_name=="N0max")
-		if(abs(bra.N()-ket.N())<=parameters.cutoff)
-                  target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
-	        else
-	          target_block(bra_index,ket_index) = 0.0;
+		{
+	         if(abs(bra.N()-ket.N())<=parameters.cutoff)
+                   target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
+		}
             }
 
         // diagnostics
