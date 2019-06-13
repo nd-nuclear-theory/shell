@@ -38,6 +38,7 @@
     - Use correct orbital formats for older files.
     - Prepend orbital index for orbitals in version 0 and 1 files.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 06/05/19 (pjf): Fixup reading of ket orbitals in version 0 and 1 files.
 ****************************************************************/
 
 #ifndef OBME_IO_H_

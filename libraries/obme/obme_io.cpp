@@ -184,6 +184,9 @@ void InOBMEStream::ReadHeader()
   for (int orbital_line_count=0; orbital_line_count < num_orbitals_ket; ++orbital_line_count)
     {
       mcutils::GetLine(stream(), line, line_count_);
+      // older versions (0 and 1) did not store an orbital index
+      if ((version==0)||(version==1))
+        orbital_info_str.append(std::to_string(orbital_line_count));
       orbital_info_str.append(line);
       orbital_info_str.append("\n");  // need to restore newline to input line
     }
