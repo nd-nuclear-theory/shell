@@ -43,6 +43,7 @@
   + 05/10/19 (pjf): Ensure Fortran records aren't larger than allowed.
   + 05/30/19 (pjf): Use long int/integer(kind=8) for number of matrix elements
     in header of binary file.
+  + 06/03/19 (pjf): Implement version 15200 binary I/O.
 ****************************************************************/
 
 #ifndef H2_IO_H_
