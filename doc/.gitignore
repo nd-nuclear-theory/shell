@@ -1,0 +1,3 @@
+# re-include data files for documentation purposes
+!*.dat
+!*.bin
