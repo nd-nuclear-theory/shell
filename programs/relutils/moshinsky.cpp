@@ -9,7 +9,7 @@
   Standard input:
     ob|tb truncation_cutoff
     source_filename coupling
-    target_filename coupling
+    target_filename coupling [parameters...]
 
     coupling : source/target coupling scheme or h2 version
       "rel" -- relative matrix elements
@@ -17,9 +17,9 @@
       "lsjt" -- two-body LSJT-coupled matrix elements
       "jjjt" -- two-body jjJT-coupled matrix elements
       "jjjpn" -- two-body jjJpn-coupled matrix elements
-      "h2v0" -- two-body jjJpn-coupled matrix elements (h2 version 0)
-      "h2v15099" -- two-body jjJpn-coupled matrix elements (h2 version 15099)
-      "h2v15200" -- two-body jjJpn-coupled matrix elements (h2 version 15200)
+        parameters: h2_format Tz0
+          h2_format -- h2 version number
+          Tz0 -- operator branch from T->Tz
 
   Note: Currently supported source couplings are "rel" and "relcm".
 
@@ -39,6 +39,9 @@
   + 03/28/19 (pjf): Allow input of relative-cm (rcmlsjt) matrix elements.
   + 04/07/19 (pjf): Change keyword for relative-cm from rcmlsjt to relcm.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 06/20/19 (pjf):
+    - Allow final branching to Tz0 > 0.
+    - Branch to jjJpn and write sector-by-sector.
 
 ****************************************************************/
 
@@ -65,17 +68,14 @@ enum class Coupling : int {
     kRelative = 0, kRelativeCMLSJT = 1, kLSJT = 2, kJJJT = 3, kJJJPN = 4
   };
 
-std::unordered_map<std::string,std::pair<Coupling,shell::H2Format>>
+std::unordered_map<std::string,Coupling>
 kCouplingDefinitions =
   {
-    {"rel",      {Coupling::kRelative,       basis::kNone}},
-    {"relcm",    {Coupling::kRelativeCMLSJT, basis::kNone}},
-    {"lsjt",     {Coupling::kLSJT,           basis::kNone}},
-    {"jjjt",     {Coupling::kJJJT,           basis::kNone}},
-    {"jjjpn",    {Coupling::kJJJPN,          basis::kNone}},
-    {"h2v0",     {Coupling::kJJJPN,          shell::kVersion0}},
-    {"h2v15099", {Coupling::kJJJPN,          shell::kVersion15099}},
-    {"h2v15200", {Coupling::kJJJPN,          shell::kVersion15200}}
+    {"rel",      Coupling::kRelative},
+    {"relcm",    Coupling::kRelativeCMLSJT},
+    {"lsjt",     Coupling::kLSJT},
+    {"jjjt",     Coupling::kJJJT},
+    {"jjjpn",    Coupling::kJJJPN}
   };
 
 struct Parameters
@@ -93,6 +93,7 @@ struct Parameters
 
   // output
   shell::H2Format output_h2_format;
+  int Tz0;
   std::string output_filename;
 
 };
@@ -140,8 +141,7 @@ void ReadParameters(Parameters& parameters)
     line_stream >> parameters.input_filename >> source_coupling_code;
     mcutils::ParsingCheck(line_stream,line_count,line);
     if (kCouplingDefinitions.count(source_coupling_code))
-      std::tie(parameters.source_coupling, std::ignore) =
-        kCouplingDefinitions.at(source_coupling_code);
+      parameters.source_coupling = kCouplingDefinitions.at(source_coupling_code);
     else
       mcutils::ParsingError(line_count,line,"unrecognized coupling scheme code");
   }
@@ -152,11 +152,14 @@ void ReadParameters(Parameters& parameters)
     std::getline(std::cin,line);
     std::istringstream line_stream(line);
     std::string target_coupling_code;
-    line_stream >> parameters.output_filename >> target_coupling_code;
+
+    line_stream >> parameters.output_filename
+                >> target_coupling_code
+                >> parameters.output_h2_format
+                >> parameters.Tz0;
     mcutils::ParsingCheck(line_stream,line_count,line);
     if (kCouplingDefinitions.count(target_coupling_code))
-      std::tie(parameters.target_coupling, parameters.output_h2_format) =
-        kCouplingDefinitions.at(target_coupling_code);
+      parameters.target_coupling = kCouplingDefinitions.at(target_coupling_code);
     else
       mcutils::ParsingError(line_count,line,"unrecognized coupling scheme code");
   }
@@ -426,6 +429,12 @@ int main(int argc, char **argv)
 
 
   ////////////////////////////////////////////////////////////////
+  // total run timer
+  ////////////////////////////////////////////////////////////////
+  mcutils::SteadyTimer total_run_timer;
+  total_run_timer.Start();
+
+  ////////////////////////////////////////////////////////////////
   // relative LSJT
   ////////////////////////////////////////////////////////////////
 
@@ -631,7 +640,7 @@ int main(int argc, char **argv)
   // branch to two-body JJJPN
   ////////////////////////////////////////////////////////////////
 
-  std::cout << "Branch to two-body JJJPN..." << std::endl;
+  std::cout << "Branch to two-body JJJPN and write to file..." << std::endl;
 
   // define space and operator containers
   basis::OrbitalSpacePN orbital_space(N1max);
@@ -642,46 +651,55 @@ int main(int argc, char **argv)
       basis::WeightMax(parameters.truncation_rank,parameters.truncation_cutoff),
       two_body_jjjpn_space_ordering
     );
-  basis::TwoBodySectorsJJJPN two_body_jjjpn_sectors;
-  basis::OperatorBlocks<double> two_body_jjjpn_blocks;
+  basis::TwoBodySectorsJJJPN two_body_jjjpn_sectors(
+      two_body_jjjpn_space,
+      operator_labels.J0, operator_labels.g0, parameters.Tz0
+    );
 
-  // do branching
+  // stream initialization
   mcutils::SteadyTimer two_body_jjjpn_timer;
   two_body_jjjpn_timer.Start();
-  moshinsky::TransformOperatorTwoBodyJJJTToTwoBodyJJJPN(
-      operator_labels,
-      two_body_jjjt_space,two_body_jjjt_component_sectors,two_body_jjjt_component_blocks,
-      two_body_jjjpn_space,two_body_jjjpn_sectors,two_body_jjjpn_blocks
+  shell::OutH2Stream output_stream(
+      parameters.output_filename,
+      orbital_space, two_body_jjjpn_space, two_body_jjjpn_sectors,
+      parameters.output_h2_format
     );
-  two_body_jjjpn_timer.Stop();
-  std::cout << "  Time: " << two_body_jjjpn_timer.ElapsedTime() << std::endl;
+  std::cout << output_stream.DiagnosticStr();
 
-  if (parameters.output_h2_format == basis::kNone)
+  // do branching
+  for (std::size_t sector_index=0; sector_index<two_body_jjjpn_sectors.size(); ++sector_index)
     {
-      WriteTwoBodyJJJPN(
+      // make reference to target sector
+      const basis::TwoBodySectorsJJJPN::SectorType& two_body_jjjpn_sector
+        = two_body_jjjpn_sectors.GetSector(sector_index);
+
+      // transform
+      auto matrix = moshinsky::TwoBodyMatrixJJJPN(
           operator_labels,
-          two_body_jjjpn_space,
-          two_body_jjjpn_sectors,
-          two_body_jjjpn_blocks,
-          parameters.output_filename
+          two_body_jjjt_space,
+          two_body_jjjt_component_sectors,
+          two_body_jjjt_component_blocks,
+          two_body_jjjpn_sector
         );
-    }
-  else
-    {
-      // TODO fix to NAS
-      WriteTwoBodyH2(
-          parameters,
-          operator_labels,
-          orbital_space,
-          two_body_jjjpn_space,
-          two_body_jjjpn_sectors,
-          two_body_jjjpn_blocks
+      mcutils::ChopMatrix(matrix);
+      output_stream.WriteSector(
+          sector_index,
+          matrix,
+          basis::NormalizationConversion::kASToNAS
         );
+      std::cout << "." << std::flush;
     }
+  output_stream.Close();
+  two_body_jjjpn_timer.Stop();
+  std::cout << std::endl;
+  std::cout << "  Time: " << two_body_jjjpn_timer.ElapsedTime() << std::endl;
 
   ////////////////////////////////////////////////////////////////
   // termination
   ////////////////////////////////////////////////////////////////
+
+  total_run_timer.Stop();
+  std::cout << "Total run time: " << total_run_timer.ElapsedTime() << std::endl;
 
   std::exit(EXIT_SUCCESS);
 }
