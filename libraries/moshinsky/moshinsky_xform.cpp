@@ -775,25 +775,36 @@ namespace moshinsky {
     // states.
 
     // coefficients of <T=0||A0||T=0> source RMEs
-    static const double kIsospinCoefficientTToTzForT0 = 1.;
+    constexpr double kIsospinCoefficientTToTzForT0 = 1.;
 
-    // coefficients of <T=1||A1||T=0> and vice versa source RMEs
-    static const double kIsospinCoefficientTToTzForT10 = 1.;
-    static const double kIsospinCoefficientTToTzForT01 = -sqrt(1/3.);
+    // coefficients of <T=1||A1,Tz0||T=0> and vice versa source RMEs
+    //  indexed by Tz0
+    static const double kIsospinCoefficientTToTzForT10[2] = {1., 1.};
+    static const double kIsospinCoefficientTToTzForT01[2] = {-sqrt(1/3.), sqrt(1/3.)};
 
     // coefficients of <T=1||...||T=1> source RMEs
     //
-    //   i.e., contribution of <T=1||A_T0||T=1> to <Tz||A||Tz>,
+    //   i.e., contribution of <T=1||A_T0,Tz0||T=1> to <Tz_bra||A||Tz_ket>,
     //
-    //   indexed by (int(two_body_species),T0),
-    //
-    //   where We have listed Tz sectors in the order pp/nn/pn to
-    //   match the TwoBodySpecies enum ordering.
-    static Eigen::Matrix3d kIsospinCoefficientMatrixTToTzForT1;  //
-    kIsospinCoefficientMatrixTToTzForT1
-      << +1, +std::sqrt(1/2.), +std::sqrt(1/10.),
-      +1,-std::sqrt(1/2.),+std::sqrt(1/10.),
-      +1,0,-std::sqrt(2./5.);
+    //   indexed by (Tz0,Tz_ket+1,T0),
+    static const double kIsospinCoefficientsTToTzForT11[3][3][3] =
+      {
+        { // coefficients for Tz0=0
+          {+1,-std::sqrt(1/2.),+std::sqrt(1/10.)},
+          {+1,0,-std::sqrt(2./5.)},
+          {+1, +std::sqrt(1/2.), +std::sqrt(1/10.)}
+        },
+        { // coefficients for Tz0=1
+          {0,-std::sqrt(1/2.),+std::sqrt(3/10.)},
+          {0,-std::sqrt(1/2.),-std::sqrt(3/10.)},
+          {0,0,0}
+        },
+        { // coefficients for Tz0=2
+          {0,0,+std::sqrt(3/5.)},
+          {0,0,0},
+          {0,0,0}
+        }
+      };
 
     // set up matrix to hold results
     Eigen::MatrixXd matrix = Eigen::MatrixXd::Zero(
@@ -802,29 +813,26 @@ namespace moshinsky {
       );
 
     // extract sector labels
-    basis::TwoBodySpeciesPN two_body_species = two_body_jjjpn_sector.bra_subspace().two_body_species();
-    int J_bra = two_body_jjjpn_sector.bra_subspace().J();
-    int J_ket = two_body_jjjpn_sector.ket_subspace().J();
+    const int Tz_bra = two_body_jjjpn_sector.bra_subspace().Tz();
+    const int Tz_ket = two_body_jjjpn_sector.ket_subspace().Tz();
+    const int J_bra = two_body_jjjpn_sector.bra_subspace().J();
+    const int J_ket = two_body_jjjpn_sector.ket_subspace().J();
+
+    // recover Tz0
+    const int Tz0 = Tz_bra - Tz_ket;
+    assert(Tz0 >= 0);
 
     // scan source sectors
-    for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+    for (int T0=std::max(operator_labels.T0_min, Tz0); T0<=operator_labels.T0_max; ++T0)
       // for each isospin component
       {
-        for (int T_bra=0; T_bra<=1; ++T_bra)
+        for (int T_bra=std::abs(Tz_bra); T_bra<=1; ++T_bra)
           // for bra isospin
-          for (int T_ket=0; T_ket<=1; ++T_ket)
+          for (int T_ket=std::abs(Tz_ket); T_ket<=1; ++T_ket)
             // for ket isospin
             {
               // impose isospin triangularity
               if (!am::AllowedTriangle(T_bra,T0,T_ket))
-                continue;
-
-              // impose isospin sufficient for current sector two-body
-              // species
-              if (!(
-                      (two_body_species==basis::TwoBodySpeciesPN::kPN)
-                      || ((T_bra==1)&&(T_ket==1))
-                    ))
                 continue;
 
               // look up source subspaces
@@ -907,11 +915,11 @@ namespace moshinsky {
               // to this source sector
               double isospin_coefficient;
               if ((T_bra==1)&&(T_ket==1))
-                isospin_coefficient = kIsospinCoefficientMatrixTToTzForT1(int(two_body_species),T0);
+                isospin_coefficient = kIsospinCoefficientsTToTzForT11[Tz0][Tz_ket+1][T0];
               else if ((T_bra==0)&&(T_ket==1))
-                isospin_coefficient = kIsospinCoefficientTToTzForT01;
+                isospin_coefficient = kIsospinCoefficientTToTzForT01[Tz0];
               else if ((T_bra==1)&&(T_ket==0))
-                isospin_coefficient = kIsospinCoefficientTToTzForT10;
+                isospin_coefficient = kIsospinCoefficientTToTzForT10[Tz0];
               else if ((T_bra==0)&&(T_ket==0))
                 isospin_coefficient = kIsospinCoefficientTToTzForT0;
 
@@ -967,8 +975,10 @@ namespace moshinsky {
                     // expanding the pn state in terms of isospin
                     // states |T,Tz> = |1,0> and |0,0>.
                     double pn_expansion_factor = 1.0;
-                    if (two_body_species==basis::TwoBodySpeciesPN::kPN)
-                        pn_expansion_factor = 0.5;
+                    if ((Tz_bra==0)!=(Tz_ket==0))  // XOR
+                      pn_expansion_factor = std::sqrt(1/2.);
+                    else if ((Tz_bra==0)&&(Tz_ket==0))
+                      pn_expansion_factor = 0.5;
 
                     // canonicalize indices of orbitals within
                     // two-body states
@@ -1100,11 +1110,11 @@ namespace moshinsky {
       const std::array<basis::OperatorBlocks<double>,3>& two_body_jjjt_component_matrices,
       const basis::TwoBodySpaceJJJPN& two_body_jjjpn_space,
       basis::TwoBodySectorsJJJPN& two_body_jjjpn_sectors,
-      basis::OperatorBlocks<double>& two_body_jjjpn_matrices
+      basis::OperatorBlocks<double>& two_body_jjjpn_matrices,
+      int Tz0
     )
   {
     // enumerate target sectors
-    int Tz0 = 0;
     two_body_jjjpn_sectors
       = basis::TwoBodySectorsJJJPN(two_body_jjjpn_space,operator_labels.J0,operator_labels.g0,Tz0);
 
