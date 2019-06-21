@@ -57,6 +57,7 @@
     - Implement dipole operator.
   + 08/08/18 (pjf): Use analytic and spline wrapper functions for radial me.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 06/20/19 (pjf): Add isospin operator.
 
 ****************************************************************/
 
@@ -259,6 +260,33 @@ namespace relative {
   //   relative_component_sectors (output) : target sectors
   //   relative_component_matrices (output) : target matrices
   //   T0 (input): isoscalar (T0=1) or isovector (T0=1)
+
+  ////////////////////////////////////////////////////////////////
+  // isospin operators
+  ////////////////////////////////////////////////////////////////
+
+  void ConstructIsospinOperator(
+      const basis::OperatorLabelsJT& operator_labels,
+      const basis::RelativeSpaceLSJT& relative_space,
+      std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices
+    );
+  // Construct isospin operator in relative LSJT basis.
+  //
+  // These matrix elements are for the isospin operator Trel taken as a relative
+  // (Galilean-invariant) operator on the two-body system.  The isospin operator
+  // T on the A-body system is obtained as the two-body operator
+  //
+  //   T = 1/(A-1) V[Trel]
+  //
+  // These matrix elements are independent of oscillator length.  (See "Note on
+  // oscillator length" at start of this header file.)
+  //
+  // Arguments:
+  //   operator_labels (input) : tensorial properties of operator
+  //   relative_space (input) : target space
+  //   relative_component_sectors (output) : target sectors
+  //   relative_component_matrices (output) : target matrices
 
   ////////////////////////////////////////////////////////////////
   // Coulomb
