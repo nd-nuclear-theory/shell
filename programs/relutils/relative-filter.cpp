@@ -17,7 +17,7 @@
 
     identity -- no filter (simply copy)
     Nrelmax <cutoff> -- cutoff on bra and ket relative quanta
-    N0max <cutoff> -- cutoff on quanta carried by operator (i.e., |delta Nrel|) 
+    N0max <cutoff> -- cutoff on quanta carried by operator (i.e., |delta Nrel|)
 
   Example (relative-filter.in):
     coulomb_Nmax20_p_rel.dat coulomb_Nmax20_p_Nrelmax02_rel.dat
@@ -72,7 +72,7 @@ void ReadParameters(Parameters& parameters)
     std::istringstream line_stream(line);
     line_stream >> parameters.source_filename
                 >> parameters.target_filename;
-    ParsingCheck(line_stream,line_count,line);
+    mcutils::ParsingCheck(line_stream,line_count,line);
   }
 
   // line 2: filtering parameters
@@ -121,10 +121,10 @@ void FilterOperator(
 
         // retrieve source block
         const basis::OperatorBlock<double>& source_block = source_component_blocks[T0][sector_index];
-        
+
         // allocate target block
         basis::OperatorBlock<double> target_block = Eigen::MatrixXd::Zero(bra_subspace.size(),ket_subspace.size());
-        
+
         // copy matrix elements
         for (int bra_index = 0; bra_index < bra_subspace.size(); ++bra_index)
           for (int ket_index = 0; ket_index < ket_subspace.size(); ++ket_index)
@@ -151,9 +151,9 @@ void FilterOperator(
         // diagnostics
         if (verbose)
           {
-            // 
-            std::cout 
-              << " sector " 
+            //
+            std::cout
+              << " sector "
               << sector_index
               << std::endl;
           }

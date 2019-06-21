@@ -161,7 +161,7 @@ void ReadParameters(Parameters& parameters)
                 >> parameters.operator_parameters.g0
                 >> parameters.operator_parameters.T0_min
                 >> parameters.operator_parameters.T0_max;
-    ParsingCheck(line_stream,line_count,line);
+    mcutils::ParsingCheck(line_stream,line_count,line);
   }
 
   // line 2: operator basis parameters
@@ -170,7 +170,7 @@ void ReadParameters(Parameters& parameters)
     std::getline(std::cin,line);
     std::istringstream line_stream(line);
     line_stream >> parameters.operator_parameters.Nmax;
-    ParsingCheck(line_stream,line_count,line);
+    mcutils::ParsingCheck(line_stream,line_count,line);
   }
 
   // set miscellaneous operator_parameters fields
@@ -187,7 +187,7 @@ void ReadParameters(Parameters& parameters)
     std::getline(std::cin,line);
     std::istringstream line_stream(line);
     line_stream >> parameters.operator_name;
-    ParsingCheck(line_stream,line_count,line);
+    mcutils::ParsingCheck(line_stream,line_count,line);
 
     // parse additional operator parameters
 
@@ -199,7 +199,7 @@ void ReadParameters(Parameters& parameters)
       {
         line_stream
           >> parameters.T0;
-        ParsingCheck(line_stream,line_count,line);
+        mcutils::ParsingCheck(line_stream,line_count,line);
       }
     else if (
         (parameters.operator_name == "coordinate-sqr")
@@ -212,13 +212,13 @@ void ReadParameters(Parameters& parameters)
         line_stream
           >> coordinate_type_string
           >> parameters.T0;
-        ParsingCheck(line_stream,line_count,line);
+        mcutils::ParsingCheck(line_stream,line_count,line);
         if (coordinate_type_string=="r")
           parameters.coordinate_type = relative::CoordinateType::kR;
         else if (coordinate_type_string=="k")
           parameters.coordinate_type = relative::CoordinateType::kK;
         else
-          ParsingError(line_count,line,"invalid operator type (r/k)");
+          mcutils::ParsingError(line_count,line,"invalid operator type (r/k)");
       }
     else if (
         (parameters.operator_name == "coulomb")
@@ -229,7 +229,7 @@ void ReadParameters(Parameters& parameters)
         line_stream
           >> operator_type_pn_string
           >> parameters.num_steps;
-        ParsingCheck(line_stream,line_count,line);
+        mcutils::ParsingCheck(line_stream,line_count,line);
         if (operator_type_pn_string=="p")
           parameters.operator_type_pn = basis::OperatorTypePN::kP;
         else if (operator_type_pn_string=="n")
@@ -237,7 +237,7 @@ void ReadParameters(Parameters& parameters)
         else if (operator_type_pn_string=="total")
           parameters.operator_type_pn = basis::OperatorTypePN::kTotal;
         else
-          ParsingError(line_count,line,"invalid operator type (p/n/total)");
+          mcutils::ParsingError(line_count,line,"invalid operator type (p/n/total)");
       }
     else if (parameters.operator_name == "symmunit")
       // special for "symmunit"
@@ -254,7 +254,7 @@ void ReadParameters(Parameters& parameters)
           >> parameters.unit_tensor_labels.S
           >> parameters.unit_tensor_labels.J
           >> parameters.unit_tensor_labels.T;
-        ParsingCheck(line_stream,line_count,line);
+        mcutils::ParsingCheck(line_stream,line_count,line);
       }
   }
 
@@ -264,7 +264,7 @@ void ReadParameters(Parameters& parameters)
     std::getline(std::cin,line);
     std::istringstream line_stream(line);
     line_stream >> parameters.target_filename;
-    ParsingCheck(line_stream,line_count,line);
+    mcutils::ParsingCheck(line_stream,line_count,line);
   }
 
 }

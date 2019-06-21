@@ -66,10 +66,6 @@ CPPFLAGS += -D'VCS_REVISION="$(vcs-git)"'
 #   map vs. hash for space lookup in basis library
 CPPFLAGS += -DBASIS_HASH
 
-# mcutils submodule
-#   allow legacy global access to variables now wrapped in mcutils namespace
-CPPFLAGS += -DMCUTILS_ALLOW_LEGACY_GLOBAL
-
 # spline submodule
 #   disable integration routines requiring later versions of gsl
 CPPFLAGS += -DSPLINE_NO_FANCY_INTEGRATION

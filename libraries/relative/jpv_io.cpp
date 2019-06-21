@@ -42,7 +42,7 @@ namespace relative {
       << "Reading relative operator file (JPV format)..." << std::endl
       << "  Filename: " << source_filename << std::endl;
     std::ifstream is(source_filename);
-    StreamCheck(bool(is),source_filename,"Failed to open relative operator file");
+    mcutils::StreamCheck(bool(is),source_filename,"Failed to open relative operator file");
 
     // set up references for convenience
     const basis::RelativeSectorsLSJT& sectors = relative_component_sectors[0];
@@ -68,7 +68,7 @@ namespace relative {
 
           // check first for terminating line
           line_stream >> J;
-          ParsingCheck(line_stream,line_count,line);
+          mcutils::ParsingCheck(line_stream,line_count,line);
           if (J==99999)
             {
               done = true;
@@ -78,7 +78,7 @@ namespace relative {
 
           // read rest of header line
           line_stream >> S >> L >> Lp >> Nmax >> dimension >> mn >> hw >> identifier;
-          ParsingCheck(line_stream,line_count,line);
+          mcutils::ParsingCheck(line_stream,line_count,line);
         }
         if (verbose)
           std::cout << fmt::format("  Input sector (raw labels): J {} S {} L {} Lp {} ipcut {} dimension {} mn {} hw {} ident {}",J,S,L,Lp,Nmax,dimension,mn,hw,identifier)
@@ -187,7 +187,7 @@ namespace relative {
             ++line_count;
             std::getline(is,line);
             std::istringstream line_stream(line);
-            StreamCheck(bool(is),source_filename,"Failure reading matrix elements");  // can fail if there are not enough matrix elements and we read past EOF
+            mcutils::StreamCheck(bool(is),source_filename,"Failure reading matrix elements");  // can fail if there are not enough matrix elements and we read past EOF
             // std::cout << fmt::format("matrix_element_count {}",matrix_element_count) << std::endl;
             // std::cout << line_count << " : " << line << std::endl;
 

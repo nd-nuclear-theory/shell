@@ -26,7 +26,7 @@ InOBMEStream::InOBMEStream(const std::string& filename)
   // open stream
   std::ios_base::openmode mode_argument = std::ios_base::in;
   stream_ptr_ = new std::ifstream(filename_, mode_argument);
-  StreamCheck(bool(stream()), filename_, "Failure opening radial operator file for input");
+  mcutils::StreamCheck(bool(stream()), filename_, "Failure opening radial operator file for input");
 
   ReadHeader();
 }
@@ -68,7 +68,7 @@ void InOBMEStream::ReadHeader()
     mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> version;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
   }
 
   // operator info and sector constraints
@@ -80,7 +80,7 @@ void InOBMEStream::ReadHeader()
     std::istringstream line_stream(line);
     line_stream >> operator_type >> l0max >> Tz0 >> num_orbitals_bra
         >> num_orbitals_ket;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
     orbital_format = basis::MFDnOrbitalFormat::kVersion15099;
     radial_operator_type_ = static_cast<RadialOperatorType>(operator_type);
     radial_operator_power_ = l0max;
@@ -96,7 +96,7 @@ void InOBMEStream::ReadHeader()
       mcutils::GetLine(stream(), line, line_count_);
       std::istringstream line_stream(line);
       line_stream >> operator_type >> radial_operator_power_;
-      ParsingCheck(line_stream, line_count_, line);
+      mcutils::ParsingCheck(line_stream, line_count_, line);
       operator_type_ = basis::OneBodyOperatorType::kRadial;
       radial_operator_type_ = static_cast<RadialOperatorType>(operator_type);
     }
@@ -108,7 +108,7 @@ void InOBMEStream::ReadHeader()
       mcutils::GetLine(stream(), line, line_count_);
       std::istringstream line_stream(line);
       line_stream >> constraint_mode;
-      ParsingCheck(line_stream, line_count_, line);
+      mcutils::ParsingCheck(line_stream, line_count_, line);
 
       if (constraint_mode == 'R') {
         line_stream >> l0max >> Tz0;
@@ -118,7 +118,7 @@ void InOBMEStream::ReadHeader()
       } else if (constraint_mode == 'S') {
         line_stream >> j0 >> g0 >> Tz0;
       }
-      ParsingCheck(line_stream, line_count_, line);
+      mcutils::ParsingCheck(line_stream, line_count_, line);
     }
 
     // number of bra orbitals, number of ket orbitals
@@ -126,7 +126,7 @@ void InOBMEStream::ReadHeader()
       mcutils::GetLine(stream(), line, line_count_);
       std::istringstream line_stream(line);
       line_stream >> num_orbitals_bra >> num_orbitals_ket;
-      ParsingCheck(line_stream, line_count_, line);
+      mcutils::ParsingCheck(line_stream, line_count_, line);
       orbital_format = basis::MFDnOrbitalFormat::kVersion15099;
     }
 
@@ -138,7 +138,7 @@ void InOBMEStream::ReadHeader()
       mcutils::GetLine(stream(), line, line_count_);
       std::istringstream line_stream(line);
       line_stream >> operator_type >> radial_operator_type >> radial_operator_power_;
-      ParsingCheck(line_stream, line_count_, line);
+      mcutils::ParsingCheck(line_stream, line_count_, line);
       operator_type_ = static_cast<basis::OneBodyOperatorType>(operator_type);
       radial_operator_type_ = static_cast<RadialOperatorType>(radial_operator_type);
     }
@@ -148,7 +148,7 @@ void InOBMEStream::ReadHeader()
       mcutils::GetLine(stream(), line, line_count_);
       std::istringstream line_stream(line);
       line_stream >> j0 >> g0 >> Tz0;
-      ParsingCheck(line_stream, line_count_, line);
+      mcutils::ParsingCheck(line_stream, line_count_, line);
     }
 
     // number of bra orbitals, number of ket orbitals
@@ -156,7 +156,7 @@ void InOBMEStream::ReadHeader()
       mcutils::GetLine(stream(), line, line_count_);
       std::istringstream line_stream(line);
       line_stream >> num_orbitals_bra >> num_orbitals_ket;
-      ParsingCheck(line_stream, line_count_, line);
+      mcutils::ParsingCheck(line_stream, line_count_, line);
       orbital_format = basis::MFDnOrbitalFormat::kVersion15200;
     }
   }
@@ -225,7 +225,7 @@ Eigen::MatrixXd InOBMEStream::ReadNextSector()
     {
       line_stream >> sector_matrix(j, k);
     }
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
   }
 
   // return matrix
@@ -249,7 +249,7 @@ OutOBMEStream::OutOBMEStream(const std::string& filename,
   // open stream
   std::ios_base::openmode mode_argument = std::ios_base::trunc;
   stream_ptr_ = new std::ofstream(filename_, mode_argument);
-  StreamCheck(bool(stream()), filename_, "Failure opening radial operator file for output");
+  mcutils::StreamCheck(bool(stream()), filename_, "Failure opening radial operator file for output");
 
   // write header to file
   WriteHeader();

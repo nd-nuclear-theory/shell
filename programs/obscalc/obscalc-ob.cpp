@@ -268,7 +268,7 @@ int main(int argc, char** argv) {
   // open output
   std::ios_base::openmode mode_argument = std::ios_base::trunc;
   std::ofstream out_stream(run_parameters.output_filename, mode_argument);
-  StreamCheck(bool(out_stream), run_parameters.output_filename,
+  mcutils::StreamCheck(bool(out_stream), run_parameters.output_filename,
               "Failure opening file for output");
 
   out_stream << "[Observables]" << std::endl;

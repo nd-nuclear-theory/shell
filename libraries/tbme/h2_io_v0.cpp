@@ -5,6 +5,7 @@
 #include "tbme/h2_io.h"  // include for IDE tools
 
 #include "mcutils/parsing.h"
+#include "mcutils/io.h"
 
 namespace shell {
 
@@ -23,7 +24,7 @@ namespace shell {
           mcutils::GetLine(stream(), line, line_count_);
           std::istringstream line_stream(line);
           line_stream >> num_types;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
 
         // header line 2: 1-body basis limit
@@ -31,7 +32,7 @@ namespace shell {
           mcutils::GetLine(stream(), line, line_count_);
           std::istringstream line_stream(line);
           line_stream >> N1max;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
 
         // header line 3: 2-body basis limit
@@ -39,7 +40,7 @@ namespace shell {
           mcutils::GetLine(stream(), line, line_count_);
           std::istringstream line_stream(line);
           line_stream >> N2max;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
 
         // header line 4: matrix size
@@ -47,7 +48,7 @@ namespace shell {
           mcutils::GetLine(stream(), line, line_count_);
           std::istringstream line_stream(line);
           line_stream >> size_pp_nn >> size_pn;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
       }
     else if (h2_mode()==H2Mode::kBinary)
@@ -210,7 +211,7 @@ namespace shell {
                 >> input_twice_J
                 >> input_two_body_species_code
                 >> input_matrix_element;
-              ParsingCheck(line_stream,line_count_,line);
+              mcutils::ParsingCheck(line_stream,line_count_,line);
 
               // validate input fields against expected values
               bool inputs_as_expected = (
@@ -220,7 +221,7 @@ namespace shell {
                   && (input_two_body_species_code==basis::kTwoBodySpeciesPNCodeDecimal[int(ket.two_body_species())])
                 );
               if (!inputs_as_expected)
-                ParsingError(line_count_,line,"Unexpected matrix element labels in input data");
+                mcutils::ParsingError(line_count_,line,"Unexpected matrix element labels in input data");
             }
           else if (h2_mode()==H2Mode::kBinary)
             {

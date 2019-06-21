@@ -60,7 +60,7 @@ InOBDMEStreamMulti::InOBDMEStreamMulti(
 
   // open info stream
   info_stream_ptr_ = new std::ifstream(info_filename_, mode_argument);
-  StreamCheck(bool(info_stream()),info_filename_,"Failure opening OBDME info file for input");
+  mcutils::StreamCheck(bool(info_stream()),info_filename_,"Failure opening OBDME info file for input");
 
   // ingest the file
   ReadInfoHeader();
@@ -85,7 +85,7 @@ void InOBDMEStreamMulti::ReadInfoHeader() {
     std::getline(info_stream(), line);
     std::istringstream line_stream(line);
     line_stream >> version_number_;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
   }
 
   if (version_number_ == 1405) {
@@ -111,7 +111,7 @@ void InOBDMEStreamMulti::ReadInfoHeader1405() {
     std::getline(info_stream(), line);
     std::istringstream line_stream(line);
     line_stream >> num_sp_orbitals;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
 
     // this is a silly way to check that the correct number of orbitals exist
     basis::OrbitalSpacePN pn_space(orbital_space().OrbitalInfo());
@@ -125,7 +125,7 @@ void InOBDMEStreamMulti::ReadInfoHeader1405() {
     std::getline(info_stream(), line);
     std::istringstream line_stream(line);
     line_stream >> j0_max_;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
     j0_min_ = 0;
   }
 
@@ -136,7 +136,7 @@ void InOBDMEStreamMulti::ReadInfoHeader1405() {
     std::istringstream line_stream(line);
     line_stream >> num_proton_obdme_;
     num_neutron_obdme_ = num_proton_obdme_;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
   }
 
   // line 5-6: comment line
@@ -161,7 +161,7 @@ void InOBDMEStreamMulti::ReadInfoHeader1500() {
     std::getline(info_stream(), line);
     std::istringstream line_stream(line);
     line_stream >> j0_max_;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
     j0_min_ = 0;
   }
 
@@ -172,7 +172,7 @@ void InOBDMEStreamMulti::ReadInfoHeader1500() {
     std::getline(info_stream(), line);
     std::istringstream line_stream(line);
     line_stream >> num_proton_orbitals >> num_neutron_orbitals;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
 
     // this is a silly way to check that the correct number of orbitals exist
     basis::OrbitalSpacePN pn_space(orbital_space().OrbitalInfo());
@@ -186,7 +186,7 @@ void InOBDMEStreamMulti::ReadInfoHeader1500() {
     std::getline(info_stream(), line);
     std::istringstream line_stream(line);
     line_stream >> num_proton_obdme_ >> num_neutron_obdme_;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
   }
 
   // line 5-6: comment line
@@ -223,7 +223,7 @@ void InOBDMEStreamMulti::ReadInfo1405() {
     std::getline(info_stream(), line);
     std::istringstream line_stream(line);
     line_stream >> index >> na >> la >> twoja >> nb >> lb >> twojb >> j0;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
 
     basis::FullOrbitalLabels orbital_a(basis::OrbitalSpeciesPN::kP, na, la, HalfInt(twoja,2));
     basis::FullOrbitalLabels orbital_b(basis::OrbitalSpeciesPN::kP, nb, lb, HalfInt(twojb,2));
@@ -254,7 +254,7 @@ void InOBDMEStreamMulti::ReadInfo1500() {
     std::getline(info_stream(), line);
     std::istringstream line_stream(line);
     line_stream >> index >> ia >> na >> la >> twoja >> ib >> nb >> lb >> twojb >> j0 >> cls;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
 
     basis::FullOrbitalLabels orbital_a(basis::OrbitalSpeciesPN(cls-1), na, la, HalfInt(twoja,2));
     basis::FullOrbitalLabels orbital_b(basis::OrbitalSpeciesPN(cls-1), nb, lb, HalfInt(twojb,2));
@@ -270,7 +270,7 @@ void InOBDMEStreamMulti::ReadData() {
   // open data stream
   std::ios_base::openmode mode_argument = std::ios_base::in;
   std::ifstream data_stream(data_filename_, mode_argument);
-  StreamCheck(bool(data_stream), data_filename_, "Failure opening OBDME data file for input");
+  mcutils::StreamCheck(bool(data_stream), data_filename_, "Failure opening OBDME data file for input");
 
   // read header
   ReadDataHeader(data_stream, data_line_count);
@@ -314,7 +314,7 @@ void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_li
     std::getline(data_stream, line);
     std::istringstream line_stream(line);
     line_stream >> version;
-    ParsingCheck(line_stream, data_line_count, line);
+    mcutils::ParsingCheck(line_stream, data_line_count, line);
     assert(version == version_number_);
   }
 
@@ -325,7 +325,7 @@ void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_li
     std::getline(data_stream, line);
     std::istringstream line_stream(line);
     line_stream >> num_protons >> num_neutrons;
-    ParsingCheck(line_stream, data_line_count, line);
+    mcutils::ParsingCheck(line_stream, data_line_count, line);
   }
 
   // line 3: MFDn quantum numbers for bra
@@ -336,7 +336,7 @@ void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_li
     std::getline(data_stream, line);
     std::istringstream line_stream(line);
     line_stream >> bra_seq >> bra_2J >> bra_n >> bra_2T;
-    ParsingCheck(line_stream, data_line_count, line);
+    mcutils::ParsingCheck(line_stream, data_line_count, line);
     bra_J = HalfInt(bra_2J, 2);
     bra_T = HalfInt(bra_2T, 2);
   }
@@ -349,7 +349,7 @@ void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_li
     std::getline(data_stream, line);
     std::istringstream line_stream(line);
     line_stream >> ket_seq >> ket_2J >> ket_n >> ket_2T;
-    ParsingCheck(line_stream, data_line_count, line);
+    mcutils::ParsingCheck(line_stream, data_line_count, line);
     ket_J = HalfInt(ket_2J, 2);
     ket_T = HalfInt(ket_2T, 2);
   }
@@ -361,7 +361,7 @@ void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_li
     std::getline(data_stream, line);
     std::istringstream line_stream(line);
     line_stream >> num_proton_obdmes >> num_neutron_obdmes;
-    ParsingCheck(line_stream, data_line_count, line);
+    mcutils::ParsingCheck(line_stream, data_line_count, line);
     assert(num_proton_obdmes == num_proton_obdme_);
     assert(num_neutron_obdmes == num_neutron_obdme_);
   } else if (version == 1500) {
@@ -370,7 +370,7 @@ void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_li
     std::getline(data_stream, line);
     std::istringstream line_stream(line);
     line_stream >> num_obdmes;
-    ParsingCheck(line_stream, data_line_count, line);
+    mcutils::ParsingCheck(line_stream, data_line_count, line);
     assert(num_obdmes == (num_proton_obdme_ + num_neutron_obdme_));
   }
 
@@ -390,7 +390,7 @@ InOBDMEStreamSingle::InOBDMEStreamSingle(
 
   // open info stream
   stream_ptr_ = new std::ifstream(filename_, mode_argument);
-  StreamCheck(bool(stream()),filename_,"Failure opening OBDME file for input");
+  mcutils::StreamCheck(bool(stream()),filename_,"Failure opening OBDME file for input");
 
   // ingest the file
   ReadHeader();
@@ -411,7 +411,7 @@ void InOBDMEStreamSingle::ReadHeader() {
     mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> version_number_;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
   }
 
   if (version_number_ == 1520) {
@@ -459,7 +459,7 @@ void InOBDMEStreamSingle::ReadHeader1520() {
     mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> j0_min_;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
   }
 
   // line 5: max j0 in multipole expansion
@@ -467,7 +467,7 @@ void InOBDMEStreamSingle::ReadHeader1520() {
     mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> j0_max_;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
   }
 
   // line 6: number of p and n orbitals
@@ -476,7 +476,7 @@ void InOBDMEStreamSingle::ReadHeader1520() {
     mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> num_orbitals_p >> num_orbitals_n;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
 
     // this is a silly way to check that the correct number of orbitals exist
     basis::OrbitalSpacePN pn_space(orbital_space().OrbitalInfo());
@@ -489,7 +489,7 @@ void InOBDMEStreamSingle::ReadHeader1520() {
     mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> num_proton_obdme_ >> num_neutron_obdme_;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
   }
 
   // orbital listing body
@@ -528,7 +528,7 @@ void InOBDMEStreamSingle::ReadData1520() {
 
     std::istringstream line_stream(line);
     line_stream >> ia >> ib >> j0 >> matrix_element;
-    ParsingCheck(line_stream, line_count_, line);
+    mcutils::ParsingCheck(line_stream, line_count_, line);
 
     // get location of matrix element
     basis::FullOrbitalLabels orbital_a = orbital_list_.at(ia-1);

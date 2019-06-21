@@ -145,8 +145,8 @@ namespace moshinsky {
     int rho = 2*n1 + l1 + 2*n2 + l2;
 
     // set up caching key
-    typedef VectorTuple<int,9,1> KeyType;
-    static Memoizer<KeyType,double> m;
+    typedef mcutils::VectorTuple<int,9,1> KeyType;
+    static mcutils::Memoizer<KeyType,double> m;
     KeyType memo_key;
 
     memo_key[1] = n1_dot;

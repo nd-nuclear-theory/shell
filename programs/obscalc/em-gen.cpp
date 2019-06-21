@@ -158,7 +158,7 @@ void ReadParameters(RunParameters& run_parameters) {
     if (keyword == "set-indexing") {
       std::string orbital_filename;
       line_stream >> orbital_filename;
-      ParsingCheck(line_stream, line_count, line);
+      mcutils::ParsingCheck(line_stream, line_count, line);
       struct stat st;
       if (stat(orbital_filename.c_str(), &st) != 0) {
         std::cerr << "ERROR: file " << orbital_filename << " does not exist!"
@@ -171,11 +171,11 @@ void ReadParameters(RunParameters& run_parameters) {
       run_parameters.space = basis::OrbitalSpaceLJPN(input_orbitals);
     } else if (keyword == "set-basis-scale-factor") {
       line_stream >> run_parameters.scale_factor;
-      ParsingCheck(line_stream, line_count, line);
+      mcutils::ParsingCheck(line_stream, line_count, line);
     } else if (keyword == "define-radial-source") {
       std::string radial_me_filename;
       line_stream >> radial_me_filename;
-      ParsingCheck(line_stream, line_count, line);
+      mcutils::ParsingCheck(line_stream, line_count, line);
       struct stat st;
       if (stat(radial_me_filename.c_str(), &st) != 0) {
         std::cerr << "ERROR: file " << radial_me_filename << " does not exist!"
@@ -193,7 +193,7 @@ void ReadParameters(RunParameters& run_parameters) {
       char species_code;
 
       line_stream >> operator_string >> lambda >> species_code >> output_filename;
-      ParsingCheck(line_stream, line_count, line);
+      mcutils::ParsingCheck(line_stream, line_count, line);
 
       // operator_type
       auto it = operator_map.find(operator_string);

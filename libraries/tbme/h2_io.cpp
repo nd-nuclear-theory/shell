@@ -257,7 +257,7 @@ namespace shell {
           std::getline(stream(),line);
           std::istringstream line_stream(line);
           line_stream >> h2_format_;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
       }
     else if (h2_mode()==H2Mode::kBinary)
@@ -269,7 +269,7 @@ namespace shell {
         mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
       }
 
-    StreamCheck(bool(stream()),filename_,"Failure while reading H2 file version code");
+    mcutils::StreamCheck(bool(stream()),filename_,"Failure while reading H2 file version code");
 
   };
 
@@ -289,7 +289,7 @@ namespace shell {
         mcutils::WriteBinary<int>(stream(),bytes);
       }
 
-    StreamCheck(bool(stream()),filename_,"Failure while writing H2 file version code");
+    mcutils::StreamCheck(bool(stream()),filename_,"Failure while writing H2 file version code");
 
   }
 
@@ -312,7 +312,7 @@ namespace shell {
     if (h2_mode_==H2Mode::kBinary)
       mode_argument |= std::ios_base::binary;
     stream_ptr_ = std::unique_ptr<std::ifstream>(new std::ifstream(filename_,mode_argument));
-    StreamCheck(bool(stream()),filename_,"Failure opening H2 file for input");
+    mcutils::StreamCheck(bool(stream()),filename_,"Failure opening H2 file for input");
 
     // read format version and header and set up indexing
     ReadVersion();
@@ -357,7 +357,7 @@ namespace shell {
       }
 
     // validate status
-    StreamCheck(bool(stream()),filename_,"Failure while reading H2 file sector");
+    mcutils::StreamCheck(bool(stream()),filename_,"Failure while reading H2 file sector");
 
     // increment to next sector
     sector_index_++;
@@ -386,7 +386,7 @@ namespace shell {
       }
 
     // validate status
-    StreamCheck(bool(stream()),filename_,"Failure while reading H2 file sector");
+    mcutils::StreamCheck(bool(stream()),filename_,"Failure while reading H2 file sector");
 
     // increment to next sector
     sector_index_++;
@@ -448,7 +448,7 @@ namespace shell {
     if (h2_mode_==H2Mode::kBinary)
       mode_argument |= std::ios_base::binary;
     stream_ptr_ = std::unique_ptr<std::ofstream>(new std::ofstream(filename_,mode_argument));
-    StreamCheck(bool(stream()),filename_,"Failure opening H2 file for output");
+    mcutils::StreamCheck(bool(stream()),filename_,"Failure opening H2 file for output");
 
     // write version
     WriteVersion();
@@ -465,7 +465,7 @@ namespace shell {
         std::cerr << "Unsupported version encountered when opening H2 file " << filename_ << std::endl;
         std::exit(EXIT_FAILURE);
       }
-    StreamCheck(bool(stream()),filename_,"Failure while writing H2 file header");
+    mcutils::StreamCheck(bool(stream()),filename_,"Failure while writing H2 file header");
   }
 
   void OutH2Stream::WriteSector(
@@ -498,7 +498,7 @@ namespace shell {
       assert(false);  // format version was already checked when writing header
 
     // validate status
-    StreamCheck(bool(stream()),filename_,"Failure while writing H2 file sector");
+    mcutils::StreamCheck(bool(stream()),filename_,"Failure while writing H2 file sector");
 
     // increment to next sector
     sector_index_++;

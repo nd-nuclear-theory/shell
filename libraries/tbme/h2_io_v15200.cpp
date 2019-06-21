@@ -58,7 +58,7 @@ namespace shell {
           mcutils::GetLine(stream(), line, line_count_);
           std::istringstream line_stream(line);
           line_stream >> J0 >> g0 >> Tz0;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
 
         // header line 2: 2-body basis limit
@@ -66,7 +66,7 @@ namespace shell {
           mcutils::GetLine(stream(), line, line_count_);
           std::istringstream line_stream(line);
           line_stream >> wpp >> wpn >> wnn;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
 
         // header line 3: matrix size
@@ -74,7 +74,7 @@ namespace shell {
           mcutils::GetLine(stream(), line, line_count_);
           std::istringstream line_stream(line);
           line_stream >> size_pp >> size_pn >> size_nn;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
       }
     else if (h2_mode()==H2Mode::kBinary)
@@ -335,7 +335,7 @@ namespace shell {
                 >> input_twice_J_bra
                 >> input_twice_J_ket
                 >> input_matrix_element;
-              ParsingCheck(line_stream,line_count_,line);
+              mcutils::ParsingCheck(line_stream,line_count_,line);
 
               // validate input fields against expected values
               bool inputs_as_expected = (
@@ -347,7 +347,7 @@ namespace shell {
                   && (input_twice_J_ket == 2*ket.J())
                 );
               if (!inputs_as_expected)
-                ParsingError(line_count_,line,"Unexpected matrix element labels in input data");
+                mcutils::ParsingError(line_count_,line,"Unexpected matrix element labels in input data");
             }
           else if (h2_mode()==H2Mode::kBinary)
             {

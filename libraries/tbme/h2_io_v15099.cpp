@@ -4,6 +4,7 @@
 
 #include "tbme/h2_io.h"  // include for IDE tools
 
+#include "mcutils/io.h"
 #include "mcutils/parsing.h"
 
 namespace shell {
@@ -52,7 +53,7 @@ namespace shell {
           mcutils::GetLine(stream(), line, line_count_);
           std::istringstream line_stream(line);
           line_stream >> J0 >> g0 >> Tz0;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
 
         // header line 2: 1-body basis limit
@@ -60,7 +61,7 @@ namespace shell {
           mcutils::GetLine(stream(), line, line_count_);
           std::istringstream line_stream(line);
           line_stream >> wp >> wn;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
 
         // header line 3: 2-body basis limit
@@ -68,7 +69,7 @@ namespace shell {
           mcutils::GetLine(stream(), line, line_count_);
           std::istringstream line_stream(line);
           line_stream >> wpp >> wnn >> wpn;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
 
         // header line 4: 2-body basis a.m. limit
@@ -76,7 +77,7 @@ namespace shell {
           mcutils::GetLine(stream(), line, line_count_);
           std::istringstream line_stream(line);
           line_stream >> twice_Jmax_pp >> twice_Jmax_nn >> twice_Jmax_pn;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
 
         // header line 5: matrix size
@@ -84,7 +85,7 @@ namespace shell {
           mcutils::GetLine(stream(), line, line_count_);
           std::istringstream line_stream(line);
           line_stream >> size_pp >> size_nn >> size_pn;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
       }
     else if (h2_mode()==H2Mode::kBinary)
@@ -454,7 +455,7 @@ namespace shell {
                 >> input_twice_J_ket
                 >> input_two_body_species_code
                 >> input_matrix_element;
-              ParsingCheck(line_stream,line_count_,line);
+              mcutils::ParsingCheck(line_stream,line_count_,line);
 
               // validate input fields against expected values
               bool inputs_as_expected = (
@@ -465,7 +466,7 @@ namespace shell {
                   && (input_two_body_species_code==basis::kTwoBodySpeciesPNCodeDecimal[int(ket.two_body_species())])
                 );
               if (!inputs_as_expected)
-                ParsingError(line_count_,line,"Unexpected matrix element labels in input data");
+                mcutils::ParsingError(line_count_,line,"Unexpected matrix element labels in input data");
             }
           else if (h2_mode()==H2Mode::kBinary)
             {
