@@ -63,6 +63,10 @@
       Spin operator (spin part of magnetic dipole), construed as relative two
       body operator.
 
+    isospin
+
+      Isospin operator, construed as relative two-body operator.
+
     coulomb p|n|total steps
 
       Coulomb potential.
@@ -98,6 +102,7 @@
   + 05/04/17 (mac): Add support for isovector transition operators.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
   + 05/15/19 (mac): Rename "matrices" to "blocks" in variable names.
+  + 06/20/19 (pjf): Add isospin operator.
 
 ****************************************************************/
 
@@ -367,6 +372,13 @@ void PopulateOperator(
           operator_parameters,
           relative_space,relative_component_sectors,relative_component_blocks,
           parameters.T0
+        );
+    }
+  else if (parameters.operator_name == "isospin")
+    {
+      relative::ConstructIsospinOperator(
+          operator_parameters,
+          relative_space,relative_component_sectors,relative_component_blocks
         );
     }
   else if (parameters.operator_name == "coulomb")
