@@ -17,25 +17,25 @@
     define-xform <id> <xform_filename>
     define-ob-source <mode> <id> ...
       define-ob-source input <id> <obme_filename> <j0> <g0> <tz0>
-      define-ob-source builtin <id> <orbital_filename>
+      define-ob-source builtin <id> [orbital_filename]
         id = l|l2|s|s2|j|j2|t2|tz|t+|t-|c+|c
       define-ob-source linear-combination <id>
         add-ob-source <id> <coefficient>
-      define-ob-source tensor-product <id> <ob_factor_a_id> <ob_factor_b_id> <j0> <scale_factor>
+      define-ob-source tensor-product <id> <ob_factor_a_id> <ob_factor_b_id> <j0> [scale_factor]
       define-ob-source xform <id> <ob_source_id> <xform_id>
     define-tb-source <mode> <id> ...
       define-tb-source input <id> <tbme_filename>
       define-tb-source builtin <id>
         id = identity|loop-test
       define-tb-source operatorU <id> <ob_source_id>
-      define-tb-source operatorV <id> <ob_factor_a_id> <ob_factor_b_id> <scale_factor>
+      define-tb-source operatorV <id> <ob_factor_a_id> <ob_factor_b_id> [scale_factor]
       define-tb-source xform <id> <tbme_filename> <wp> <wn> <wpp> <wnn> <wpn> <xform_id>
     define-target <filename>
     add-source <id> <coefficient>
 
   Language: C++11
 
-  Mark A. Caprio
+  Mark A. Caprio, Patrick J. Fasano
   University of Notre Dame
 
   + 10/23/16 (mac): Created, succeeding prior incarnation originated 3/14/12.
@@ -68,6 +68,12 @@
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
   + 05/28/19 (mac/pjf): Allow copy construction of OneBodyOperatorData and
     XformData.
+  + 07/01/19 (pjf):
+    - Pass RunParameters and TwoBodyOperatorIndexing to
+      ConstructOneBodyOperatorData.
+    - Make scale_factor optional for tensor products.
+    - Make orbital_filename optional for builtin ob source.
+    - Remove all builtin two-body angular momentum operator code.
 ******************************************************************************/
 
 #include <omp.h>
@@ -213,8 +219,10 @@ struct OneBodySourceChannel
   std::string id;
 
   virtual void ConstructOneBodyOperatorData(
+      const RunParameters& run_parameters,
       const XformMap& xforms,
-      OneBodyOperatorMap& operators
+      OneBodyOperatorMap& operators,
+      const TwoBodyOperatorIndexing& target_indexing
     ) = 0;
   // Construct OneBodyOperatorData object in-place.
   //
@@ -243,8 +251,10 @@ struct OneBodyInputChannel : public OneBodySourceChannel
   {}
 
   void ConstructOneBodyOperatorData(
+      const RunParameters& run_parameters,
       const XformMap& xforms,
-      OneBodyOperatorMap& operators
+      OneBodyOperatorMap& operators,
+      const TwoBodyOperatorIndexing& target_indexing
     ) override;
 
   // operator identification
@@ -266,8 +276,10 @@ struct OneBodyBuiltinChannel : public OneBodySourceChannel
   {}
 
   void ConstructOneBodyOperatorData(
+      const RunParameters& run_parameters,
       const XformMap& xforms,
-      OneBodyOperatorMap& operators
+      OneBodyOperatorMap& operators,
+      const TwoBodyOperatorIndexing& target_indexing
     ) override;
 
   // construction
@@ -312,8 +324,10 @@ struct OneBodyLinearCombinationChannel : public OneBodySourceChannel
   {}
 
   void ConstructOneBodyOperatorData(
+      const RunParameters& run_parameters,
       const XformMap& xforms,
-      OneBodyOperatorMap& operators
+      OneBodyOperatorMap& operators,
+      const TwoBodyOperatorIndexing& target_indexing
     ) override;
 
   // construction
@@ -337,8 +351,10 @@ struct OneBodyTensorProductChannel : public OneBodySourceChannel
   {}
 
   void ConstructOneBodyOperatorData(
+      const RunParameters& run_parameters,
       const XformMap& xforms,
-      OneBodyOperatorMap& operators
+      OneBodyOperatorMap& operators,
+      const TwoBodyOperatorIndexing& target_indexing
     ) override;
 
   // construction
@@ -362,8 +378,10 @@ struct OneBodyXformChannel : public OneBodySourceChannel
   {}
 
   void ConstructOneBodyOperatorData(
+      const RunParameters& run_parameters,
       const XformMap& xforms,
-      OneBodyOperatorMap& operators
+      OneBodyOperatorMap& operators,
+      const TwoBodyOperatorIndexing& target_indexing
     ) override;
 
   // construction
@@ -484,34 +502,6 @@ struct InputChannel : public TwoBodySourceChannel
 std::set<std::string> kIdentityOperatorIdSet(
     {"identity","loop-test"}
   );
-
-typedef std::tuple<am::AngularMomentumOperatorType,basis::OperatorTypePN> AngularMomentumOperatorDefinition;
-std::map<std::string,AngularMomentumOperatorDefinition> kAngularMomentumOperatorDefinitions(
-      {
-        // Note: Lp and Ln are disallowed, since Lp^2 and Ln^2 are
-        // subject to physical misinterpretation (meaning not clear, as
-        // the proton or neutron orbital angular momentum "relative"
-        // to what?).  Jp and Jn are similarly disallowed.
-
-        // {"Lp2",AngularMomentumOperatorDefinition(am::AngularMomentumOperatorType::kOrbital,basis::OperatorTypePN::kP)},
-        // {"Ln2",AngularMomentumOperatorDefinition(am::AngularMomentumOperatorType::kOrbital,basis::OperatorTypePN::kN)},
-        {"L2",AngularMomentumOperatorDefinition(am::AngularMomentumOperatorType::kOrbital,basis::OperatorTypePN::kTotal)},
-        {"Sp2",AngularMomentumOperatorDefinition(am::AngularMomentumOperatorType::kSpin,basis::OperatorTypePN::kP)},
-        {"Sn2",AngularMomentumOperatorDefinition(am::AngularMomentumOperatorType::kSpin,basis::OperatorTypePN::kN)},
-        {"S2",AngularMomentumOperatorDefinition(am::AngularMomentumOperatorType::kSpin,basis::OperatorTypePN::kTotal)},
-        // {"Jp2",AngularMomentumOperatorDefinition(am::AngularMomentumOperatorType::kTotal,basis::OperatorTypePN::kP)},
-        // {"Jn2",AngularMomentumOperatorDefinition(am::AngularMomentumOperatorType::kTotal,basis::OperatorTypePN::kN)},
-        {"J2",AngularMomentumOperatorDefinition(am::AngularMomentumOperatorType::kTotal,basis::OperatorTypePN::kTotal)}
-      }
-  );
-
-// typedef std::tuple<shell::IsospinOperatorType> IsospinOperatorDefinition;
-// std::map<std::string,IsospinOperatorDefinition> kIsospinOperatorDefinitions(
-//       {
-//         {"T2",IsospinOperatorDefinition(shell::IsospinOperatorType::kSquared)},
-//         {"Tz",IsospinOperatorDefinition(shell::IsospinOperatorType::kTz)},
-//       }
-//   );
 
 struct BuiltinChannel : public TwoBodySourceChannel
 // Parameters and data for a source channel providing a generated
@@ -804,9 +794,14 @@ void ReadParameters(
             }
           else if (sub_keyword=="builtin")
             {
-              std::string id, orbital_filename;
-              line_stream >> id >> orbital_filename;
+              std::string id, orbital_filename="";
+              line_stream >> id;
               mcutils::ParsingCheck(line_stream,line_count,line);
+              if (!line_stream.eof())
+                {
+                  line_stream >> orbital_filename;
+                  mcutils::ParsingCheck(line_stream,line_count,line);
+                }
 
               if (!(
                     (id == "identity")
@@ -834,9 +829,14 @@ void ReadParameters(
             {
               std::string id, ob_factor_a_id, ob_factor_b_id;
               int j0;
-              double scale_factor;
-              line_stream >> id >> ob_factor_a_id >> ob_factor_b_id >> j0 >> scale_factor;
+              double scale_factor = 1.0;
+              line_stream >> id >> ob_factor_a_id >> ob_factor_b_id >> j0;
               mcutils::ParsingCheck(line_stream,line_count,line);
+              if (!line_stream.eof())
+                {
+                  line_stream >> scale_factor;
+                  mcutils::ParsingCheck(line_stream,line_count,line);
+                }
 
               one_body_channels.emplace_back(
                   new OneBodyTensorProductChannel(
@@ -900,11 +900,7 @@ void ReadParameters(
               line_stream >> id;
               mcutils::ParsingCheck(line_stream,line_count,line);
 
-              if (!(
-                      kIdentityOperatorIdSet.count(id)
-                      || kAngularMomentumOperatorDefinitions.count(id)
-                      // || kIsospinOperatorDefinitions.count(id)
-                    ))
+              if (!(kIdentityOperatorIdSet.count(id)))
                 mcutils::ParsingError(line_count,line,"Unrecognized operator ID");
 
               two_body_channels.emplace_back(
@@ -924,9 +920,14 @@ void ReadParameters(
           else if (sub_keyword=="operatorV")
             {
               std::string id, ob_factor_a_id, ob_factor_b_id;
-              double scale_factor;
-              line_stream >> id >> ob_factor_a_id >> ob_factor_b_id >> scale_factor;
+              double scale_factor = 1.0;
+              line_stream >> id >> ob_factor_a_id >> ob_factor_b_id;
               mcutils::ParsingCheck(line_stream, line_count, line);
+              if (!line_stream.eof())
+                {
+                  line_stream >> scale_factor;
+                  mcutils::ParsingCheck(line_stream,line_count,line);
+                }
 
               two_body_channels.emplace_back(
                   new OperatorVChannel(
@@ -1041,8 +1042,10 @@ void InitializeXforms(
 /////////////////////////////////////////////////////////////////
 
 void OneBodyInputChannel::ConstructOneBodyOperatorData(
+    const RunParameters& run_parameters,
     const XformMap& xforms,
-    OneBodyOperatorMap& operators
+    OneBodyOperatorMap& operators,
+    const TwoBodyOperatorIndexing& target_indexing
   )
 // Populate map with data from input file.
 {
@@ -1089,8 +1092,10 @@ void OneBodyInputChannel::ConstructOneBodyOperatorData(
 }
 
 void OneBodyBuiltinChannel::ConstructOneBodyOperatorData(
+    const RunParameters& run_parameters,
     const XformMap& xforms,
-    OneBodyOperatorMap& operators
+    OneBodyOperatorMap& operators,
+    const TwoBodyOperatorIndexing& target_indexing
   )
 // Populate map with data from built-in generation routines.
 {
@@ -1109,9 +1114,17 @@ void OneBodyBuiltinChannel::ConstructOneBodyOperatorData(
     std::cerr << fmt::format("WARN: Replacing operator {}...", id) << std::endl;
   OneBodyOperatorData& operator_data = it->second;
 
-  std::ifstream orbital_file(orbital_filename);
-  basis::OrbitalPNList orbital_info = basis::ParseOrbitalPNStream(orbital_file,true);
-  operator_data.orbital_space = basis::OrbitalSpaceLJPN(orbital_info);
+  if (orbital_filename == "")
+    {
+      operator_data.orbital_space = basis::OrbitalSpaceLJPN(target_indexing.orbital_space);
+    }
+  else
+    {
+      std::ifstream orbital_file(orbital_filename);
+      basis::OrbitalPNList orbital_info = basis::ParseOrbitalPNStream(orbital_file,true);
+      operator_data.orbital_space = basis::OrbitalSpaceLJPN(orbital_info);
+    }
+
   if (id == "identity")
     // identity operator
     {
@@ -1146,7 +1159,7 @@ void OneBodyBuiltinChannel::ConstructOneBodyOperatorData(
               operator_data.matrices
             );
         }
-      else // if (power == 2)
+      else if (power == 2)
         {
           shell::AngularMomentumSquaredOneBodyOperator(
               am_operator_type,
@@ -1155,7 +1168,6 @@ void OneBodyBuiltinChannel::ConstructOneBodyOperatorData(
               operator_data.matrices
             );
         }
-
     }
   else if (kIsospinOneBodyOperatorDefinitions.count(id))
     {
@@ -1195,8 +1207,10 @@ void OneBodyBuiltinChannel::ConstructOneBodyOperatorData(
 }
 
 void OneBodyLinearCombinationChannel::ConstructOneBodyOperatorData(
+    const RunParameters& run_parameters,
     const XformMap& xforms,
-    OneBodyOperatorMap& operators
+    OneBodyOperatorMap& operators,
+    const TwoBodyOperatorIndexing& target_indexing
   )
 {
   std::cout
@@ -1261,8 +1275,10 @@ void OneBodyLinearCombinationChannel::ConstructOneBodyOperatorData(
 }
 
 void OneBodyTensorProductChannel::ConstructOneBodyOperatorData(
+    const RunParameters& run_parameters,
     const XformMap& xforms,
-    OneBodyOperatorMap& operators
+    OneBodyOperatorMap& operators,
+    const TwoBodyOperatorIndexing& target_indexing
   )
 {
   std::cout
@@ -1325,8 +1341,10 @@ void OneBodyTensorProductChannel::ConstructOneBodyOperatorData(
 }
 
 void OneBodyXformChannel::ConstructOneBodyOperatorData(
+    const RunParameters& run_parameters,
     const XformMap& xforms,
-    OneBodyOperatorMap& operators
+    OneBodyOperatorMap& operators,
+    const TwoBodyOperatorIndexing& target_indexing
   )
 {
   std::cout
@@ -1480,9 +1498,7 @@ void BuiltinChannel::InitializeChannel(
     const OneBodyOperatorMap &one_body_operators,
     const TwoBodyOperatorIndexing &target_indexing
   )
-{
-  // TODO(pjf): Check for one-body operator existence
-}
+{}
 
 void OperatorUChannel::InitializeChannel(
     const RunParameters &run_parameters,
@@ -1723,18 +1739,6 @@ void BuiltinChannel::PopulateSourceMatrix(
     // loop timing test
     {
       operator_matrix = shell::TimingTestMatrixJJJPN(target_sector,true,true);
-    }
-  else if (kAngularMomentumOperatorDefinitions.count(id))
-    // angular momentum square
-    {
-      shell::AngularMomentumOperatorFamily operator_family;
-      shell::AngularMomentumOperatorSpecies operator_species;
-      std::tie(operator_family,operator_species)
-        = kAngularMomentumOperatorDefinitions.at(id);
-      operator_matrix = shell::AngularMomentumMatrixJJJPN(
-          operator_family, operator_species,
-          target_sector, run_parameters.A
-        );
     }
 
   // save result
@@ -2011,7 +2015,7 @@ int main(int argc, char **argv)
   for (auto& one_body_channel_ptr : one_body_channels)
   {
     one_body_channel_ptr->ConstructOneBodyOperatorData(
-        xforms, one_body_operators
+        run_parameters, xforms, one_body_operators, target_indexing
       );
   }
 
