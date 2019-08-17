@@ -39,6 +39,7 @@
     - Prepend orbital index for orbitals in version 0 and 1 files.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
   + 06/05/19 (pjf): Fixup reading of ket orbitals in version 0 and 1 files.
+  + 08/16/19 (pjf): Remove radial operator type and power from version 2 header.
 ****************************************************************/
 
 #ifndef OBME_IO_H_
@@ -74,24 +75,16 @@ class OBMEStreamBase {
                  const basis::OrbitalSpaceLJPN& bra_space,
                  const basis::OrbitalSpaceLJPN& ket_space,
                  const basis::OrbitalSectorsLJPN& sectors,
-                 const basis::OneBodyOperatorType operator_type,
-                 const RadialOperatorType radial_operator_type,
-                 int radial_operator_power)
+                 const basis::OneBodyOperatorType operator_type)
       : filename_(filename),
         sector_index_(0),
         bra_orbital_space_(bra_space),
         ket_orbital_space_(ket_space),
         operator_type_(operator_type),
-        radial_operator_type_(radial_operator_type),
-        radial_operator_power_(radial_operator_power),
         sectors_(sectors) {}
 
   // operator type accessor
   const basis::OneBodyOperatorType& operator_type() const { return operator_type_; }
-  const RadialOperatorType& radial_operator_type() const { return radial_operator_type_; }
-
-  // operator power accessor
-  int radial_operator_power() const { return radial_operator_power_; }
 
  protected:
   // indexing accessors
@@ -106,8 +99,6 @@ class OBMEStreamBase {
 
   // operator information
   basis::OneBodyOperatorType operator_type_;
-  RadialOperatorType radial_operator_type_;
-  int radial_operator_power_;
 
   // indexing information
   basis::OrbitalSpaceLJPN bra_orbital_space_;
@@ -171,13 +162,11 @@ class OutOBMEStream : public OBMEStreamBase {
    */
   OutOBMEStream() : stream_ptr_(NULL) {}
 
-  explicit OutOBMEStream(const std::string& filename,
+  OutOBMEStream(const std::string& filename,
                          const basis::OrbitalSpaceLJPN& bra_space,
                          const basis::OrbitalSpaceLJPN& ket_space,
                          const basis::OrbitalSectorsLJPN& sectors,
                          const basis::OneBodyOperatorType operator_type,
-                         const RadialOperatorType radial_operator_type,
-                         int radial_operator_power,
                          const std::string& format_str,
                          bool verbose_mode = true);
 
@@ -185,20 +174,17 @@ class OutOBMEStream : public OBMEStreamBase {
                          const basis::OrbitalSpaceLJPN& bra_space,
                          const basis::OrbitalSpaceLJPN& ket_space,
                          const basis::OrbitalSectorsLJPN& sectors,
-                         const basis::OneBodyOperatorType operator_type,
-                         const RadialOperatorType radial_operator_type,
-                         int radial_operator_power)
+                         const basis::OneBodyOperatorType operator_type)
       : OutOBMEStream(filename, bra_space, ket_space, sectors, operator_type,
-                      radial_operator_type, radial_operator_power, "16.8e", true) {}
+                      "16.8e", true) {}
 
   explicit OutOBMEStream(const std::string& filename, const basis::OrbitalSpaceLJPN& bra_space,
                          const basis::OrbitalSpaceLJPN& ket_space,
                          const basis::OrbitalSectorsLJPN& sectors,
                          const basis::OneBodyOperatorType operator_type,
-                         const RadialOperatorType radial_operator_type,
-                         int radial_operator_power, bool verbose_mode)
+                         bool verbose_mode)
       : OutOBMEStream(filename, bra_space, ket_space, sectors, operator_type,
-                      radial_operator_type, radial_operator_power, "16.8e", verbose_mode) {}
+                      "16.8e", verbose_mode) {}
 
   // destructor
   ~OutOBMEStream() { delete stream_ptr_; }

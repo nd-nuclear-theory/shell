@@ -60,7 +60,7 @@ basis::OperatorBlocks<double> TestRadialOut(const std::string& filename, bool ve
   std::cout << "Output stream" << std::endl;
   shell::OutOBMEStream os(
     filename, bra_space, ket_space, sectors,
-    basis::OneBodyOperatorType::kRadial, shell::RadialOperatorType::kR, 0
+    basis::OneBodyOperatorType::kRadial
   );
 
   // generate matrices
