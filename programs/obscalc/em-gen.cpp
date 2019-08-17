@@ -8,12 +8,15 @@
 
   Input format:
 
-    set-indexing orbital_filename
-    set-basis-scale-factor scale_factor
-    define-radial-source radial_filename
-    define-target type lambda species output_filename
+    set-indexing <orbital_filename>
+    set-basis-scale-factor <scale_factor>
+    define-radial-source <type> <power> <radial_filename>
+      type = r|k
+    define-am-source <type> <filename>
+      type = l|s
+    define-target <type> <lambda> <species> <output_filename>
       type = E|Dl|Ds
-      species = p|n
+      species = p|n|total
 
   Patrick J. Fasano
   University of Notre Dame
@@ -24,6 +27,8 @@
   + 11/28/17 (pjf): Print header with version.
   + 04/04/19 (pjf): Write matrix elements in Rose convention, for consistency.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 08/17/19 (pjf): Refactor to use only spherical tensor operators, such as
+      solid harmonics, l, and s. (Fixes #4.)
 
 ******************************************************************************/
 
@@ -36,9 +41,11 @@
 #include "am/am.h"
 #include "am/halfint.h"
 #include "am/wigner_gsl.h"
+#include "am/rme.h"
 #include "basis/nlj_orbital.h"
 #include "basis/proton_neutron.h"
 #include "fmt/format.h"
+#include "obme/obme.h"
 #include "obme/obme_operator.h"
 #include "obme/obme_io.h"
 
@@ -52,25 +59,24 @@ enum class OperatorType : char { kE, kDl, kDs };
 std::map<std::string, OperatorType> operator_map = {
     {"E", OperatorType::kE}, {"Dl", OperatorType::kDl}, {"Ds", OperatorType::kDs}};
 
-// Label for radial operator as (type,power,j0,g0,Tz0) of r, k, or o.
-typedef std::tuple<shell::RadialOperatorType, int, int, int, int> RadialOperatorLabels;
+// Label for radial operator as (type,power).
+typedef std::tuple<shell::RadialOperatorType, int> RadialOperatorLabels;
+typedef std::tuple<am::AngularMomentumOperatorType> AngularMomentumOperatorLabels;
 
 // Indexing and matrix elements for a radial operator.
 //
 // Caveat: Just "copying" indexing in here is not good enough, since
 // then sectors can be left pointing to deleted temporaries for the
 // orbital subspaces.
-struct RadialOperatorData {
-  RadialOperatorData() = default;
+struct OperatorData {
+  OperatorData() = default;
 
-  RadialOperatorData(const std::string& filename_) : filename(filename_)
+  OperatorData(const std::string& filename_) : filename(filename_)
   {
     // open radial operator file
     basis::OrbitalSpaceLJPN ket_space;
     shell::InOBMEStream stream(filename_);
     stream.SetToIndexing(space, ket_space, sectors);
-    auto radial_operator_type = stream.radial_operator_type();
-    auto radial_operator_power = stream.radial_operator_power();
 
     // sanity check on input file
     if (space.OrbitalInfo() != ket_space.OrbitalInfo()) {
@@ -79,16 +85,10 @@ struct RadialOperatorData {
                 << std::endl;
       std::exit(EXIT_FAILURE);
     }
-    if (stream.operator_type() != basis::OneBodyOperatorType::kRadial) {
-      std::cerr << "ERROR: Matrix elements must be radial matrix elements." << std::endl;
+    if (stream.operator_type() != basis::OneBodyOperatorType::kSpherical) {
+      std::cerr << "ERROR: Matrix elements must be of a spherical tensor operator." << std::endl;
       std::exit(EXIT_FAILURE);
     }
-
-    // construct labels for input
-    labels = RadialOperatorLabels{radial_operator_type,
-                                  radial_operator_power,
-                                  sectors.j0(), sectors.g0(), sectors.Tz0()
-                                 };
 
     // read matrices
     stream.Read(matrices);
@@ -96,9 +96,6 @@ struct RadialOperatorData {
     // close stream
     stream.Close();
   }
-
-  // operator identification
-  RadialOperatorLabels labels;
 
   // input filename
   std::string filename;
@@ -109,16 +106,17 @@ struct RadialOperatorData {
   basis::OperatorBlocks<double> matrices;
 };
 
-// Map to hold all loaded radial operators.
-typedef std::map<RadialOperatorLabels, RadialOperatorData> RadialOperatorMap;
+// Map to hold all loaded radial and angular momentum operators
+typedef std::map<RadialOperatorLabels, OperatorData> RadialOperatorMap;
+typedef std::map<AngularMomentumOperatorLabels, OperatorData> AngularMomentumOperatorMap;
 
 struct TargetChannel {
   OperatorType operator_type;
   int lambda;
-  basis::OrbitalSpeciesPN species;
+  basis::OperatorTypePN species;
   std::string output_filename;
 
-  TargetChannel(OperatorType op_, int lambda_, basis::OrbitalSpeciesPN species_,
+  TargetChannel(OperatorType op_, int lambda_, basis::OperatorTypePN species_,
                 const std::string& output_filename_)
       : operator_type(op_),
         lambda(lambda_),
@@ -132,6 +130,7 @@ struct RunParameters {
   double scale_factor;
 
   RadialOperatorMap radial_operators;
+  AngularMomentumOperatorMap am_operators;
   std::vector<TargetChannel> targets;
 };
 
@@ -174,23 +173,34 @@ void ReadParameters(RunParameters& run_parameters) {
       mcutils::ParsingCheck(line_stream, line_count, line);
     } else if (keyword == "define-radial-source") {
       std::string radial_me_filename;
-      line_stream >> radial_me_filename;
+      char radial_type;
+      int radial_power;
+      line_stream >> radial_type >> radial_power >> radial_me_filename;
       mcutils::ParsingCheck(line_stream, line_count, line);
-      struct stat st;
-      if (stat(radial_me_filename.c_str(), &st) != 0) {
-        std::cerr << "ERROR: file " << radial_me_filename << " does not exist!"
-                  << std::endl;
-        std::exit(EXIT_FAILURE);
-      }
+      RadialOperatorLabels labels
+        = {static_cast<shell::RadialOperatorType>(radial_type), radial_power};
 
-      RadialOperatorData radial_operator_data(radial_me_filename);
-      run_parameters.radial_operators.insert(
-          {radial_operator_data.labels, radial_operator_data});
+      mcutils::FileExistCheck(radial_me_filename, true, false);
+      OperatorData operator_data(radial_me_filename);
+
+      run_parameters.radial_operators.insert({labels, operator_data});
+    } else if (keyword == "define-am-source") {
+      std::string am_me_filename;
+      char am_type;
+      line_stream >> am_type >> am_me_filename;
+      mcutils::ParsingCheck(line_stream, line_count, line);
+      AngularMomentumOperatorLabels labels
+        = {static_cast<am::AngularMomentumOperatorType>(am_type)};
+
+      mcutils::FileExistCheck(am_me_filename, true, false);
+      OperatorData operator_data(am_me_filename);
+
+      run_parameters.am_operators.insert({labels, operator_data});
     } else if (keyword == "define-target") {
       // type lambda species output_filename
       std::string operator_string, output_filename;
       int lambda;
-      char species_code;
+      std::string species_code;
 
       line_stream >> operator_string >> lambda >> species_code >> output_filename;
       mcutils::ParsingCheck(line_stream, line_count, line);
@@ -204,143 +214,221 @@ void ReadParameters(RunParameters& run_parameters) {
       OperatorType operator_type = it->second;
 
       // species
-      basis::OrbitalSpeciesPN species;
-      if (species_code == 'p') {
-        species = basis::OrbitalSpeciesPN::kP;
-      } else if (species_code == 'n') {
-        species = basis::OrbitalSpeciesPN::kN;
-      } else {
-        std::cerr << "Invalid species code: " << species_code << std::endl;
-        std::exit(EXIT_FAILURE);
-      }
+      basis::OperatorTypePN species = basis::kCharCodeOperatorTypePN.at(species_code);
 
       // check output file
-      struct stat st;
-      if (stat(output_filename.c_str(), &st) == 0) {
-        std::cerr << "WARN: overwriting file " << output_filename << std::endl;
-      }
+      mcutils::FileExistCheck(output_filename, false, true);
 
-      run_parameters.targets.emplace_back(operator_type, lambda, species,
-                                          output_filename);
+      run_parameters.targets.emplace_back(
+          operator_type, lambda, species, output_filename
+        );
     }
   }
 }
 
-double CalculatePrefactorE(double scale_factor,
-                           const TargetChannel& target,
-                           const basis::OrbitalSubspaceLJPN& a,
-                           const basis::OrbitalSubspaceLJPN& b) {
+double CalculatePrefactorE(
+    double scale_factor,
+    const TargetChannel& target,
+    const basis::OrbitalSubspaceLJPN& a,
+    const basis::OrbitalSubspaceLJPN& b
+  )
+{
   assert(a.orbital_species() == b.orbital_species());
-  if (a.orbital_species() != target.species) return 0;
+  if (target.species != basis::OperatorTypePN::kTotal)
+  {
+    if (static_cast<int>(a.orbital_species()) != static_cast<int>(target.species)) return 0.;
+  }
 
   const int& lambda = target.lambda;
 
   double factor = std::pow(scale_factor, lambda);
-  factor *= 1. / std::sqrt(4. * kPi);
-  factor *= ParitySign(b.j() + lambda - HalfInt(1, 2));
-
-  // parity conservation -- enforced by sector enumeration
-  // factor *= ((a.l() + b.l() + lambda) % 2 == 0);
-
-  // Racah reduction formula
-  factor *= Hat(a.j()) * Hat(lambda)
-    * am::Wigner3J(a.j(), b.j(), lambda, HalfInt(1, 2), -HalfInt(1, 2), 0);
+  // difference between C and Y -- Brink & Satchler (1993), app. IV,  p.145
+  factor *= Hat(lambda) / std::sqrt(4. * kPi);
 
   return factor;
 }
 
-double CalculatePrefactorM(double scale_factor,
-                           const TargetChannel& target,
-                           const basis::OrbitalSubspaceLJPN& a,
-                           const basis::OrbitalSubspaceLJPN& b) {
-  assert(a.orbital_species() == b.orbital_species());
-  if (a.orbital_species() != target.species) return 0;
-
-  const int& lambda = target.lambda;
-
-  double factor = std::pow(scale_factor, lambda - 1);
-  factor *= 1 / std::sqrt(4. * kPi);
-  factor *= ParitySign(b.j() + lambda - HalfInt(1, 2));
-
-  // parity conservation -- enforced by sector enumeration
-  // factor *= ((a.l() + b.l() + lambda + 1) % 2 == 0);
-
-  // Racah reduction formula
-  factor *= Hat(a.j()) * Hat(lambda)
-    * am::Wigner3J(a.j(), b.j(), lambda, HalfInt(1, 2), -HalfInt(1, 2), 0);
-
-  double kappa = double(
-      ParitySign(a.l() + a.j() + HalfInt(1, 2)) * (a.j() + HalfInt(1, 2))
-      + ParitySign(b.l() + b.j() + HalfInt(1, 2)) * (b.j() + HalfInt(1, 2)));
-
-  factor *= (lambda - kappa);
-  if (target.operator_type == OperatorType::kDl) {
-    factor *= (1 + kappa / (lambda + 1));
-  } else if (target.operator_type == OperatorType::kDs) {
-    factor *= -0.5;
-  }
-  return factor;
-}
-
-void GenerateTarget(const RunParameters& run_parameters,
-                    const TargetChannel& target) {
-  // get radial matrix elements
-  int radial_order =
-      target.lambda - ((target.operator_type == OperatorType::kDl)
-                       || (target.operator_type == OperatorType::kDs));
+void GenerateTargetE(
+    const RunParameters& run_parameters,
+    const TargetChannel& target
+  )
+{
+  int radial_order = target.lambda;
+  int j0 = target.lambda;
   int g0 = radial_order % 2;
   int Tz0 = 0;
-  RadialOperatorLabels key{shell::RadialOperatorType::kR, radial_order,
-                           target.lambda, g0, 0};
-  if (run_parameters.radial_operators.count(key) == 0) {
-    std::cerr << fmt::format(
-                     "ERROR: Missing radial matrix elements: {}^{:d} j0={:d} "
-                     "g0={:d} Tz0={:d}",
-                     static_cast<char>(shell::RadialOperatorType::kR),
-                     radial_order, target.lambda, g0, Tz0)
-              << std::endl;
-  }
-  const RadialOperatorData& radial_operator_data =
-      run_parameters.radial_operators.at(key);
-  assert(radial_operator_data.space.OrbitalInfo()
-         == run_parameters.space.OrbitalInfo());
 
-  // construct new sectors
+  // construct output sectors
   basis::OrbitalSectorsLJPN output_sectors(
-      run_parameters.space, run_parameters.space, target.lambda, g0, Tz0);
-  // default initialization
+      run_parameters.space, run_parameters.space,
+      j0, g0, Tz0
+    );
+  // declare output storage
   basis::OperatorBlocks<double> output_matrices;
 
-  // loop over blocks and apply factor
+  // get solid harmonic operator
+  RadialOperatorLabels radial_key{shell::RadialOperatorType::kR, radial_order};
+  if (run_parameters.radial_operators.count(radial_key) == 0) {
+    std::cerr << fmt::format(
+                    "ERROR: Missing radial matrix elements: {}^{:d} j0={:d} "
+                    "g0={:d} Tz0={:d}",
+                    static_cast<char>(shell::RadialOperatorType::kR),
+                    radial_order, radial_order, g0, Tz0
+                    )
+              << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+  const OperatorData& radial_operator_data = run_parameters.radial_operators.at(radial_key);
+  assert(radial_operator_data.space.OrbitalInfo() == run_parameters.space.OrbitalInfo());
+
+  // populate matrices with unscaled matrix elements
+  output_matrices = radial_operator_data.matrices;
+
+  // scale operator and apply species constraint
   for (std::size_t sector_index = 0; sector_index < output_sectors.size(); ++sector_index) {
-    const auto& output_sector = output_sectors.GetSector(sector_index);
-    const auto& bra_subspace = output_sector.bra_subspace();
-    const auto& ket_subspace = output_sector.ket_subspace();
-
-    const std::size_t bra_subspace_index = output_sector.bra_subspace_index();
-    const std::size_t ket_subspace_index = output_sector.ket_subspace_index();
-    std::size_t radial_sector_index = radial_operator_data.sectors.LookUpSectorIndex(
-        bra_subspace_index, ket_subspace_index);
-    assert(radial_sector_index != basis::kNone);
-
-    double prefactor = 0.;
-    if (target.operator_type == OperatorType::kE) {
-      prefactor = CalculatePrefactorE(run_parameters.scale_factor, target,
-                                      bra_subspace, ket_subspace);
-    } else if ((target.operator_type == OperatorType::kDl)
-               || (target.operator_type == OperatorType::kDs)) {
-      prefactor = CalculatePrefactorM(run_parameters.scale_factor, target,
-                                      bra_subspace, ket_subspace);
-    }
-    output_matrices.push_back(
-        prefactor * radial_operator_data.matrices[radial_sector_index]);
+    const auto& sector = output_sectors.GetSector(sector_index);
+    output_matrices[sector_index] *= CalculatePrefactorE(
+        run_parameters.scale_factor, target,
+        sector.bra_subspace(), sector.ket_subspace()
+      );
   }
 
   // write operator to file
-  shell::OutOBMEStream os(target.output_filename, run_parameters.space,
-                          run_parameters.space, output_sectors,
-                          basis::OneBodyOperatorType::kSpherical, shell::RadialOperatorType::kGeneric, radial_order);
+  shell::OutOBMEStream os(
+      target.output_filename,
+      run_parameters.space, run_parameters.space, output_sectors,
+      basis::OneBodyOperatorType::kSpherical
+    );
   os.Write(output_matrices);
+}
+
+double CalculatePrefactorM(
+    double scale_factor,
+    const TargetChannel& target,
+    const basis::OrbitalSubspaceLJPN& a,
+    const basis::OrbitalSubspaceLJPN& b
+  )
+{
+  assert(a.orbital_species() == b.orbital_species());
+  if (target.species != basis::OperatorTypePN::kTotal)
+  {
+    if (static_cast<int>(a.orbital_species()) != static_cast<int>(target.species)) return 0.;
+  }
+
+  const int& lambda = target.lambda;
+
+  // radial scaling
+  double factor = std::pow(scale_factor, lambda - 1);
+  // difference between C and Y -- Brink & Satchler (1993), app. IV,  p.145
+  factor *= Hat(lambda-1) / std::sqrt(4. * kPi);
+  // gradient of solid harmonic -- Heyde (1990), eq. 4.12
+  factor *= Hat(lambda) * std::sqrt(lambda);
+
+  if (target.operator_type == OperatorType::kDl) {
+    factor *= (2 / (lambda + 1));
+  }
+  return factor;
+}
+
+void GenerateTargetM(
+    const RunParameters& run_parameters,
+    const TargetChannel& target
+  )
+{
+  int radial_order = target.lambda - 1;
+  int j0 = target.lambda;
+  int g0 = radial_order % 2;
+  int Tz0 = 0;
+
+  // construct output sectors
+  basis::OrbitalSectorsLJPN output_sectors(
+      run_parameters.space, run_parameters.space,
+      j0, g0, Tz0
+    );
+  // declare output storage
+  basis::OperatorBlocks<double> output_matrices;
+
+  // get angular momentum operator
+  AngularMomentumOperatorLabels am_key;
+  if (target.operator_type == OperatorType::kDl)
+    am_key = {am::AngularMomentumOperatorType::kOrbital};
+  else if (target.operator_type == OperatorType::kDs)
+    am_key = {am::AngularMomentumOperatorType::kSpin};
+
+  if (run_parameters.am_operators.count(am_key) == 0) {
+    std::cerr << fmt::format(
+                    "ERROR: Missing angular-momentum matrix elements: {}",
+                    static_cast<char>(am::AngularMomentumOperatorType::kOrbital)
+                  )
+              << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+  const OperatorData& am_operator_data = run_parameters.am_operators.at(am_key);
+
+  // populate matrices with unscaled matrix elements
+  if (radial_order == 0)
+  {
+    output_matrices = am_operator_data.matrices;
+  }
+  else
+  {
+    RadialOperatorLabels radial_key{shell::RadialOperatorType::kR, radial_order};
+    if (run_parameters.radial_operators.count(radial_key) == 0) {
+      std::cerr << fmt::format(
+                      "ERROR: Missing radial matrix elements: {}^{:d} j0={:d} "
+                      "g0={:d} Tz0={:d}",
+                      static_cast<char>(shell::RadialOperatorType::kR),
+                      radial_order, radial_order, g0, Tz0
+                      )
+                << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+    const OperatorData& radial_operator_data = run_parameters.radial_operators.at(radial_key);
+    assert(radial_operator_data.space.OrbitalInfo() == run_parameters.space.OrbitalInfo());
+
+    // calculate product operator
+    shell::OneBodyOperatorTensorProduct(
+        run_parameters.space,
+        am_operator_data.sectors, am_operator_data.matrices,
+        radial_operator_data.sectors, radial_operator_data.matrices,
+        output_sectors, output_matrices
+      );
+  }
+
+  // scale operator and apply species constraint
+  for (std::size_t sector_index = 0; sector_index < output_sectors.size(); ++sector_index) {
+    const auto& sector = output_sectors.GetSector(sector_index);
+    output_matrices[sector_index] *= CalculatePrefactorM(
+        run_parameters.scale_factor, target,
+        sector.bra_subspace(), sector.ket_subspace()
+      );
+  }
+
+  // write operator to file
+  shell::OutOBMEStream os(
+      target.output_filename,
+      run_parameters.space, run_parameters.space, output_sectors,
+      basis::OneBodyOperatorType::kSpherical
+    );
+  os.Write(output_matrices);
+}
+
+void GenerateTarget(
+    const RunParameters& run_parameters,
+    const TargetChannel& target
+  )
+{
+  if (target.operator_type == OperatorType::kE)
+  {
+    GenerateTargetE(run_parameters, target);
+  }
+  else if (
+      (target.operator_type == OperatorType::kDl)
+      ||(target.operator_type == OperatorType::kDs)
+    )
+  {
+    GenerateTargetM(run_parameters, target);
+  }
 }
 
 int main(int argc, const char* argv[]) {
