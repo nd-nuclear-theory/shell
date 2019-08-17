@@ -34,6 +34,7 @@
     + Modify access specifications and provide accessors for matrices and
       sectors as a function of j0.
     + Fix indexing problems for j0_min != 0.
+  + 08/17/19 (pjf): Fix conversion to Rose convention.
 
 ****************************************************************/
 
