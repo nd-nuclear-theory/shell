@@ -19,6 +19,7 @@
   + 12/30/17 (pjf): Ensure orbital file is properly sorted.
   + 07/27/18 (pjf): Update for new OBDME input routines.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 08/16/19 (pjf): Remove radial operator type and power from OutOBMEStream.
 
 ******************************************************************************/
 
@@ -253,7 +254,7 @@ int main(int argc, const char *argv[]) {
       // note hard-coded l0max=0, Tz0=0
   shell::OutOBMEStream xs(run_parameters.output_xform_file,
                           input_space, output_space, output_sectors,
-                          basis::OneBodyOperatorType::kRadial, shell::RadialOperatorType::kO, 0);
+                          basis::OneBodyOperatorType::kRadial);
   xs.Write(xform_matrices);
 
   // sort orbitals and write out

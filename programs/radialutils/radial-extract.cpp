@@ -14,6 +14,7 @@
 
   + 03/04/19 (pjf): Created, based on radial-plot.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 08/16/19 (pjf): Remove radial operator type and power from OutOBMEStream.
 
 ******************************************************************************/
 
@@ -98,7 +99,6 @@ int main(int argc, const char *argv[]) {
   xform_s.Close();
 
   // check that xform is valid
-  assert(xform_s.radial_operator_type() == shell::RadialOperatorType::kO);
   assert(xform_s.operator_type() == basis::OneBodyOperatorType::kRadial);
   assert(sectors.j0() == 0);
   assert(sectors.g0() == 0);

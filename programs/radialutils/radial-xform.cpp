@@ -19,6 +19,7 @@
   + 10/18/17 (pjf): Correctly set target_operator_order.
   + 11/28/17 (pjf): Print header with version.
   + 10/18/18 (pjf): Update to use new obme library.
+  + 08/16/19 (pjf): Remove radial operator type and power from OutOBMEStream.
 
 ******************************************************************************/
 
@@ -142,15 +143,11 @@ int main(int argc, const char* argv[])
   basis::OrbitalSpaceLJPN source_bra_space, source_ket_space;
   basis::OrbitalSectorsLJPN source_sectors;
   basis::OneBodyOperatorType source_operator_type = is.operator_type();
-  shell::RadialOperatorType source_radial_operator_type =
-      is.radial_operator_type();
-  int source_operator_order = is.radial_operator_power();
   is.SetToIndexing(source_bra_space, source_ket_space, source_sectors);
 
   basis::OrbitalSpaceLJPN xform_bra_space, xform_ket_space;
   basis::OrbitalSectorsLJPN xform_sectors;
   basis::OneBodyOperatorType xform_operator_type = xforms.operator_type();
-  shell::RadialOperatorType xform_radial_type = xforms.radial_operator_type();
   xforms.SetToIndexing(xform_bra_space, xform_ket_space, xform_sectors);
 
   // check that operator is transformable (bra and ket spaces are the same)
@@ -171,7 +168,6 @@ int main(int argc, const char* argv[])
 
   // check that overlaps are valid
   if ((xform_operator_type != basis::OneBodyOperatorType::kRadial)
-      || (xform_radial_type != shell::RadialOperatorType::kO)
       || (source_ket_space.OrbitalInfo() != xform_bra_space.OrbitalInfo())
       || (xform_sectors.Tz0() != 0))
   {
@@ -181,9 +177,6 @@ int main(int argc, const char* argv[])
 
   // construct new indexing
   const basis::OneBodyOperatorType& target_operator_type = source_operator_type;
-  const shell::RadialOperatorType& target_radial_operator_type =
-      source_radial_operator_type;
-  const int target_operator_order = source_operator_order;
   const basis::OrbitalSpaceLJPN& target_space = xform_ket_space;
   basis::OrbitalSectorsLJPN target_sectors;
   target_sectors = basis::OrbitalSectorsLJPN(
@@ -208,7 +201,7 @@ int main(int argc, const char* argv[])
             << std::endl;
   shell::OutOBMEStream os(
       run_parameters.output_filename, target_space, target_space, target_sectors,
-      target_operator_type, target_radial_operator_type, target_operator_order);
+      target_operator_type);
   os.Write(target_matrices);
 
   os.Close();
