@@ -32,6 +32,9 @@
   + 05/28/19 (pjf): Output zero matrix element if densities missing from file.
   + 05/30/19 (pjf): Reduce file I/O requirements by refactoring to pass  compute
     all operators for a given set of densities.
+  + 08/17/19 (pjf):
+    - Fix Rose convention.
+    - Fix input parsing.
 ******************************************************************************/
 
 #include <sys/stat.h>
@@ -143,7 +146,7 @@ void ReadParameters(RunParameters& run_parameters) {
       mcutils::ParsingCheck(line_stream, line_count, line);
       mcutils::FileExistCheck(robdme_filename, true, false);
 
-      if (line_stream.good()) {
+      if (!line_stream.eof()) {
         line_stream >> robdme_info_filename;
         mcutils::ParsingCheck(line_stream, line_count, line);
         mcutils::FileExistCheck(robdme_info_filename, true, false);
@@ -152,6 +155,7 @@ void ReadParameters(RunParameters& run_parameters) {
       densities.gf = densities.gi = g;
       densities.nf = densities.ni = n;
       densities.robdme_filename = robdme_filename;
+      densities.robdme_info_filename = robdme_info_filename;
       run_parameters.static_densities.push_back(densities);
     } else if (keyword == "define-transition-densities") {
       OneBodyDensities densities;
@@ -160,7 +164,7 @@ void ReadParameters(RunParameters& run_parameters) {
       line_stream >> twiceJf >> gf >> nf >> twiceJi >> gi >> ni >> robdme_filename;
       mcutils::ParsingCheck(line_stream, line_count, line);
       mcutils::FileExistCheck(robdme_filename, true, false);
-      if (line_stream.good()) {
+      if (!line_stream.eof()) {
         line_stream >> robdme_info_filename;
         mcutils::ParsingCheck(line_stream, line_count, line);
         mcutils::FileExistCheck(robdme_info_filename, true, false);
@@ -217,7 +221,7 @@ std::vector<double> CalculateMatrixElements(
     }
     obdme_s.GetMultipole(op.sectors.j0(), density_sectors, density_blocks);
 
-    // loop and sum over \sum_{a,b} rho_{ab} T_{ba}
+    // loop and sum over \sum_{a,b} rho_{ab} T_{ab}
     double value = 0.;
     for (std::size_t subspace_index_a = 0; subspace_index_a < space.size();
         ++subspace_index_a) {
@@ -230,7 +234,7 @@ std::vector<double> CalculateMatrixElements(
         if (sector_index == basis::kNone) continue;
 
         // dimension factor only present in Rose convention
-        double dimension_factor = double(2*subspace_b.j()+1);
+        double dimension_factor = double(2*subspace_a.j()+1);
 
         for (std::size_t state_index_a = 0; state_index_a < subspace_a.size(); ++state_index_a) {
           for (std::size_t state_index_b = 0; state_index_b < subspace_b.size(); ++state_index_b) {
