@@ -29,6 +29,9 @@
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
   + 08/17/19 (pjf): Refactor to use only spherical tensor operators, such as
       solid harmonics, l, and s. (Fixes #4.)
+  + 08/27/19 (pjf):
+    - Change prefactors to use solid harmonic convention.
+    - Use shell::kCharCodeRadialOperatorType instead of static_cast.
 
 ******************************************************************************/
 
@@ -173,12 +176,12 @@ void ReadParameters(RunParameters& run_parameters) {
       mcutils::ParsingCheck(line_stream, line_count, line);
     } else if (keyword == "define-radial-source") {
       std::string radial_me_filename;
-      char radial_type;
+      std::string radial_type;
       int radial_power;
       line_stream >> radial_type >> radial_power >> radial_me_filename;
       mcutils::ParsingCheck(line_stream, line_count, line);
       RadialOperatorLabels labels
-        = {static_cast<shell::RadialOperatorType>(radial_type), radial_power};
+        = {shell::kCharCodeRadialOperatorType.at(radial_type), radial_power};
 
       mcutils::FileExistCheck(radial_me_filename, true, false);
       OperatorData operator_data(radial_me_filename);
@@ -242,9 +245,6 @@ double CalculatePrefactorE(
   const int& lambda = target.lambda;
 
   double factor = std::pow(scale_factor, lambda);
-  // difference between C and Y -- Brink & Satchler (1993), app. IV,  p.145
-  factor *= Hat(lambda) / std::sqrt(4. * kPi);
-
   return factor;
 }
 
@@ -319,8 +319,6 @@ double CalculatePrefactorM(
 
   // radial scaling
   double factor = std::pow(scale_factor, lambda - 1);
-  // difference between C and Y -- Brink & Satchler (1993), app. IV,  p.145
-  factor *= Hat(lambda-1) / std::sqrt(4. * kPi);
   // gradient of solid harmonic -- Heyde (1990), eq. 4.12
   factor *= Hat(lambda) * std::sqrt(lambda);
 
