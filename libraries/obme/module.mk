@@ -4,8 +4,8 @@ $(eval $(begin-module))
 # unit definitions
 ################################################################
 
-module_units_h := obme_operator
-module_units_cpp-h := obme_io radial obme
+module_units_h :=
+module_units_cpp-h := obme_io radial obme obme_operator
 # module_units_f :=
 module_programs_cpp_test := obme_io_test obme_test
 
