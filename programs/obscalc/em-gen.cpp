@@ -32,6 +32,7 @@
   + 08/27/19 (pjf):
     - Change prefactors to use solid harmonic convention.
     - Use shell::kCharCodeRadialOperatorType instead of static_cast.
+  + 08/28/19 (pjf): Fix missing 1/sqrt(4pi) on M1-type operators.
 
 ******************************************************************************/
 
@@ -367,6 +368,7 @@ void GenerateTargetM(
   if (radial_order == 0)
   {
     output_matrices = am_operator_data.matrices;
+    basis::ScalarMultiplyOperator(output_sectors, output_matrices, am::kInvSqrt4Pi);
   }
   else
   {
