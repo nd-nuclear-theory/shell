@@ -18,7 +18,7 @@
     define-ob-source <mode> <id> ...
       define-ob-source input <id> <obme_filename> <j0> <g0> <tz0>
       define-ob-source builtin <id> [orbital_filename]
-        id = l|l2|s|s2|j|j2|t2|tz|t+|t-|c+|c
+        id = identity|l|l2|s|s2|j|j2|tz|t+|t-|c+|c
       define-ob-source linear-combination <id>
         add-ob-source <id> <coefficient>
       define-ob-source tensor-product <id> <ob_factor_a_id> <ob_factor_b_id> <j0> [scale_factor]
@@ -75,6 +75,7 @@
     - Make orbital_filename optional for builtin ob source.
     - Remove all builtin two-body angular momentum operator code.
   + 08/22/19 (pjf): Remove ability to overwrite existing one-body channels.
+  + 09/06/19 (pjf): Truncate target orbitals before constructing orbital space.
 ******************************************************************************/
 
 #include <omp.h>
@@ -301,7 +302,6 @@ kAngularMomentumOneBodyOperatorDefinitions =
 std::unordered_map<std::string,int>
 kIsospinOneBodyOperatorDefinitions =
   {
-    // {"t2", 0},
     {"tz",  0},
     {"t+", +1},
     {"t-", -1}
@@ -1429,21 +1429,20 @@ void InitializeTargetIndexing(
     // oscillator-like indexing
     {
       target_indexing.orbital_space = basis::OrbitalSpacePN(run_parameters.truncation_cutoff);
-      target_indexing.space = basis::TwoBodySpaceJJJPN(
-          target_indexing.orbital_space, run_parameters.weight_max, space_ordering
-        );
     }
   else
     // generic indexing
     {
       std::ifstream orbital_file(run_parameters.orbital_filename);
       basis::OrbitalPNList orbital_info = basis::ParseOrbitalPNStream(orbital_file,true);
+      orbital_info = basis::TruncateOrbitalList(run_parameters.weight_max, orbital_info);
       target_indexing.orbital_space = basis::OrbitalSpacePN(orbital_info);
-      target_indexing.space = basis::TwoBodySpaceJJJPN(
-          target_indexing.orbital_space, run_parameters.weight_max, space_ordering
-        );
     }
 
+  // set up two-body space
+  target_indexing.space = basis::TwoBodySpaceJJJPN(
+      target_indexing.orbital_space, run_parameters.weight_max, space_ordering
+    );
   // set up sectors
   target_indexing.sectors = basis::TwoBodySectorsJJJPN(
       target_indexing.space,
