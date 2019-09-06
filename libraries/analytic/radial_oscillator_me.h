@@ -15,6 +15,9 @@
     - Define k_sqrt_2.
     - Move ladder oscillator matrix element functions to top and define
       coordinate matrix elements in terms of them.
+  + 09/03/19 (pjf):
+    - Remove unused variables from CoordinateOscillatorMatrixElement.
+    - Fix operator signs on CoordinateSqrOscillatorMatrixElement.
 ****************************************************************/
 
 #ifndef RADIAL_OSCILLATOR_ME_H_
@@ -108,10 +111,6 @@ inline double CoordinateOscillatorMatrixElement(
 {
   const int delta_l = bra_l - ket_l;
   const int delta_N = bra_N - ket_N;
-  // cast to double to ensure floating-point arithmetic
-  const double N = ket_N;
-  const double l = ket_l;
-
   assert((delta_l == -1) || (delta_l == +1));
 
   double matrix_element = 0.;
@@ -171,7 +170,7 @@ inline double CoordinateSqrOscillatorMatrixElement(
     if (delta_l == +2) {
       matrix_element =  0.5 * std::sqrt((N + l + 5) * (N + l + 3));
     } else if (delta_l == 0) {
-      matrix_element = -operator_sign * 0.5 * std::sqrt((N + l + 3) * (N - l + 2));
+      matrix_element = -0.5 * std::sqrt((N + l + 3) * (N - l + 2));
     } else if (delta_l == -2) {
       matrix_element =  0.5 * std::sqrt((N - l + 2) * (N - l + 4));
     }
@@ -179,7 +178,7 @@ inline double CoordinateSqrOscillatorMatrixElement(
     if (delta_l == +2) {
       matrix_element = -operator_sign * std::sqrt((N - l) * (N + l + 3));
     } else if (delta_l == 0) {
-      matrix_element = N + 1.5;
+      matrix_element =  operator_sign * (N + 1.5);
     } else if (delta_l == -2) {
       matrix_element = -operator_sign * std::sqrt((N - l + 2) * (N + l + 1));
     }
@@ -187,7 +186,7 @@ inline double CoordinateSqrOscillatorMatrixElement(
     if (delta_l == +2) {
       matrix_element =  0.5 * std::sqrt((N - l - 2) * (N - l));
     } else if (delta_l == 0) {
-      matrix_element = -operator_sign * 0.5 * std::sqrt((N - l) * (N + l + 1));
+      matrix_element = -0.5 *std::sqrt((N - l) * (N + l + 1));
     } else if (delta_l == -2) {
       matrix_element =  0.5 * std::sqrt((N + l + 1) * (N + l - 1));
     }
