@@ -28,8 +28,6 @@ void GenerateRadialOperator(
   const int j0 = sectors.j0();
   const int g0 = sectors.g0();
   const int Tz0 = sectors.Tz0();
-  const int operator_sign =
-      ParitySign(operator_type == shell::RadialOperatorType::kK);
 
   // initialize output matrices
   basis::SetOperatorToZero(sectors, matrices);
@@ -79,6 +77,7 @@ void GenerateRadialOperator(
         {
           const int bra_N = 2 * bra_n + bra_l;
           const int ket_N = 2 * ket_n + ket_l;
+          const int operator_sign = (operator_type == shell::RadialOperatorType::kK) ? -1 : +1;
           if ((order == 1) && (j0 == 1) && (g0 == 1))
           {
             matrix_element = analytic::CoordinateOscillatorMatrixElement(
@@ -135,8 +134,6 @@ void GenerateRadialOverlaps(
         sectors.GetSector(sector_index);
     basis::OperatorBlock<double>& sector_matrix = matrices[sector_index];
 
-    // non-diagonal sectors should not be allowed, but we short-circuit anyway
-    if (!sector.IsDiagonal()) { continue; }
     // get sizes
     const std::size_t bra_subspace_size = sector.bra_subspace().size();
     const std::size_t ket_subspace_size = sector.ket_subspace().size();

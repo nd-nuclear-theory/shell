@@ -11,6 +11,9 @@
   + 06/15/18 (pjf): Created.
   + 02/01/19 (pjf): Add documentation.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 09/04/19 (pjf):
+    - Fix operator_sign in GenerateRadialOperator.
+    - Remove diagonal sector constraint from GenerateRadialOverlaps.
 ****************************************************************/
 
 #ifndef OBME_RADIAL_H_
