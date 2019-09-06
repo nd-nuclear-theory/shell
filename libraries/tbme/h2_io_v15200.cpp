@@ -216,6 +216,10 @@ namespace shell {
               basis::MFDnOrbitalFormat::kVersion15200
             );
 
+        // sanity check: orbital space weight max should match space weight max
+        assert(orbital_space().GetSubspace(0).weight_max()==space().weight_max().one_body[0]);
+        assert(orbital_space().GetSubspace(1).weight_max()==space().weight_max().one_body[1]);
+
         // write two-body header info
         stream()
           // header line 1: operator properties
@@ -270,6 +274,10 @@ namespace shell {
         mcutils::WriteBinary<int32_t>(stream(),sectors().J0());
         mcutils::WriteBinary<int32_t>(stream(),sectors().g0());
         mcutils::WriteBinary<int32_t>(stream(),sectors().Tz0());
+
+        // sanity check: orbital space weight max should match space weight max
+        assert(orbital_space().GetSubspace(0).weight_max()==space().weight_max().one_body[0]);
+        assert(orbital_space().GetSubspace(1).weight_max()==space().weight_max().one_body[1]);
 
         // header line 2: 2-body basis limit
         mcutils::WriteBinary<float>(stream(),space().weight_max().two_body[0]);  // TODO(pjf) change if TwoBodySpeciesPN enum changes

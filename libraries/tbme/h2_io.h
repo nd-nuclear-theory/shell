@@ -46,6 +46,8 @@
   + 06/03/19 (pjf): Implement version 15200 binary I/O.
   + 08/28/19 (pjf): Correctly extract implicit one-body truncation from
     orbitals listed in version 15200 file.
+  + 09/06/19 (pjf): Ensure (for version 15200) that orbital space weight maxes
+    match two-body space truncation.
 ****************************************************************/
 
 #ifndef H2_IO_H_
