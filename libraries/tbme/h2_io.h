@@ -44,6 +44,8 @@
   + 05/30/19 (pjf): Use long int/integer(kind=8) for number of matrix elements
     in header of binary file.
   + 06/03/19 (pjf): Implement version 15200 binary I/O.
+  + 08/28/19 (pjf): Correctly extract implicit one-body truncation from
+    orbitals listed in version 15200 file.
 ****************************************************************/
 
 #ifndef H2_IO_H_

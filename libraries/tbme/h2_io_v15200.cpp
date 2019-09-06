@@ -167,6 +167,9 @@ namespace shell {
     // set up indexing
     orbital_space_ = basis::OrbitalSpacePN(orbitals);
     // std::cout << orbital_space_.DebugStr() << std::endl;
+    // wp and wn are implicitly defined by the orbital space
+    wp = orbital_space().GetSubspace(0).weight_max();
+    wn = orbital_space().GetSubspace(1).weight_max();
     space_ = basis::TwoBodySpaceJJJPN(
         orbital_space_,
         basis::WeightMax(wp,wn,wpp,wnn,wpn),
