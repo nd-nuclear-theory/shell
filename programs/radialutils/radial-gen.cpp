@@ -55,6 +55,7 @@
   + 08/16/19 (pjf): Remove radial operator type and power from OutOBMEStream.
   + 08/27/19 (pjf): Separate out solid harmonic generation as a separate mode.
   + 08/28/19 (pjf): Remove operator species option from am mode.
+  + 09/04/19 (pjf): Fix typo in kKinematicOneBodyOperatorDefinitions for "k".
 
 ******************************************************************************/
 
@@ -94,7 +95,7 @@ kKinematicOneBodyOperatorDefinitions =
     // {id, {operator type, order, j0}}
     {"identity", {shell::RadialOperatorType::kO, 0, 0}},
     {"r", {shell::RadialOperatorType::kR, 1, 1}},
-    {"k", {shell::RadialOperatorType::kR, 1, 1}},
+    {"k", {shell::RadialOperatorType::kK, 1, 1}},
     {"r.r", {shell::RadialOperatorType::kR, 2, 0}},
     {"k.k", {shell::RadialOperatorType::kK, 2, 0}},
   };
