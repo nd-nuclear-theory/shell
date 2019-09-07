@@ -10,13 +10,12 @@
     set-ket-basis <basis_type> <orbital_filename>
       basis_type = oscillator|laguerre
     define-operator-target <mode> <id> ...
-      define-operator-target kinematic <id> [args...] <output_filename>
+      define-operator-target kinematic <id> <output_filename>
         id = identity|r|k|r.r|k.k
       define-operator-target solid-harmonic <id> <order> <output_filename>
         id = r|k
-      define-operator-target am <id> <species> <output_filename>
+      define-operator-target am <id> <output_filename>
         id = l|l2|s|s2|j|j2
-        species = total|p|n
       define-operator-target isospin <id> <output_filename>
         id = tz|t+|t-
     define-radial-target <operator_type> <order> <j0> <g0> <tz0> <output_filename>
@@ -55,6 +54,7 @@
   + 08/14/29 (pjf): Add additional operator types.
   + 08/16/19 (pjf): Remove radial operator type and power from OutOBMEStream.
   + 08/27/19 (pjf): Separate out solid harmonic generation as a separate mode.
+  + 08/28/19 (pjf): Remove operator species option from am mode.
 
 ******************************************************************************/
 
@@ -149,7 +149,6 @@ struct OperatorParameters {
   int j0;
   int g0;
   int tz0;
-  basis::OperatorTypePN operator_species;
 };
 
 void PrintUsage(char** argv) { std::cout << "Usage: " << argv[0] << std::endl; }
@@ -216,7 +215,6 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
 
         parameters.g0 = parameters.j0%2;
         parameters.tz0 = 0;
-        parameters.operator_species = basis::OperatorTypePN::kTotal;
       }
       else if (mode == "solid-harmonic")
       {
@@ -229,7 +227,6 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
         parameters.order = parameters.j0 = order;
         parameters.g0 = parameters.j0%2;
         parameters.tz0 = 0;
-        parameters.operator_species = basis::OperatorTypePN::kTotal;
       }
       else if (mode == "am")
       {
@@ -241,9 +238,6 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
           = kAngularMomentumOneBodyOperatorDefinitions.at(id);
         parameters.g0 = 0;
         parameters.tz0 = 0;
-        line_stream >> operator_species_s;
-        mcutils::ParsingCheck(line_stream,line_count,line);
-        parameters.operator_species = basis::kCharCodeOperatorTypePN.at(operator_species_s);
       }
       else if (mode == "isospin")
       {
@@ -286,7 +280,6 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
 
       // fill remaining parameters
       parameters.radial_operator_type = shell::kCharCodeRadialOperatorType.at(operator_type);
-      parameters.operator_species = basis::OperatorTypePN::kTotal;
 
       mcutils::FileExistCheck(parameters.output_filename, false, true);
 
@@ -304,7 +297,6 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
       parameters.j0 = 0;
       parameters.g0 = 0;
       parameters.tz0 = 0;
-      parameters.operator_species = basis::OperatorTypePN::kTotal;
 
       line_stream >> parameters.scale_factor
                   >> basis_type_str
