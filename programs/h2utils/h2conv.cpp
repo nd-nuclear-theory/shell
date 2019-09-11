@@ -8,9 +8,11 @@
   Mark A. Caprio
   University of Notre Dame
 
-  10/19/16 (mac): Created, based on h2stat.
-  10/22/16 (mac): Update syntax.
-  11/28/17 (pjf): Include version in header.
+  + 10/19/16 (mac): Created, based on h2stat.
+  + 10/22/16 (mac): Update syntax.
+  + 11/28/17 (pjf): Include version in header.
+  + 02/21/19 (pjf): Add H2 Version15200 support.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ******************************************************************************/
 
@@ -94,8 +96,18 @@ int main(int argc, char **argv)
   std::cout << std::endl;
 
   const basis::OrbitalSpacePN& orbital_space = input_stream.orbital_space();
-  const basis::TwoBodySpaceJJJPN& space = input_stream.space();
-  const basis::TwoBodySectorsJJJPN& sectors = input_stream.sectors();
+  const basis::TwoBodySpaceJJJPN& input_space = input_stream.space();
+  const basis::TwoBodySectorsJJJPN& input_sectors = input_stream.sectors();
+  basis::TwoBodySpaceJJJPNOrdering space_ordering =
+    shell::kH2SpaceOrdering.at(run_parameters.output_h2_format);
+  const basis::TwoBodySpaceJJJPN space = basis::TwoBodySpaceJJJPN(
+      orbital_space,
+      input_space.weight_max(),
+      space_ordering
+    );
+  const basis::TwoBodySectorsJJJPN sectors = basis::TwoBodySectorsJJJPN(
+      space, input_sectors.J0(), input_sectors.g0(), input_sectors.Tz0()
+    );
 
   std::cout << "Output stream" << std::endl;
   shell::OutH2Stream output_stream(
@@ -111,11 +123,21 @@ int main(int argc, char **argv)
   ////////////////////////////////////////////////////////////////
 
   // iterate over sectors
-  for (int sector_index = 0; sector_index < input_stream.num_sectors(); ++sector_index)
+  for (std::size_t sector_index = 0; sector_index < input_stream.num_sectors(); ++sector_index)
     {
       Eigen::MatrixXd matrix;
-      input_stream.ReadSector(matrix);
-      output_stream.WriteSector(matrix);
+      // construct target sector
+      const auto& sector = sectors.GetSector(sector_index);
+      // locate corresponding input sector
+      std::size_t input_bra_subspace_index
+        = input_space.LookUpSubspaceIndex(sector.bra_subspace().labels());
+      std::size_t input_ket_subspace_index
+        = input_space.LookUpSubspaceIndex(sector.ket_subspace().labels());
+      // Note: We cannot simply look up by target_sector's Key, since that uses target subspace indices.
+      std::size_t input_sector_index
+        = input_sectors.LookUpSectorIndex(input_bra_subspace_index,input_ket_subspace_index);
+      input_stream.ReadSector(input_sector_index, matrix);
+      output_stream.WriteSector(sector_index, matrix);
       std::cout << "." << std::flush;
     }
   std::cout << std::endl;

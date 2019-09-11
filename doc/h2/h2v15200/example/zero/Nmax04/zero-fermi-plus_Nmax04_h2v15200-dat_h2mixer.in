@@ -1,0 +1,9 @@
+# zero-fermi-plus_Nmax04_h2v15200-dat_h2mixer.in -- make zero operator with Fermi Tz0=+1 selection
+
+set-target-indexing-oscillator tb 4
+set-target-multipolarity 0 0 +1
+set-output-format 15200
+set-mass 2
+
+define-target zero-fermi-plus_Nmax04_h2v15200.dat
+

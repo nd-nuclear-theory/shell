@@ -1,0 +1,34 @@
+
+moshinsky -- Moshinsky transformation of general relative operator
+version: 0.0.3-97-g4b2dd81-dirty
+
+Parameters
+  rank 2 cutoff 2
+Reading relative-cm operator file...
+  Filename: ksqr-1_Nmax02_relcm.dat
+  Operator properties: J0 0 g0 0 T0_min 1 T0_max 1 symmetry 0
+  Truncation: Nmax 2
+  Matrix elements: 74
+  Allocated: 78
+  Time: 0.00694102
+Scatter relative-cm LSJTN...
+  Time: 0.000194462
+  Allocated matrix elements: 76
+Transform to two-body LSJTN...
+  Time: 0.000391741
+  Allocated matrix elements: 76
+Recouple to two-body JJJTN...
+  Time: 0.00237821
+Gather to two-body JJJT...
+  Time: 0.000134916
+Branch to two-body JJJPN and write to file...
+  File: ksqr-1_Nmax02_h2v15099.dat
+  Format: 15099 (text)
+  Operator properties: J0 0 g0 0 Tz0 0
+  Orbitals: p 6 n 6 (oscillator-like true)
+  Truncation: p 2.0000 n 2.0000 pp 2.0000 nn 2.0000 pn 2.0000
+  Sectors: pp 7 nn 7 pn 7 => total 21
+  Matrix elements: pp 32 nn 32 pn 110 => total 174
+.....................
+  Time: 0.00373306
+Total run time: 0.0142887

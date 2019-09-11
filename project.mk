@@ -33,7 +33,7 @@ modules += programs/obscalc
 ################
 
 modules += libraries/relative libraries/moshinsky
-modules += libraries/tbme libraries/radial libraries/density
+modules += libraries/tbme libraries/obme libraries/density libraries/analytic
 
 # legacy libraries -- DEPRECATED
 ##modules += libraries/no libraries/legacy
@@ -65,10 +65,6 @@ CPPFLAGS += -D'VCS_REVISION="$(vcs-git)"'
 # basis submodule
 #   map vs. hash for space lookup in basis library
 CPPFLAGS += -DBASIS_HASH
-
-# mcutils submodule
-#   allow legacy global access to variables now wrapped in mcutils namespace
-CPPFLAGS += -DMCUTILS_ALLOW_LEGACY_GLOBAL
 
 # spline submodule
 #   disable integration routines requiring later versions of gsl

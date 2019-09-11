@@ -1,0 +1,9 @@
+# zero-e1_Nmax04_h2v15200-dat_h2mixer.in -- make zero operator with E1 selection
+
+set-target-indexing-oscillator tb 4
+set-target-multipolarity 1 1 0
+set-output-format 15200
+set-mass 2
+
+define-target zero-e1_Nmax04_h2v15200.dat
+

@@ -1,0 +1,23 @@
+
+h2mixer -- MFDn H2 file generation
+version: 0.0.3-58-g12d167b
+
+Parallelization: max_threads 8, num_procs 8
+
+Constructing one-body matrix elements for operator t+ with indexing from orbitals-Nmax02.dat...
+Constructing one-body matrix elements for operator s with indexing from orbitals-Nmax02.dat...
+Generating one-body tensor product gt = [(t+)(s)]_1
+Generating one-body tensor product t+gt = [(t+)(gt)]_1
+
+Output stream
+  File: fermi-gt_Nmax02_h2v15200.dat
+  Format: 15200 (text)
+  Operator properties: J0 1 g0 0 Tz0 2
+  Orbitals: p 6 n 6 (oscillator-like true)
+  Truncation: p 2.0000 n 2.0000 pp 2.0000 nn 2.0000 pn 2.0000
+  Sectors: pp 15 nn 0 pn 0 => total 15
+  Matrix elements: pp 95 nn 0 pn 0 => total 95
+
+...............
+(Total time: 0.00272195)
+

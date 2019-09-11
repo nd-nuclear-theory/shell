@@ -74,9 +74,9 @@ void ReadParameters(Parameters& parameters)
     line_stream >> parameters.Nmax
                 >> parameters.Jmax
                 >> parameters.T0_max;
-    ParsingCheck(line_stream,line_count,line);
+    mcutils::ParsingCheck(line_stream,line_count,line);
     if (!((parameters.T0_max==0)||(parameters.T0_max==2)))
-        ParsingError(line_count,line,"Invalid T0_max");
+        mcutils::ParsingError(line_count,line,"Invalid T0_max");
   }
 
   // line 2: source filename(s)
@@ -91,7 +91,7 @@ void ReadParameters(Parameters& parameters)
         >> parameters.source_filenames[0]
         >> parameters.source_filenames[1]
         >> parameters.source_filenames[2];
-    ParsingCheck(line_stream,line_count,line);
+    mcutils::ParsingCheck(line_stream,line_count,line);
   }
 
   // line 3: target filename
@@ -100,7 +100,7 @@ void ReadParameters(Parameters& parameters)
     std::getline(std::cin,line);
     std::istringstream line_stream(line);
     line_stream >> parameters.target_filename;
-    ParsingCheck(line_stream,line_count,line);
+    mcutils::ParsingCheck(line_stream,line_count,line);
   }
 
 }
@@ -127,10 +127,10 @@ int main(int argc, char **argv)
   basis::OperatorLabelsJT operator_labels(0,0,0,parameters.T0_max,basis::SymmetryPhaseMode::kHermitian);
   basis::RelativeOperatorParametersLSJT operator_parameters(operator_labels,parameters.Nmax,parameters.Jmax);
   std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
-  std::array<basis::OperatorBlocks<double>,3> relative_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_component_blocks;
   basis::ConstructZeroOperatorRelativeLSJT(
       operator_parameters,
-      relative_space,relative_component_sectors,relative_component_matrices
+      relative_space,relative_component_sectors,relative_component_blocks
     );
 
   // operator diagnostics
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
   std::cout << std::endl;
   std::cout << "  Allocated:";
   for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
-    std::cout << " " << basis::AllocatedEntries(relative_component_matrices[T0]);
+    std::cout << " " << basis::AllocatedEntries(relative_component_blocks[T0]);
   std::cout << std::endl;
 
   // populate matrix elements
@@ -153,7 +153,7 @@ int main(int argc, char **argv)
     {
       relative::ReadJPVOperator(
           parameters.source_filename,
-          relative_space,operator_labels,relative_component_sectors,relative_component_matrices,
+          relative_space,operator_labels,relative_component_sectors,relative_component_blocks,
           false  // verbose
         );
     }
@@ -161,7 +161,7 @@ int main(int argc, char **argv)
     {
       relative::ReadJPVOperatorPN(
           parameters.source_filenames,
-          relative_space,operator_parameters,relative_component_sectors,relative_component_matrices,
+          relative_space,operator_parameters,relative_component_sectors,relative_component_blocks,
           false  // verbose
         );
     }
@@ -172,7 +172,7 @@ int main(int argc, char **argv)
       relative_space,
       operator_labels,
       relative_component_sectors,
-      relative_component_matrices,
+      relative_component_blocks,
       true  // verbose
     );
 

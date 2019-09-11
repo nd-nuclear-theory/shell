@@ -53,8 +53,8 @@ namespace moshinsky {
     // int g_ket = relative_cm_sector.bra_subspace().g();
 
     // iterate over spurious relative (target) matrix elements
-    for (int relative_cm_bra_index=0; relative_cm_bra_index<relative_cm_sector.bra_subspace().size(); ++relative_cm_bra_index)
-      for (int relative_cm_ket_index=0; relative_cm_ket_index<relative_cm_sector.ket_subspace().size(); ++relative_cm_ket_index)
+    for (std::size_t relative_cm_bra_index=0; relative_cm_bra_index<relative_cm_sector.bra_subspace().size(); ++relative_cm_bra_index)
+      for (std::size_t relative_cm_ket_index=0; relative_cm_ket_index<relative_cm_sector.ket_subspace().size(); ++relative_cm_ket_index)
         {
 
           // DISABLED: short circuit if target matrix element is non-canonical
@@ -130,11 +130,11 @@ namespace moshinsky {
 
                 // look up relative subspace indices
                 int gr_bra = lr_bra%2;
-                int relative_subspace_index_bra = relative_space.LookUpSubspaceIndex(
+                std::size_t relative_subspace_index_bra = relative_space.LookUpSubspaceIndex(
                     basis::RelativeSubspaceLSJT::SubspaceLabelsType(lr_bra,S_bra,Jr_bra,T_bra,gr_bra)
                   );
                 int gr_ket = lr_ket%2;
-                int relative_subspace_index_ket = relative_space.LookUpSubspaceIndex(
+                std::size_t relative_subspace_index_ket = relative_space.LookUpSubspaceIndex(
                     basis::RelativeSubspaceLSJT::SubspaceLabelsType(lr_ket,S_ket,Jr_ket,T_ket,gr_ket)
                   );
 
@@ -145,18 +145,18 @@ namespace moshinsky {
                 const basis::RelativeSubspaceLSJT& relative_ket_subspace = relative_space.GetSubspace(
                     relative_subspace_index_ket
                   );
-                int relative_state_index_bra = relative_bra_subspace.LookUpStateIndex(
+                std::size_t relative_state_index_bra = relative_bra_subspace.LookUpStateIndex(
                     basis::RelativeStateLSJT::StateLabelsType(Nr_bra)
                   );
-                int relative_state_index_ket = relative_ket_subspace.LookUpStateIndex(
+                std::size_t relative_state_index_ket = relative_ket_subspace.LookUpStateIndex(
                     basis::RelativeStateLSJT::StateLabelsType(Nr_ket)
                   );
                 // std::cout << relative_bra_subspace.LabelStr() << relative_ket_subspace.LabelStr() << std::endl;
 
 
                 // canonicalize indices for matrix element lookup
-                int canonical_relative_subspace_index_bra, canonical_relative_subspace_index_ket;
-                int canonical_relative_state_index_bra, canonical_relative_state_index_ket;
+                std::size_t canonical_relative_subspace_index_bra, canonical_relative_subspace_index_ket;
+                std::size_t canonical_relative_state_index_bra, canonical_relative_state_index_ket;
                 double canonicalization_factor;
                 std::tie(
                     canonical_relative_subspace_index_bra, canonical_relative_subspace_index_ket,
@@ -173,7 +173,7 @@ namespace moshinsky {
                     );
 
                 // look up matrix element
-                int relative_sector_index = relative_sectors.LookUpSectorIndex(
+                std::size_t relative_sector_index = relative_sectors.LookUpSectorIndex(
                     canonical_relative_subspace_index_bra,
                     canonical_relative_subspace_index_ket
                   );
@@ -230,7 +230,7 @@ namespace moshinsky {
 
         // populate matrices
         relative_cm_lsjtn_component_matrices[T0].resize(relative_cm_lsjtn_component_sectors[T0].size());
-        for (int sector_index=0; sector_index<relative_cm_lsjtn_component_sectors[T0].size(); ++sector_index)
+        for (std::size_t sector_index=0; sector_index<relative_cm_lsjtn_component_sectors[T0].size(); ++sector_index)
           {
             const basis::RelativeCMSectorsLSJTN::SectorType& relative_cm_lsjtn_sector
               = relative_cm_lsjtn_component_sectors[T0].GetSector(sector_index);
@@ -270,8 +270,8 @@ namespace moshinsky {
     int L = relative_cm_subspace.L();
 
     // populate matrix
-    for (int index_relative_cm=0; index_relative_cm<relative_cm_subspace.size(); ++index_relative_cm)
-      for (int index_two_body=0; index_two_body<two_body_subspace.size(); ++index_two_body)
+    for (std::size_t index_relative_cm=0; index_relative_cm<relative_cm_subspace.size(); ++index_relative_cm)
+      for (std::size_t index_two_body=0; index_two_body<two_body_subspace.size(); ++index_two_body)
         {
 
           // retrieve relative-cm state
@@ -356,14 +356,14 @@ namespace moshinsky {
 
         // populate matrices
         two_body_lsjtn_component_matrices[T0].resize(two_body_lsjtn_component_sectors[T0].size());
-        for (int sector_index=0; sector_index<two_body_lsjtn_component_sectors[T0].size(); ++sector_index)
+        for (std::size_t sector_index=0; sector_index<two_body_lsjtn_component_sectors[T0].size(); ++sector_index)
           {
             // make reference to target sector
             const basis::TwoBodySectorsLSJTN::SectorType& two_body_lsjtn_sector
               = two_body_lsjtn_component_sectors[T0].GetSector(sector_index);
 
             // look up source sector
-            int relative_cm_lsjtn_bra_subspace_index = relative_cm_lsjtn_space.LookUpSubspaceIndex(
+            std::size_t relative_cm_lsjtn_bra_subspace_index = relative_cm_lsjtn_space.LookUpSubspaceIndex(
                 basis::RelativeCMSubspaceLSJTNLabels(
                     two_body_lsjtn_sector.bra_subspace().L(),
                     two_body_lsjtn_sector.bra_subspace().S(),
@@ -373,7 +373,7 @@ namespace moshinsky {
                     two_body_lsjtn_sector.bra_subspace().N()
                   )
               );
-            int relative_cm_lsjtn_ket_subspace_index = relative_cm_lsjtn_space.LookUpSubspaceIndex(
+            std::size_t relative_cm_lsjtn_ket_subspace_index = relative_cm_lsjtn_space.LookUpSubspaceIndex(
                 basis::RelativeCMSubspaceLSJTNLabels(
                     two_body_lsjtn_sector.ket_subspace().L(),
                     two_body_lsjtn_sector.ket_subspace().S(),
@@ -383,7 +383,7 @@ namespace moshinsky {
                     two_body_lsjtn_sector.ket_subspace().N()
                   )
               );
-            int relative_cm_lsjtn_sector_index = relative_cm_lsjtn_component_sectors[T0].LookUpSectorIndex(
+            std::size_t relative_cm_lsjtn_sector_index = relative_cm_lsjtn_component_sectors[T0].LookUpSectorIndex(
                 relative_cm_lsjtn_bra_subspace_index,
                 relative_cm_lsjtn_ket_subspace_index
               );
@@ -455,7 +455,7 @@ namespace moshinsky {
     int J = two_body_lsjtn_subspace.J();
 
     // populate matrix -- scan columns
-    for (int index_two_body_jjjtn=0; index_two_body_jjjtn<two_body_jjjtn_subspace.size(); ++index_two_body_jjjtn)
+    for (std::size_t index_two_body_jjjtn=0; index_two_body_jjjtn<two_body_jjjtn_subspace.size(); ++index_two_body_jjjtn)
       // for each target JJJTN state
       {
         // retrieve target JJJTN state
@@ -480,7 +480,7 @@ namespace moshinsky {
         // this same constraint combined with the realization that l
         // goes by steps of two within a major shell, so j values map
         // uniquely onto l values.
-        int index_two_body_lsjtn = two_body_lsjtn_subspace.LookUpStateIndex(
+        std::size_t index_two_body_lsjtn = two_body_lsjtn_subspace.LookUpStateIndex(
             basis::TwoBodyStateLSJTNLabels(N1,l1,N2,l2)
           );
         if (index_two_body_lsjtn==basis::kNone)
@@ -493,7 +493,7 @@ namespace moshinsky {
         //     two_body_lsjtn_subspace,
         //     basis::TwoBodyStateLSJTNLabels(N1,l1,N2,l2)
         //   );
-        // int index_two_body_lsjtnt = two_body_lsjtn_state.index();
+        // std::size_t index_two_body_lsjtnt = two_body_lsjtn_state.index();
 
         // evaluate bracket
         const HalfInt s(1,2);
@@ -598,12 +598,12 @@ namespace moshinsky {
     // subspaces.  But one could also explicitly attempt lookups of the small set
     // of possibly subspaces given by (1) S=0,1 and (2) L in triangle(J,S).
 
-    std::vector<int> bra_two_body_lsjtn_subspace_indices, ket_two_body_lsjtn_subspace_indices;
+    std::vector<std::size_t> bra_two_body_lsjtn_subspace_indices, ket_two_body_lsjtn_subspace_indices;
     std::vector<Eigen::SparseMatrix<double>> bra_transformation_matrices, ket_transformation_matrices;
 
     // scan for bra subspace
     for (
-        int bra_two_body_lsjtn_subspace_index=0;
+        std::size_t bra_two_body_lsjtn_subspace_index=0;
         bra_two_body_lsjtn_subspace_index<two_body_lsjtn_space.size();
         ++bra_two_body_lsjtn_subspace_index
       )
@@ -624,7 +624,7 @@ namespace moshinsky {
 
     // scan for ket subspace
     for (
-        int ket_two_body_lsjtn_subspace_index=0;
+        std::size_t ket_two_body_lsjtn_subspace_index=0;
         ket_two_body_lsjtn_subspace_index<two_body_lsjtn_space.size();
         ++ket_two_body_lsjtn_subspace_index
       )
@@ -643,16 +643,16 @@ namespace moshinsky {
         ket_transformation_matrices.push_back(ket_transformation_matrix);
       }
 
-    for (int bra_subspace_metaindex=0; bra_subspace_metaindex<bra_two_body_lsjtn_subspace_indices.size(); ++bra_subspace_metaindex)
-      for (int ket_subspace_metaindex=0; ket_subspace_metaindex<ket_two_body_lsjtn_subspace_indices.size(); ++ket_subspace_metaindex)
+    for (std::size_t bra_subspace_metaindex=0; bra_subspace_metaindex<bra_two_body_lsjtn_subspace_indices.size(); ++bra_subspace_metaindex)
+      for (std::size_t ket_subspace_metaindex=0; ket_subspace_metaindex<ket_two_body_lsjtn_subspace_indices.size(); ++ket_subspace_metaindex)
         {
           // alias source subspace information -- bra
-          int bra_two_body_lsjtn_subspace_index = bra_two_body_lsjtn_subspace_indices[bra_subspace_metaindex];
+          std::size_t bra_two_body_lsjtn_subspace_index = bra_two_body_lsjtn_subspace_indices[bra_subspace_metaindex];
           const basis::TwoBodySubspaceLSJTN& bra_two_body_lsjtn_subspace = two_body_lsjtn_space.GetSubspace(bra_two_body_lsjtn_subspace_index);
           Eigen::SparseMatrix<double>& bra_transformation_matrix = bra_transformation_matrices[bra_subspace_metaindex];
 
           // alias source subspace information -- ket
-          int ket_two_body_lsjtn_subspace_index = ket_two_body_lsjtn_subspace_indices[ket_subspace_metaindex];
+          std::size_t ket_two_body_lsjtn_subspace_index = ket_two_body_lsjtn_subspace_indices[ket_subspace_metaindex];
           const basis::TwoBodySubspaceLSJTN& ket_two_body_lsjtn_subspace = two_body_lsjtn_space.GetSubspace(ket_two_body_lsjtn_subspace_index);
           Eigen::SparseMatrix<double>& ket_transformation_matrix = ket_transformation_matrices[ket_subspace_metaindex];
 
@@ -660,7 +660,7 @@ namespace moshinsky {
 
           // identify source sector
 
-          int bra_canonical_two_body_lsjtn_subspace_index,ket_canonical_two_body_lsjtn_subspace_index;
+          std::size_t bra_canonical_two_body_lsjtn_subspace_index,ket_canonical_two_body_lsjtn_subspace_index;
           bool swapped_subspaces;
           double canonicalization_factor;
           std::tie(
@@ -673,7 +673,7 @@ namespace moshinsky {
                 J0,T0,g0,symmetry_phase_mode,
                 bra_two_body_lsjtn_subspace_index,ket_two_body_lsjtn_subspace_index
               );
-          int two_body_lsjtn_sector_index = two_body_lsjtn_sectors.LookUpSectorIndex(
+          std::size_t two_body_lsjtn_sector_index = two_body_lsjtn_sectors.LookUpSectorIndex(
               bra_canonical_two_body_lsjtn_subspace_index,
               ket_canonical_two_body_lsjtn_subspace_index
             );
@@ -727,7 +727,7 @@ namespace moshinsky {
 
         // populate matrices
         two_body_jjjtn_component_matrices[T0].resize(two_body_jjjtn_component_sectors[T0].size());
-        for (int sector_index=0; sector_index<two_body_jjjtn_component_sectors[T0].size(); ++sector_index)
+        for (std::size_t sector_index=0; sector_index<two_body_jjjtn_component_sectors[T0].size(); ++sector_index)
           // for each target sector
           {
             // make reference to target sector
@@ -775,25 +775,36 @@ namespace moshinsky {
     // states.
 
     // coefficients of <T=0||A0||T=0> source RMEs
-    static const double kIsospinCoefficientTToTzForT0 = 1.;
+    constexpr double kIsospinCoefficientTToTzForT0 = 1.;
 
-    // coefficients of <T=1||A1||T=0> and vice versa source RMEs
-    static const double kIsospinCoefficientTToTzForT10 = 1.;
-    static const double kIsospinCoefficientTToTzForT01 = -sqrt(1/3.);
+    // coefficients of <T=1||A1,Tz0||T=0> and vice versa source RMEs
+    //  indexed by Tz0
+    static const double kIsospinCoefficientTToTzForT10[2] = {1., 1.};
+    static const double kIsospinCoefficientTToTzForT01[2] = {-sqrt(1/3.), sqrt(1/3.)};
 
     // coefficients of <T=1||...||T=1> source RMEs
     //
-    //   i.e., contribution of <T=1||A_T0||T=1> to <Tz||A||Tz>,
+    //   i.e., contribution of <T=1||A_T0,Tz0||T=1> to <Tz_bra||A||Tz_ket>,
     //
-    //   indexed by (int(two_body_species),T0),
-    //
-    //   where We have listed Tz sectors in the order pp/nn/pn to
-    //   match the TwoBodySpecies enum ordering.
-    static Eigen::Matrix3d kIsospinCoefficientMatrixTToTzForT1;  //
-    kIsospinCoefficientMatrixTToTzForT1
-      << +1, +std::sqrt(1/2.), +std::sqrt(1/10.),
-      +1,-std::sqrt(1/2.),+std::sqrt(1/10.),
-      +1,0,-std::sqrt(2./5.);
+    //   indexed by (Tz0,Tz_ket+1,T0),
+    static const double kIsospinCoefficientsTToTzForT11[3][3][3] =
+      {
+        { // coefficients for Tz0=0
+          {+1,-std::sqrt(1/2.),+std::sqrt(1/10.)},
+          {+1,0,-std::sqrt(2./5.)},
+          {+1, +std::sqrt(1/2.), +std::sqrt(1/10.)}
+        },
+        { // coefficients for Tz0=1
+          {0,-std::sqrt(1/2.),+std::sqrt(3/10.)},
+          {0,-std::sqrt(1/2.),-std::sqrt(3/10.)},
+          {0,0,0}
+        },
+        { // coefficients for Tz0=2
+          {0,0,+std::sqrt(3/5.)},
+          {0,0,0},
+          {0,0,0}
+        }
+      };
 
     // set up matrix to hold results
     Eigen::MatrixXd matrix = Eigen::MatrixXd::Zero(
@@ -802,33 +813,30 @@ namespace moshinsky {
       );
 
     // extract sector labels
-    basis::TwoBodySpeciesPN two_body_species = two_body_jjjpn_sector.bra_subspace().two_body_species();
-    int J_bra = two_body_jjjpn_sector.bra_subspace().J();
-    int J_ket = two_body_jjjpn_sector.ket_subspace().J();
+    const int Tz_bra = two_body_jjjpn_sector.bra_subspace().Tz();
+    const int Tz_ket = two_body_jjjpn_sector.ket_subspace().Tz();
+    const int J_bra = two_body_jjjpn_sector.bra_subspace().J();
+    const int J_ket = two_body_jjjpn_sector.ket_subspace().J();
+
+    // recover Tz0
+    const int Tz0 = Tz_bra - Tz_ket;
+    assert(Tz0 >= 0);
 
     // scan source sectors
-    for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+    for (int T0=std::max(operator_labels.T0_min, Tz0); T0<=operator_labels.T0_max; ++T0)
       // for each isospin component
       {
-        for (int T_bra=0; T_bra<=1; ++T_bra)
+        for (int T_bra=std::abs(Tz_bra); T_bra<=1; ++T_bra)
           // for bra isospin
-          for (int T_ket=0; T_ket<=1; ++T_ket)
+          for (int T_ket=std::abs(Tz_ket); T_ket<=1; ++T_ket)
             // for ket isospin
             {
               // impose isospin triangularity
               if (!am::AllowedTriangle(T_bra,T0,T_ket))
                 continue;
 
-              // impose isospin sufficient for current sector two-body
-              // species
-              if (!(
-                      (two_body_species==basis::TwoBodySpeciesPN::kPN)
-                      || ((T_bra==1)&&(T_ket==1))
-                    ))
-                continue;
-
               // look up source subspaces
-              int two_body_jjjt_subspace_index_bra = two_body_jjjt_space.LookUpSubspaceIndex(
+              std::size_t two_body_jjjt_subspace_index_bra = two_body_jjjt_space.LookUpSubspaceIndex(
                   basis::TwoBodySubspaceJJJTLabels(
                       two_body_jjjpn_sector.bra_subspace().J(),
                       T_bra,
@@ -837,7 +845,7 @@ namespace moshinsky {
                 );
               const basis::TwoBodySubspaceJJJT& two_body_jjjt_subspace_bra
                 = two_body_jjjt_space.GetSubspace(two_body_jjjt_subspace_index_bra);
-              int two_body_jjjt_subspace_index_ket = two_body_jjjt_space.LookUpSubspaceIndex(
+              std::size_t two_body_jjjt_subspace_index_ket = two_body_jjjt_space.LookUpSubspaceIndex(
                   basis::TwoBodySubspaceJJJTLabels(
                       two_body_jjjpn_sector.ket_subspace().J(),
                       T_ket,
@@ -894,7 +902,7 @@ namespace moshinsky {
               // (and swap) must be taken into account in the state
               // index lookup in the pn sectors.
 
-              int two_body_jjjt_sector_index = two_body_jjjt_component_sectors[T0].LookUpSectorIndex(
+              std::size_t two_body_jjjt_sector_index = two_body_jjjt_component_sectors[T0].LookUpSectorIndex(
                   std::min(two_body_jjjt_subspace_index_bra,two_body_jjjt_subspace_index_ket),
                   std::max(two_body_jjjt_subspace_index_bra,two_body_jjjt_subspace_index_ket)
                 );
@@ -907,18 +915,18 @@ namespace moshinsky {
               // to this source sector
               double isospin_coefficient;
               if ((T_bra==1)&&(T_ket==1))
-                isospin_coefficient = kIsospinCoefficientMatrixTToTzForT1(int(two_body_species),T0);
+                isospin_coefficient = kIsospinCoefficientsTToTzForT11[Tz0][Tz_ket+1][T0];
               else if ((T_bra==0)&&(T_ket==1))
-                isospin_coefficient = kIsospinCoefficientTToTzForT01;
+                isospin_coefficient = kIsospinCoefficientTToTzForT01[Tz0];
               else if ((T_bra==1)&&(T_ket==0))
-                isospin_coefficient = kIsospinCoefficientTToTzForT10;
+                isospin_coefficient = kIsospinCoefficientTToTzForT10[Tz0];
               else if ((T_bra==0)&&(T_ket==0))
                 isospin_coefficient = kIsospinCoefficientTToTzForT0;
 
 
               // accumulate contributions to target sector matrix elements
-              for (int bra_index = 0; bra_index < two_body_jjjpn_sector.bra_subspace().size(); ++bra_index)
-                for (int ket_index = 0; ket_index < two_body_jjjpn_sector.ket_subspace().size(); ++ket_index)
+              for (std::size_t bra_index = 0; bra_index < two_body_jjjpn_sector.bra_subspace().size(); ++bra_index)
+                for (std::size_t ket_index = 0; ket_index < two_body_jjjpn_sector.ket_subspace().size(); ++ket_index)
                   // for each target matrix element
                   {
 
@@ -948,10 +956,10 @@ namespace moshinsky {
                         continue;
 
                     // retrieve source state indices
-                    int index1_bra = two_body_jjjpn_bra.index1();
-                    int index2_bra = two_body_jjjpn_bra.index2();
-                    int index1_ket = two_body_jjjpn_ket.index1();
-                    int index2_ket = two_body_jjjpn_ket.index2();
+                    std::size_t index1_bra = two_body_jjjpn_bra.index1();
+                    std::size_t index2_bra = two_body_jjjpn_bra.index2();
+                    std::size_t index1_ket = two_body_jjjpn_ket.index1();
+                    std::size_t index2_ket = two_body_jjjpn_ket.index2();
                     int N1_bra = two_body_jjjpn_bra.GetOrbital1().N();
                     int N2_bra = two_body_jjjpn_bra.GetOrbital2().N();
                     int N1_ket = two_body_jjjpn_ket.GetOrbital1().N();
@@ -967,8 +975,10 @@ namespace moshinsky {
                     // expanding the pn state in terms of isospin
                     // states |T,Tz> = |1,0> and |0,0>.
                     double pn_expansion_factor = 1.0;
-                    if (two_body_species==basis::TwoBodySpeciesPN::kPN)
-                        pn_expansion_factor = 0.5;
+                    if ((Tz_bra==0)!=(Tz_ket==0))  // XOR
+                      pn_expansion_factor = std::sqrt(1/2.);
+                    else if ((Tz_bra==0)&&(Tz_ket==0))
+                      pn_expansion_factor = 0.5;
 
                     // canonicalize indices of orbitals within
                     // two-body states
@@ -1003,7 +1013,7 @@ namespace moshinsky {
                     //           << " " << two_body_jjjpn_bra.GetOrbital2().j()
                     //           << std::endl;
 
-                    int two_body_jjjt_state_index_bra
+                    std::size_t two_body_jjjt_state_index_bra
                       = two_body_jjjt_subspace_bra.LookUpStateIndex(
                           two_body_jjjt_state_labels_bra
                         );
@@ -1035,7 +1045,7 @@ namespace moshinsky {
                     //           << " " << two_body_jjjpn_ket.GetOrbital2().j()
                     //           << std::endl;
 
-                    int two_body_jjjt_state_index_ket
+                    std::size_t two_body_jjjt_state_index_ket
                       = two_body_jjjt_subspace_ket.LookUpStateIndex(
                           two_body_jjjt_state_labels_ket
                         );
@@ -1046,8 +1056,8 @@ namespace moshinsky {
                     // canonicalized sector index, so we do not care
                     // any more about the subspace indices returned by
                     // this call.
-                    int canonical_two_body_jjjt_subspace_index_bra, canonical_two_body_jjjt_subspace_index_ket;
-                    int canonical_two_body_jjjt_state_index_bra, canonical_two_body_jjjt_state_index_ket;
+                    std::size_t canonical_two_body_jjjt_subspace_index_bra, canonical_two_body_jjjt_subspace_index_ket;
+                    std::size_t canonical_two_body_jjjt_state_index_bra, canonical_two_body_jjjt_state_index_ket;
                     double canonicalization_factor;
                     std::tie(
                         canonical_two_body_jjjt_subspace_index_bra, canonical_two_body_jjjt_subspace_index_ket,
@@ -1100,17 +1110,17 @@ namespace moshinsky {
       const std::array<basis::OperatorBlocks<double>,3>& two_body_jjjt_component_matrices,
       const basis::TwoBodySpaceJJJPN& two_body_jjjpn_space,
       basis::TwoBodySectorsJJJPN& two_body_jjjpn_sectors,
-      basis::OperatorBlocks<double>& two_body_jjjpn_matrices
+      basis::OperatorBlocks<double>& two_body_jjjpn_matrices,
+      int Tz0
     )
   {
     // enumerate target sectors
-    int Tz0 = 0;
     two_body_jjjpn_sectors
       = basis::TwoBodySectorsJJJPN(two_body_jjjpn_space,operator_labels.J0,operator_labels.g0,Tz0);
 
     // populate matrices
     two_body_jjjpn_matrices.resize(two_body_jjjpn_sectors.size());
-    for (int sector_index=0; sector_index<two_body_jjjpn_sectors.size(); ++sector_index)
+    for (std::size_t sector_index=0; sector_index<two_body_jjjpn_sectors.size(); ++sector_index)
       {
         // make reference to target sector
         const basis::TwoBodySectorsJJJPN::SectorType& two_body_jjjpn_sector

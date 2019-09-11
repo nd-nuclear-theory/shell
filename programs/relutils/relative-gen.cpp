@@ -47,7 +47,7 @@
 
       Relative electric dipole operator.
       [NOTE: only "r" version implemented; only T0=1 defined]
- 
+
     quadrupole r|k T0
 
       Relative electric quadrupole operator.
@@ -62,6 +62,10 @@
 
       Spin operator (spin part of magnetic dipole), construed as relative two
       body operator.
+
+    isospin
+
+      Isospin operator, construed as relative two-body operator.
 
     coulomb p|n|total steps
 
@@ -88,14 +92,17 @@
   Mark A. Caprio
   University of Notre Dame
 
-  07/16/16 (mac): Created (writerel.cpp).
-  07/25/16 (mac): Update to use WriteRelativeOperatorLSJT.
-  10/09/16 (pjf): Rename mcpp -> mcutils.
-  03/06/17 (mac): Rough in Coulomb interaction code.
-  03/26/17 (mac): Finish implementing Coulomb.  Rename to relative-gen.cpp.
-  04/05/17 (mac): Update call to ConstructZeroOperatorRelativeLSJT.
-  11/28/17 (pjf): Print header with version.
-  05/04/17 (mac): Add support for isovector transition operators.
+  + 07/16/16 (mac): Created (writerel.cpp).
+  + 07/25/16 (mac): Update to use WriteRelativeOperatorLSJT.
+  + 10/09/16 (pjf): Rename mcpp -> mcutils.
+  + 03/06/17 (mac): Rough in Coulomb interaction code.
+  + 03/26/17 (mac): Finish implementing Coulomb.  Rename to relative-gen.cpp.
+  + 04/05/17 (mac): Update call to ConstructZeroOperatorRelativeLSJT.
+  + 11/28/17 (pjf): Print header with version.
+  + 05/04/17 (mac): Add support for isovector transition operators.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 05/15/19 (mac): Rename "matrices" to "blocks" in variable names.
+  + 06/20/19 (pjf): Add isospin operator.
 
 ****************************************************************/
 
@@ -154,7 +161,7 @@ void ReadParameters(Parameters& parameters)
                 >> parameters.operator_parameters.g0
                 >> parameters.operator_parameters.T0_min
                 >> parameters.operator_parameters.T0_max;
-    ParsingCheck(line_stream,line_count,line);
+    mcutils::ParsingCheck(line_stream,line_count,line);
   }
 
   // line 2: operator basis parameters
@@ -163,7 +170,7 @@ void ReadParameters(Parameters& parameters)
     std::getline(std::cin,line);
     std::istringstream line_stream(line);
     line_stream >> parameters.operator_parameters.Nmax;
-    ParsingCheck(line_stream,line_count,line);
+    mcutils::ParsingCheck(line_stream,line_count,line);
   }
 
   // set miscellaneous operator_parameters fields
@@ -180,7 +187,7 @@ void ReadParameters(Parameters& parameters)
     std::getline(std::cin,line);
     std::istringstream line_stream(line);
     line_stream >> parameters.operator_name;
-    ParsingCheck(line_stream,line_count,line);
+    mcutils::ParsingCheck(line_stream,line_count,line);
 
     // parse additional operator parameters
 
@@ -192,7 +199,7 @@ void ReadParameters(Parameters& parameters)
       {
         line_stream
           >> parameters.T0;
-        ParsingCheck(line_stream,line_count,line);
+        mcutils::ParsingCheck(line_stream,line_count,line);
       }
     else if (
         (parameters.operator_name == "coordinate-sqr")
@@ -205,13 +212,13 @@ void ReadParameters(Parameters& parameters)
         line_stream
           >> coordinate_type_string
           >> parameters.T0;
-        ParsingCheck(line_stream,line_count,line);
+        mcutils::ParsingCheck(line_stream,line_count,line);
         if (coordinate_type_string=="r")
           parameters.coordinate_type = relative::CoordinateType::kR;
         else if (coordinate_type_string=="k")
           parameters.coordinate_type = relative::CoordinateType::kK;
         else
-          ParsingError(line_count,line,"invalid operator type (r/k)");
+          mcutils::ParsingError(line_count,line,"invalid operator type (r/k)");
       }
     else if (
         (parameters.operator_name == "coulomb")
@@ -222,7 +229,7 @@ void ReadParameters(Parameters& parameters)
         line_stream
           >> operator_type_pn_string
           >> parameters.num_steps;
-        ParsingCheck(line_stream,line_count,line);
+        mcutils::ParsingCheck(line_stream,line_count,line);
         if (operator_type_pn_string=="p")
           parameters.operator_type_pn = basis::OperatorTypePN::kP;
         else if (operator_type_pn_string=="n")
@@ -230,7 +237,7 @@ void ReadParameters(Parameters& parameters)
         else if (operator_type_pn_string=="total")
           parameters.operator_type_pn = basis::OperatorTypePN::kTotal;
         else
-          ParsingError(line_count,line,"invalid operator type (p/n/total)");
+          mcutils::ParsingError(line_count,line,"invalid operator type (p/n/total)");
       }
     else if (parameters.operator_name == "symmunit")
       // special for "symmunit"
@@ -247,7 +254,7 @@ void ReadParameters(Parameters& parameters)
           >> parameters.unit_tensor_labels.S
           >> parameters.unit_tensor_labels.J
           >> parameters.unit_tensor_labels.T;
-        ParsingCheck(line_stream,line_count,line);
+        mcutils::ParsingCheck(line_stream,line_count,line);
       }
   }
 
@@ -257,7 +264,7 @@ void ReadParameters(Parameters& parameters)
     std::getline(std::cin,line);
     std::istringstream line_stream(line);
     line_stream >> parameters.target_filename;
-    ParsingCheck(line_stream,line_count,line);
+    mcutils::ParsingCheck(line_stream,line_count,line);
   }
 
 }
@@ -270,7 +277,7 @@ void PopulateOperator(
     const Parameters& parameters,
     basis::RelativeSpaceLSJT& relative_space,
     std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
-    std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices
+    std::array<basis::OperatorBlocks<double>,3>& relative_component_blocks
   )
 // Define operator.
 //
@@ -279,7 +286,7 @@ void PopulateOperator(
 //      choice of operator to use
 //   relative_space (..., output) : target space
 //   relative_component_sectors (..., output) : target sectors
-//   relative_component_matrices (..., output) : target matrices
+//   relative_component_blocks (..., output) : target blocks
 {
 
   // define shortcut reference to operator parameters
@@ -296,21 +303,21 @@ void PopulateOperator(
     {
       basis::ConstructZeroOperatorRelativeLSJT(
           operator_parameters,
-          relative_space,relative_component_sectors,relative_component_matrices
+          relative_space,relative_component_sectors,relative_component_blocks
         );
     }
   else if (parameters.operator_name == "identity")
     {
       basis::ConstructIdentityOperatorRelativeLSJT(
           operator_parameters,
-          relative_space,relative_component_sectors,relative_component_matrices
+          relative_space,relative_component_sectors,relative_component_blocks
         );
     }
   else if (parameters.operator_name == "rsqr")  // DEPRECATED
     {
       relative::ConstructCoordinateSqr(
           operator_parameters,
-          relative_space,relative_component_sectors,relative_component_matrices,
+          relative_space,relative_component_sectors,relative_component_blocks,
           relative::CoordinateType::kR,
           0  // T0
         );
@@ -319,7 +326,7 @@ void PopulateOperator(
     {
       relative::ConstructCoordinateSqr(
           operator_parameters,
-          relative_space,relative_component_sectors,relative_component_matrices,
+          relative_space,relative_component_sectors,relative_component_blocks,
           relative::CoordinateType::kK,
           0  // T0
         );
@@ -328,7 +335,7 @@ void PopulateOperator(
     {
       relative::ConstructCoordinateSqr(
           operator_parameters,
-          relative_space,relative_component_sectors,relative_component_matrices,
+          relative_space,relative_component_sectors,relative_component_blocks,
           parameters.coordinate_type,
           parameters.T0
         );
@@ -337,7 +344,7 @@ void PopulateOperator(
     {
       relative::ConstructDipoleOperator(
           operator_parameters,
-          relative_space,relative_component_sectors,relative_component_matrices,
+          relative_space,relative_component_sectors,relative_component_blocks,
           parameters.coordinate_type,
           parameters.T0
         );
@@ -346,7 +353,7 @@ void PopulateOperator(
     {
       relative::ConstructQuadrupoleOperator(
           operator_parameters,
-          relative_space,relative_component_sectors,relative_component_matrices,
+          relative_space,relative_component_sectors,relative_component_blocks,
           parameters.coordinate_type,
           parameters.T0
         );
@@ -355,7 +362,7 @@ void PopulateOperator(
     {
       relative::ConstructOrbitalAMOperator(
           operator_parameters,
-          relative_space,relative_component_sectors,relative_component_matrices,
+          relative_space,relative_component_sectors,relative_component_blocks,
           parameters.T0
         );
     }
@@ -363,8 +370,15 @@ void PopulateOperator(
     {
       relative::ConstructSpinAMOperator(
           operator_parameters,
-          relative_space,relative_component_sectors,relative_component_matrices,
+          relative_space,relative_component_sectors,relative_component_blocks,
           parameters.T0
+        );
+    }
+  else if (parameters.operator_name == "isospin")
+    {
+      relative::ConstructIsospinOperator(
+          operator_parameters,
+          relative_space,relative_component_sectors,relative_component_blocks
         );
     }
   else if (parameters.operator_name == "coulomb")
@@ -372,7 +386,7 @@ void PopulateOperator(
       // 500 steps seems to suffice for ~8 digits precision at Nmax20
       relative::ConstructCoulombOperator(
           operator_parameters,
-          relative_space,relative_component_sectors,relative_component_matrices,
+          relative_space,relative_component_sectors,relative_component_blocks,
           parameters.operator_type_pn,
           parameters.num_steps
         );
@@ -382,7 +396,7 @@ void PopulateOperator(
       // start from zero operator
       basis::ConstructZeroOperatorRelativeLSJT(
           operator_parameters,
-          relative_space,relative_component_sectors,relative_component_matrices
+          relative_space,relative_component_sectors,relative_component_blocks
         );
 
       // define shortcut reference to unit tensor labels
@@ -390,7 +404,7 @@ void PopulateOperator(
 
       // look up subspace indices
       int gp = unit_tensor_labels.Lp%2;
-      int relative_subspace_index_bra = relative_space.LookUpSubspaceIndex(
+      std::size_t relative_subspace_index_bra = relative_space.LookUpSubspaceIndex(
           basis::RelativeSubspaceLSJTLabels(
               unit_tensor_labels.Lp,
               unit_tensor_labels.Sp,
@@ -406,7 +420,7 @@ void PopulateOperator(
                 << " -> index " << relative_subspace_index_bra
                 << std::endl;
       int g = unit_tensor_labels.L%2;
-      int relative_subspace_index_ket = relative_space.LookUpSubspaceIndex(
+      std::size_t relative_subspace_index_ket = relative_space.LookUpSubspaceIndex(
           basis::RelativeSubspaceLSJTLabels(
               unit_tensor_labels.L,
               unit_tensor_labels.S,
@@ -423,7 +437,7 @@ void PopulateOperator(
                 << std::endl;
 
       // look up state indices
-      int relative_state_index_bra = relative_subspace_bra.LookUpStateIndex(
+      std::size_t relative_state_index_bra = relative_subspace_bra.LookUpStateIndex(
           basis::RelativeStateLSJT::StateLabelsType(
               unit_tensor_labels.Np
             )
@@ -432,7 +446,7 @@ void PopulateOperator(
                 << " " << unit_tensor_labels.Np
                 << " -> index " << relative_state_index_bra
                 << std::endl;
-      int relative_state_index_ket = relative_subspace_ket.LookUpStateIndex(
+      std::size_t relative_state_index_ket = relative_subspace_ket.LookUpStateIndex(
           basis::RelativeStateLSJT::StateLabelsType(
               unit_tensor_labels.N
             )
@@ -444,10 +458,10 @@ void PopulateOperator(
 
       // select T0 component
       const basis::RelativeSectorsLSJT& relative_sectors = relative_component_sectors[unit_tensor_labels.T0];
-      basis::OperatorBlocks<double>& relative_matrices = relative_component_matrices[unit_tensor_labels.T0];
+      basis::OperatorBlocks<double>& relative_blocks = relative_component_blocks[unit_tensor_labels.T0];
 
       // look up sector
-      int relative_sector_index
+      std::size_t relative_sector_index
         = relative_sectors.LookUpSectorIndex(
             relative_subspace_index_bra,
             relative_subspace_index_ket
@@ -459,7 +473,7 @@ void PopulateOperator(
         assert(relative_state_index_bra<=relative_state_index_ket);
 
       // set matrix element
-      relative_matrices[relative_sector_index](relative_state_index_bra,relative_state_index_ket) = 1.;
+      relative_blocks[relative_sector_index](relative_state_index_bra,relative_state_index_ket) = 1.;
 
     }
 }
@@ -483,11 +497,11 @@ int main(int argc, char **argv)
   // set up operator
   basis::RelativeSpaceLSJT relative_space;
   std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
-  std::array<basis::OperatorBlocks<double>,3> relative_component_matrices;
+  std::array<basis::OperatorBlocks<double>,3> relative_component_blocks;
   PopulateOperator(
       parameters,
       relative_space,
-      relative_component_sectors,relative_component_matrices
+      relative_component_sectors,relative_component_blocks
     );
 
   // write operator
@@ -496,7 +510,7 @@ int main(int argc, char **argv)
       relative_space,
       parameters.operator_parameters,  // only need operator labels
       relative_component_sectors,
-      relative_component_matrices,
+      relative_component_blocks,
       true  // verbose
     );
 

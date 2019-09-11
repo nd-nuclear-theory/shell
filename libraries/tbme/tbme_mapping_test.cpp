@@ -137,6 +137,41 @@ void TestMappingRenumber()
 
 }
 
+void TestMappingReorder()
+{
+
+  std::cout << "TestMappingReorder" << std::endl;
+
+  // source space -- triangle
+  const int source_Nmax = 2;
+  const basis::OrbitalSpacePN source_orbital_space(source_Nmax);
+  const basis::TwoBodySpaceJJJPN source_space(
+      source_orbital_space,
+      basis::WeightMax(basis::Rank::kTwoBody,source_Nmax),
+      basis::TwoBodySpaceJJJPNOrdering::kPN
+    );
+  std::cout << source_space.DebugStr() << std::endl;
+
+  // target space -- triangle
+  const int target_Nmax = 2;
+  const basis::OrbitalSpacePN target_orbital_space(target_Nmax);
+  const basis::TwoBodySpaceJJJPN target_space(
+      source_orbital_space,
+      basis::WeightMax(basis::Rank::kTwoBody,target_Nmax),
+      basis::TwoBodySpaceJJJPNOrdering::kTz
+    );
+  std::cout << target_space.DebugStr() << std::endl;
+
+  // set up mapping
+  const shell::TwoBodyMapping two_body_mapping(
+      source_orbital_space,source_space,
+      target_orbital_space,target_space
+    );
+
+  std::cout << two_body_mapping.DebugStr() << std::endl;
+
+}
+
 ////////////////////////////////////////////////////////////////
 // main
 ////////////////////////////////////////////////////////////////
@@ -148,6 +183,7 @@ int main(int argc, char **argv)
   TestMappingSubset();
   TestMappingSuperset();
   TestMappingRenumber();
+  TestMappingReorder();
 
   // termination
   return 0;

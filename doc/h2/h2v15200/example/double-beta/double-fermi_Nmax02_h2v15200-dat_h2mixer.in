@@ -1,0 +1,15 @@
+set-target-indexing orbitals-Nmax02.dat 2 2 2 2 2
+set-target-multipolarity 0 0 2
+set-mass 2
+set-output-format 15200
+
+# built-in one-body sources
+define-ob-source builtin t+ orbitals-Nmax02.dat
+define-ob-source tensor-product t+t+ t+ t+ 0 1.000000e+00
+
+define-tb-source operatorU Ut+t+ t+t+
+define-tb-source operatorV Vt+t+ t+ t+ 1.000000e+00
+
+define-target double-fermi_Nmax02_h2v15200.dat
+  add-source Ut+t+  1.0
+  add-source Vt+t+  2.0

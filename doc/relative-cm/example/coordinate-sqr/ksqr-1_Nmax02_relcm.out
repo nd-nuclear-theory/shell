@@ -1,0 +1,24 @@
+
+moshinsky -- Moshinsky transformation of general relative operator
+version: 0.0.3-70-g6d282c0-dirty
+
+Parameters
+  rank 2 cutoff 2
+Reading relative operator file...
+  Filename: ../../../relative/example/coordinate-sqr/ksqr-1_Nmax02_rel.dat
+  Operator properties: J0 0 g0 0 T0_min 1 T0_max 1 symmetry 0
+  Truncation: Nmax 2 Jmax 3
+  Matrix elements: 9
+  Allocated: 10
+  Time: 0.000161849
+Augment to relative-cm LSJTN...
+  Time: 0.000131116
+  Allocated matrix elements: 76
+Gather relative-cm LSJT...
+  Time: 3.7534e-05
+Write relative-cm LSJT...
+Writing relative-cm operator file...
+  Filename: ksqr-1_Nmax02_relcm.dat
+  Operator properties: J0 0 g0 0 T0_min 1 T0_max 1 symmetry 0
+  Truncation: Nmax 2
+  Time: 0.00100294

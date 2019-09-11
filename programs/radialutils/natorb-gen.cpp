@@ -17,6 +17,9 @@
   + 11/28/17 (pjf): Print header with version.
   + 12/29/17 (pjf): Use input orbital indexing for output orbitals.
   + 12/30/17 (pjf): Ensure orbital file is properly sorted.
+  + 07/27/18 (pjf): Update for new OBDME input routines.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 08/16/19 (pjf): Remove radial operator type and power from OutOBMEStream.
 
 ******************************************************************************/
 
@@ -33,7 +36,7 @@
 
 #include "basis/nlj_orbital.h"
 #include "density/obdme_io.h"
-#include "radial/radial_io.h"
+#include "obme/obme_io.h"
 #include "basis/operator.h"
 #include "mcutils/eigen.h"
 
@@ -161,13 +164,13 @@ void SortEigensystem(Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>& eigensolver
                      Eigen::MatrixXd& eigenvectors)
 {
   // initialize Eigen objects
-  int dimension = eigensolver.eigenvalues().size();
+  std::size_t dimension = eigensolver.eigenvalues().size();
   eigenvalues.resize(dimension);
   Eigen::MatrixXd permutation_matrix = Eigen::MatrixXd::Zero(dimension, dimension);
   // generate a vector of pairs (sortable by std::sort) which keeps track of
   // the eigenvalue and the eigenvalue's original index
-  std::vector<std::pair<double,int>> eigenvalue_keys;
-  for (int i=0; i < dimension; ++i) {
+  std::vector<std::pair<double,std::size_t>> eigenvalue_keys;
+  for (std::size_t i=0; i < dimension; ++i) {
     eigenvalue_keys.emplace_back(eigensolver.eigenvalues()(i), i);
   }
 
@@ -179,7 +182,7 @@ void SortEigensystem(Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>& eigensolver
   std::sort(eigenvalue_keys.rbegin(), eigenvalue_keys.rend());
   #endif
 
-  for (int i=0; i<dimension; ++i) {
+  for (std::size_t i=0; i<dimension; ++i) {
     eigenvalues(i) = eigenvalue_keys[i].first;
     permutation_matrix(eigenvalue_keys[i].second, i) = 1;
   }
@@ -207,18 +210,17 @@ int main(int argc, const char *argv[]) {
 
   // Get OBDMEs
   basis::OperatorBlocks<double> density_matrices;
-  shell::InOBDMEReader obdme_reader(run_parameters.robdme_info, input_space);
-  obdme_reader.ReadMultipole(run_parameters.robdme_stat, 0, density_matrices);
+  shell::InOBDMEStreamMulti obdme_reader(run_parameters.robdme_info, run_parameters.robdme_stat, input_space);
 
-  // Get sectors
+  // Get sectors and blocks
   basis::OrbitalSectorsLJPN sectors;
-  obdme_reader.SetToIndexing(0, sectors);
+  obdme_reader.GetMultipole(0, sectors, density_matrices);
 
   // Here we loop through the density matrices and diagonalize each sector.
   basis::OperatorBlocks<double> xform_matrices;
   // TODO(pjf) generalize to use eigenvalues for orbital weights
   // std::vector<basis::OrbitalPNInfo> output_orbitals;
-  for (int sector_index = 0; sector_index < sectors.size(); ++sector_index) {
+  for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index) {
     // get next sector
     const basis::OrbitalSectorsLJPN::SectorType sector = sectors.GetSector(sector_index);
     basis::OrbitalSpeciesPN species = sector.bra_subspace().orbital_species();
@@ -248,11 +250,11 @@ int main(int argc, const char *argv[]) {
   // write xform out to file
   // TODO(pjf) construct new indexing for output
   basis::OrbitalSpaceLJPN& output_space = input_space;
-  basis::OrbitalSectorsLJPN output_sectors(input_space, output_space, 0, 0);
+  basis::OrbitalSectorsLJPN output_sectors(input_space, output_space, 0, 0, 0);
       // note hard-coded l0max=0, Tz0=0
-  shell::OutRadialStream xs(run_parameters.output_xform_file,
-                            input_space, output_space, output_sectors,
-                            shell::RadialOperatorType::kO, 0);
+  shell::OutOBMEStream xs(run_parameters.output_xform_file,
+                          input_space, output_space, output_sectors,
+                          basis::OneBodyOperatorType::kRadial);
   xs.Write(xform_matrices);
 
   // sort orbitals and write out

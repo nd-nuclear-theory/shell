@@ -29,9 +29,9 @@ void TestQuadrupole()
 
   // set up relative space
   basis::RelativeSpaceLSJT relative_space(Nmax,Jmax);
- 
-  for (const basis::OperatorTypePN& operator_species : {basis::OperatorTypePN::kTotal})
-  // for (const basis::OperatorTypePN& operator_species : {basis::OperatorTypePN::kPP,basis::OperatorTypePN::kNN,basis::OperatorTypePN::kTotal})
+
+  for (int T0 : {0})
+  // for (int T0 : {0,1})
     {
       // populate operator containers
       std::array<basis::RelativeSectorsLSJT,3> relative_component_sectors;
@@ -48,10 +48,10 @@ void TestQuadrupole()
           relative_space,
           relative_component_sectors,
           relative_component_matrices,
-          relative::KinematicOperator::kRSqr,
-          operator_species
+          relative::CoordinateType::kR,
+          T0
         );
-      std::string filename = fmt::format("quadrupole_test_Nmax{}_{}_rel.dat",Nmax,basis::kOperatorTypePNCodeChar[int(operator_species)]);
+      std::string filename = fmt::format("quadrupole_test_Nmax{}_{}_rel.dat",Nmax,T0);
       basis::WriteRelativeOperatorLSJT(
           filename,
           relative_space,
@@ -103,7 +103,7 @@ void TestCoulombSpline()
           basis::OperatorTypePN::kP,
           num_steps
         );
-  
+
       std::string filename = fmt::format("coulomb_test_Nmax{}_steps{}_rel.dat",Nmax,num_steps);
       basis::WriteRelativeOperatorLSJT(
           filename,

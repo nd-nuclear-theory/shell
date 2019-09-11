@@ -14,6 +14,7 @@
   + 11/4/16 (pjf): Created, based on radial-gen.cpp.
   + 10/12/17 (pjf): Update for changes to radial_io.
   + 11/28/17 (pjf): Print header with version.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ******************************************************************************/
 
@@ -26,7 +27,7 @@
 
 #include "mcutils/profiling.h"
 #include "basis/nlj_orbital.h"
-#include "radial/radial_io.h"
+#include "obme/obme_io.h"
 
 ////////////////////////////////////////////////////////////////
 // process arguments
@@ -113,21 +114,22 @@ int main(int argc, char **argv) {
   ProcessArguments(argc, argv, run_parameters);
 
   // Read input
-  shell::InRadialStream is(run_parameters.input_filename);
+  shell::InOBMEStream is(run_parameters.input_filename);
 
   // get indexing
   basis::OrbitalSpaceLJPN bra_orbital_space, ket_orbital_space;
   basis::OrbitalSectorsLJPN sectors;
-  shell::RadialOperatorType operator_type = is.radial_operator_type();
+  basis::OneBodyOperatorType operator_type = is.operator_type();
+  shell::RadialOperatorType radial_operator_type = is.radial_operator_type();
   int radial_operator_power = is.radial_operator_power();
   is.SetToIndexing(bra_orbital_space, ket_orbital_space, sectors);
 
   // check that this is an operator we can scale
-  if (operator_type == shell::RadialOperatorType::kO) {
+  if (radial_operator_type == shell::RadialOperatorType::kO) {
     std::cerr << "ERROR: Overlaps cannot be scaled. Exiting." << std::endl;
     std::exit(EXIT_FAILURE);
   }
-  if (operator_type == shell::RadialOperatorType::kGeneric) {
+  if (radial_operator_type == shell::RadialOperatorType::kGeneric) {
     std::cerr << "ERROR: Generic operators cannot be scaled. Exiting." << std::endl;
     std::exit(EXIT_FAILURE);
   }
@@ -138,10 +140,10 @@ int main(int argc, char **argv) {
 
   float proton_scale_factor = 1.;
   float neutron_scale_factor = 1.;
-  if (operator_type == shell::RadialOperatorType::kR) {
+  if (radial_operator_type == shell::RadialOperatorType::kR) {
     proton_scale_factor = std::pow(run_parameters.proton_scale, radial_operator_power);
     neutron_scale_factor = std::pow(run_parameters.neutron_scale, radial_operator_power);
-  } else if (operator_type == shell::RadialOperatorType::kK) {
+  } else if (radial_operator_type == shell::RadialOperatorType::kK) {
     proton_scale_factor = std::pow(run_parameters.proton_scale, -1*radial_operator_power);
     neutron_scale_factor = std::pow(run_parameters.neutron_scale, -1*radial_operator_power);
   }
@@ -151,9 +153,9 @@ int main(int argc, char **argv) {
   is.Read(matrices);
 
   // main loop
-  const int sectors_size = sectors.size();
+  const std::size_t sectors_size = sectors.size();
   #pragma omp parallel for
-  for (int sector_index=0; sector_index < sectors_size; ++sector_index) {
+  for (std::size_t sector_index=0; sector_index < sectors_size; ++sector_index) {
     if (sectors.GetSector(sector_index).bra_subspace().orbital_species() == basis::OrbitalSpeciesPN::kP) {
       matrices[sector_index] *= proton_scale_factor;
     } else if (sectors.GetSector(sector_index).bra_subspace().orbital_species() == basis::OrbitalSpeciesPN::kN) {
@@ -162,9 +164,9 @@ int main(int argc, char **argv) {
   }
 
   // write out to file
-  shell::OutRadialStream os(run_parameters.output_filename,
-                            bra_orbital_space, ket_orbital_space, sectors,
-                            operator_type, radial_operator_power);
+  shell::OutOBMEStream os(run_parameters.output_filename,
+                          bra_orbital_space, ket_orbital_space, sectors,
+                          operator_type, radial_operator_type, radial_operator_power);
   os.Write(matrices);
 
   is.Close();

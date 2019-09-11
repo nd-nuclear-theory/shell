@@ -1,0 +1,3 @@
+tb 2
+../../../relative/example/dipole/dipole_Nmax02_rel.dat rel
+dipole_Nmax02_relcm.dat relcm

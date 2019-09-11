@@ -8,14 +8,16 @@
   Mark A. Caprio
   University of Notre Dame
 
-  10/19/16 (mac): Created.
-  10/22/16 (mac): Add mode argument.
-  10/30/16 (mac): Update command line syntax.
-  11/13/16 (mac): Add sector matrix output mode.
-  11/28/17 (pjf): Include version in header.
-  02/12/18 (mac):
+  + 10/19/16 (mac): Created.
+  + 10/22/16 (mac): Add mode argument.
+  + 10/30/16 (mac): Update command line syntax.
+  + 11/13/16 (mac): Add sector matrix output mode.
+  + 11/28/17 (pjf): Include version in header.
+  + 02/12/18 (mac):
     - Remove artificial restriction to scalar operators.
     - Add sector tabulation.
+  + 02/21/19 (pjf): Add H2 Version15200 support.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ******************************************************************************/
 
@@ -112,7 +114,7 @@ void DoIndexing(shell::InH2Stream& input_stream)
   std::cout << orbital_space.DebugStr();
   std::cout << std::endl;
 
-  for (int subspace_index=0; subspace_index<orbital_space.size(); ++subspace_index)
+  for (std::size_t subspace_index=0; subspace_index<orbital_space.size(); ++subspace_index)
     {
       std::cout << fmt::format(" Subspace {} {}",subspace_index,orbital_space.GetSubspace(subspace_index).LabelStr()) << std::endl;
       std::cout << orbital_space.GetSubspace(subspace_index).DebugStr();
@@ -131,7 +133,7 @@ void DoIndexing(shell::InH2Stream& input_stream)
   std::cout << space.DebugStr();
   std::cout << std::endl;
 
-  for (int subspace_index=0; subspace_index<space.size(); ++subspace_index)
+  for (std::size_t subspace_index=0; subspace_index<space.size(); ++subspace_index)
     {
       std::cout << fmt::format(" Subspace {} {}",subspace_index,space.GetSubspace(subspace_index).LabelStr()) << std::endl;
       std::cout << space.GetSubspace(subspace_index).DebugStr();
@@ -154,10 +156,11 @@ void DoVerify(shell::InH2Stream& input_stream)
   std::cout << "Verification scan" << std::endl;
 
   // iterate over sectors
-  for (int sector_index = 0; sector_index < input_stream.num_sectors(); ++sector_index)
+  for (std::size_t sector_index = 0; sector_index < input_stream.num_sectors(); ++sector_index)
     {
       // read sector
-      input_stream.SkipSector();
+      Eigen::MatrixXd matrix;
+      input_stream.ReadSector(sector_index, matrix);
 
       // progress indicator
       std::cout << "." << std::flush;
@@ -171,11 +174,11 @@ void DoMatrices(shell::InH2Stream& input_stream)
   std::cout << std::endl;
 
   // iterate over sectors
-  for (int sector_index = 0; sector_index < input_stream.num_sectors(); ++sector_index)
+  for (std::size_t sector_index = 0; sector_index < input_stream.num_sectors(); ++sector_index)
     {
       // read sector
       Eigen::MatrixXd matrix;
-      input_stream.ReadSector(matrix);
+      input_stream.ReadSector(sector_index, matrix);
 
       // head sector
       const typename basis::TwoBodySectorsJJJPN::SectorType& sector

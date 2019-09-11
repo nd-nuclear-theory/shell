@@ -7,18 +7,21 @@
   Mark A. Caprio
   University of Notre Dame
 
-  - 10/21/16 (mac): Created, as two_body_mapping.
-  - 11/4/16 (mac):
-    + Add storage of subspace_mapping.
-    + Add RemappedMatrixJJJPN.
-    + Rename to tbme_mapping.
+  + 10/21/16 (mac): Created, as two_body_mapping.
+  + 11/4/16 (mac):
+    - Add storage of subspace_mapping.
+    - Add RemappedMatrixJJJPN.
+    - Rename to tbme_mapping.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ****************************************************************/
 
 #ifndef TBME_MAPPING_H_
 #define TBME_MAPPING_H_
 
+#include <cstddef>
 #include <vector>
+#include <limits>
 
 #include "eigen3/Eigen/Dense"
 
@@ -61,17 +64,17 @@ namespace shell {
 
     // mapping data
 
-    static const int kNone = -1;
+    static constexpr std::size_t kNone = basis::kNone;
     // Flag value for missing target.
 
-    std::vector<std::vector<int>> orbital_mapping;
+    std::vector<std::vector<std::size_t>> orbital_mapping;
     // Nested vectors providing mapping of orbital indices from
     // (source_subspace_index, state_index) to target_state_index.
     //
     // Precondition: It is assumed that both p and n subspaces will be
     // present.
 
-    std::vector<int> subspace_mapping;
+    std::vector<std::size_t> subspace_mapping;
     // Vectors providing mapping of two-body subspace indices from
     // source_subspace_index to target_subspace_index.
     //
@@ -83,7 +86,7 @@ namespace shell {
     // need to look up the indices of the subspaces.  Nonetheless, the
     // subspace mapping can be informative diagnostic information.
 
-    std::vector<std::vector<std::tuple<int,int>>> state_mapping;
+    std::vector<std::vector<std::tuple<std::size_t,std::size_t>>> state_mapping;
     // Nested vectors providing mapping of two-body state indices from
     // (source_subspace_index, state_index) to
     // (target_state_index, relative_phase).

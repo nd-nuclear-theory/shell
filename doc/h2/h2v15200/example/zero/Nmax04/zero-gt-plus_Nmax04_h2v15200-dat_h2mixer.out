@@ -1,0 +1,18 @@
+
+h2mixer -- MFDn H2 file generation
+version: 0.0.3-58-g12d167b
+
+Parallelization: max_threads 8, num_procs 8
+
+Output stream
+  File: zero-gt-plus_Nmax04_h2v15200.dat
+  Format: 15200 (text)
+  Operator properties: J0 1 g0 0 Tz0 1
+  Orbitals: p 15 n 15 (oscillator-like true)
+  Truncation: p 4.0000 n 4.0000 pp 4.0000 nn 4.0000 pn 4.0000
+  Sectors: pp 27 nn 0 pn 27 => total 54
+  Matrix elements: pp 4601 nn 0 pn 4601 => total 9202
+
+......................................................
+(Total time: 0.0878695)
+

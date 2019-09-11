@@ -42,7 +42,7 @@ namespace relative {
       << "Reading relative operator file (JPV format)..." << std::endl
       << "  Filename: " << source_filename << std::endl;
     std::ifstream is(source_filename);
-    StreamCheck(bool(is),source_filename,"Failed to open relative operator file");
+    mcutils::StreamCheck(bool(is),source_filename,"Failed to open relative operator file");
 
     // set up references for convenience
     const basis::RelativeSectorsLSJT& sectors = relative_component_sectors[0];
@@ -68,7 +68,7 @@ namespace relative {
 
           // check first for terminating line
           line_stream >> J;
-          ParsingCheck(line_stream,line_count,line);
+          mcutils::ParsingCheck(line_stream,line_count,line);
           if (J==99999)
             {
               done = true;
@@ -78,7 +78,7 @@ namespace relative {
 
           // read rest of header line
           line_stream >> S >> L >> Lp >> Nmax >> dimension >> mn >> hw >> identifier;
-          ParsingCheck(line_stream,line_count,line);
+          mcutils::ParsingCheck(line_stream,line_count,line);
         }
         if (verbose)
           std::cout << fmt::format("  Input sector (raw labels): J {} S {} L {} Lp {} ipcut {} dimension {} mn {} hw {} ident {}",J,S,L,Lp,Nmax,dimension,mn,hw,identifier)
@@ -124,10 +124,10 @@ namespace relative {
         int gp = Lp%2;
 
         // look up corresponding sector in our internal representation
-        int subspace_index_bra = relative_space.LookUpSubspaceIndex(
+        std::size_t subspace_index_bra = relative_space.LookUpSubspaceIndex(
             basis::RelativeSubspaceLSJTLabels(Lp,S,J,Tp,gp)
           );
-        int subspace_index_ket = relative_space.LookUpSubspaceIndex(
+        std::size_t subspace_index_ket = relative_space.LookUpSubspaceIndex(
             basis::RelativeSubspaceLSJTLabels(L,S,J,T,g)
           );
         // short circuit if subspace falls outside our target truncation
@@ -137,14 +137,14 @@ namespace relative {
             std::exit(EXIT_FAILURE);
           }
         assert(subspace_index_bra<=subspace_index_ket);  // subspaces should be canonical after our L swap
-        int sector_index = sectors.LookUpSectorIndex(subspace_index_bra,subspace_index_ket);
+        std::size_t sector_index = sectors.LookUpSectorIndex(subspace_index_bra,subspace_index_ket);
         const basis::RelativeSectorsLSJT::SectorType& sector = sectors.GetSector(sector_index);
 
         // look up target matrix dimensions
-        int dimension_bra = sector.bra_subspace().size();
-        int dimension_ket = sector.ket_subspace().size();
+        std::size_t dimension_bra = sector.bra_subspace().size();
+        std::size_t dimension_ket = sector.ket_subspace().size();
         // print sector diagnostics
-        int sector_size;
+        std::size_t sector_size;
         if (sector.IsDiagonal())
           sector_size = dimension_ket * (dimension_ket + 1);
         else
@@ -177,9 +177,9 @@ namespace relative {
         //     until (read enough matrix elements) or (fail due to end of line)
         //   until (read enough matrix elements)
 
-        int matrix_element_count = 0;
-        int row_index = 0;
-        int column_index = 0;
+        std::size_t matrix_element_count = 0;
+        std::size_t row_index = 0;
+        std::size_t column_index = 0;
         bool done = (matrix_element_count == expected_matrix_elements);
         while (!done)
           {
@@ -187,7 +187,7 @@ namespace relative {
             ++line_count;
             std::getline(is,line);
             std::istringstream line_stream(line);
-            StreamCheck(bool(is),source_filename,"Failure reading matrix elements");  // can fail if there are not enough matrix elements and we read past EOF
+            mcutils::StreamCheck(bool(is),source_filename,"Failure reading matrix elements");  // can fail if there are not enough matrix elements and we read past EOF
             // std::cout << fmt::format("matrix_element_count {}",matrix_element_count) << std::endl;
             // std::cout << line_count << " : " << line << std::endl;
 
@@ -210,7 +210,7 @@ namespace relative {
                 int n = column_index;
                 if (flip)
                   std::swap(np,n);
-              
+
                 // save matrix element
                 if ((np<dimension_bra)&&(n<dimension_ket))
                   matrices[sector_index](np,n) = matrix_element;
@@ -268,7 +268,7 @@ namespace relative {
     //   <0||A0||0> = <00|A|00>
     //
     // For T=1 sectors:
-    // 
+    //
     // {<1||A0||1>, <1||A1||1>, <1||A2||1>}
     // = 1/3. * {
     //           {1,1,1},
@@ -279,7 +279,7 @@ namespace relative {
     //
     // We have listed Tz sectors in the order pp/nn/pn to match
     // the TwoBodySpecies enum ordering.
-    
+
     // transformation matrix
     //
     // indexed by (T,int(two_body_species))
@@ -323,8 +323,8 @@ namespace relative {
           );
 
         // accumulate matrix elements
-        const int num_sectors = relative_component_sectors_input[0].size();
-        for (int sector_index=0; sector_index < num_sectors; ++sector_index)
+        const std::size_t num_sectors = relative_component_sectors_input[0].size();
+        for (std::size_t sector_index=0; sector_index < num_sectors; ++sector_index)
           // for each source "isoscalar operator" sector
           {
             // set up aliases for convenience
@@ -332,14 +332,14 @@ namespace relative {
               = relative_component_sectors_input[0].GetSector(sector_index);
             const Eigen::MatrixXd& input_matrix
               = relative_component_matrices_input[0][sector_index];
-          
+
             // extract sector isospin labels
             int bra_T = input_sector.bra_subspace().T();
             int ket_T = input_sector.ket_subspace().T();
             if (bra_T!=ket_T)
               continue;  // short circuit known vanishing T-changing sectors
             int T = ket_T;
-          
+
             if (T==0)
               // sector with (T'T)=(0,0)
               {
@@ -357,7 +357,7 @@ namespace relative {
                 for (int T0=0; T0<=2; ++T0)
                   {
                     // look up target sector
-                    int target_sector_index = relative_component_sectors[T0].LookUpSectorIndex(input_sector.bra_subspace_index(),input_sector.ket_subspace_index());
+                    std::size_t target_sector_index = relative_component_sectors[T0].LookUpSectorIndex(input_sector.bra_subspace_index(),input_sector.ket_subspace_index());
                     assert(sector_index!=basis::kNone);
                     const typename basis::RelativeSectorsLSJT::SectorType& target_sector
                       = relative_component_sectors[T0].GetSector(target_sector_index);
@@ -392,7 +392,7 @@ namespace relative {
 
                   }
 
-          
+
               }
           }
       }

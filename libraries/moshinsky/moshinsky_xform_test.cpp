@@ -42,7 +42,7 @@ void TestRelativeCM()
   basis::SetOperatorToIdentity(relative_sectors,relative_matrices);
 
   // inspect relative identity operator (sanity check)
-  for (int sector_index=0; sector_index<relative_sectors.size(); ++sector_index)
+  for (std::size_t sector_index=0; sector_index<relative_sectors.size(); ++sector_index)
     {
       const basis::RelativeSectorsLSJT::SectorType& relative_sector = relative_sectors.GetSector(sector_index);
       std::cout << " sector " << sector_index << " diagonal " << relative_sector.IsDiagonal() << std::endl;
@@ -63,7 +63,7 @@ void TestRelativeCM()
   basis::OperatorBlocks<double> relative_cm_matrices;
   relative_cm_matrices.resize(relative_cm_sectors.size());
 
-  for (int sector_index=0; sector_index<relative_cm_sectors.size(); ++sector_index)
+  for (std::size_t sector_index=0; sector_index<relative_cm_sectors.size(); ++sector_index)
     {
       const basis::RelativeCMSectorsLSJTN::SectorType& relative_cm_sector = relative_cm_sectors.GetSector(sector_index);
 
@@ -185,10 +185,11 @@ void TestTransformSimple(
         relative_space,relative_component_sectors,relative_component_matrices
       );
   else if (operator_code=='K')
-     ConstructKinematicOperator(
+     ConstructCoordinateSqr(
          operator_labels,
          relative_space,relative_component_sectors,relative_component_matrices,
-         relative::KinematicOperator::kKSqr
+         relative::CoordinateType::kK,
+         0
        );
 
   ////////////////////////////////////////////////////////////////
@@ -221,7 +222,7 @@ void TestTransformSimple(
   std::array<basis::OperatorBlocks<double>,3> two_body_lsjtn_component_matrices;
 
   // do transformation
-  Timer two_body_lsjtn_timer;
+  mcutils::SteadyTimer two_body_lsjtn_timer;
   two_body_lsjtn_timer.Start();
   moshinsky::TransformOperatorRelativeCMLSJTNToTwoBodyLSJTN(
       operator_labels,
@@ -242,7 +243,7 @@ void TestTransformSimple(
 
   std::cout << "writing two-body LSJTN matrices" << std::endl;
   for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
-    for (int sector_index=0; sector_index<two_body_lsjtn_component_sectors[T0].size(); ++sector_index)
+    for (std::size_t sector_index=0; sector_index<two_body_lsjtn_component_sectors[T0].size(); ++sector_index)
       {
       const basis::TwoBodySectorsLSJTN::SectorType& two_body_lsjtn_sector
         = two_body_lsjtn_component_sectors[T0].GetSector(sector_index);
@@ -261,7 +262,7 @@ void TestTransformSimple(
           std::cout << std::endl;
         }
       std::cout << std::endl;
-  
+
     }
 
   ////////////////////////////////////////////////////////////////
@@ -311,7 +312,7 @@ void TestTransformSimple(
   std::array<basis::OperatorBlocks<double>,3> two_body_jjjtn_component_matrices;
 
   // do recoupling
-  Timer two_body_jjjtn_timer;
+  mcutils::SteadyTimer two_body_jjjtn_timer;
   two_body_jjjtn_timer.Start();
   moshinsky::TransformOperatorTwoBodyLSJTNToTwoBodyJJJTN(
       operator_labels,
@@ -332,7 +333,7 @@ void TestTransformSimple(
 
   std::cout << "writing two-body JJJTN matrices" << std::endl;
   for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
-    for (int sector_index=0; sector_index<two_body_jjjtn_component_sectors[T0].size(); ++sector_index)
+    for (std::size_t sector_index=0; sector_index<two_body_jjjtn_component_sectors[T0].size(); ++sector_index)
       {
       const basis::TwoBodySectorsJJJTN::SectorType& two_body_jjjtn_sector
         = two_body_jjjtn_component_sectors[T0].GetSector(sector_index);
@@ -350,7 +351,7 @@ void TestTransformSimple(
           std::cout << std::endl;
         }
       std::cout << std::endl;
-  
+
     }
 
   ////////////////////////////////////////////////////////////////
@@ -404,7 +405,7 @@ void TestTransformSimple(
   basis::OperatorBlocks<double> two_body_jjjpn_matrices;
 
   // do branching
-  Timer two_body_jjjpn_timer;
+  mcutils::SteadyTimer two_body_jjjpn_timer;
   two_body_jjjpn_timer.Start();
   moshinsky::TransformOperatorTwoBodyJJJTToTwoBodyJJJPN(
       operator_labels,
@@ -430,7 +431,7 @@ void TestTransformSimple(
         );
   std::ofstream jjjpn_stream(two_body_jjjpn_filename.c_str());
   jjjpn_stream << jjjpn_sstream.str();
-  
+
 }
 
 ////////////////////////////////////////////////////////////////
@@ -480,7 +481,7 @@ void TestTransformTiming(
   std::array<basis::OperatorBlocks<double>,3> relative_component_matrices;
 
   // do construction
-  Timer relative_lsjt_timer;
+  mcutils::SteadyTimer relative_lsjt_timer;
   relative_lsjt_timer.Start();
   ConstructIdentityOperatorRelativeLSJT(
       operator_labels,
@@ -501,7 +502,7 @@ void TestTransformTiming(
   std::array<basis::OperatorBlocks<double>,3> relative_cm_lsjtn_component_matrices;
 
   // do transformation
-  Timer relative_cm_lsjtn_timer;
+  mcutils::SteadyTimer relative_cm_lsjtn_timer;
   relative_cm_lsjtn_timer.Start();
   moshinsky::TransformOperatorRelativeLSJTToRelativeCMLSJTN(
       operator_labels,
@@ -523,7 +524,7 @@ void TestTransformTiming(
   std::array<basis::OperatorBlocks<double>,3> two_body_lsjtn_component_matrices;
 
   // do transformation
-  Timer two_body_lsjtn_timer;
+  mcutils::SteadyTimer two_body_lsjtn_timer;
   two_body_lsjtn_timer.Start();
   moshinsky::TransformOperatorRelativeCMLSJTNToTwoBodyLSJTN(
       operator_labels,
@@ -545,7 +546,7 @@ void TestTransformTiming(
   std::array<basis::OperatorBlocks<double>,3> two_body_jjjtn_component_matrices;
 
   // do recoupling
-  Timer two_body_jjjtn_timer;
+  mcutils::SteadyTimer two_body_jjjtn_timer;
   two_body_jjjtn_timer.Start();
   moshinsky::TransformOperatorTwoBodyLSJTNToTwoBodyJJJTN(
       operator_labels,
@@ -567,7 +568,7 @@ void TestTransformTiming(
   std::array<basis::OperatorBlocks<double>,3> two_body_jjjt_component_matrices;
 
   // construct gathered operator
-  Timer two_body_jjjt_timer;
+  mcutils::SteadyTimer two_body_jjjt_timer;
   two_body_jjjt_timer.Start();
   basis::GatherOperatorTwoBodyJJJTNToTwoBodyJJJT(
       operator_labels,
