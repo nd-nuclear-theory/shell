@@ -1,0 +1,5 @@
+set-ket-basis oscillator orbitals-Nmax06.dat
+define-operator-target solid-harmonic r 1 obme-r1-Nmax06.dat
+define-operator-target solid-harmonic r 2 obme-r2-Nmax06.dat
+define-operator-target am l total obme-l-Nmax06.dat
+define-operator-target am s total obme-s-Nmax06.dat

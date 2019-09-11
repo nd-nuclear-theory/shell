@@ -10,12 +10,12 @@
     set-ket-basis <basis_type> <orbital_filename>
       basis_type = oscillator|laguerre
     define-operator-target <mode> <id> ...
-      define-operator-target kinematic <id> [args...] <output_filename>
-        id = identity|r.r|k.k|rY|kY
-        args = <order> (for rY, kY)
-      define-operator-target am <id> <species> <output_filename>
+      define-operator-target kinematic <id> <output_filename>
+        id = identity|r|k|r.r|k.k
+      define-operator-target solid-harmonic <id> <order> <output_filename>
+        id = r|k
+      define-operator-target am <id> <output_filename>
         id = l|l2|s|s2|j|j2
-        species = total|p|n
       define-operator-target isospin <id> <output_filename>
         id = tz|t+|t-
     define-radial-target <operator_type> <order> <j0> <g0> <tz0> <output_filename>
@@ -53,6 +53,9 @@
   + 10/18/18 (pjf): Update to use new obme library.
   + 08/14/29 (pjf): Add additional operator types.
   + 08/16/19 (pjf): Remove radial operator type and power from OutOBMEStream.
+  + 08/27/19 (pjf): Separate out solid harmonic generation as a separate mode.
+  + 08/28/19 (pjf): Remove operator species option from am mode.
+  + 09/04/19 (pjf): Fix typo in kKinematicOneBodyOperatorDefinitions for "k".
 
 ******************************************************************************/
 
@@ -83,7 +86,7 @@ const double kPi = 3.1415926535897;
 /////////////////////////////////////////////////////////////////
 
 enum class OperationMode {
-  kKinematic, kAngularMomentum, kIsospin, kRadial, kXform
+  kKinematic, kSolidHarmonic, kAngularMomentum, kIsospin, kRadial, kXform
 };
 
 std::unordered_map<std::string,std::tuple<shell::RadialOperatorType,int,int>>
@@ -91,10 +94,10 @@ kKinematicOneBodyOperatorDefinitions =
   {
     // {id, {operator type, order, j0}}
     {"identity", {shell::RadialOperatorType::kO, 0, 0}},
+    {"r", {shell::RadialOperatorType::kR, 1, 1}},
+    {"k", {shell::RadialOperatorType::kK, 1, 1}},
     {"r.r", {shell::RadialOperatorType::kR, 2, 0}},
     {"k.k", {shell::RadialOperatorType::kK, 2, 0}},
-    {"rY",  {shell::RadialOperatorType::kR, basis::kNone, basis::kNone}},
-    {"kY",  {shell::RadialOperatorType::kK, basis::kNone, basis::kNone}}
   };
 
 std::unordered_map<std::string,std::tuple<am::AngularMomentumOperatorType,int,int>>
@@ -147,7 +150,6 @@ struct OperatorParameters {
   int j0;
   int g0;
   int tz0;
-  basis::OperatorTypePN operator_species;
 };
 
 void PrintUsage(char** argv) { std::cout << "Usage: " << argv[0] << std::endl; }
@@ -209,21 +211,23 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
         if (!kKinematicOneBodyOperatorDefinitions.count(id))
           mcutils::ParsingError(line_count,line,"Unrecognized kinematic operator ID");
         parameters.mode = OperationMode::kKinematic;
-        // parameters.id = id;
         std::tie(parameters.radial_operator_type, parameters.order, parameters.j0)
           = kKinematicOneBodyOperatorDefinitions.at(id);
 
-        if (parameters.order == basis::kNone)
-        {
-          int order;
-          line_stream >> order;
-          mcutils::ParsingCheck(line_stream,line_count,line);
-          parameters.order = parameters.j0 = order;
-        }
-
         parameters.g0 = parameters.j0%2;
         parameters.tz0 = 0;
-        parameters.operator_species = basis::OperatorTypePN::kTotal;
+      }
+      else if (mode == "solid-harmonic")
+      {
+        int order;
+        line_stream >> order;
+        mcutils::ParsingCheck(line_stream,line_count,line);
+
+        parameters.mode = OperationMode::kSolidHarmonic;
+        parameters.radial_operator_type = shell::kCharCodeRadialOperatorType.at(id);
+        parameters.order = parameters.j0 = order;
+        parameters.g0 = parameters.j0%2;
+        parameters.tz0 = 0;
       }
       else if (mode == "am")
       {
@@ -235,9 +239,6 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
           = kAngularMomentumOneBodyOperatorDefinitions.at(id);
         parameters.g0 = 0;
         parameters.tz0 = 0;
-        line_stream >> operator_species_s;
-        mcutils::ParsingCheck(line_stream,line_count,line);
-        parameters.operator_species = basis::kCharCodeOperatorTypePN.at(operator_species_s);
       }
       else if (mode == "isospin")
       {
@@ -262,7 +263,7 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
       // define-radial-target <operator_type> <order> <j0> <g0> <Tz0> <output_filename>
       //   operator_type = r|k
       OperatorParameters parameters;
-      char operator_type;
+      std::string operator_type;
 
       // set basic parameters
       parameters.bra_orbital_filename = ket_orbital_filename;
@@ -279,9 +280,7 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
       mcutils::ParsingCheck(line_stream, line_count, line);
 
       // fill remaining parameters
-      parameters.radial_operator_type
-        = static_cast<shell::RadialOperatorType>(operator_type);
-      parameters.operator_species = basis::OperatorTypePN::kTotal;
+      parameters.radial_operator_type = shell::kCharCodeRadialOperatorType.at(operator_type);
 
       mcutils::FileExistCheck(parameters.output_filename, false, true);
 
@@ -299,7 +298,6 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
       parameters.j0 = 0;
       parameters.g0 = 0;
       parameters.tz0 = 0;
-      parameters.operator_species = basis::OperatorTypePN::kTotal;
 
       line_stream >> parameters.scale_factor
                   >> basis_type_str
@@ -347,6 +345,23 @@ void BuildOperator(OperatorParameters operator_parameters)
         ket_space,
         sectors,
         matrices
+      );
+  }
+  else if (operator_parameters.mode == OperationMode::kSolidHarmonic)
+  {
+    shell::SolidHarmonicOneBodyOperator(
+        operator_parameters.ket_basis_type,
+        operator_parameters.radial_operator_type,
+        operator_parameters.order,
+        ket_space,
+        sectors,
+        matrices
+      );
+
+    // difference between C and Y -- Brink & Satchler (1993), app. IV,  p.145
+    basis::ScalarMultiplyOperator(
+        sectors, matrices,
+        Hat(operator_parameters.order) * am::kInvSqrt4Pi
       );
   }
   else if (operator_parameters.mode == OperationMode::kAngularMomentum)
@@ -397,6 +412,7 @@ void BuildOperator(OperatorParameters operator_parameters)
   // file mode flag
   basis::OneBodyOperatorType operator_type;
   if ((operator_parameters.mode == OperationMode::kKinematic)
+      ||(operator_parameters.mode == OperationMode::kSolidHarmonic)
       ||(operator_parameters.mode == OperationMode::kAngularMomentum)
       ||(operator_parameters.mode == OperationMode::kIsospin)) {
     operator_type = basis::OneBodyOperatorType::kSpherical;

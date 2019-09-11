@@ -10,10 +10,14 @@
 
   + 02/20/18 (pjf): Created.
   + 12/11/18 (pjf): Add LadderOperatorType enum.
+  + 08/26/19 (pjf): Add reverse definition for RadialOperatorType.
 ****************************************************************/
 
 #ifndef OBME_OPERATOR_H_
 #define OBME_OPERATOR_H_
+
+#include <string>
+#include <unordered_map>
 
 #include "basis/nlj_operator.h"
 #include "basis/operator.h"
@@ -29,6 +33,14 @@ enum class RadialOperatorType : char {
   kO = 'o',       // overlaps
   kGeneric = 'g'  // generic
 };
+
+// notational reverse definitions for operator types
+//
+// Example:
+//   std::string operator_type_code = "p";
+//   ...
+//   os << shell::kCharCodeRadialOperatorType[operator_type_code];
+extern const std::unordered_map<std::string, RadialOperatorType> kCharCodeRadialOperatorType;
 
 /**
  * Ladder IDs

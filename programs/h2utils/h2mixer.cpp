@@ -18,7 +18,7 @@
     define-ob-source <mode> <id> ...
       define-ob-source input <id> <obme_filename> <j0> <g0> <tz0>
       define-ob-source builtin <id> [orbital_filename]
-        id = l|l2|s|s2|j|j2|t2|tz|t+|t-|c+|c
+        id = identity|l|l2|s|s2|j|j2|tz|t+|t-|c+|c
       define-ob-source linear-combination <id>
         add-ob-source <id> <coefficient>
       define-ob-source tensor-product <id> <ob_factor_a_id> <ob_factor_b_id> <j0> [scale_factor]
@@ -74,6 +74,8 @@
     - Make scale_factor optional for tensor products.
     - Make orbital_filename optional for builtin ob source.
     - Remove all builtin two-body angular momentum operator code.
+  + 08/22/19 (pjf): Remove ability to overwrite existing one-body channels.
+  + 09/06/19 (pjf): Truncate target orbitals before constructing orbital space.
 ******************************************************************************/
 
 #include <omp.h>
@@ -300,7 +302,6 @@ kAngularMomentumOneBodyOperatorDefinitions =
 std::unordered_map<std::string,int>
 kIsospinOneBodyOperatorDefinitions =
   {
-    // {"t2", 0},
     {"tz",  0},
     {"t+", +1},
     {"t-", -1}
@@ -1061,7 +1062,10 @@ void OneBodyInputChannel::ConstructOneBodyOperatorData(
   bool new_operator;
   std::tie(it, new_operator) = operators.emplace(id, id);
   if (!new_operator)
-    std::cerr << fmt::format("WARN: Replacing operator {}...", id) << std::endl;
+  {
+    std::cerr << fmt::format("ERROR: Operator {} exists!", id) << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
   OneBodyOperatorData& operator_data = it->second;
 
   // open radial operator file
@@ -1111,7 +1115,10 @@ void OneBodyBuiltinChannel::ConstructOneBodyOperatorData(
   bool new_operator;
   std::tie(it, new_operator) = operators.emplace(id, id);
   if (!new_operator)
-    std::cerr << fmt::format("WARN: Replacing operator {}...", id) << std::endl;
+  {
+    std::cerr << fmt::format("ERROR: Operator {} exists!", id) << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
   OneBodyOperatorData& operator_data = it->second;
 
   if (orbital_filename == "")
@@ -1222,8 +1229,7 @@ void OneBodyLinearCombinationChannel::ConstructOneBodyOperatorData(
   std::tie(it, new_operator) = operators.emplace(id, id);
   if (!new_operator)
   {
-    std::cerr << fmt::format("ERROR {}: Operator {} already exists!", __LINE__, id)
-              << std::endl;
+    std::cerr << fmt::format("ERROR: Operator {} exists!", id) << std::endl;
     std::exit(EXIT_FAILURE);
   }
   OneBodyOperatorData& operator_data = it->second;
@@ -1293,8 +1299,7 @@ void OneBodyTensorProductChannel::ConstructOneBodyOperatorData(
   std::tie(it, new_operator) = operators.emplace(id, id);
   if (!new_operator)
   {
-    std::cerr << fmt::format("ERROR {}: Operator {} already exists!", __LINE__, id)
-              << std::endl;
+    std::cerr << fmt::format("ERROR: Operator {} exists!", id) << std::endl;
     std::exit(EXIT_FAILURE);
   }
   OneBodyOperatorData& operator_data = it->second;
@@ -1372,15 +1377,24 @@ void OneBodyXformChannel::ConstructOneBodyOperatorData(
   }
   const XformData& xform_data = xforms.at(xform_id);
 
+  // construct new OneBodyOperatorData in-place
+  OneBodyOperatorMap::iterator it;
+  bool new_operator;
+  std::tie(it, new_operator) = operators.emplace(id, id);
+  if (!new_operator)
+  {
+    std::cerr << fmt::format("ERROR: Operator {} exists!", id) << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+  OneBodyOperatorData& operator_data = it->second;
+
   // construct new indexing
   assert(source_data.orbital_space.OrbitalInfo() == xform_data.bra_orbital_space.OrbitalInfo());
-  int j0 = source_data.sectors.j0();
-  int g0 = source_data.sectors.g0();
-  int tz0 = source_data.sectors.Tz0();
-  basis::OrbitalSectorsLJPN sectors(
-      xform_data.ket_orbital_space, j0, g0, tz0
+  operator_data.orbital_space = xform_data.ket_orbital_space;
+  operator_data.sectors = basis::OrbitalSectorsLJPN(
+      xform_data.ket_orbital_space,
+      source_data.sectors.j0(), source_data.sectors.g0(), source_data.sectors.Tz0()
     );
-  basis::OperatorBlocks<double> matrices;
 
   // perform transformation
   shell::SimilarityTransformOperator(
@@ -1390,25 +1404,9 @@ void OneBodyXformChannel::ConstructOneBodyOperatorData(
       xform_data.matrices,
       source_data.sectors,
       source_data.matrices,
-      sectors,
-      matrices
+      operator_data.sectors,
+      operator_data.matrices
     );
-
-  // construct new OneBodyOperatorData in-place
-  OneBodyOperatorMap::iterator it;
-  bool new_operator;
-  std::tie(it, new_operator) = operators.emplace(id, id);
-  if (!new_operator)
-  {
-    std::cerr << fmt::format("WARN: overwriting operator {}.", id)
-              << std::endl;
-  }
-  OneBodyOperatorData& operator_data = it->second;
-  operator_data.orbital_space = xform_data.ket_orbital_space;
-  operator_data.sectors = basis::OrbitalSectorsLJPN(
-      operator_data.orbital_space, j0, g0, tz0
-    );
-  operator_data.matrices = matrices;
 
 }
 
@@ -1431,21 +1429,20 @@ void InitializeTargetIndexing(
     // oscillator-like indexing
     {
       target_indexing.orbital_space = basis::OrbitalSpacePN(run_parameters.truncation_cutoff);
-      target_indexing.space = basis::TwoBodySpaceJJJPN(
-          target_indexing.orbital_space, run_parameters.weight_max, space_ordering
-        );
     }
   else
     // generic indexing
     {
       std::ifstream orbital_file(run_parameters.orbital_filename);
       basis::OrbitalPNList orbital_info = basis::ParseOrbitalPNStream(orbital_file,true);
+      orbital_info = basis::TruncateOrbitalList(run_parameters.weight_max, orbital_info);
       target_indexing.orbital_space = basis::OrbitalSpacePN(orbital_info);
-      target_indexing.space = basis::TwoBodySpaceJJJPN(
-          target_indexing.orbital_space, run_parameters.weight_max, space_ordering
-        );
     }
 
+  // set up two-body space
+  target_indexing.space = basis::TwoBodySpaceJJJPN(
+      target_indexing.orbital_space, run_parameters.weight_max, space_ordering
+    );
   // set up sectors
   target_indexing.sectors = basis::TwoBodySectorsJJJPN(
       target_indexing.space,
