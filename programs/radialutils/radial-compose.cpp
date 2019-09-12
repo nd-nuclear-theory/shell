@@ -16,6 +16,7 @@
   + 10/12/17 (pjf): Update for changes to radial_io.
   + 11/28/17 (pjf): Print header with version.
   + 10/18/18 (pjf): Update to use new obme library.
+  + 08/16/19 (pjf): Remove radial operator type and power from OutOBMEStream.
 
 ******************************************************************************/
 
@@ -129,14 +130,12 @@ int main(int argc, const char* argv[])
   olaps2.SetToIndexing(olap2_bra_space, olap2_ket_space, olap2_sectors);
 
   // check that overlaps are valid
-  if ((olaps1.radial_operator_type() != shell::RadialOperatorType::kO)
-      || (olaps1.operator_type() != basis::OneBodyOperatorType::kRadial))
+  if (olaps1.operator_type() != basis::OneBodyOperatorType::kRadial)
   {
     std::cerr << "ERROR: Invalid olap1." << std::endl;
     std::exit(EXIT_FAILURE);
   }
-  if ((olaps2.radial_operator_type() != shell::RadialOperatorType::kO)
-      || (olaps1.operator_type() != basis::OneBodyOperatorType::kRadial))
+  if (olaps1.operator_type() != basis::OneBodyOperatorType::kRadial)
   {
     std::cerr << "ERROR: Invalid olap2." << std::endl;
     std::exit(EXIT_FAILURE);
@@ -151,9 +150,6 @@ int main(int argc, const char* argv[])
   // construct new indexing
   const basis::OneBodyOperatorType& out_operator_type =
       basis::OneBodyOperatorType::kRadial;
-  const shell::RadialOperatorType out_radial_operator_type =
-      shell::RadialOperatorType::kO;
-  const int out_operator_power = 0;
   const basis::OrbitalSpaceLJPN& out_bra_space = olap1_bra_space;
   const basis::OrbitalSpaceLJPN& out_ket_space = olap2_ket_space;
   basis::OrbitalSectorsLJPN out_sectors(out_bra_space, out_ket_space, 0, 0, 0);
@@ -175,7 +171,7 @@ int main(int argc, const char* argv[])
             << std::endl;
   shell::OutOBMEStream os(
       run_parameters.output_filename, out_bra_space, out_ket_space, out_sectors,
-      out_operator_type, out_radial_operator_type, out_operator_power);
+      out_operator_type);
   os.Write(output_matrices);
   os.Close();
 

@@ -2,6 +2,8 @@
 // format/mode-specific I/O: v15200
 ////////////////////////////////////////////////////////////////
 
+#include <cstdint>
+
 #include "tbme/h2_io.h"  // include for IDE tools
 
 #include "mcutils/parsing.h"
@@ -18,7 +20,7 @@ namespace shell {
     // header parameters
     int J0, g0, Tz0;
     float wp, wn, wpp, wnn, wpn;
-    int size_pp, size_nn, size_pn;
+    long int size_pp, size_nn, size_pn;
 
     if (h2_mode()==H2Mode::kText)
       {
@@ -27,7 +29,7 @@ namespace shell {
         std::string line;
 
         // orbital listing header
-        int num_orbitals_p, num_orbitals_n;
+        std::size_t num_orbitals_p, num_orbitals_n;
         {
           mcutils::GetLine(stream(), line, line_count_);
           std::istringstream line_stream(line);
@@ -36,9 +38,9 @@ namespace shell {
         }
 
         // orbital listing body
-        int num_orbitals = num_orbitals_p + num_orbitals_n;
+        std::size_t num_orbitals = num_orbitals_p + num_orbitals_n;
         std::string orbital_info_str;
-        for (int orbital_line_count=0; orbital_line_count < num_orbitals; ++orbital_line_count)
+        for (std::size_t orbital_line_count=0; orbital_line_count < num_orbitals; ++orbital_line_count)
           {
             mcutils::GetLine(stream(), line, line_count_);
             orbital_info_str.append(line);
@@ -56,7 +58,7 @@ namespace shell {
           mcutils::GetLine(stream(), line, line_count_);
           std::istringstream line_stream(line);
           line_stream >> J0 >> g0 >> Tz0;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
 
         // header line 2: 2-body basis limit
@@ -64,7 +66,7 @@ namespace shell {
           mcutils::GetLine(stream(), line, line_count_);
           std::istringstream line_stream(line);
           line_stream >> wpp >> wpn >> wnn;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
 
         // header line 3: matrix size
@@ -72,7 +74,7 @@ namespace shell {
           mcutils::GetLine(stream(), line, line_count_);
           std::istringstream line_stream(line);
           line_stream >> size_pp >> size_pn >> size_nn;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
       }
     else if (h2_mode()==H2Mode::kBinary)
@@ -81,119 +83,93 @@ namespace shell {
         int num_fields, bytes;
 
         // orbital listing header
-        num_fields=2;
-        bytes = num_fields * kIntegerSize;
         int num_orbitals_p, num_orbitals_n;
-        mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
-        mcutils::ReadBinary<int>(stream(),num_orbitals_p);
-        mcutils::ReadBinary<int>(stream(),num_orbitals_n);
-        mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
+        mcutils::ReadBinary<int32_t>(stream(),num_orbitals_p);
+        mcutils::ReadBinary<int32_t>(stream(),num_orbitals_n);
 
         // orbital listing body
-        /* int num_orbitals = num_orbitals_p + num_orbitals_n; */
-        for (basis::OrbitalSpeciesPN orbital_species : {basis::OrbitalSpeciesPN::kP,basis::OrbitalSpeciesPN::kN})
+        std::size_t num_orbitals = num_orbitals_p + num_orbitals_n;
+
+        // set up vector storage for quantum numbers
+        std::vector<int32_t> orbitals_n;
+        std::vector<int32_t> orbitals_l;
+        std::vector<int32_t> orbitals_twice_j;
+        std::vector<int32_t> orbitals_twice_tz;
+        std::vector<float> orbitals_weight;
+
+        // do vector read for each orbital property
+        // read n
+        for (std::size_t orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
           {
-            // select number of orbitals
-            int num_orbitals;
-            if (orbital_species==basis::OrbitalSpeciesPN::kP)
-              num_orbitals = num_orbitals_p;
-            else
-              num_orbitals = num_orbitals_n;
+            int n;
+            mcutils::ReadBinary<int32_t>(stream(),n);
+            orbitals_n.push_back(n);
+          }
+        // read l
+        for (std::size_t orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
+          {
+            int l;
+            mcutils::ReadBinary<int32_t>(stream(),l);
+            orbitals_l.push_back(l);
+          }
+        // read twice_j
+        for (std::size_t orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
+          {
+            int twice_j;
+            mcutils::ReadBinary<int32_t>(stream(),twice_j);
+            orbitals_twice_j.push_back(twice_j);
+          }
+        // read twice_tz
+        for (std::size_t orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
+          {
+            int twice_tz;
+            mcutils::ReadBinary<int32_t>(stream(),twice_tz);
+            orbitals_twice_tz.push_back(twice_tz);
+          }
+        // read weight
+        for (std::size_t orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
+          {
+            float weight;
+            mcutils::ReadBinary<float>(stream(),weight);
+            orbitals_weight.push_back(weight);
+          }
 
-            // set up vector storage for quantum numbers
-            std::vector<int> orbitals_n;
-            std::vector<int> orbitals_l;
-            std::vector<int> orbitals_twice_j;
-            std::vector<float> orbitals_weight;
+        // store orbital info
+        for (std::size_t orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
+          {
+            int n = orbitals_n[orbital_index];
+            int l = orbitals_l[orbital_index];
+            HalfInt j = HalfInt(orbitals_twice_j[orbital_index],2);
+            HalfInt tz = HalfInt(orbitals_twice_tz[orbital_index],2);
+            double weight = orbitals_weight[orbital_index];
 
-            // do vector read for each orbital property
-            // read n
-            bytes = num_orbitals * kIntegerSize;
-            mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
-            for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-              {
-                int n;
-                mcutils::ReadBinary<int>(stream(),n);
-                orbitals_n.push_back(n);
-              }
-            mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
-            // read l
-            bytes = num_orbitals * kIntegerSize;
-            mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
-            for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-              {
-                int l;
-                mcutils::ReadBinary<int>(stream(),l);
-                orbitals_l.push_back(l);
-              }
-            mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
-            // read twice_j
-            bytes = num_orbitals * kIntegerSize;
-            mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
-            for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-              {
-                int twice_j;
-                mcutils::ReadBinary<int>(stream(),twice_j);
-                orbitals_twice_j.push_back(twice_j);
-              }
-            mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
-            // read weight
-            bytes = num_orbitals * kFloatSize;
-            mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
-            for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-              {
-                float weight;
-                mcutils::ReadBinary<float>(stream(),weight);
-                orbitals_weight.push_back(weight);
-              }
-            mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
-
-            // store orbital info
-            for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-              {
-                int n = orbitals_n[orbital_index];
-                int l = orbitals_l[orbital_index];
-                int twice_j = orbitals_twice_j[orbital_index];
-                double weight = orbitals_weight[orbital_index];
-                HalfInt j = HalfInt(twice_j,2);
-
-                orbitals.push_back(basis::OrbitalPNInfo(orbital_species,n,l,j,weight));
-             }
+            orbitals.push_back(basis::OrbitalPNInfo(n,l,j,tz,weight));
           }
 
         // two-body indexing
 
         // header line 1: operator properties
-        num_fields=3;
-        bytes = num_fields * kIntegerSize;
-        mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
-        mcutils::ReadBinary<int>(stream(),J0);
-        mcutils::ReadBinary<int>(stream(),g0);
-        mcutils::ReadBinary<int>(stream(),Tz0);
-        mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
+        mcutils::ReadBinary<int32_t>(stream(),J0);
+        mcutils::ReadBinary<int32_t>(stream(),g0);
+        mcutils::ReadBinary<int32_t>(stream(),Tz0);
 
         // header line 2: 2-body basis limit
-        num_fields=3;
-        bytes = num_fields * kFloatSize;
-        mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
         mcutils::ReadBinary<float>(stream(),wpp);
         mcutils::ReadBinary<float>(stream(),wpn);
         mcutils::ReadBinary<float>(stream(),wnn);
-        mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
 
         // header line 3: matrix size
-        num_fields=3;
-        bytes = num_fields * kIntegerSize;
-        mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
-        mcutils::ReadBinary<int>(stream(),size_pp);
-        mcutils::ReadBinary<int>(stream(),size_pn);
-        mcutils::ReadBinary<int>(stream(),size_nn);
-        mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
+        mcutils::ReadBinary<int64_t>(stream(),size_pp);
+        mcutils::ReadBinary<int64_t>(stream(),size_pn);
+        mcutils::ReadBinary<int64_t>(stream(),size_nn);
       }
 
     // set up indexing
     orbital_space_ = basis::OrbitalSpacePN(orbitals);
     // std::cout << orbital_space_.DebugStr() << std::endl;
+    // wp and wn are implicitly defined by the orbital space
+    wp = orbital_space().GetSubspace(0).weight_max();
+    wn = orbital_space().GetSubspace(1).weight_max();
     space_ = basis::TwoBodySpaceJJJPN(
         orbital_space_,
         basis::WeightMax(wp,wn,wpp,wnn,wpn),
@@ -240,6 +216,10 @@ namespace shell {
               basis::MFDnOrbitalFormat::kVersion15200
             );
 
+        // sanity check: orbital space weight max should match space weight max
+        assert(orbital_space().GetSubspace(0).weight_max()==space().weight_max().one_body[0]);
+        assert(orbital_space().GetSubspace(1).weight_max()==space().weight_max().one_body[1]);
+
         // write two-body header info
         stream()
           // header line 1: operator properties
@@ -261,68 +241,53 @@ namespace shell {
         // dump orbitals
 
         // header: dimensions
-        mcutils::WriteBinary<int>(stream(),2*kIntegerSize);
-        for (int subspace_index=0; subspace_index < orbital_space().size(); ++subspace_index)
-          mcutils::WriteBinary<int>(stream(),orbital_space().GetSubspace(subspace_index).size());
-        mcutils::WriteBinary<int>(stream(),2*kIntegerSize);
+        for (std::size_t subspace_index=0; subspace_index < orbital_space().size(); ++subspace_index)
+          mcutils::WriteBinary<int32_t>(stream(),orbital_space().GetSubspace(subspace_index).size());
 
         // orbital listing body
-        for (int subspace_index=0; subspace_index < orbital_space().size(); ++subspace_index)
-          {
-            const std::vector<basis::OrbitalPNInfo> orbitals = orbital_space().GetSubspace(subspace_index).OrbitalInfo();
-            const int num_orbitals = orbitals.size();
+        const std::vector<basis::OrbitalPNInfo> orbitals = orbital_space().OrbitalInfo();
+        const std::size_t num_orbitals = orbitals.size();
 
-            // do vector write for each orbital property
-            // write n
-            mcutils::WriteBinary<int>(stream(),num_orbitals*kIntegerSize);
-            for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-              mcutils::WriteBinary<int>(stream(),orbitals[orbital_index].n);
-            mcutils::WriteBinary<int>(stream(),num_orbitals*kIntegerSize);
-            // write l
-            mcutils::WriteBinary<int>(stream(),num_orbitals*kIntegerSize);
-            for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-              mcutils::WriteBinary<int>(stream(),orbitals[orbital_index].l);
-            mcutils::WriteBinary<int>(stream(),num_orbitals*kIntegerSize);
-            // write twice_j
-            mcutils::WriteBinary<int>(stream(),num_orbitals*kIntegerSize);
-            for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-              mcutils::WriteBinary<int>(stream(),TwiceValue(orbitals[orbital_index].j));
-            mcutils::WriteBinary<int>(stream(),num_orbitals*kIntegerSize);
-            // write weight
-            mcutils::WriteBinary<int>(stream(),num_orbitals*kFloatSize);
-            for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-              mcutils::WriteBinary<float>(stream(),orbitals[orbital_index].weight);
-            mcutils::WriteBinary<int>(stream(),num_orbitals*kFloatSize);
-          }
+        // do vector write for each orbital property
+        // write n
+        for (std::size_t orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
+          mcutils::WriteBinary<int32_t>(stream(),orbitals[orbital_index].n);
+        // write l
+        for (std::size_t orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
+          mcutils::WriteBinary<int32_t>(stream(),orbitals[orbital_index].l);
+        // write twice_j
+        for (std::size_t orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
+          mcutils::WriteBinary<int32_t>(stream(),TwiceValue(orbitals[orbital_index].j));
+        // write twice_tz
+        for (std::size_t orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
+          mcutils::WriteBinary<int32_t>(
+              stream(),
+              TwiceValue(basis::kOrbitalSpeciesPNCodeTz[int(orbitals[orbital_index].orbital_species)])
+            );
+        // write weight
+        for (std::size_t orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
+          mcutils::WriteBinary<float>(stream(),orbitals[orbital_index].weight);
 
         // two-body indexing
 
         // header line 1: operator properties
-        num_fields=3;
-        bytes = num_fields * kIntegerSize;
-        mcutils::WriteBinary<int>(stream(),bytes);
-        mcutils::WriteBinary<int>(stream(),sectors().J0());
-        mcutils::WriteBinary<int>(stream(),sectors().g0());
-        mcutils::WriteBinary<int>(stream(),sectors().Tz0());
-        mcutils::WriteBinary<int>(stream(),bytes);
+        mcutils::WriteBinary<int32_t>(stream(),sectors().J0());
+        mcutils::WriteBinary<int32_t>(stream(),sectors().g0());
+        mcutils::WriteBinary<int32_t>(stream(),sectors().Tz0());
+
+        // sanity check: orbital space weight max should match space weight max
+        assert(orbital_space().GetSubspace(0).weight_max()==space().weight_max().one_body[0]);
+        assert(orbital_space().GetSubspace(1).weight_max()==space().weight_max().one_body[1]);
 
         // header line 2: 2-body basis limit
-        num_fields=3;
-        bytes = num_fields * kFloatSize;
-        mcutils::WriteBinary<int>(stream(),bytes);
         mcutils::WriteBinary<float>(stream(),space().weight_max().two_body[0]);  // TODO(pjf) change if TwoBodySpeciesPN enum changes
         mcutils::WriteBinary<float>(stream(),space().weight_max().two_body[2]);  // TODO(pjf) change if TwoBodySpeciesPN enum changes
         mcutils::WriteBinary<float>(stream(),space().weight_max().two_body[1]);  // TODO(pjf) change if TwoBodySpeciesPN enum changes
-        mcutils::WriteBinary<int>(stream(),bytes);
 
         // header line 3: matrix size
-        num_fields=3;
-        bytes = num_fields * kIntegerSize;
-        mcutils::WriteBinary<int>(stream(),bytes);
-        mcutils::WriteBinary<int>(stream(),size_by_type()[0]);  // TODO(pjf) change if TwoBodySpeciesPN enum changes
-        mcutils::WriteBinary<int>(stream(),size_by_type()[2]);  // TODO(pjf) change if TwoBodySpeciesPN enum changes
-        mcutils::WriteBinary<int>(stream(),size_by_type()[1]);  // TODO(pjf) change if TwoBodySpeciesPN enum changes
-        mcutils::WriteBinary<int>(stream(),bytes);
+        mcutils::WriteBinary<int64_t>(stream(),size_by_type()[0]);  // TODO(pjf) change if TwoBodySpeciesPN enum changes
+        mcutils::WriteBinary<int64_t>(stream(),size_by_type()[2]);  // TODO(pjf) change if TwoBodySpeciesPN enum changes
+        mcutils::WriteBinary<int64_t>(stream(),size_by_type()[1]);  // TODO(pjf) change if TwoBodySpeciesPN enum changes
       }
   };
 
@@ -344,26 +309,16 @@ namespace shell {
     // allocate matrix
     matrix = Eigen::MatrixXd::Zero(bra_subspace.size(),ket_subspace.size());
 
-    // read FORTRAN record beginning delimiter
-    if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
-      {
-        int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        mcutils::VerifyBinary<int>(
-            stream(),entries*kIntegerSize,
-            "Encountered unexpected value in H2 file","record delimiter"
-          );
-      }
-
     // get offsets to convert index within orbital subspace to index in all orbitals
-    int num_orbitals_p = orbital_space().GetSubspace(0).size();
+    std::size_t num_orbitals_p = orbital_space().GetSubspace(0).size();
     int bra_index1_offset = ((bra_subspace.orbital_subspace1().orbital_species()==basis::OrbitalSpeciesPN::kP) ? 1 : num_orbitals_p+1);
     int bra_index2_offset = ((bra_subspace.orbital_subspace2().orbital_species()==basis::OrbitalSpeciesPN::kP) ? 1 : num_orbitals_p+1);
     int ket_index1_offset = ((ket_subspace.orbital_subspace1().orbital_species()==basis::OrbitalSpeciesPN::kP) ? 1 : num_orbitals_p+1);
     int ket_index2_offset = ((ket_subspace.orbital_subspace2().orbital_species()==basis::OrbitalSpeciesPN::kP) ? 1 : num_orbitals_p+1);
 
     // iterate over matrix elements
-    for (int bra_index=0; bra_index<bra_subspace.size(); ++bra_index)
-      for (int ket_index=0; ket_index<ket_subspace.size(); ++ket_index)
+    for (std::size_t bra_index=0; bra_index<bra_subspace.size(); ++bra_index)
+      for (std::size_t ket_index=0; ket_index<ket_subspace.size(); ++ket_index)
         {
 
           // diagonal sector: restrict to upper triangle
@@ -391,7 +346,7 @@ namespace shell {
                 >> input_twice_J_bra
                 >> input_twice_J_ket
                 >> input_matrix_element;
-              ParsingCheck(line_stream,line_count_,line);
+              mcutils::ParsingCheck(line_stream,line_count_,line);
 
               // validate input fields against expected values
               bool inputs_as_expected = (
@@ -403,7 +358,7 @@ namespace shell {
                   && (input_twice_J_ket == 2*ket.J())
                 );
               if (!inputs_as_expected)
-                ParsingError(line_count_,line,"Unexpected matrix element labels in input data");
+                mcutils::ParsingError(line_count_,line,"Unexpected matrix element labels in input data");
             }
           else if (h2_mode()==H2Mode::kBinary)
             {
@@ -412,16 +367,6 @@ namespace shell {
 
           matrix(bra_index,ket_index) = input_matrix_element;
         }
-
-    // read FORTRAN record ending delimiter
-    if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
-      {
-        int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        mcutils::VerifyBinary<int>(
-            stream(),entries*kIntegerSize,
-            "Encountered unexpected value in H2 file","record delimiter"
-          );
-      }
   }
 
   void InH2Stream::SkipSector_Version15200()
@@ -438,36 +383,12 @@ namespace shell {
     // sectors are stored.
     assert(sector.IsUpperTriangle());
 
-    // read FORTRAN record beginning delimiter
-    if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
-      {
-        int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        mcutils::VerifyBinary<int>(
-            stream(),entries*kIntegerSize,
-            "Encountered unexpected value in H2 file","record delimiter"
-          );
-      }
-
     // calculate number of matrix elements in sector
-    int sector_entries = 0;
-    if (sector.IsDiagonal())
-      // diagonal sector
-      {
-        int dimension = ket_subspace.size();
-        sector_entries = dimension*(dimension+1)/2;
-      }
-    else  // if (sector.IsUpperTriangle())
-      // upper triangle sector (but not diagonal)
-      {
-        int bra_dimension = bra_subspace.size();
-        int ket_dimension = ket_subspace.size();
-        sector_entries = bra_dimension*ket_dimension;
-      }
-
+    std::size_t sector_entries = GetSectorCount(sector);
     // skip matrix elements
     if (h2_mode()==H2Mode::kText)
       {
-        for (int indx=0; indx<sector_entries; ++indx)
+        for (std::size_t indx=0; indx<sector_entries; ++indx)
           // skip sector_entries lines
           {
             std::string line;
@@ -477,17 +398,7 @@ namespace shell {
     else if (h2_mode()==H2Mode::kBinary)
       // simply move file pointer ahead
       {
-        stream().seekg(sector_entries*kIntegerSize, std::ios_base::cur);
-      }
-
-    // read FORTRAN record ending delimiter
-    if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
-      {
-        int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        mcutils::VerifyBinary<int>(
-            stream(),entries*kIntegerSize,
-            "Encountered unexpected value in H2 file","record delimiter"
-          );
+        stream().seekg(sector_entries*kFloatSize, std::ios_base::cur);
       }
   }
 
@@ -508,23 +419,16 @@ namespace shell {
     // sectors are stored.
     assert(sector.IsUpperTriangle());
 
-    // write FORTRAN record beginning delimiter
-    if ((h2_mode()==H2Mode::kBinary) && SectorIsFirstOfType())
-      {
-        int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        mcutils::WriteBinary<int>(stream(),entries*kIntegerSize);
-      }
-
     // get offsets to convert index within orbital subspace to index in all orbitals
-    int num_orbitals_p = orbital_space().GetSubspace(0).size();
+    std::size_t num_orbitals_p = orbital_space().GetSubspace(0).size();
     int bra_index1_offset = ((bra_subspace.orbital_subspace1().orbital_species()==basis::OrbitalSpeciesPN::kP) ? 1 : num_orbitals_p+1);
     int bra_index2_offset = ((bra_subspace.orbital_subspace2().orbital_species()==basis::OrbitalSpeciesPN::kP) ? 1 : num_orbitals_p+1);
     int ket_index1_offset = ((ket_subspace.orbital_subspace1().orbital_species()==basis::OrbitalSpeciesPN::kP) ? 1 : num_orbitals_p+1);
     int ket_index2_offset = ((ket_subspace.orbital_subspace2().orbital_species()==basis::OrbitalSpeciesPN::kP) ? 1 : num_orbitals_p+1);
 
     // iterate over matrix elements
-    for (int bra_index=0; bra_index<bra_subspace.size(); ++bra_index)
-      for (int ket_index=0; ket_index<ket_subspace.size(); ++ket_index)
+    for (std::size_t bra_index=0; bra_index<bra_subspace.size(); ++bra_index)
+      for (std::size_t ket_index=0; ket_index<ket_subspace.size(); ++ket_index)
         {
 
           // diagonal sector: restrict to upper triangle
@@ -575,14 +479,5 @@ namespace shell {
               mcutils::WriteBinary<float>(stream(),output_matrix_element);
             }
         }
-
-    // write FORTRAN record ending delimiter
-    if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
-      {
-        int entries = size_by_type()[int(ket_subspace.two_body_species())];
-        mcutils::WriteBinary<int>(stream(),entries*kIntegerSize);
-      }
   }
-
-}
-
+}  // namespace shell

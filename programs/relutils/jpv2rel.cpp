@@ -74,9 +74,9 @@ void ReadParameters(Parameters& parameters)
     line_stream >> parameters.Nmax
                 >> parameters.Jmax
                 >> parameters.T0_max;
-    ParsingCheck(line_stream,line_count,line);
+    mcutils::ParsingCheck(line_stream,line_count,line);
     if (!((parameters.T0_max==0)||(parameters.T0_max==2)))
-        ParsingError(line_count,line,"Invalid T0_max");
+        mcutils::ParsingError(line_count,line,"Invalid T0_max");
   }
 
   // line 2: source filename(s)
@@ -91,7 +91,7 @@ void ReadParameters(Parameters& parameters)
         >> parameters.source_filenames[0]
         >> parameters.source_filenames[1]
         >> parameters.source_filenames[2];
-    ParsingCheck(line_stream,line_count,line);
+    mcutils::ParsingCheck(line_stream,line_count,line);
   }
 
   // line 3: target filename
@@ -100,7 +100,7 @@ void ReadParameters(Parameters& parameters)
     std::getline(std::cin,line);
     std::istringstream line_stream(line);
     line_stream >> parameters.target_filename;
-    ParsingCheck(line_stream,line_count,line);
+    mcutils::ParsingCheck(line_stream,line_count,line);
   }
 
 }

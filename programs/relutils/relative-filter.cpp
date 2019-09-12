@@ -17,7 +17,7 @@
 
     identity -- no filter (simply copy)
     Nrelmax <cutoff> -- cutoff on bra and ket relative quanta
-    N0max <cutoff> -- cutoff on quanta carried by operator (i.e., |delta Nrel|) 
+    N0max <cutoff> -- cutoff on quanta carried by operator (i.e., |delta Nrel|)
 
   Example (relative-filter.in):
     coulomb_Nmax20_p_rel.dat coulomb_Nmax20_p_Nrelmax02_rel.dat
@@ -172,9 +172,9 @@ void FilterOperator(
         // diagnostics
         if (verbose)
           {
-            // 
-            std::cout 
-              << " sector " 
+            //
+            std::cout
+              << " sector "
               << sector_index
               << std::endl;
           }

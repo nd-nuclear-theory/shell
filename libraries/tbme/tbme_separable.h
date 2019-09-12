@@ -43,6 +43,9 @@
     - Rewrite UpgradeOneBodyOperatorJJJPN and RacahReduceTensorProductJJJPN
       for generic nonscalar operators.
     - Remove RacahReduceDotProductJJJPN (redundant to RacahReduceTensorProductJJJPN).
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 07/05/19 (pjf): Remove all built-in angular momentum, kinematic, and isospin
+    operators.
 
 ****************************************************************/
 
@@ -175,146 +178,7 @@ namespace shell {
   //   store (bool): do memory access to write entry
 
   ////////////////////////////////////////////////////////////////
-  // kinematic operators
   ////////////////////////////////////////////////////////////////
+}  // namespace shell
 
-  enum class CoordinateSqrOperatorType {kUTSqr,kVT1T2};
-
-  Eigen::MatrixXd
-  CoordinateSqrMatrixJJJPN(
-      const basis::OrbitalSpaceLJPN& radial_orbital_space,
-      const basis::OrbitalSectorsLJPN& radial_sectors,
-      const basis::OperatorBlocks<double>& radial_matrices,
-      const RadialOperatorType& radial_operator_type,
-      CoordinateSqrOperatorType coordinate_sqr_operator_type,
-      const basis::TwoBodySectorsJJJPN::SectorType& sector,
-      int A, int J0
-    );
-  // Populate matrix with two-body matrix elements of coordinate-squared
-  // operator.
-  //
-  // Case kUTSqr:
-  //
-  //   Populate matrix with two-body matrix elements for the
-  //   *one-body* operator U_(T^2) obtained from a scalar one-body
-  //   operator T^2, i.e., r^2 or k^2, on a given JJJPN sector.
-  //
-  //   This one-body operator is related to the two-body operator
-  //   V_(T^2), also defined in csbasis, by U_(T^2) = 1/(A-1)*V_(T^2).
-  //   See csbasis (51).
-  //
-  //   Obtained by csbasis (52)-(54).
-  //
-  // Case kUTSqr:
-  //
-  //   Populate matrix with two-body matrix elements for the
-  //   *two-body* operator V_(T1.T2) obtained from a a dot product of
-  //   one-body vector operators (i.e., T = r or k), on a given JJJPN
-  //   sector.
-  //
-  //   Obtained by csbasis (55)-(60).
-  //
-  // Precondition: It is assumed that the sector is valid for an isoscalar.
-  //
-  // Arguments:
-  //   radial_orbital_space, radial_sectors, radial_matrices (...):
-  //      definition of radial matrix elements (T^2 for UTSqr or T for VT1T2)
-  //   radial_operator_type (shell::RadialOperatorType): whether
-  //     coordinate (kR) or momentum (kK) space (only affects phase factor
-  //     calculation)
-  //   coordinate_sqr_operator_type (CoordinateSqrOperatorType): whether UTSqr or VT1T2 matrix
-  //   sector (basis::TwoBodySectorsJJJPN::SectorType) : the sector to
-  //     populate
-  //   A (int): atomic mass number
-  //   J0 (int): two-body operator J0
-  //
-  // Returns:
-  //   (Eigen::MatrixXd) : the matrix for this sector
-
-  ////////////////////////////////////////////////////////////////
-  // angular momentum operators
-  ////////////////////////////////////////////////////////////////
-
-  // Note: The implementation of AngularMomentumMatrixJJJPN is
-  // redundant to CoordinateSqrMatrixJJJPN and could be reimplemented more
-  // simply in terms of CoordinateSqrMatrixJJJPN by definition of
-  // appropriate "radial" matrix realizations for the various angular
-  // momentum operators.
-
-  // enum class AngularMomentumOperatorFamily {kOrbital,kSpin,kTotal};
-  DEPRECATED("use am::AngularMomentumOperatorType instead")
-  typedef am::AngularMomentumOperatorType AngularMomentumOperatorFamily;
-  // enum class AngularMomentumOperatorSpecies {kP,kN,kTotal};
-  DEPRECATED("use basis::OperatorTypePN instead")
-  typedef basis::OperatorTypePN AngularMomentumOperatorSpecies ;
-
-  Eigen::MatrixXd
-  AngularMomentumMatrixJJJPN(
-      am::AngularMomentumOperatorType operator_family,
-      basis::OperatorTypePN operator_species,
-      const basis::TwoBodySectorsJJJPN::SectorType& sector,
-      int A
-    );
-  // Populate matrix with two-body matrix elements for a squared
-  // angular momentum operator, on a given JJJPN sector.
-  //
-  // Precondition: It is assumed that the sector is valid for a scalar
-  // (and isoscalar and positive parity), i.e., is a diagonal sector.
-  //
-  // Only the upper triangle of the returned matrix is populated (this
-  // operator only has diagonal sectors).
-  //
-  // Arguments:
-  //   operator_family (shell::AngularMomentumOperatorFamily):
-  //     identifies momentum operator type (kOrbital, kSpin, kTotal)
-  //   operator_species (shell::AngularMomentumOperatorSpecies):
-  //     whether operator is total or restricted (kP, kN, kTotal)
-  //   sector (basis::TwoBodySectorsJJJPN::SectorType) : the sector to
-  //     populate
-  //   A (int): atomic mass number
-  //
-  // Returns:
-  //   (Eigen::MatrixXd) : the matrix for this sector
-
-  ////////////////////////////////////////////////////////////////
-  // isospin operators
-  ////////////////////////////////////////////////////////////////
-
-  enum class IsospinOperatorType {kSquared, kTz, kRaising, kLowering};
-
-  Eigen::MatrixXd
-  IsospinMatrixJJJPN(
-      // overlap matrix element data
-      const basis::OrbitalSpaceLJPN& overlap_orbital_space,
-      const basis::OrbitalSectorsLJPN& overlap_sectors,
-      const basis::OperatorBlocks<double>& overlap_matrices,
-      IsospinOperatorType operator_type,
-      const basis::TwoBodySectorsJJJPN::SectorType& sector,
-      int A
-    );
-  // Populate matrix with two-body matrix elements for an isospin
-  // operator, on a given JJJPN sector.
-  //
-  // Precondition: It is assumed that the sector is valid for a scalar
-  // (and positive parity).
-  //
-  // Only the upper triangle of the returned matrix is populated if
-  // the sector is diagonal.
-  //
-  // Arguments:
-  //   overlap_orbital_space, overlap_sectors, overlap_matrices (...):
-  //      definition of pn-overlap matrix elements
-  //   operator_type (shell::IsospinOperatorType): isospin operator to
-  //     calculate
-  //   sector (basis::TwoBodySectorsJJJPN::SectorType) : the sector to
-  //     populate
-  //   A (int): atomic mass number
-  //
-  // Returns:
-  //   (Eigen::MatrixXd) : the matrix for this sector
-
-  ////////////////////////////////////////////////////////////////
-  ////////////////////////////////////////////////////////////////
-} // namespace
-
-#endif
+#endif  // TBME_SEPARABLE_H_

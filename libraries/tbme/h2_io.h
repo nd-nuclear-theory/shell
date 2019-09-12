@@ -39,6 +39,15 @@
   + 02/21/19 (pjf):
     - Remove Tz0!=0 support from h2v15099.
     - Implement H2 Version15200.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 05/10/19 (pjf): Ensure Fortran records aren't larger than allowed.
+  + 05/30/19 (pjf): Use long int/integer(kind=8) for number of matrix elements
+    in header of binary file.
+  + 06/03/19 (pjf): Implement version 15200 binary I/O.
+  + 08/28/19 (pjf): Correctly extract implicit one-body truncation from
+    orbitals listed in version 15200 file.
+  + 09/06/19 (pjf): Ensure (for version 15200) that orbital space weight maxes
+    match two-body space truncation.
 ****************************************************************/
 
 #ifndef H2_IO_H_
@@ -161,23 +170,23 @@ namespace shell {
     }
 
     // size accessors
-    const std::array<int,3>& num_sectors_by_type() const
+    const std::array<std::size_t,3>& num_sectors_by_type() const
     {
       return num_sectors_by_type_;
     }
-    int num_sectors() const
+    std::size_t num_sectors() const
     {
-      // int total = num_sectors_by_type_[0]+num_sectors_by_type_[1]+num_sectors_by_type_[2];  // okay, but...
-      int total = sectors().size();  // simpler...
+      // std::size_t total = num_sectors_by_type_[0]+num_sectors_by_type_[1]+num_sectors_by_type_[2];  // okay, but...
+      std::size_t total = sectors().size();  // simpler...
       return total;
     }
-    const std::array<int,3>& size_by_type() const
+    const std::array<std::size_t,3>& size_by_type() const
     {
       return size_by_type_;
     }
-    int size() const
+    std::size_t size() const
     {
-      int total = size_by_type_[0]+size_by_type_[1]+size_by_type_[2];
+      std::size_t total = size_by_type_[0]+size_by_type_[1]+size_by_type_[2];
       return total;
     }
     const std::array<int,3>& Jmax_by_type() const
@@ -195,8 +204,8 @@ namespace shell {
     basis::TwoBodySectorsJJJPN sectors_;
 
     // size information (for pp/nn/pn)
-    std::array<int,3> num_sectors_by_type_;  // number of sectors
-    std::array<int,3> size_by_type_;  // number of matrix elements
+    std::array<std::size_t,3> num_sectors_by_type_;  // number of sectors
+    std::array<std::size_t,3> size_by_type_;  // number of matrix elements
     std::array<int,3> Jmax_by_type_;  // twice Jmax
 
     // mode information
@@ -207,7 +216,7 @@ namespace shell {
     std::string filename_;
 
     // current pointer
-    int sector_index_;
+    std::size_t sector_index_;
 
     bool SectorIsFirstOfType() const;
     // Determine if sector_index is first of its pp/nn/pn type.
@@ -242,7 +251,7 @@ namespace shell {
 
     // I/O
 
-    void ReadSector(int sector_index, Eigen::MatrixXd& matrix);
+    void ReadSector(std::size_t sector_index, Eigen::MatrixXd& matrix);
     // Read current sector.
 
     void Close();
@@ -254,7 +263,7 @@ namespace shell {
     void SkipSector();
     // Skip (read but do not store) current sector.
 
-    void SeekToSector(int seek_index);
+    void SeekToSector(std::size_t seek_index);
     // Skip (read but do not store) through sectors until arriving at
     // given sector.
 
@@ -313,7 +322,7 @@ namespace shell {
 
     // I/O
     void WriteSector(
-        int sector_index,
+        std::size_t sector_index,
         const Eigen::MatrixXd& matrix,
         basis::NormalizationConversion conversion_mode = basis::NormalizationConversion::kNone
       );

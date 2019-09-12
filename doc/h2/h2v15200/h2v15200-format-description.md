@@ -4,8 +4,14 @@ Patrick J. Fasano, Mark A. Caprio
 
   + 02/12/19 (pjf): Created, duplicated from h2v15099-format-description-180425.md.
   + 02/21/19 (pjf): Updated, with minor revisions from pm.
-  + 04/07/19 (pjf): Updated, with additional revisions from pm and mac.
+  + 04/07/19 (pjf):
+    - Added initial binary defintion, compied from h2v15099.
+    - Updated, with additional revisions from pm and mac.
   + 04/25/19 (mac): Typographical and formatting corrections.
+  + 06/03/19 (pjf):
+    - Revise binary format to switch to Fortran `stream` mode.
+    - Clarify how binary header information is written.
+
 ----------------------------------------------------------------
 
 ## Text vs. binary ##
@@ -174,46 +180,72 @@ Example:
 ### Data types ###
 
 In binary format, the basic data content is the same as in text mode.  All
-integers are stored as 4-byte integers, and all floating point values are stored
-as 4-byte IEEE single-precision floating point values.
+integers are stored as 4-byte integers unless otherwise noted, and all floating
+point values are stored as 4-byte IEEE single-precision floating point values.
 
-### FORTRAN record structure ###
+### Fortran binary I/O ###
 
-The complication is that MFDn uses standard FORTRAN binary I/O, which
-is "record" based.  Each record is sandwiched between two delimiters.
-These are 4-byte integers, each giving the byte-count of the record.
+The complication is that MFDn has historically used standard Fortran unformatted
+sequential I/O, which is "record"-based binary.  While unspecified by the
+Fortran standards, under Intel Fortran and GNU Fortran, each record,
+corresponding to a Fortran `read` or `write` statement, is sandwiched between
+two delimiters. These delimiters are 32-bit signed integers, each giving the
+byte count of the record. Individual record sizes (including the sizes of the
+two delimiters) may not exceed the maximum value of a signed 32-bit integer, or
+2^31-9 bytes. Records with byte counts larger than the maximum value are split
+into subrecords, where the signs of the record delimiters indicates continuation
+of the overall record.
 
-So, how is the file broken into records?  To ensure forward compatibility, we
-write the format code as it own record.  Then the rest of the header is broken
-into records roughly corresponding to one record per header line (see below for
-details).  Then the rest of the matrix elements are written out in three
-records: all the pp matrix elements, all the nn matrix elements, and all the pn
-matrix elements.
+Because the way in which records are split into subrecords is potentially
+implementation-dependent, we instead switch to Fortran 2003+ `stream` access.
+This mode treats a file as a sequence of "file storage units", otherwise known
+as bytes. No record delimiters are inserted in this mode.
 
-FORTRAN handles the record structure automatically.  But codes in
-other languages (C++, etc.) can add in these record delimiters manually.
+For compatibility with other versions of the H2 format, as well as different
+versions of MFDn, we manually include the record delimiters around the format
+code. In Fortran, this means that we can open any binary file in unformatted
+sequential mode and read the first record to retrieve the version number. For
+other versions, stored in unformatted sequential access mode, reading can
+proceed normally. For this version, the file should be closed, re-opened in
+`stream` mode and the version header read as three 32-bit integers.
+
+Following the version number record, all other data is written without record
+delimiters as an uninterrupted stream of bytes.
 
 ### Header data ###
 
-The header data fields are grouped into FORTRAN writes as follows:
+The header data fields are written as follows:
 
-  * Version number
+  + Version number:
+    - Record delimiter for version number (`int32`)
+    - Version number (`int32`)
+    - Record delimiter for version number (`int32`)
 
-  * Orbital listing header
+  + Orbital listing header:
+    - num_orbitals_p (`int32`)
+    - num_orbitals_n (`int32`)
 
-  * A separate array is written for each orbital property:
+  + Orbital data:
+    - n (`int32` * (`num_orbitals_p`+`num_orbitals_n`))
+    - l (`int32` * (`num_orbitals_p`+`num_orbitals_n`))
+    - twice_j (`int32` * (`num_orbitals_p`+`num_orbitals_n`))
+    - twice_tz (`int32` * (`num_orbitals_p`+`num_orbitals_n`))
+    - weight (`float32` * (`num_orbitals_p`+`num_orbitals_n`))
 
-    * n
-    * l
-    * twice_j
-    * twice_tz
-    * weight
+  + Header line 1: operator properties
+    - J0 (`int32`)
+    - g0 (`int32`)
+    - Tz0 (`int32`)
 
-  * Header line 1: operator properties
+  + Header line 2: 2-body basis limit
+    - wpp (`float32`)
+    - wpn (`float32`)
+    - wnn (`float32`)
 
-  * Header line 2: 2-body basis limit
-
-  * Header line 3: matrix size
+  * Header line 3: matrix sizes
+    * size_pp (`int64`)
+    * size_pn (`int64`)
+    * size_nn (`int64`)
 
 
 ### Matrix elements ###
@@ -222,7 +254,7 @@ In binary format, the matrix elements are simply written one after another
 without any accompanying indexing information.  All that indexing information is
 superfluous, since we have a well-defined ordering for the matrix elements.
 
-The matrix elements are grouped into three FORTRAN writes, for the:
+The matrix elements are written sequentially, for the:
 
   * pp sector
   * pn sector
@@ -240,33 +272,33 @@ First, here is a raw hex dump, for reference
 
     % od -x identity_Nmax04_h2v15200.bin
 
-    0000000 0004 0000 3b60 0000 0004 0000 0008 0000
-    0000020 000f 0000 000f 0000 0008 0000 003c 0000
+    0000000 0004 0000 3b60 0000 0004 0000 000f 0000
+    0000020 000f 0000 0000 0000 0000 0000 0000 0000
 
 
 Let us now try to parse this as 4-byte integers
 
     % od -Ad -t d4 identity_Nmax04_h2v15200.bin
 
-    0000000           4       15200           4           8
-    0000016          15          15           8          60
+    0000000           4       15200           4          15
+    0000016          15           0           0           0
     ...
 
 Thus, you can see that the "Version number" record consists of the initial byte
 count 4, followed by the verion number itself 15200, followed by the terminal
-byte count 4.  Then "Orbital listing header" record consists of the byte count
-8, followed by the proton and neutron orbital counts 15 and 15, followed by the
-terminal byte count 8.  And so on...
+byte count 4.  Then "Orbital listing header" consists of the proton and neutron
+orbital counts 15 and 15, followed by the $n$ values for the first three orbitals,
+and so on...
 
 To examine the matrix elements, we can re-parse the file as 4-byte floats, using
 
-    % od -Ad -t fF identity_Nmax04_h2v15099.bin
+    % od -Ad -t fF identity_Nmax04_h2v15200.bin
 
     ...
-    0000672               0               1               0               0
-    0000688               0               0               0               0
-    0000704               0               0               1               0
+    0000704               0               1               0               0
     0000720               0               0               0               0
+    0000736               0               0               1               0
+    0000752               0               0               0               0
     ...
 
 ## Matrix elements: ordering ##

@@ -1,5 +1,5 @@
 /****************************************************************
-  moshinsky_bracket.h 
+  moshinsky_bracket.h
 
   Defines Moshinsky bracket calculations.
 
@@ -7,18 +7,18 @@
   in modern physics (Harwood Academic Publishers, Amsterdam, 1996).
 
   Language: C++11
-                                 
+
   Mark A. Caprio, University of Notre Dame.
 
-  2/15/11 (mac): Created.
-  11/14/15 (mac): Updated header file.  Removed special Ncm=0 functions.
-  11/26/15 (mac): Renamed from moshinsky to moshinsky_bracket.
-  3/5/16 (mac): Eradicate use of shell_indexing_nl.
-  7/4/16 (mac):
-    - Update to current usage of am module (namespace conventions, use 
+  + 02/15/11 (mac): Created.
+  + 11/14/15 (mac): Updated header file.  Removed special Ncm=0 functions.
+  + 11/26/15 (mac): Renamed from moshinsky to moshinsky_bracket.
+  + 03/05/16 (mac): Eradicate use of shell_indexing_nl.
+  + 07/04/16 (mac):
+    - Update to current usage of am module (namespace conventions, use
       of HalfInt::pair, use of int conversion).
     - Update #include guard and include files.
-  10/9/16 (pjf): Rename mcpp -> mcutils.
+  + 10/09/16 (pjf): Rename mcpp -> mcutils.
 
 FUTURE: Reimplement using C++11 STL tuples in place of home-grown
 VectorTuple.  Perhaps eradicate wrappers for shell_indexing_nl state
@@ -43,8 +43,8 @@ namespace moshinsky {
 
   // Moshinsky bracket -- general form
   double MoshinskyBracket(
-      int n1_dot, int l1_dot, 
-      int n2_dot, int l2_dot, 
+      int n1_dot, int l1_dot,
+      int n2_dot, int l2_dot,
       int n1, int l1, int n2, int l2,
       int Lambda
     );

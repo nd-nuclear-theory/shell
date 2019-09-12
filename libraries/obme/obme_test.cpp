@@ -43,7 +43,7 @@ basis::OperatorBlocks<double> TestRadial(const std::string& filename, int j0, in
   std::cout << "Output stream" << std::endl;
   shell::OutOBMEStream os(
     filename, space, space, sectors,
-    basis::OneBodyOperatorType::kRadial, shell::RadialOperatorType::kR, order
+    basis::OneBodyOperatorType::kRadial
   );
 
   // generate matrices
@@ -86,7 +86,7 @@ basis::OperatorBlocks<double> TestOperator(const std::string& filename, int j0, 
   std::cout << "Output stream" << std::endl;
   shell::OutOBMEStream os(
     filename, space, space, sectors,
-    basis::OneBodyOperatorType::kRadial, shell::RadialOperatorType::kR, order
+    basis::OneBodyOperatorType::kRadial
   );
 
   // generate matrices
@@ -153,7 +153,7 @@ basis::OperatorBlocks<double> TestProduct(const std::string& filename, bool verb
   std::cout << "Output stream" << std::endl;
   shell::OutOBMEStream os(
     filename, space, space, output_sectors,
-    basis::OneBodyOperatorType::kRadial, shell::RadialOperatorType::kR, 2
+    basis::OneBodyOperatorType::kRadial
   );
 
   // write to file

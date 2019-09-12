@@ -28,14 +28,12 @@ void GenerateRadialOperator(
   const int j0 = sectors.j0();
   const int g0 = sectors.g0();
   const int Tz0 = sectors.Tz0();
-  const int operator_sign =
-      ParitySign(operator_type == shell::RadialOperatorType::kK);
 
   // initialize output matrices
   basis::SetOperatorToZero(sectors, matrices);
 
   // loop over sectors
-  for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+  for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
   {
     // get sector and reference to block
     const basis::OrbitalSectorsLJPN::SectorType sector =
@@ -43,14 +41,14 @@ void GenerateRadialOperator(
     basis::OperatorBlock<double>& sector_matrix = matrices[sector_index];
 
     // get sizes
-    const int bra_subspace_size = sector.bra_subspace().size();
-    const int ket_subspace_size = sector.ket_subspace().size();
+    const std::size_t bra_subspace_size = sector.bra_subspace().size();
+    const std::size_t ket_subspace_size = sector.ket_subspace().size();
 
     // main loop
     #pragma omp parallel for collapse(2)
-    for (int j = 0; j < bra_subspace_size; ++j)
+    for (std::size_t j = 0; j < bra_subspace_size; ++j)
     {
-      for (int k = 0; k < ket_subspace_size; ++k)
+      for (std::size_t k = 0; k < ket_subspace_size; ++k)
       {
         // get states
         basis::OrbitalStateLJPN bra_state(sector.bra_subspace(), j);
@@ -79,6 +77,7 @@ void GenerateRadialOperator(
         {
           const int bra_N = 2 * bra_n + bra_l;
           const int ket_N = 2 * ket_n + ket_l;
+          const int operator_sign = (operator_type == shell::RadialOperatorType::kK) ? -1 : +1;
           if ((order == 1) && (j0 == 1) && (g0 == 1))
           {
             matrix_element = analytic::CoordinateOscillatorMatrixElement(
@@ -128,24 +127,22 @@ void GenerateRadialOverlaps(
   basis::SetOperatorToZero(sectors, matrices);
 
   // loop over sectors
-  for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+  for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
   {
     // get sector and reference to block
     const basis::OrbitalSectorsLJPN::SectorType sector =
         sectors.GetSector(sector_index);
     basis::OperatorBlock<double>& sector_matrix = matrices[sector_index];
 
-    // non-diagonal sectors should not be allowed, but we short-circuit anyway
-    if (!sector.IsDiagonal()) { continue; }
     // get sizes
-    const int bra_subspace_size = sector.bra_subspace().size();
-    const int ket_subspace_size = sector.ket_subspace().size();
+    const std::size_t bra_subspace_size = sector.bra_subspace().size();
+    const std::size_t ket_subspace_size = sector.ket_subspace().size();
 
     // main loop
     #pragma omp parallel for collapse(2)
-    for (int j = 0; j < bra_subspace_size; ++j)
+    for (std::size_t j = 0; j < bra_subspace_size; ++j)
     {
-      for (int k = 0; k < ket_subspace_size; ++k)
+      for (std::size_t k = 0; k < ket_subspace_size; ++k)
       {
         // get states
         basis::OrbitalStateLJPN bra_state(sector.bra_subspace(), j);
@@ -216,24 +213,24 @@ void ComposeRadialOperators(
   // initialize output matrices
   basis::SetOperatorToZero(sectors, matrices);
 
-  for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+  for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
   {
     // get sector and reference to block
     const basis::OrbitalSectorsLJPN::SectorType sector =
         sectors.GetSector(sector_index);
-    const int bra_subspace_index = sector.bra_subspace_index();
-    const int ket_subspace_index = sector.ket_subspace_index();
+    const std::size_t bra_subspace_index = sector.bra_subspace_index();
+    const std::size_t ket_subspace_index = sector.ket_subspace_index();
 
     // loop over intermediate subspaces
-    for (int inner_subspace_index = 0; inner_subspace_index < inner_space.size();
+    for (std::size_t inner_subspace_index = 0; inner_subspace_index < inner_space.size();
          ++inner_subspace_index)
     {
       if (sectors_a.ContainsSector(bra_subspace_index, inner_subspace_index)
           && sectors_b.ContainsSector(inner_subspace_index, ket_subspace_index))
       {
-        const int sector_index_a =
+        const std::size_t sector_index_a =
             sectors_a.LookUpSectorIndex(bra_subspace_index, inner_subspace_index);
-        const int sector_index_b =
+        const std::size_t sector_index_b =
             sectors_b.LookUpSectorIndex(inner_subspace_index, ket_subspace_index);
         matrices[sector_index] +=
             matrices_a[sector_index_a] * matrices_b[sector_index_b];
@@ -260,34 +257,34 @@ void SimilarityTransformOperator(
   // initialize output matrices
   basis::SetOperatorToZero(output_sectors, output_matrices);
 
-  for (int sector_index = 0; sector_index < output_sectors.size(); ++sector_index)
+  for (std::size_t sector_index = 0; sector_index < output_sectors.size(); ++sector_index)
   {
     // get sector and reference to block
     const auto& sector = output_sectors.GetSector(sector_index);
-    const int target_bra_subspace_index = sector.bra_subspace_index();
+    const std::size_t target_bra_subspace_index = sector.bra_subspace_index();
     const auto& target_bra_subspace_labels = sector.bra_subspace().labels();
-    const int target_ket_subspace_index = sector.ket_subspace_index();
+    const std::size_t target_ket_subspace_index = sector.ket_subspace_index();
     const auto& target_ket_subspace_labels = sector.ket_subspace().labels();
 
     // find the bra and ket subspace indices in the source space
     // if either doesn't exist, this sector will be left/padded with zeros
-    int source_bra_subspace_index =
+    std::size_t source_bra_subspace_index =
         source_space.LookUpSubspaceIndex(target_bra_subspace_labels);
     if (source_bra_subspace_index == basis::kNone) { continue; }
-    int source_ket_subspace_index =
+    std::size_t source_ket_subspace_index =
         source_space.LookUpSubspaceIndex(target_ket_subspace_labels);
     if (source_ket_subspace_index == basis::kNone) { continue; }
 
     // find the sector index in the input operator sectors
-    int operator_sector_index = operator_sectors.LookUpSectorIndex(
+    std::size_t operator_sector_index = operator_sectors.LookUpSectorIndex(
         source_bra_subspace_index, source_ket_subspace_index);
     assert(operator_sector_index != basis::kNone);
 
     // find xform sectors for transforming the bra and ket subspaces
-    int left_xform_sector_index = xform_sectors.LookUpSectorIndex(
+    std::size_t left_xform_sector_index = xform_sectors.LookUpSectorIndex(
         source_bra_subspace_index, target_bra_subspace_index);
     assert(left_xform_sector_index != basis::kNone);
-    int right_xform_sector_index = xform_sectors.LookUpSectorIndex(
+    std::size_t right_xform_sector_index = xform_sectors.LookUpSectorIndex(
         source_ket_subspace_index, target_ket_subspace_index);
     assert(right_xform_sector_index != basis::kNone);
 

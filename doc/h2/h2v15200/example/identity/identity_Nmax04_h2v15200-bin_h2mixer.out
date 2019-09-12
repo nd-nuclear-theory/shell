@@ -1,6 +1,6 @@
 
 h2mixer -- MFDn H2 file generation
-version: 0.0.3-58-g12d167b
+version: 0.0.3-91-g01b0314-dirty
 
 Parallelization: max_threads 8, num_procs 8
 
@@ -14,5 +14,5 @@ Output stream
   Matrix elements: pp 481 nn 481 pn 1856 => total 2818
 
 .................................
-(Total time: 0.00192353)
+(Total time: 0.00110589)
 

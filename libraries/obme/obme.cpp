@@ -33,7 +33,7 @@ void SolidHarmonicOneBodyOperator(
 {
   GenerateRadialOperator(basis_type, operator_type, order, space, sectors, matrices);
 
-  for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+  for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
   {
     // get sector and reference to block
     const basis::OrbitalSectorsLJPN::SectorType& sector =
@@ -66,7 +66,7 @@ void LadderOneBodyOperator(
   assert(basis_type==shell::RadialBasisType::kOscillator);
 
   // loop over sectors
-  for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+  for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
   {
     // get sector and reference to block
     const basis::OrbitalSectorsLJPN::SectorType sector =
@@ -74,8 +74,8 @@ void LadderOneBodyOperator(
     basis::OperatorBlock<double>& sector_matrix = matrices[sector_index];
 
     // get sizes
-    const int bra_subspace_size = sector.bra_subspace().size();
-    const int ket_subspace_size = sector.ket_subspace().size();
+    const std::size_t bra_subspace_size = sector.bra_subspace().size();
+    const std::size_t ket_subspace_size = sector.ket_subspace().size();
 
     // angular momentum factor
     double angular_factor = am::LJCoupledSphericalHarmonicCRME(
@@ -84,9 +84,9 @@ void LadderOneBodyOperator(
 
     // main loop
     #pragma omp parallel for collapse(2)
-    for (int j = 0; j < bra_subspace_size; ++j)
+    for (std::size_t j = 0; j < bra_subspace_size; ++j)
     {
-      for (int k = 0; k < ket_subspace_size; ++k)
+      for (std::size_t k = 0; k < ket_subspace_size; ++k)
       {
         // get states
         basis::OrbitalStateLJPN bra_state(sector.bra_subspace(), j);
@@ -132,7 +132,7 @@ void AngularMomentumOneBodyOperator(
   // initialize output matrices
   basis::SetOperatorToZero(sectors, matrices);
 
-  for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+  for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
   {
     double factor;
     // get sector and reference to block
@@ -184,7 +184,7 @@ void AngularMomentumSquaredOneBodyOperator(
   // initialize output matrices
   basis::SetOperatorToIdentity(sectors, matrices);
 
-  for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+  for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
   {
     double factor;
     // get sector and reference to block
@@ -228,7 +228,7 @@ void IsospinOneBodyOperator(
   // initialize output matrices
   matrices.resize(sectors.size());
 
-  for (int sector_index=0; sector_index < sectors.size(); ++sector_index)
+  for (std::size_t sector_index=0; sector_index < sectors.size(); ++sector_index)
   {
     const auto& sector = sectors.GetSector(sector_index);
 
@@ -270,27 +270,27 @@ void OneBodyOperatorTensorProduct(
   // initialize output matrices
   basis::SetOperatorToZero(sectors, matrices);
 
-  for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+  for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
   {
     // get sector and reference to block
     const basis::OrbitalSectorsLJPN::SectorType& sector =
         sectors.GetSector(sector_index);
-    const int bra_subspace_index = sector.bra_subspace_index();
-    const int ket_subspace_index = sector.ket_subspace_index();
+    const std::size_t bra_subspace_index = sector.bra_subspace_index();
+    const std::size_t ket_subspace_index = sector.ket_subspace_index();
     // get angular momentum quantum numbers
     const HalfInt bra_j = sector.bra_subspace().j();
     const HalfInt ket_j = sector.ket_subspace().j();
 
     // loop over intermediate subspaces
-    for (int inner_subspace_index = 0; inner_subspace_index < space.size();
+    for (std::size_t inner_subspace_index = 0; inner_subspace_index < space.size();
          ++inner_subspace_index)
     {
       if (sectors_a.ContainsSector(bra_subspace_index, inner_subspace_index)
           && sectors_b.ContainsSector(inner_subspace_index, ket_subspace_index))
       {
-        const int sector_index_a =
+        const std::size_t sector_index_a =
             sectors_a.LookUpSectorIndex(bra_subspace_index, inner_subspace_index);
-        const int sector_index_b =
+        const std::size_t sector_index_b =
             sectors_b.LookUpSectorIndex(inner_subspace_index, ket_subspace_index);
         const HalfInt inner_j = space.GetSubspace(inner_subspace_index).j();
         matrices[sector_index] +=

@@ -1,5 +1,0 @@
-set-basis-scale-factor 1.43917693861397663529
-set-indexing ../orbitals.dat
-define-radial-source radial-me-r2.dat
-define-target E 2 p E2p.dat
-define-target E 2 n E2n.dat

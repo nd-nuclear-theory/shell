@@ -17,6 +17,7 @@
   + 07/25/18 (pjf): Created, based on natorb-gen.
   + 04/07/19 (pjf): Modify to try to determine overall phase in addition to
       checking consistency (to provided tolerance) between matrix elements.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
 
 ******************************************************************************/
 
@@ -171,20 +172,20 @@ int main(int argc, const char *argv[]) {
     in_obdme1.GetMultipole(K, sectors, matrices1);
     in_obdme2.GetMultipole(K, sectors, matrices2);
 
-    for (int sector_index = 0; sector_index < sectors.size(); ++sector_index)
+    for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
     {
       // get next sector
       const basis::OrbitalSectorsLJPN::SectorType sector = sectors.GetSector(sector_index);
       // get sizes
-      const int bra_subspace_size = sector.bra_subspace().size();
-      const int ket_subspace_size = sector.ket_subspace().size();
+      const std::size_t bra_subspace_size = sector.bra_subspace().size();
+      const std::size_t ket_subspace_size = sector.ket_subspace().size();
       const basis::OperatorBlock<double>& matrix1 = matrices1[sector_index];
       const basis::OperatorBlock<double>& matrix2 = matrices2[sector_index];
 
       // main loop
-      for (int j=0; j < bra_subspace_size; ++j)
+      for (std::size_t j=0; j < bra_subspace_size; ++j)
       {
-        for (int k=0; k < ket_subspace_size; ++k)
+        for (std::size_t k=0; k < ket_subspace_size; ++k)
         {
           double difference;
           // numerical zeros -- skip

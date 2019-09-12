@@ -21,11 +21,11 @@
 ////////////////////////////////////////////////////////////////
 
 int element_index = 0;
-Eigen::MatrixXd GenerateDummyMatrix(int rows, int columns) {
+Eigen::MatrixXd GenerateDummyMatrix(std::size_t rows, std::size_t columns) {
   Eigen::MatrixXd dummy(rows, columns);
 
-  for (int j=0; j < rows; ++j) {
-    for (int k=0; k < columns; ++k) {
+  for (std::size_t j=0; j < rows; ++j) {
+    for (std::size_t k=0; k < columns; ++k) {
       dummy(j, k) = ++element_index;
     }
   }
@@ -60,12 +60,12 @@ basis::OperatorBlocks<double> TestRadialOut(const std::string& filename, bool ve
   std::cout << "Output stream" << std::endl;
   shell::OutOBMEStream os(
     filename, bra_space, ket_space, sectors,
-    basis::OneBodyOperatorType::kRadial, shell::RadialOperatorType::kR, 0
+    basis::OneBodyOperatorType::kRadial
   );
 
   // generate matrices
   basis::OperatorBlocks<double> matrices;
-  for (int sector_index=0; sector_index < sectors.size(); ++sector_index) {
+  for (std::size_t sector_index=0; sector_index < sectors.size(); ++sector_index) {
     // get sector
     const basis::OrbitalSectorsLJPN::SectorType sector = sectors.GetSector(sector_index);
     if (verbose) std::cout << "generating sector " << sector_index << std::endl;

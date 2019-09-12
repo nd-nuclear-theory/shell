@@ -1,26 +1,27 @@
 
 moshinsky -- Moshinsky transformation of general relative operator
-version: 0.0.1-1-g5f42aeb-dirty
+version: 0.0.3-97-g4b2dd81-dirty
 
 Parameters
   rank 2 cutoff 2
-Read relative operator...
-  J0 1 g0 0 T0_min 0 T0_max 0 symmetry 0
-  Nmax 2 Jmax 3
-  Allocated matrix elements: 19
+Reading relative operator file...
+  Filename: orbital-am_Nmax02_rel.dat
+  Operator properties: J0 1 g0 0 T0_min 0 T0_max 0 symmetry 0
+  Truncation: Nmax 2 Jmax 3
+  Matrix elements: 18
+  Allocated: 19
+  Time: 0.000262209
 Augment to relative-cm LSJTN...
-  Time: 0.000135553
+  Time: 0.000275362
   Allocated matrix elements: 126
 Transform to two-body LSJTN...
-  Time: 0.000102221
+  Time: 0.000220149
   Allocated matrix elements: 126
 Recouple to two-body JJJTN...
-  Time: 0.000868931
+  Time: 0.00157146
 Gather to two-body JJJT...
-  Time: 3.1045e-05
-Branch to two-body JJJPN...
-  Time: 8.4244e-05
-Output stream
+  Time: 9.1118e-05
+Branch to two-body JJJPN and write to file...
   File: orbital-am_Nmax02_h2v15099.dat
   Format: 15099 (text)
   Operator properties: J0 1 g0 0 Tz0 0
@@ -28,5 +29,6 @@ Output stream
   Truncation: p 2.0000 n 2.0000 pp 2.0000 nn 2.0000 pn 2.0000
   Sectors: pp 10 nn 10 pn 10 => total 30
   Matrix elements: pp 53 nn 53 pn 237 => total 343
-
 ..............................
+  Time: 0.00309231
+Total run time: 0.00578184

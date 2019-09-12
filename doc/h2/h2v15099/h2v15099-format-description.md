@@ -7,6 +7,8 @@ Mark A. Caprio, Patrick J. Fasano
   + 02/21/19 (pjf): Fix typos.
   + 02/27/19 (pjf): Impose restriction to Tz0=0.
   + 04/07/19 (pjf): Typographical corrections.
+  + 06/03/19 (pjf): Clarify that all labels are written for proton orbitals
+    before labels for neutron orbitals.
 
 ----------------------------------------------------------------
 
@@ -227,7 +229,8 @@ The header data fields are grouped into FORTRAN writes as follows:
 
   * Orbital listing header
 
-  * A separate array is written for each orbital property:
+  * A separate array is written for each orbital property for protons, followed
+    by separate arrays for each orbital property for neutrons:
 
     * n
     * l

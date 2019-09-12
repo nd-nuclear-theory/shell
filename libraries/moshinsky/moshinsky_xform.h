@@ -31,6 +31,9 @@
     - Fix ket phase in branching to jjJpn scheme.
     - Sanitize naming convention for quantum numbers; rename Jp->J_bra and
       J->J_ket, etc.
+  + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 06/19/19 (pjf): Generalize TwoBodyMatrixJJJPN and
+    TransformOperatorTwoBodyJJJTToTwoBodyJJJPN for branching to Tz0 > 0.
 
 ****************************************************************/
 
@@ -384,7 +387,8 @@ namespace moshinsky {
       const std::array<basis::OperatorBlocks<double>,3>& two_body_jjjt_component_matrices,
       const basis::TwoBodySpaceJJJPN& two_body_jjjpn_space,
       basis::TwoBodySectorsJJJPN& two_body_jjjpn_sectors,
-      basis::OperatorBlocks<double>& two_body_jjjpn_matrices
+      basis::OperatorBlocks<double>& two_body_jjjpn_matrices,
+      int Tz0 = 0
     );
   // Branch operator to two-body jjJpn scheme representation (in
   // TwoBodyJJJPN basis), from two-body JJJT representation (in

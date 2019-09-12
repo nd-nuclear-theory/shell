@@ -8,6 +8,8 @@
 
 #include "tbme/h2_io.h"
 
+#include <cstddef>
+#include <limits>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -28,8 +30,14 @@ namespace shell {
   // code assumes int and float are both 4-byte
   constexpr int kIntegerSize = 4;
   static_assert(sizeof(int)==kIntegerSize, "Integers are not 4 bytes.");
+  constexpr int kLongIntegerSize = 8;
+  static_assert(sizeof(long int)==kLongIntegerSize, "Long integers are not 8 bytes.");
   constexpr int kFloatSize = 4;
   static_assert(sizeof(float)==kFloatSize, "Floats are not 4 bytes.");
+
+  // Fortran allows a maximum record length of (2**31-1) minus the bytes
+  // for record overhead
+  constexpr long int kMaxRecordLength = (long int)2147483647 - 2*kIntegerSize;
 
   ////////////////////////////////////////////////////////////////
   // space ordering
@@ -60,7 +68,7 @@ namespace shell {
     Jmax_by_type = std::array<int,3>({0,0,0});
 
     // scan subspaces for Jmax
-    for (int subspace_index=0; subspace_index<space.size(); ++subspace_index)
+    for (std::size_t subspace_index=0; subspace_index<space.size(); ++subspace_index)
       {
         // extract subspace
         const basis::TwoBodySubspaceJJJPN& subspace = space.GetSubspace(subspace_index);
@@ -74,10 +82,31 @@ namespace shell {
       }
   }
 
+  std::size_t GetSectorCount(const basis::TwoBodySectorsJJJPN::SectorType& sector)
+  {
+    const auto& bra_subspace = sector.bra_subspace();
+    const auto& ket_subspace = sector.ket_subspace();
+    std::size_t sector_entries = 0;
+    if (sector.IsDiagonal())
+      // diagonal sector
+      {
+        std::size_t dimension = ket_subspace.size();
+        sector_entries = dimension*(dimension+1)/2;
+      }
+    else if (sector.IsUpperTriangle())
+      // upper triangle sector (but not diagonal)
+      {
+        std::size_t bra_dimension = bra_subspace.size();
+        std::size_t ket_dimension = ket_subspace.size();
+        sector_entries = bra_dimension*ket_dimension;
+      }
+    return sector_entries;
+  }
+
   void EvaluateCountsByType(
       const basis::TwoBodySectorsJJJPN& sectors,
-      std::array<int,3>& num_sectors_by_type,
-      std::array<int,3>& size_by_type
+      std::array<std::size_t,3>& num_sectors_by_type,
+      std::array<std::size_t,3>& size_by_type
     )
   // Count sectors and matrix elements in the upper triangular portion
   // of a set of pp/nn/pn sectors.
@@ -89,16 +118,16 @@ namespace shell {
   //
   // Arguments:
   //   sectors (..., input) : container for sectors
-  //   num_sectors_by_type (std::array<int,3>, output) : number of sectors
-  //   size_by_type (std::array<int,3>, output) : number of matrix elements
+  //   num_sectors_by_type (std::array<std::size_t,3>, output) : number of sectors
+  //   size_by_type (std::array<std::size_t,3>, output) : number of matrix elements
   {
 
     // initialize
-    num_sectors_by_type = std::array<int,3>({0,0,0});
-    size_by_type = std::array<int,3>({0,0,0});
+    num_sectors_by_type = {0,0,0};
+    size_by_type = {0,0,0};
 
     // count over sectors
-    for (int sector_index=0; sector_index<sectors.size(); ++sector_index)
+    for (std::size_t sector_index=0; sector_index<sectors.size(); ++sector_index)
       {
 
         // extract sector
@@ -113,21 +142,7 @@ namespace shell {
         ++num_sectors_by_type[int(two_body_species)];
 
         // count sector entries
-        int sector_entries = 0;
-        if (sector.IsDiagonal())
-          // diagonal sector
-          {
-            int dimension = ket_subspace.size();
-            sector_entries = dimension*(dimension+1)/2;
-          }
-        else if (sector.IsUpperTriangle())
-          // upper triangle sector (but not diagonal)
-          {
-            int bra_dimension = bra_subspace.size();
-            int ket_dimension = ket_subspace.size();
-            sector_entries = bra_dimension*ket_dimension;
-          }
-        size_by_type[int(two_body_species)] += sector_entries;
+        size_by_type[int(two_body_species)] += GetSectorCount(sector);
       }
   }
 
@@ -242,7 +257,7 @@ namespace shell {
           std::getline(stream(),line);
           std::istringstream line_stream(line);
           line_stream >> h2_format_;
-          ParsingCheck(line_stream,line_count_,line);
+          mcutils::ParsingCheck(line_stream,line_count_,line);
         }
       }
     else if (h2_mode()==H2Mode::kBinary)
@@ -254,7 +269,7 @@ namespace shell {
         mcutils::VerifyBinary<int>(stream(),bytes,"Encountered unexpected value in H2 file","record delimiter");
       }
 
-    StreamCheck(bool(stream()),filename_,"Failure while reading H2 file version code");
+    mcutils::StreamCheck(bool(stream()),filename_,"Failure while reading H2 file version code");
 
   };
 
@@ -274,7 +289,7 @@ namespace shell {
         mcutils::WriteBinary<int>(stream(),bytes);
       }
 
-    StreamCheck(bool(stream()),filename_,"Failure while writing H2 file version code");
+    mcutils::StreamCheck(bool(stream()),filename_,"Failure while writing H2 file version code");
 
   }
 
@@ -297,7 +312,7 @@ namespace shell {
     if (h2_mode_==H2Mode::kBinary)
       mode_argument |= std::ios_base::binary;
     stream_ptr_ = std::unique_ptr<std::ifstream>(new std::ifstream(filename_,mode_argument));
-    StreamCheck(bool(stream()),filename_,"Failure opening H2 file for input");
+    mcutils::StreamCheck(bool(stream()),filename_,"Failure opening H2 file for input");
 
     // read format version and header and set up indexing
     ReadVersion();
@@ -320,7 +335,7 @@ namespace shell {
   };
 
 
-  void InH2Stream::ReadSector(int sector_index, Eigen::MatrixXd& matrix)
+  void InH2Stream::ReadSector(std::size_t sector_index, Eigen::MatrixXd& matrix)
   {
     // jump to correct sector
     SeekToSector(sector_index);
@@ -342,7 +357,7 @@ namespace shell {
       }
 
     // validate status
-    StreamCheck(bool(stream()),filename_,"Failure while reading H2 file sector");
+    mcutils::StreamCheck(bool(stream()),filename_,"Failure while reading H2 file sector");
 
     // increment to next sector
     sector_index_++;
@@ -371,7 +386,7 @@ namespace shell {
       }
 
     // validate status
-    StreamCheck(bool(stream()),filename_,"Failure while reading H2 file sector");
+    mcutils::StreamCheck(bool(stream()),filename_,"Failure while reading H2 file sector");
 
     // increment to next sector
     sector_index_++;
@@ -381,7 +396,7 @@ namespace shell {
       stream_sector_positions_.push_back(stream().tellg());
   }
 
-  void InH2Stream::SeekToSector(int seek_index)
+  void InH2Stream::SeekToSector(std::size_t seek_index)
   {
     assert(seek_index!=basis::kNone);
     assert(seek_index<sectors().size());
@@ -433,7 +448,7 @@ namespace shell {
     if (h2_mode_==H2Mode::kBinary)
       mode_argument |= std::ios_base::binary;
     stream_ptr_ = std::unique_ptr<std::ofstream>(new std::ofstream(filename_,mode_argument));
-    StreamCheck(bool(stream()),filename_,"Failure opening H2 file for output");
+    mcutils::StreamCheck(bool(stream()),filename_,"Failure opening H2 file for output");
 
     // write version
     WriteVersion();
@@ -450,11 +465,11 @@ namespace shell {
         std::cerr << "Unsupported version encountered when opening H2 file " << filename_ << std::endl;
         std::exit(EXIT_FAILURE);
       }
-    StreamCheck(bool(stream()),filename_,"Failure while writing H2 file header");
+    mcutils::StreamCheck(bool(stream()),filename_,"Failure while writing H2 file header");
   }
 
   void OutH2Stream::WriteSector(
-      int sector_index,
+      std::size_t sector_index,
       const Eigen::MatrixXd& matrix,
       basis::NormalizationConversion conversion_mode
     )
@@ -483,7 +498,7 @@ namespace shell {
       assert(false);  // format version was already checked when writing header
 
     // validate status
-    StreamCheck(bool(stream()),filename_,"Failure while writing H2 file sector");
+    mcutils::StreamCheck(bool(stream()),filename_,"Failure while writing H2 file sector");
 
     // increment to next sector
     sector_index_++;
