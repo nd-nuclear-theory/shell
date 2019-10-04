@@ -1,9 +1,9 @@
 /******************************************************************************
 
-  h2filter.cpp -- filter MFDn H2 TBME file by keeping only the TBMEs for which
-                  the number of oscillator quanta carried by the ket or bra
-		  state is less than or equal to "cutoff" (the remaining TBMEs
-		  are zeroed out) thus performing the interaction truncation
+  h2filter.cpp -- filter MFDn H2 TBME, i.e. truncate the interaction on the
+                  number of oscillator quanta in the ket and bra states.
+		  The omitted TBMEs are zeroed out, i.e. the size of the file
+		  is unchanged. Possibility of Hungarian smoothing on N_tb.
 
   Syntax:
     h2filter format input_filename output_filename
@@ -12,6 +12,7 @@
   University of Notre Dame
 
   + 07/19 (jh): Created, based on h2conv.
+  + 10/19 (jh): Truncation on N_ob and Hungarian smoothing on N_tb added.
 
 ******************************************************************************/
 
@@ -19,6 +20,8 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <cmath>     // added by J.H.
+#include <algorithm> // added by J.H.
 
 #include "mcutils/profiling.h"
 #include "tbme/h2_io.h"
@@ -62,6 +65,14 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters)
   run_parameters.output_filename = argv[3];
 }
 
+// beginning of a block added by J.H.
+float hungarian_smoothing(int n, int nn, float a){
+  float r;
+  r=(1.0-exp(-pow(a*(float)(n-nn-1)/(float)(nn+1),2)))/(1.0-exp(-a*a));
+  return (r);
+}
+// end of the block added by J.H.
+
 ////////////////////////////////////////////////////////////////
 // main program
 /////////////////////////////////////////////////////////////////
@@ -69,7 +80,25 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters)
 int main(int argc, char **argv)
 {
 
-  int nmax,jj=-2,pi=-1,i1,p,i2,l1,l2,h=-1,cutoff=18; // added by J.H.
+// beginning of a block added by J.H.
+  int nmax,jj=-2,pi=-1,i1,p,i2,l1,l2,h=-1,cutoff,indicator,indicator_smooth;
+  float a;
+  std::cout << "Enter 1 for truncation on N_ob or 2 for truncation on N_tb: ";
+  std::cin >> indicator;
+  std::cout << "Enter the value of N_ob_max or N_tb_max: ";
+  std::cin >> cutoff;
+  if (indicator==2){
+    std::cout << "Enter 1 for Hungarian smoothing or 0 for no smoothing: ";
+    std::cin >> indicator_smooth;
+  }
+  else{
+    indicator_smooth=0;
+  }
+  if (indicator_smooth==1){
+    std::cout << "Enter the value of the floating point parameter a in the Hungarian smoothing: ";
+    std::cin >> a;
+  }
+// end of the block added by J.H.
 
   ////////////////////////////////////////////////////////////////
   // initialization
@@ -138,7 +167,7 @@ int main(int argc, char **argv)
       int input_sector_index
         = input_sectors.LookUpSectorIndex(input_bra_subspace_index,input_ket_subspace_index);
       input_stream.ReadSector(input_sector_index, matrix);
-// beginning of a block added by J.H. performing the filtering operation
+// beginning of a block added by J.H. performing the filtering and smoothing operation
       if (sector_index == 0){
         if (matrix.rows() == 1){nmax=0;}
 	else if (matrix.rows() == 4){nmax=2;}
@@ -175,7 +204,7 @@ int main(int argc, char **argv)
                     if ((abs(jj1-jj2)<=jj)&&(jj1+jj2>=jj)&&(2*((nk1+nk2)/2)==nk1+nk2)&&(nk1+nk2<=nmax)){
 		      if (sector_index>=2*(input_stream.num_sectors()/3)){
 		        p=p+1;
-			if (nk1+nk2>cutoff){
+			if (((indicator==1)&&((nk1>cutoff)||(nk2>cutoff)))||((indicator==2)&&(nk1+nk2>cutoff))){
                           for (int k=0; k<=p-1; ++k){
 			    matrix(k,p-1)=0.0;
 			  }
@@ -183,10 +212,20 @@ int main(int argc, char **argv)
                             matrix(p-1,k)=0.0;
 	                  }
 			}
+                        // Hungarian smoothing
+                        else if (indicator_smooth==1){
+                        for (int k=0; k<=p-1; ++k){
+                            matrix(k,p-1)=hungarian_smoothing(nk1+nk2,std::min(cutoff,nmax),a)*matrix(k,p-1);
+                          }
+                          for (int k=p-1; k<=matrix.cols()-1; ++k){
+                            matrix(p-1,k)=hungarian_smoothing(nk1+nk2,std::min(cutoff,nmax),a)*matrix(p-1,k);
+                          }
+			}
+                        // end of Hungarian smoothing
 	              }
 	              else if (i2>i1){
                         p=p+1;
-			if (nk1+nk2>cutoff){
+			if (((indicator==1)&&((nk1>cutoff)||(nk2>cutoff)))||((indicator==2)&&(nk1+nk2>cutoff))){
                           for (int k=0; k<=p-1; ++k){
 		            matrix(k,p-1)=0.0;
 			  }
@@ -194,10 +233,20 @@ int main(int argc, char **argv)
                             matrix(p-1,k)=0.0;
 			  }
 			}
+                        // Hungarian smoothing
+			else if (indicator_smooth==1){
+                        for (int k=0; k<=p-1; ++k){
+                            matrix(k,p-1)=hungarian_smoothing(nk1+nk2,std::min(cutoff,nmax),a)*matrix(k,p-1);
+                          }
+                          for (int k=p-1; k<=matrix.cols()-1; ++k){
+                            matrix(p-1,k)=hungarian_smoothing(nk1+nk2,std::min(cutoff,nmax),a)*matrix(p-1,k);
+                          }
+                        }
+                        // end of Hungarian smoothing
 	              }
                       else if ((i2==i1)&&(4*(jj/4)==jj)){
                         p=p+1;
-			if (nk1+nk2>cutoff){
+			if (((indicator==1)&&((nk1>cutoff)||(nk2>cutoff)))||((indicator==2)&&(nk1+nk2>cutoff))){
                           for (int k=0; k<=p-1; ++k){
                             matrix(k,p-1)=0.0;
 			  }
@@ -205,6 +254,16 @@ int main(int argc, char **argv)
                             matrix(p-1,k)=0.0;
 			  }
 			}
+                        // Hungarian smoothing
+			else if (indicator_smooth==1){
+                        for (int k=0; k<=p-1; ++k){
+                            matrix(k,p-1)=hungarian_smoothing(nk1+nk2,std::min(cutoff,nmax),a)*matrix(k,p-1);
+                          }
+                          for (int k=p-1; k<=matrix.cols()-1; ++k){
+                            matrix(p-1,k)=hungarian_smoothing(nk1+nk2,std::min(cutoff,nmax),a)*matrix(p-1,k);
+                          }
+                        }
+                        // end of Hungarian smoothing
 		      }
 		    }
 		  }
@@ -212,7 +271,7 @@ int main(int argc, char **argv)
                     if ((abs(jj1-jj2)<=jj)&&(jj1+jj2>=jj)&&(2*((nk1+nk2)/2)!=nk1+nk2)&&(nk1+nk2<=nmax)){
 		      if (sector_index>=2*(input_stream.num_sectors()/3)){
                         p=p+1;
-			if (nk1+nk2>cutoff){
+			if (((indicator==1)&&((nk1>cutoff)||(nk2>cutoff)))||((indicator==2)&&(nk1+nk2>cutoff))){
                           for (int k=0; k<=p-1; ++k){
                             matrix(k,p-1)=0.0;
 			  }
@@ -220,10 +279,20 @@ int main(int argc, char **argv)
                             matrix(p-1,k)=0.0;
 			  }
 			}
+                        // Hungarian smoothing
+			else if (indicator_smooth==1){
+                        for (int k=0; k<=p-1; ++k){
+                            matrix(k,p-1)=hungarian_smoothing(nk1+nk2,std::min(cutoff,nmax),a)*matrix(k,p-1);
+                          }
+                          for (int k=p-1; k<=matrix.cols()-1; ++k){
+                            matrix(p-1,k)=hungarian_smoothing(nk1+nk2,std::min(cutoff,nmax),a)*matrix(p-1,k);
+                          }
+                        }
+                        // end of Hungarian smoothing
 	              }
 		      else if (i2>i1){
                         p=p+1;
-			if (nk1+nk2>cutoff){
+			if (((indicator==1)&&((nk1>cutoff)||(nk2>cutoff)))||((indicator==2)&&(nk1+nk2>cutoff))){
                           for (int k=0; k<=p-1; ++k){
                             matrix(k,p-1)=0.0;
 			  }
@@ -231,10 +300,20 @@ int main(int argc, char **argv)
                             matrix(p-1,k)=0.0;
 			  }
 			}
+                        // Hungarian smoothing
+			else if (indicator_smooth==1){
+                        for (int k=0; k<=p-1; ++k){
+                            matrix(k,p-1)=hungarian_smoothing(nk1+nk2,std::min(cutoff,nmax),a)*matrix(k,p-1);
+                          }
+                          for (int k=p-1; k<=matrix.cols()-1; ++k){
+                            matrix(p-1,k)=hungarian_smoothing(nk1+nk2,std::min(cutoff,nmax),a)*matrix(p-1,k);
+                          }
+                        }
+                        // end of Hungarian smoothing
 		      }
                       else if ((i2==i1)&&(4*(jj/4)==jj)){
                         p=p+1;
-			if (nk1+nk2>cutoff){
+			if (((indicator==1)&&((nk1>cutoff)||(nk2>cutoff)))||((indicator==2)&&(nk1+nk2>cutoff))){
                           for (int k=0; k<=p-1; ++k){
                             matrix(k,p-1)=0.0;
 			  }
@@ -242,6 +321,16 @@ int main(int argc, char **argv)
                             matrix(p-1,k)=0.0;
 			  }
 			}
+                        // Hungarian smoothing
+			else if (indicator_smooth==1){
+                        for (int k=0; k<=p-1; ++k){
+                            matrix(k,p-1)=hungarian_smoothing(nk1+nk2,std::min(cutoff,nmax),a)*matrix(k,p-1);
+                          }
+                          for (int k=p-1; k<=matrix.cols()-1; ++k){
+                            matrix(p-1,k)=hungarian_smoothing(nk1+nk2,std::min(cutoff,nmax),a)*matrix(p-1,k);
+                          }
+                        }
+                        // end of Hungarian smoothing
 		      }
 		    }
 		  }
