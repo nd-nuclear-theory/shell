@@ -58,6 +58,7 @@
   + 08/08/18 (pjf): Use analytic and spline wrapper functions for radial me.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
   + 06/20/19 (pjf): Add isospin operator.
+  + 10/06/19 (pjf): Fix sqrt(5/16pi) prefactor in ConstructQuadrupoleOperator.
 
 ****************************************************************/
 
