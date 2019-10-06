@@ -521,7 +521,7 @@ namespace relative {
         const int S = ket_S;
         const int T = ket_T;
         double angular_factor
-          = std::sqrt(5./(4*M_PI))
+          = std::sqrt(5./(16*M_PI))
           *ParitySign(bra_L+ket_L+S+ket_J)
           *Hat(bra_J)*Hat(ket_J)*Hat(bra_L)*Hat(ket_L)
           *am::Wigner3J(ket_L,2,bra_L,0,0,0)
