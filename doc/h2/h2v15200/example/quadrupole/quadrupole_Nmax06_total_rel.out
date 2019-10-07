@@ -1,6 +1,6 @@
 
 relative-gen -- relative operator matrix element generation
-version: 0.0.3-58-g12d167b-dirty
+version: 0.1.1-0-g5a533c7
 
 Writing relative operator file...
   Filename: quadrupole_Nmax06_total_rel.dat

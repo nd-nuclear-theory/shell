@@ -1,6 +1,6 @@
 
 moshinsky -- Moshinsky transformation of general relative operator
-version: 0.0.3-97-g4b2dd81-dirty
+version: 0.1.1-0-g5a533c7
 
 Parameters
   rank 2 cutoff 2
@@ -10,17 +10,17 @@ Reading relative operator file...
   Truncation: Nmax 2 Jmax 3
   Matrix elements: 16
   Allocated: 16
-  Time: 0.00040741
+  Time: 9.9905e-05
 Augment to relative-cm LSJTN...
-  Time: 0.000636859
+  Time: 0.000174839
   Allocated matrix elements: 175
 Transform to two-body LSJTN...
-  Time: 0.000540917
+  Time: 0.000145538
   Allocated matrix elements: 175
 Recouple to two-body JJJTN...
-  Time: 0.00290128
+  Time: 0.00108409
 Gather to two-body JJJT...
-  Time: 0.000197932
+  Time: 5.7181e-05
 Branch to two-body JJJPN and write to file...
   File: quadrupole-1_Nmax02_h2v15099.dat
   Format: 15099 (text)
@@ -30,5 +30,5 @@ Branch to two-body JJJPN and write to file...
   Sectors: pp 11 nn 11 pn 11 => total 33
   Matrix elements: pp 59 nn 59 pn 250 => total 368
 .................................
-  Time: 0.0049786
-Total run time: 0.0105812
+  Time: 0.00129299
+Total run time: 0.00297534
