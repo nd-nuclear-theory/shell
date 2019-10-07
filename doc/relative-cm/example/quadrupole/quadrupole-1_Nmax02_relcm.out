@@ -1,6 +1,6 @@
 
 moshinsky -- Moshinsky transformation of general relative operator
-version: 0.0.3-70-g6d282c0-dirty
+version: 0.1.1-0-g5a533c7-dirty
 
 Parameters
   rank 2 cutoff 2
@@ -10,15 +10,15 @@ Reading relative operator file...
   Truncation: Nmax 2 Jmax 3
   Matrix elements: 16
   Allocated: 16
-  Time: 0.000129426
+  Time: 0.000382291
 Augment to relative-cm LSJTN...
-  Time: 0.000182807
+  Time: 0.000545816
   Allocated matrix elements: 175
 Gather relative-cm LSJT...
-  Time: 6.6001e-05
+  Time: 0.000265636
 Write relative-cm LSJT...
 Writing relative-cm operator file...
   Filename: quadrupole-1_Nmax02_relcm.dat
   Operator properties: J0 2 g0 0 T0_min 1 T0_max 1 symmetry 0
   Truncation: Nmax 2
-  Time: 0.0013395
+  Time: 0.00335872
