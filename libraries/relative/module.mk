@@ -5,7 +5,7 @@ $(eval $(begin-module))
 ################################################################
 
 module_units_h :=
-module_units_cpp-h := relative_me jpv_io
+module_units_cpp-h := relative_me jpv_io pn_io
 # module_units_f :=
 module_programs_cpp_test := relative_me_test
 
