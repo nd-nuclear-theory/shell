@@ -181,7 +181,7 @@ namespace shell {
 
   bool H2StreamBase::SectorIsFirstOfType() const
   {
-    assert((sector_index_>=0) && (sector_index_<sectors().size()));
+    assert((sector_index_!=basis::kNone) && (sector_index_<sectors().size()));
     // short-circuit on first sector overall
     if (sector_index_ == 0)
       return true;
@@ -197,7 +197,7 @@ namespace shell {
 
   bool H2StreamBase::SectorIsLastOfType() const
   {
-    assert((sector_index_>=0) && (sector_index_<sectors().size()));
+    assert((sector_index_!=basis::kNone) && (sector_index_<sectors().size()));
     // short-circuit on first sector overall
     if (sector_index_ == sectors().size()-1)
       return true;
