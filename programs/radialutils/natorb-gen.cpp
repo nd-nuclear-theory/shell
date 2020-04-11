@@ -6,8 +6,14 @@
 
   Syntax:
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    natorb-gen input_orbitals robdme_info robdme_stat output_xform output_orbitals
+    natorb-gen
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Input format:
+
+    set-indexing orbital_filename
+    define-densities J g n robdme_filename [robdme_info_filename]
+    set-output-xform output_orbital_filename output_xform_filename
 
   Patrick J. Fasano
   University of Notre Dame
@@ -20,10 +26,13 @@
   + 07/27/18 (pjf): Update for new OBDME input routines.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
   + 08/16/19 (pjf): Remove radial operator type and power from OutOBMEStream.
+  + 04/09/20 (pjf):
+    - Rewrite to take input on stdin.
+    - Require quantum numbers of many-body state.
+    - Use Eigen's reverse() rather than custom sorting function.
 
 ******************************************************************************/
 
-#include <sys/stat.h>
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -46,7 +55,7 @@
 
 // traditional oscillator weight
 void ComputeOrbitalWeights(std::vector<basis::OrbitalPNInfo>& orbitals) {
-  for (auto& orbital: orbitals) {
+  for (auto& orbital : orbitals) {
     orbital.weight = 2 * orbital.n + orbital.l;
   }
 }
@@ -78,117 +87,76 @@ void ComputeOrbitalWeights(std::vector<basis::OrbitalPNInfo>& orbitals) {
 // Stores simple parameters for run
 struct RunParameters {
   // filenames
-  std::string input_orbital_file;
-  std::string robdme_info;
-  std::string robdme_stat;
-  std::string output_xform_file;
-  std::string output_orbital_file;
+  basis::OrbitalSpaceLJPN input_space;
+  std::unique_ptr<shell::InOBDMEStream> density_stream;
+  std::string output_xform_filename;
+  std::string output_orbital_filename;
 };
 
-void PrintUsage(const char **argv) {
-  std::cout << "Usage: " << argv[0]
-            << " input_orbitals robdme_info robdme_stat output_xform output_orbitals"
-            << std::endl;
-}
+void PrintUsage(char **argv) { std::cout << "Usage: " << argv[0] << std::endl; }
 
-void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameters) {
-  // argument counter
-  int arg = 0;
+void ReadParameters(RunParameters& run_parameters) {
+  std::string line;
+  int line_count = 0;
 
-  // usage message
-  if (argc-1 != 5) {
-    PrintUsage(argv);
-    std::cerr << "ERROR: Incorrect number of arguments." << std::endl;
-    std::exit(EXIT_FAILURE);
-  }
+  while (mcutils::GetLine(std::cin, line, line_count)) {
+    // set up for line parsing
+    std::istringstream line_stream(line);
+    std::string keyword;
+    line_stream >> keyword;
 
-  // input orbital file
-  {
-    std::istringstream parameter_stream(argv[++arg]);
-    parameter_stream >> run_parameters.input_orbital_file;
-    struct stat st;
-    if (stat(run_parameters.input_orbital_file.c_str(), &st) != 0) {
-      std::cerr << "ERROR: file " << run_parameters.input_orbital_file << " does not exist!" << std::endl;
-      std::exit(EXIT_FAILURE);
+    // select action based on keyword
+    if (keyword == "set-output-xform") {
+      line_stream >> run_parameters.output_orbital_filename
+                  >> run_parameters.output_xform_filename;
+      mcutils::ParsingCheck(line_stream, line_count, line);
+      mcutils::FileExistCheck(run_parameters.output_orbital_filename, false, true);
+      mcutils::FileExistCheck(run_parameters.output_xform_filename, false, true);
     }
-  }
+    else if (keyword == "set-indexing")
+    {
+      std::string orbital_filename;
+      line_stream >> orbital_filename;
+      mcutils::ParsingCheck(line_stream, line_count, line);
+      mcutils::FileExistCheck(orbital_filename, true, false);
 
-  // input ROBDME info file
-  {
-    std::istringstream parameter_stream(argv[++arg]);
-    parameter_stream >> run_parameters.robdme_info;
-    struct stat st;
-    if (stat(run_parameters.robdme_info.c_str(), &st) != 0) {
-      std::cerr << "ERROR: file " << run_parameters.robdme_info << " does not exist!" << std::endl;
-      std::exit(EXIT_FAILURE);
+      std::ifstream orbital_stream(orbital_filename);
+      std::vector<basis::OrbitalPNInfo> input_orbitals =
+          basis::ParseOrbitalPNStream(orbital_stream, true);
+      run_parameters.input_space = basis::OrbitalSpaceLJPN(input_orbitals);
     }
-  }
+    else if (keyword == "define-densities")
+    {
+      std::unique_ptr<shell::InOBDMEStream> density_stream;
+      float J;
+      int g, n;
+      std::string robdme_filename, robdme_info_filename="";
+      line_stream >> J >> g >> n >> robdme_filename;
+      mcutils::ParsingCheck(line_stream, line_count, line);
+      mcutils::FileExistCheck(robdme_filename, true, false);
+      if (!line_stream.eof()) {
+        line_stream >> robdme_info_filename;
+        mcutils::ParsingCheck(line_stream, line_count, line);
+        mcutils::FileExistCheck(robdme_info_filename, true, false);
 
-  // input static ROBDME file
-  {
-    std::istringstream parameter_stream(argv[++arg]);
-    parameter_stream >> run_parameters.robdme_stat;
-    struct stat st;
-    if (stat(run_parameters.robdme_stat.c_str(), &st) != 0) {
-      std::cerr << "ERROR: file " << run_parameters.robdme_stat << " does not exist!" << std::endl;
-      std::exit(EXIT_FAILURE);
-    }
-  }
-
-  // output xform file
-  {
-    std::istringstream parameter_stream(argv[++arg]);
-    parameter_stream >> run_parameters.output_xform_file;
-    struct stat st;
-    if (stat(run_parameters.output_xform_file.c_str(), &st) == 0) {
-      std::cerr << "WARN: overwriting file " << run_parameters.output_xform_file << std::endl;
-    }
-  }
-
-  // output orbital file
-  {
-    std::istringstream parameter_stream(argv[++arg]);
-    parameter_stream >> run_parameters.output_orbital_file;
-    struct stat st;
-    if (stat(run_parameters.output_orbital_file.c_str(), &st) == 0) {
-      std::cerr << "WARN: overwriting file " << run_parameters.output_orbital_file << std::endl;
+        // construct multi-file stream
+        run_parameters.density_stream =
+          std::unique_ptr<shell::InOBDMEStream>(new shell::InOBDMEStreamMulti(
+            robdme_info_filename, robdme_filename, run_parameters.input_space,
+            HalfInt(2*J,2), g, n, HalfInt(2*J, 2), g, n
+          ));
+      } else {
+        // construct single-file stream
+        run_parameters.density_stream =
+          std::unique_ptr<shell::InOBDMEStream>(new shell::InOBDMEStreamSingle(
+            robdme_filename, run_parameters.input_space,
+            HalfInt(2*J,2), g, n, HalfInt(2*J, 2), g, n
+          ));
+      }
     }
   }
 }
 
-///////////////////////////////////////////////////////////////////////
-// Take an EigenSolver and extract sorted eigenvalues and eigenvectors.
-///////////////////////////////////////////////////////////////////////
-void SortEigensystem(Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd>& eigensolver,
-                     Eigen::VectorXd& eigenvalues,
-                     Eigen::MatrixXd& eigenvectors)
-{
-  // initialize Eigen objects
-  std::size_t dimension = eigensolver.eigenvalues().size();
-  eigenvalues.resize(dimension);
-  Eigen::MatrixXd permutation_matrix = Eigen::MatrixXd::Zero(dimension, dimension);
-  // generate a vector of pairs (sortable by std::sort) which keeps track of
-  // the eigenvalue and the eigenvalue's original index
-  std::vector<std::pair<double,std::size_t>> eigenvalue_keys;
-  for (std::size_t i=0; i < dimension; ++i) {
-    eigenvalue_keys.emplace_back(eigensolver.eigenvalues()(i), i);
-  }
-
-  #if __cplusplus > 201103L
-  // C++14 has a nice way to sort in descending lexicographical order
-  std::sort(eigenvalue_keys.begin(), eigenvalue_keys.end(), std::greater<>());
-  #else
-  // C++11's way of sorting is not as pretty, using reverse iterators
-  std::sort(eigenvalue_keys.rbegin(), eigenvalue_keys.rend());
-  #endif
-
-  for (std::size_t i=0; i<dimension; ++i) {
-    eigenvalues(i) = eigenvalue_keys[i].first;
-    permutation_matrix(eigenvalue_keys[i].second, i) = 1;
-  }
-
-  eigenvectors = eigensolver.eigenvectors() * permutation_matrix;
-}
 
 ////////////////////////////////////////////////////////////////
 // main program
@@ -201,20 +169,12 @@ int main(int argc, const char *argv[]) {
   std::cout << std::endl;
 
   RunParameters run_parameters;
-  ProcessArguments(argc, argv, run_parameters);
-
-  // Read input orbitals
-  std::ifstream input_orbital_s(run_parameters.input_orbital_file);
-  basis::OrbitalSpaceLJPN input_space(basis::ParseOrbitalPNStream(input_orbital_s, true));
-  input_orbital_s.close();
-
-  // Get OBDMEs
-  basis::OperatorBlocks<double> density_matrices;
-  shell::InOBDMEStreamMulti obdme_reader(run_parameters.robdme_info, run_parameters.robdme_stat, input_space);
+  ReadParameters(run_parameters);
 
   // Get sectors and blocks
   basis::OrbitalSectorsLJPN sectors;
-  obdme_reader.GetMultipole(0, sectors, density_matrices);
+  basis::OperatorBlocks<double> density_matrices;
+  run_parameters.density_stream->GetMultipole(0, sectors, density_matrices);
 
   // Here we loop through the density matrices and diagonalize each sector.
   basis::OperatorBlocks<double> xform_matrices;
@@ -222,19 +182,19 @@ int main(int argc, const char *argv[]) {
   // std::vector<basis::OrbitalPNInfo> output_orbitals;
   for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index) {
     // get next sector
-    const basis::OrbitalSectorsLJPN::SectorType sector = sectors.GetSector(sector_index);
-    basis::OrbitalSpeciesPN species = sector.bra_subspace().orbital_species();
-    int l = sector.bra_subspace().l();
-    HalfInt j = sector.bra_subspace().j();
+    const auto& sector = sectors.GetSector(sector_index);
+    const auto& species = sector.bra_subspace().orbital_species();
+    const auto& l = sector.bra_subspace().l();
+    const auto& j = sector.bra_subspace().j();
 
     // the one-body static density matrix should be real and symmetric, so
     // we can use the SelfAdjointEigenSolver from Eigen
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> eigensolver(density_matrices[sector_index]);
 
-    // use sort code to ge eigen vectors and eigenvalues
-    Eigen::VectorXd eigenvalues;
-    Eigen::MatrixXd eigenvectors;
-    SortEigensystem(eigensolver, eigenvalues, eigenvectors);
+    // SelfAdjointEigenSolver returns sorted by eigenvalue in ascending order.
+    // We need to be in descending order, so we reverse
+    Eigen::VectorXd eigenvalues = eigensolver.eigenvalues().reverse();
+    Eigen::MatrixXd eigenvectors = eigensolver.eigenvectors().rowwise().reverse();
 
     // add to output
     xform_matrices.push_back(eigenvectors);
@@ -246,23 +206,26 @@ int main(int argc, const char *argv[]) {
 
   // TODO(pjf) generalize to use eigenvalues for orbital weights
   // ComputeOrbitalWeights(output_orbitals);
-
-  // write xform out to file
-  // TODO(pjf) construct new indexing for output
-  basis::OrbitalSpaceLJPN& output_space = input_space;
-  basis::OrbitalSectorsLJPN output_sectors(input_space, output_space, 0, 0, 0);
-      // note hard-coded l0max=0, Tz0=0
-  shell::OutOBMEStream xs(run_parameters.output_xform_file,
-                          input_space, output_space, output_sectors,
-                          basis::OneBodyOperatorType::kRadial);
-  xs.Write(xform_matrices);
+  basis::OrbitalPNList output_orbitals = run_parameters.input_space.OrbitalInfo();
 
   // sort orbitals and write out
-  std::vector<basis::OrbitalPNInfo> output_orbitals = output_space.OrbitalInfo();
   std::sort(output_orbitals.begin(), output_orbitals.end(), basis::OrbitalSortCmpWeight);
-  std::ofstream output_orbital_s(run_parameters.output_orbital_file);
+  std::ofstream output_orbital_s(run_parameters.output_orbital_filename);
   output_orbital_s << basis::OrbitalDefinitionStr(output_orbitals, true);
   output_orbital_s.close();
+
+  // write xform out to file
+  const basis::OrbitalSpaceLJPN output_space(output_orbitals);
+  basis::OrbitalSectorsLJPN output_sectors(
+      run_parameters.input_space, output_space, 0, 0, 0
+      // note hard-coded j0=0, g0, Tz0=0
+    );
+  shell::OutOBMEStream xs(
+      run_parameters.output_xform_filename,
+      run_parameters.input_space, output_space, output_sectors,
+      basis::OneBodyOperatorType::kRadial
+    );
+  xs.Write(xform_matrices);
 
   /* return code */
   return EXIT_SUCCESS;
