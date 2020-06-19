@@ -20,10 +20,19 @@
 
     [One-body observable]
     #  J0  g0 Tz0  name
-        1   0   0  Dl1p
+        2   0   0  E2p
     #   Jf  gf  nf    Ji  gi  ni              rme
-      0.5   0   1   0.5   0   1   3.22179640e-02
-      0.5   0   1   0.5   0   2  -6.10005432e-03
+       0.5   1   1   1.5   1   1   2.10359485e+00
+       0.5   1   1   1.5   1   2   9.99786880e+00
+    ...
+    
+    [One-body observable]
+    #  J0  g0 Tz0  name
+        1   0   0  Dlp
+    #   Jf  gf  nf    Ji  gi  ni              rme
+       0.5   1   1   0.5   1   1   2.33091440e-01
+       0.5   1   1   1.5   1   1   2.52027931e-01
+    ...    
 
   Patrick J. Fasano
   University of Notre Dame
@@ -158,8 +167,11 @@ void ReadParameters(RunParameters& run_parameters) {
           ));
 
       }
-
+    } else {
+        mcutils::ParsingError(line_count,line,"Unrecognized keyword");
     }
+    
+
   }
 }
 
