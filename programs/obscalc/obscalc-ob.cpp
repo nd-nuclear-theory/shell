@@ -11,7 +11,7 @@
 
   Input format:
 
-    set-output-file output_filename
+    set-output-file output_filename [append]
     set-indexing orbital_filename
     define-operator name operator_filename
     define-densities Jf gf nf Ji gi ni robdme_filename [robdme_info_filename]
@@ -25,14 +25,14 @@
        0.5   1   1   1.5   1   1   2.10359485e+00
        0.5   1   1   1.5   1   2   9.99786880e+00
     ...
-    
+
     [One-body observable]
     #  J0  g0 Tz0  name
         1   0   0  Dlp
     #   Jf  gf  nf    Ji  gi  ni              rme
        0.5   1   1   0.5   1   1   2.33091440e-01
        0.5   1   1   1.5   1   1   2.52027931e-01
-    ...    
+    ...
 
   Patrick J. Fasano
   University of Notre Dame
@@ -57,6 +57,7 @@
     - Suppress output if transition cannot be calculated due to Clebsch zero.
     - New output format to use simple listings rather than tables.
     - Reorder loops over operators and densities.
+  + 08/14/20 (pjf): Add append mode to allow repeated calls to obscalc-ob.
 ******************************************************************************/
 
 #include <sys/stat.h>
@@ -103,6 +104,7 @@ struct OneBodyOperator {
 struct RunParameters {
   // filenames
   std::string output_filename;
+  std::ios_base::openmode file_mode;
   basis::OrbitalSpaceLJPN space;
   std::vector<OneBodyOperator> operators;
   std::vector<std::unique_ptr<shell::InOBDMEStream>> density_streams;
@@ -123,8 +125,18 @@ void ReadParameters(RunParameters& run_parameters) {
     // select action based on keyword
     if (keyword == "set-output-file") {
       line_stream >> run_parameters.output_filename;
+      run_parameters.filemode = std::ios_base::trunc;
+      if (!line_stream.eof()) {
+        std::string mode;
+        line_stream >> mode;
+        if (mode == "append")
+          run_parameters.file_mode = std::ios_base::app;
+      }
       mcutils::ParsingCheck(line_stream, line_count, line);
-      mcutils::FileExistCheck(run_parameters.output_filename, false, true);
+      mcutils::FileExistCheck(
+        run_parameters.output_filename, false,
+        run_parameters.file_mode==std::ios_base::trunc
+        );
     } else if (keyword == "set-indexing") {
       std::string orbital_filename;
       line_stream >> orbital_filename;
@@ -170,7 +182,7 @@ void ReadParameters(RunParameters& run_parameters) {
     } else {
         mcutils::ParsingError(line_count,line,"Unrecognized keyword");
     }
-    
+
 
   }
 }
@@ -267,8 +279,7 @@ int main(int argc, char** argv) {
             << std::endl;
 
   // open output
-  std::ios_base::openmode mode_argument = std::ios_base::trunc;
-  std::ofstream out_stream(run_parameters.output_filename, mode_argument);
+  std::ofstream out_stream(run_parameters.output_filename, run_parameters.file_mode);
   mcutils::StreamCheck(
       bool(out_stream), run_parameters.output_filename,
       "Failure opening file for output"
