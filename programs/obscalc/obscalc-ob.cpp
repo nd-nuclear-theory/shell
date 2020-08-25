@@ -125,7 +125,7 @@ void ReadParameters(RunParameters& run_parameters) {
     // select action based on keyword
     if (keyword == "set-output-file") {
       line_stream >> run_parameters.output_filename;
-      run_parameters.filemode = std::ios_base::trunc;
+      run_parameters.file_mode = std::ios_base::trunc;
       if (!line_stream.eof()) {
         std::string mode;
         line_stream >> mode;
