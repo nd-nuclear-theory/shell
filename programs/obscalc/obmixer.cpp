@@ -529,7 +529,7 @@ void ReadParameters(
         line_stream >> coordinate >> operator_order >> j0;
         mcutils::ParsingCheck(line_stream,line_count,line);
 
-        OperatorType operator_type = shell::kCharCodeRadialOperatorType.at(id);
+        OperatorType operator_type = shell::kCharCodeRadialOperatorType.at(coordinate);
         g0 = j0%2;
         tz0 = 0;
         if (!line_stream.eof())
