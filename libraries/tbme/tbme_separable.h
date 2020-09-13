@@ -46,6 +46,7 @@
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
   + 07/05/19 (pjf): Remove all built-in angular momentum, kinematic, and isospin
     operators.
+  + 08/07/20 (pjf): Apply simplifications inside RacahReduceTensorProductJJJPN.
 
 ****************************************************************/
 

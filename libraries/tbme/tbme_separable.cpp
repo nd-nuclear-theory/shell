@@ -288,73 +288,90 @@ namespace shell {
 
         double matrix_element = 0.;
         int phase = 1;
+        double factor_c1a_d2b, factor_d2b_c1a, factor_d1b_c2a, factor_c2a_d1b,
+          factor_c1b_d2a, factor_d2a_c1b, factor_d1a_c2b, factor_c2b_d1a;
 
-        // (cd;J'||v12||ab;J)+(cd;J'||v21||ab;J)
-        matrix_element += phase
+        // phase = 1;
+        factor_c1a_d2b = phase
           * am::RacahReductionFactor12Rose(
                 c.j(), d.j(), bra.J(),
                 a.j(), b.j(), ket.J(),
                 ob_sectors1.j0(), ob_sectors2.j0(), J0
-            )
-          * matel_c1a * matel_d2b;
-        matrix_element += phase
-          * am::RacahReductionFactor21Rose(
+            );
+        // phase = ParitySign(bra.J()-c.j()-d.j()+ket.J()-a.j()-b.j());
+        factor_d2b_c1a = phase
+          * ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j())
+          * factor_c1a_d2b;
+
+
+        // phase = ParitySign(bra.J()-c.j()-d.j()+ket.J()-a.j()-b.j());
+        if (ob_sectors1.j0() == ob_sectors2.j0())
+          factor_d1b_c2a =
+            ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j()+ob_sectors1.j0()+ob_sectors2.j0()+J0)
+            * factor_c1a_d2b;
+        else
+          factor_d1b_c2a = phase
+            * am::RacahReductionFactor12Rose(
+                d.j(), c.j(), bra.J(),
+                b.j(), a.j(), ket.J(),
+                ob_sectors1.j0(), ob_sectors2.j0(), J0
+            );
+        // phase = 1;
+        factor_c2a_d1b = phase
+          * ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j())
+          * factor_d1b_c2a;
+
+
+        // phase = - ParitySign(ket.J()-a.j()-b.j());
+        factor_c1b_d2a = phase
+          * am::RacahReductionFactor12Rose(
                 c.j(), d.j(), bra.J(),
+                b.j(), a.j(), ket.J(),
+                ob_sectors1.j0(), ob_sectors2.j0(), J0
+            );
+        // phase = - ParitySign(bra.J()-c.j()-d.j());
+        factor_d2a_c1b = phase
+          * ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j())
+          * factor_c1b_d2a;
+
+
+        // phase = - ParitySign(bra.J()-c.j()-d.j());
+        if (ob_sectors1.j0() == ob_sectors2.j0())
+          factor_d1a_c2b =
+            ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j()+ob_sectors1.j0()+ob_sectors2.j0()+J0)
+            * factor_c1b_d2a;
+        else
+          factor_d1a_c2b = phase
+            * am::RacahReductionFactor12Rose(
+                d.j(), c.j(), bra.J(),
                 a.j(), b.j(), ket.J(),
                 ob_sectors1.j0(), ob_sectors2.j0(), J0
-            )
-          * matel_c2a * matel_d1b;
+            );
+        // phase = - ParitySign(ket.J()-a.j()-b.j());
+        factor_c2b_d1a = phase
+          * ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j())
+          * factor_d1a_c2b;
+
+
+
+        // (cd;J'||v12||ab;J)+(cd;J'||v21||ab;J)
+        matrix_element += phase * factor_c1a_d2b * matel_c1a * matel_d2b;
+        matrix_element += phase * factor_c2a_d1b * matel_c2a * matel_d1b;
 
         // - (-)**(J-ja-jb) * [(cd;J'||v12||ba;J)+(cd;J'||v21||ba;J)]
         phase = - ParitySign(ket.J()-a.j()-b.j());  // AS phase
-        matrix_element += phase
-          * am::RacahReductionFactor12Rose(
-                c.j(), d.j(), bra.J(),
-                b.j(), a.j(), ket.J(),
-                ob_sectors1.j0(), ob_sectors2.j0(), J0
-            )
-          * matel_c1b * matel_d2a;
-        matrix_element += phase
-          * am::RacahReductionFactor21Rose(
-                c.j(), d.j(), bra.J(),
-                b.j(), a.j(), ket.J(),
-                ob_sectors1.j0(), ob_sectors2.j0(), J0
-            )
-          * matel_c2b * matel_d1a;
+        matrix_element += phase * factor_c1b_d2a * matel_c1b * matel_d2a;
+        matrix_element += phase * factor_c2b_d1a * matel_c2b * matel_d1a;
 
         // - (-)**(J'-jc-jd) * [(dc;J'||v12||ab;J)+(dc;J'||v21||ab;J)]
         phase = - ParitySign(bra.J()-c.j()-d.j());  // AS phase
-        matrix_element += phase
-          * am::RacahReductionFactor12Rose(
-                d.j(), c.j(), bra.J(),
-                a.j(), b.j(), ket.J(),
-                ob_sectors1.j0(), ob_sectors2.j0(), J0
-            )
-          * matel_d1a * matel_c2b;
-        matrix_element += phase
-          * am::RacahReductionFactor21Rose(
-                d.j(), c.j(), bra.J(),
-                a.j(), b.j(), ket.J(),
-                ob_sectors1.j0(), ob_sectors2.j0(), J0
-            )
-          * matel_d2a * matel_c1b;
+        matrix_element += phase * factor_d1a_c2b * matel_d1a * matel_c2b;
+        matrix_element += phase * factor_d2a_c1b * matel_d2a * matel_c1b;
 
         // (-)**(J'-jc-jd+J-ja-jb) * [(dc;J'||v12||ba;J)+(dc;J'||v21||ba;J)]
         phase = ParitySign(bra.J()-c.j()-d.j()+ket.J()-a.j()-b.j());  // AS phase
-        matrix_element += phase
-          * am::RacahReductionFactor12Rose(
-                d.j(), c.j(), bra.J(),
-                b.j(), a.j(), ket.J(),
-                ob_sectors1.j0(), ob_sectors2.j0(), J0
-            )
-          * matel_d1b * matel_c2a;
-        matrix_element += phase
-          * am::RacahReductionFactor21Rose(
-                d.j(), c.j(), bra.J(),
-                b.j(), a.j(), ket.J(),
-                ob_sectors1.j0(), ob_sectors2.j0(), J0
-            )
-          * matel_d2b * matel_c1a;
+        matrix_element += phase * factor_d1b_c2a * matel_d1b * matel_c2a;
+        matrix_element += phase * factor_d2b_c1a * matel_d2b * matel_c1a;
 
         // normalize (from symmetrization of v and sqrt(2) in AS state)
         matrix_element *= 0.25;
