@@ -7,7 +7,9 @@ $(eval $(begin-module))
 module_units_h :=
 module_units_cpp-h :=
 # module_units_f :=
-module_programs_cpp := ew-gen obscalc-ob obmixer
+module_programs_cpp := obmixer obscalc-ob ew-gen
+module_programs_cpp += orbital-gen natorb-gen
+module_programs_cpp += radial-gen radial-xform radial-compose
 # module_programs_cpp_test := obdme-compare_test
 
 # module_programs_f :=
