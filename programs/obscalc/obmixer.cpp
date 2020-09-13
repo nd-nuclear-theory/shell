@@ -1,14 +1,20 @@
 /******************************************************************************
   @file obmixer.cpp
 
-  compute radial and one-body operator matrix elements
+  Compute one-body operator matrix elements.
+
+  Note: All matrix elements are defined in terms for unitless operators,
+  i.e., r->(b^-1 r) and ik->(b ik). Equivalently, they are evaluated between
+  radial functions with length parameter 1. Any alternate scaling can be
+  accomplished by providing a length_parameter.
 
   Syntax:
-    + radial-gen
+    + obmixer
 
   Input format:
     set-basis <basis_type> <orbital_filename>
       basis_type = oscillator|laguerre
+    set-length-parameter <length_parameter>
     define-xform <id> <xform_filename>
     define-source <mode> <id> ...
       define-source kinematic <id> [orbital_filename]
@@ -20,7 +26,7 @@
       define-source ladder <id> [orbital_filename]
         id = c+|c
       define-source solid-harmonic <id> <coordinate> <order> [orbital_filename]
-        coordinate = r|k
+        coordinate = r|ik
       define-source input <id> <filename> <j0> <g0> <tz0>
       define-source linear-combination <id>
         add-source <id> <coefficient>
@@ -33,7 +39,9 @@
   Patrick J. Fasano
   University of Notre Dame
 
-  + 09/02/20 (pjf): Created, based on h2mixer and radial-gen.
+  + 09/08/20 (pjf): Created, based on h2mixer and radial-gen.
+  + 09/10/20 (pjf): Add length parameter option.
+  + 09/13/20 (pjf): Fix xform source.
 
 ******************************************************************************/
 
@@ -128,10 +136,13 @@ struct RunParameters
 // Structure to store input parameters for run.
 {
   RunParameters()
-    : basis_type(shell::RadialBasisType::kOscillator), orbital_space()
+    : basis_type(shell::RadialBasisType::kOscillator), length_parameter(1.0), orbital_space()
   {};
 
-  void InitializeIndexing(const shell::RadialBasisType& basis_type_, const std::string& orbital_filename_)
+  void InitializeIndexing(
+      const shell::RadialBasisType& basis_type_,
+      const std::string& orbital_filename_
+    )
   {
     basis_type = basis_type_;
     std::ifstream orbital_file(orbital_filename_);
@@ -141,6 +152,7 @@ struct RunParameters
 
   // basis parameters
   shell::RadialBasisType basis_type;
+  double length_parameter;
   basis::OrbitalSpaceLJPN orbital_space;
 };
 
@@ -433,6 +445,11 @@ void ReadParameters(
       auto basis_type = kBasisTypeDefinitions.at(basis_type_str);
       mcutils::FileExistCheck(orbital_filename, true, false);
       run_parameters.InitializeIndexing(basis_type, orbital_filename);
+    }
+    else if (keyword=="set-length-parameter")
+    {
+      line_stream >> run_parameters.length_parameter;
+      mcutils::ParsingCheck(line_stream, line_count, line);
     }
     else if (keyword=="define-xform")
     {
@@ -796,14 +813,21 @@ void OneBodyGeneratedChannel::ConstructOneBodyOperatorData(
         operator_data.matrices
       );
 
-    if (kKinematicOneBodyOperatorDefinitions.count(id) == 0)
+    // scaling for radial power
+    double scale_factor = 1.0;
+    if (radial_operator_type == shell::RadialOperatorType::kR)
+      scale_factor *= std::pow(run_parameters.length_parameter, operator_order);
+    else if (radial_operator_type == shell::RadialOperatorType::kK)
+      scale_factor *= std::pow(run_parameters.length_parameter, -operator_order);
+
     // convert between C and Y if not using a special kinematic operator
-    {
-      basis::ScalarMultiplyOperator(
-          operator_data.sectors, operator_data.matrices,
-          Hat(operator_order) * am::kInvSqrt4Pi
-        );
-    }
+    if (!kKinematicOneBodyOperatorDefinitions.count(id))
+      scale_factor *= Hat(operator_order) * am::kInvSqrt4Pi;
+
+    // apply scale factor
+    basis::ScalarMultiplyOperator(
+        operator_data.sectors, operator_data.matrices, scale_factor
+      );
   }
   else if (std::holds_alternative<am::AngularMomentumOperatorType>(operator_type))
   // angular momentum operators
@@ -842,7 +866,7 @@ void OneBodyGeneratedChannel::ConstructOneBodyOperatorData(
   {
     auto& ladder_operator_type = std::get<shell::LadderOperatorType>(operator_type);
     LadderOneBodyOperator(
-        shell::RadialBasisType::kOscillator,
+        run_parameters.basis_type,
         ladder_operator_type,
         operator_data.orbital_space,
         operator_data.sectors,
@@ -1036,7 +1060,7 @@ void OneBodyXformChannel::ConstructOneBodyOperatorData(
   const OneBodyOperatorData& source_data = operators.at(ob_source_id);
 
   // look up xform data
-  if (!operators.count(xform_id))
+  if (!xforms.count(xform_id))
   {
     std::cerr << fmt::format("ERROR {}: xform {} not found.", __LINE__, xform_id)
               << std::endl;
@@ -1194,8 +1218,6 @@ int main(int argc, char **argv)
     );
 
   // set up parallelization
-
-  // for now, disable Eigen internal parallelization (but we will want it later for the matmul)
   std::cout
     << fmt::format("Parallelization: max_threads {}, num_procs {}",
                    omp_get_max_threads(), omp_get_num_procs()
@@ -1203,7 +1225,6 @@ int main(int argc, char **argv)
     << std::endl
     << std::endl;
   Eigen::initParallel();
-  // Eigen::setNbThreads(0);
 
   // start timing
   mcutils::SteadyTimer total_time;
