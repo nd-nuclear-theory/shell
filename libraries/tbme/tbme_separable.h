@@ -47,6 +47,8 @@
   + 07/05/19 (pjf): Remove all built-in angular momentum, kinematic, and isospin
     operators.
   + 08/07/20 (pjf): Apply simplifications inside RacahReduceTensorProductJJJPN.
+  + 10/10/20 (pjf): OpenMP-parallelize loops in UpgradeOneBodyOperatorJJJPN
+    and RacahReduceTensorProductJJJPN.
 
 ****************************************************************/
 

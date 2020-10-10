@@ -43,13 +43,13 @@ namespace shell {
       const basis::OrbitalSectorsLJPN& ob_sectors,
       const basis::OperatorBlocks<double>& ob_matrices,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
-      int A
+      const int A
     )
   {
     // set up aliases
-    int j0 = ob_sectors.j0();
-    int g0 = ob_sectors.g0();
-    int Tz0 = ob_sectors.Tz0();
+    const int j0 = ob_sectors.j0();
+    const int g0 = ob_sectors.g0();
+    const int Tz0 = ob_sectors.Tz0();
     const basis::TwoBodySubspaceJJJPN& bra_subspace = sector.bra_subspace();
     const std::size_t bra_subspace_size = bra_subspace.size();
     const basis::TwoBodySubspaceJJJPN& ket_subspace = sector.ket_subspace();
@@ -63,6 +63,14 @@ namespace shell {
       return matrix;
 
     // build sector matrix
+    #pragma omp parallel for \
+      collapse(2)            \
+      default(none),         \
+      shared(                \
+        matrix, j0, g0, Tz0, \
+        bra_subspace, bra_subspace_size, ket_subspace, ket_subspace_size, \
+        ob_orbital_space, ob_sectors, ob_matrices, sector, A \
+        )
     for (std::size_t bra_index = 0; bra_index < bra_subspace_size; ++bra_index)
       for (std::size_t ket_index = 0; ket_index < ket_subspace_size; ++ket_index)
       {
@@ -185,6 +193,9 @@ namespace shell {
         if (c == d)
           matrix_element *= 1/(sqrt(2.));
 
+        // NOTE(pjf): uncertain if this write needs to be in a critical region,
+        // but the synchronization cost is high
+        // #pragma omp critical
         matrix(bra_index, ket_index) = matrix_element;
       }
     return 1./(A-1)*matrix;
@@ -203,7 +214,7 @@ namespace shell {
       const basis::OrbitalSectorsLJPN& ob_sectors2,
       const basis::OperatorBlocks<double>& ob_matrices2,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
-      int J0
+      const int J0
     )
   {
     // sanity check on angular momenta
@@ -222,6 +233,14 @@ namespace shell {
       return matrix;
 
     // build sector matrix
+    #pragma omp parallel for                                                    \
+      collapse(2)                                                               \
+      default(none),                                                            \
+      shared(                                                                   \
+        matrix, bra_subspace, bra_subspace_size, ket_subspace, ket_subspace_size,\
+        ob_orbital_space, ob_sectors1, ob_matrices1, ob_sectors2, ob_matrices2, \
+        sector, J0                                                              \
+        )
     for (std::size_t bra_index = 0; bra_index < bra_subspace_size; ++bra_index)
       for (std::size_t ket_index = 0; ket_index < ket_subspace_size; ++ket_index)
       {
@@ -380,6 +399,9 @@ namespace shell {
         if (c == d)
           matrix_element *= 1/(sqrt(2.));
 
+        // NOTE(pjf): uncertain if this write needs to be in a critical region,
+        // but the synchronization cost is high
+        // #pragma omp critical
         matrix(bra_index, ket_index) = matrix_element;
       }
     return matrix;
