@@ -423,7 +423,33 @@ namespace shell {
           );
       }
 
+    // temporary buffer for binary read
+    std::vector<float> buffer;
+    if (h2_mode()==H2Mode::kBinary)
+      {
+        // calculate number of matrix elements in sector
+        std::size_t sector_entries = 0;
+        if (sector.IsDiagonal())
+          // diagonal sector
+          {
+            std::size_t dimension = ket_subspace.size();
+            sector_entries = dimension*(dimension+1)/2;
+          }
+        else  // if (sector.IsUpperTriangle())
+          // upper triangle sector (but not diagonal)
+          {
+            std::size_t bra_dimension = bra_subspace.size();
+            std::size_t ket_dimension = ket_subspace.size();
+            sector_entries = bra_dimension*ket_dimension;
+          }
+
+        // read entire sector to temporary buffer
+        buffer.resize(sector_entries, 0.);
+        mcutils::ReadBinary<float>(stream(),buffer.data(),sector_entries);
+      }
+
     // iterate over matrix elements
+    std::size_t i = 0;
     for (std::size_t bra_index=0; bra_index<bra_subspace.size(); ++bra_index)
       for (std::size_t ket_index=0; ket_index<ket_subspace.size(); ++ket_index)
         {
@@ -433,14 +459,14 @@ namespace shell {
             if (!(bra_index<=ket_index))
               continue;
 
-          // retrieve states
-          const basis::TwoBodyStateJJJPN bra(bra_subspace,bra_index);
-          const basis::TwoBodyStateJJJPN ket(ket_subspace,ket_index);
-
           // read input matrix element
           float input_matrix_element;
           if (h2_mode()==H2Mode::kText)
             {
+              // retrieve states
+              const basis::TwoBodyStateJJJPN bra(bra_subspace,bra_index);
+              const basis::TwoBodyStateJJJPN ket(ket_subspace,ket_index);
+
               // input fields for text mode only
               int input_i1, input_i2, input_i3, input_i4, input_twice_J_bra, input_twice_J_ket;
               int input_two_body_species_code;
@@ -470,7 +496,7 @@ namespace shell {
             }
           else if (h2_mode()==H2Mode::kBinary)
             {
-              mcutils::ReadBinary<float>(stream(),input_matrix_element);
+              input_matrix_element = buffer[i++];
             }
 
           matrix(bra_index,ket_index) = input_matrix_element;
@@ -579,7 +605,32 @@ namespace shell {
         mcutils::WriteBinary<int>(stream(),entries*kIntegerSize);
       }
 
+    // temporary buffer for binary write
+    std::vector<float> buffer;
+    std::size_t sector_entries = 0;
+    if (h2_mode()==H2Mode::kBinary)
+      {
+        // calculate number of matrix elements in sector
+        if (sector.IsDiagonal())
+          // diagonal sector
+          {
+            const std::size_t& dimension = ket_subspace.size();
+            sector_entries = dimension*(dimension+1)/2;
+          }
+        else  // if (sector.IsUpperTriangle())
+          // upper triangle sector (but not diagonal)
+          {
+            const std::size_t& bra_dimension = bra_subspace.size();
+            const std::size_t& ket_dimension = ket_subspace.size();
+            sector_entries = bra_dimension*ket_dimension;
+          }
+
+        // allocate buffer
+        buffer.resize(sector_entries, 0.);
+      }
+
     // iterate over matrix elements
+    std::size_t i = 0;
     for (std::size_t bra_index=0; bra_index<bra_subspace.size(); ++bra_index)
       for (std::size_t ket_index=0; ket_index<ket_subspace.size(); ++ket_index)
         {
@@ -608,16 +659,16 @@ namespace shell {
           // retrieve matrix element for output
           float output_matrix_element = conversion_factor * matrix(bra_index,ket_index);
 
-          // write line: output matrix element
-          int output_i1 = bra.index1()+1;
-          int output_i2 = bra.index2()+1;
-          int output_i3 = ket.index1()+1;
-          int output_i4 = ket.index2()+1;
-          int output_twice_J_bra = 2*bra.J();
-          int output_twice_J_ket = 2*ket.J();
-          int output_two_body_species_code=basis::kTwoBodySpeciesPNCodeDecimal[int(ket.two_body_species())];
           if (h2_mode()==H2Mode::kText)
             {
+              // write line: output matrix element
+              int output_i1 = bra.index1()+1;
+              int output_i2 = bra.index2()+1;
+              int output_i3 = ket.index1()+1;
+              int output_i4 = ket.index2()+1;
+              int output_twice_J_bra = 2*bra.J();
+              int output_twice_J_ket = 2*ket.J();
+              int output_two_body_species_code=basis::kTwoBodySpeciesPNCodeDecimal[int(ket.two_body_species())];
               stream()
                 << fmt::format(
                     "{:3d} {:3d} {:3d} {:3d} {:3d} {:3d} {:2d} {:+16.7e}",
@@ -631,9 +682,14 @@ namespace shell {
             }
           else if (h2_mode()==H2Mode::kBinary)
             {
-              mcutils::WriteBinary<float>(stream(),output_matrix_element);
+              // store to buffer
+              buffer[i++] = output_matrix_element;
             }
         }
+
+    // write temporary buffer to file
+    if (h2_mode()==H2Mode::kBinary)
+      mcutils::WriteBinary<float>(stream(),buffer.data(),sector_entries);
 
     // write FORTRAN record ending delimiter
     if ((h2_mode()==H2Mode::kBinary) && SectorIsLastOfType())
