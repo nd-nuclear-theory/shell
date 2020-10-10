@@ -42,6 +42,7 @@
   + 09/08/20 (pjf): Created, based on h2mixer and radial-gen.
   + 09/10/20 (pjf): Add length parameter option.
   + 09/13/20 (pjf): Fix xform source.
+  + 10/09/20 (pjf): Fix output header line.
 
 ******************************************************************************/
 
@@ -1203,7 +1204,7 @@ int main(int argc, char **argv)
 
   // header
   std::cout << std::endl;
-  std::cout << "h2mixer -- MFDn H2 file generation" << std::endl;
+  std::cout << "obmixer -- one-body matrix element generation" << std::endl;
   std::cout << "version: " VCS_REVISION << std::endl;
   std::cout << std::endl;
 
