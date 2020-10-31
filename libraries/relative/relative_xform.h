@@ -5,7 +5,7 @@
 
   Language: C++17
 
-  Patrick J. fasano
+  Patrick J. Fasano
   University of Notre Dame
 
   + 10/13/20 (pjf): Created.

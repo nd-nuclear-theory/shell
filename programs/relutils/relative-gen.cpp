@@ -67,7 +67,7 @@
 
       Isospin operator, construed as relative two-body operator.
 
-    coulomb p|n|total steps
+    coulomb p|n total steps
 
       Coulomb potential.
 
@@ -75,6 +75,11 @@
 
       Symmetrized unit tensor.  The labels must specify a canonical
       (upper triangle) matrix element.
+
+    interaction Jmax <interaction>
+
+      Two-body interaction.
+      interaction = Daejeon16
 
   Other operator parameter values are taken as:
     symmetry_phase_mode = kHermitian
@@ -103,6 +108,7 @@
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
   + 05/15/19 (mac): Rename "matrices" to "blocks" in variable names.
   + 06/20/19 (pjf): Add isospin operator.
+  + 10/30/20 (pjf): Add (optional) Daejeon16 interaction.
 
 ****************************************************************/
 
@@ -112,6 +118,10 @@
 #include "mcutils/parsing.h"
 #include "relative/relative_me.h"
 #include "spline/wavefunction_class.h"
+
+#ifdef USE_DAEJEON16
+#include "Daejeon16/Daejeon16_wrapper.h"
+#endif  // USE_DAEJEON16
 
 ////////////////////////////////////////////////////////////////
 // parameter input
@@ -132,6 +142,7 @@ struct Parameters
   std::string target_filename;
 
   // optional parameters for specific operators
+  std::string interaction_name;
   UnitTensorLabels unit_tensor_labels;
   basis::OperatorTypePN operator_type_pn;
   relative::CoordinateType coordinate_type;
@@ -255,6 +266,16 @@ void ReadParameters(Parameters& parameters)
           >> parameters.unit_tensor_labels.J
           >> parameters.unit_tensor_labels.T;
         mcutils::ParsingCheck(line_stream,line_count,line);
+      }
+    else if (parameters.operator_name == "interaction")
+      // arguments: interaction name
+      {
+        line_stream >> parameters.operator_parameters.Jmax >> parameters.interaction_name;
+        mcutils::ParsingCheck(line_stream,line_count,line);
+      }
+    else
+      {
+        mcutils::ParsingError(line_count,line,"unknown operator name");
       }
   }
 
@@ -475,6 +496,22 @@ void PopulateOperator(
       // set matrix element
       relative_blocks[relative_sector_index](relative_state_index_bra,relative_state_index_ket) = 1.;
 
+    }
+  else if (parameters.operator_name == "interaction")
+    {
+#ifdef USE_DAEJEON16
+      if (parameters.interaction_name == "Daejeon16")
+        {
+          contrib::ConstructDaejeon16Operator(
+              operator_parameters,
+              relative_space,relative_component_sectors,relative_component_blocks
+            );
+        }
+#endif  // USE_DAEJEON16
+
+      // exit with failure if interaction not recognized
+      std::cerr << "ERROR: Unknown interaction " << parameters.interaction_name << std::endl;
+      std::exit(EXIT_FAILURE);
     }
 }
 
