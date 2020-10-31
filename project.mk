@@ -32,6 +32,7 @@ modules += programs/obutils
 # libraries
 ################
 
+modules += contrib/Daejeon16
 modules += libraries/relative libraries/moshinsky
 modules += libraries/tbme libraries/obme libraries/density libraries/analytic
 
@@ -54,6 +55,9 @@ extras :=
 # additional project-specific make settings and rules
 ################################################################
 
+# contrib
+src_library_dir += ./libraries ./contrib
+
 # gsl
 LDLIBS += -lgsl
 LDLIBS += -lgslcblas
@@ -69,3 +73,5 @@ CPPFLAGS += -DBASIS_HASH
 # spline submodule
 #   disable integration routines requiring later versions of gsl
 CPPFLAGS += -DSPLINE_NO_FANCY_INTEGRATION
+
+CPPFLAGS += -I$(EIGEN3_DIR)/include/eigen3
