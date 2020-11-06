@@ -217,9 +217,36 @@ namespace moshinsky {
       const std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       const basis::RelativeCMSpaceLSJTN& relative_cm_lsjtn_space,
       std::array<basis::RelativeCMSectorsLSJTN,3>& relative_cm_lsjtn_component_sectors,
-      std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_matrices
+      std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_matrices,
+      bool verbose
     )
   {
+    // write diagnostics
+    if (verbose)
+      {
+        std::cout
+          << "  Operator properties:"
+          << " J0 " << operator_labels.J0
+          << " g0 " << operator_labels.g0
+          << " T0_min " << operator_labels.T0_min
+          << " T0_max " << operator_labels.T0_max
+          << " symmetry " << int(operator_labels.symmetry_phase_mode)
+          << std::endl
+          << "  Truncation:"
+          << " Nmax " << relative_space.Nmax()
+          << " Jmax " << relative_space.Jmax()
+          << std::endl;
+
+        std::cout << "  Matrix elements:";
+        for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+          std::cout << " " << basis::UpperTriangularEntries(relative_cm_lsjtn_component_sectors[T0]);
+        std::cout << std::endl;
+        std::cout << "  Allocated:";
+        for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+          std::cout << " " << basis::AllocatedEntries(relative_cm_lsjtn_component_matrices[T0]);
+        std::cout << std::endl;
+      }
+
     for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
       // for each isospin component
       {
