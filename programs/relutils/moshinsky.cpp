@@ -492,7 +492,8 @@ int main(int argc, char **argv)
       moshinsky::TransformOperatorRelativeLSJTToRelativeCMLSJTN(
           operator_labels,
           relative_space,relative_component_sectors,relative_component_blocks,
-          relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_blocks
+          relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_blocks,
+          true
         );
       relative_cm_lsjtn_timer.Stop();
       std::cout << "  Time: " << relative_cm_lsjtn_timer.ElapsedTime() << std::endl;
