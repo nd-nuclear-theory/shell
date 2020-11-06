@@ -59,12 +59,14 @@
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
   + 06/20/19 (pjf): Add isospin operator.
   + 10/06/19 (pjf): Fix sqrt(5/16pi) prefactor in ConstructQuadrupoleOperator.
+  + 11/02/20 (pjf): Add SU(4) Casimir operator.
 
 ****************************************************************/
 
 #ifndef RELATIVE_ME_H_
 #define RELATIVE_ME_H_
 
+#include <array>
 #include "basis/lsjt_operator.h"
 #include "basis/proton_neutron.h"
 
@@ -279,6 +281,33 @@ namespace relative {
   // T on the A-body system is obtained as the two-body operator
   //
   //   T = 1/(A-1) V[Trel]
+  //
+  // These matrix elements are independent of oscillator length.  (See "Note on
+  // oscillator length" at start of this header file.)
+  //
+  // Arguments:
+  //   operator_labels (input) : tensorial properties of operator
+  //   relative_space (input) : target space
+  //   relative_component_sectors (output) : target sectors
+  //   relative_component_matrices (output) : target matrices
+
+  ////////////////////////////////////////////////////////////////
+  // Wigner's SU(4) Casimir
+  ////////////////////////////////////////////////////////////////
+
+  void ConstructSU4CasimirOperator(
+      const basis::OperatorLabelsJT& operator_labels,
+      const basis::RelativeSpaceLSJT& relative_space,
+      std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices
+    );
+  // Construct SU(4) quadratic Casimir in relative LSJT basis.
+  //
+  // These matrix elements are for the SU(4) Casimir operator CSU4rel taken as a
+  // relative (Galilean-invariant) operator on the two-body system.  The SU(4)
+  // Casimir CSU4 on the A-body system is obtained as the two-body operator
+  //
+  //   CSU4 = V[CSU4rel] - (A-2)/(A-1) V[15/2 I]
   //
   // These matrix elements are independent of oscillator length.  (See "Note on
   // oscillator length" at start of this header file.)

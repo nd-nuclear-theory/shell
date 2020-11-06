@@ -780,7 +780,7 @@ namespace relative {
   }
 
   ////////////////////////////////////////////////////////////////
-  // spin transition operators
+  // isospin transition operators
   ////////////////////////////////////////////////////////////////
 
   void ConstructIsospinOperator(
@@ -818,7 +818,7 @@ namespace relative {
         // Dipole (J0=1) and positive parity (g0=0) selection rules should
         // already have been enforced in sector construction.
         //
-        // But here we also impose (L0,S0)=(0,1) and T0 triangularity.
+        // But here we also impose (L0,S0)=(0,0) and T0 triangularity.
         //
         // For isoscalar: We furthermore impose spin angular momentum conservation by
         // the spin generator action (S'=S).
@@ -869,6 +869,99 @@ namespace relative {
           {
             std::size_t bra_n = ket_n;
             matrix(bra_n,ket_n) = isospin_factor;
+          }
+
+      }
+  }
+
+  ////////////////////////////////////////////////////////////////
+  // SU(4) Casimir operators
+  ////////////////////////////////////////////////////////////////
+
+  void ConstructSU4CasimirOperator(
+      const basis::OperatorLabelsJT& operator_labels,
+      const basis::RelativeSpaceLSJT& relative_space,
+      std::array<basis::RelativeSectorsLSJT,3>& relative_component_sectors,
+      std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices
+    )
+  {
+
+    // validate operator parameters
+    assert(operator_labels.J0==0);
+    assert(operator_labels.g0==0);
+    assert((operator_labels.T0_min==0)&&(0<=operator_labels.T0_max));
+
+    // zero initialize operator
+    basis::ConstructZeroOperatorRelativeLSJT(
+        operator_labels,relative_space,relative_component_sectors,relative_component_matrices
+      );
+
+    // select T0 component
+    const basis::RelativeSectorsLSJT& sectors = relative_component_sectors[0];
+    basis::OperatorBlocks<double>& matrices = relative_component_matrices[0];
+
+    // iterate over sectors
+    for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
+      {
+        // set us aliases -- for sector and subspaces
+        const basis::RelativeSectorsLSJT::SectorType& sector = sectors.GetSector(sector_index);
+        const basis::RelativeSubspaceLSJT& bra_subspace = sector.bra_subspace();
+        const basis::RelativeSubspaceLSJT& ket_subspace = sector.ket_subspace();
+
+        // short-circuit select allowed sectors
+        //
+        // Dipole (J0=1) and positive parity (g0=0) selection rules should
+        // already have been enforced in sector construction.
+        //
+        // But here we also impose (L0,S0,T0)=(0,0,0).
+        if (
+            !(
+                am::AllowedTriangle(bra_subspace.L(),0,ket_subspace.L())
+                && am::AllowedTriangle(bra_subspace.S(),0,ket_subspace.S())
+                && am::AllowedTriangle(bra_subspace.T(),0,ket_subspace.T())
+              )
+          )
+          continue;
+
+        // extract subspace labels
+
+        // const int bra_L = bra_subspace.L();
+        const int ket_L = ket_subspace.L();
+        // const int bra_S = bra_subspace.S();
+        const int ket_S = ket_subspace.S();
+        // const int bra_J = bra_subspace.J();
+        const int ket_J = ket_subspace.J();
+        // const int bra_T = bra_subspace.T();
+        const int ket_T = ket_subspace.T();
+
+        // determine angular/isospin factor
+
+        int rme;
+        int S2 = ket_S*(ket_S+1);
+        int T2 = ket_T*(ket_T+1);
+        rme = 2*S2*T2 - 2*S2 - 2*T2 + 9;
+
+        // alias to matrix
+        basis::OperatorBlock<double>& matrix = matrices[sector_index];
+
+        // populate nonzero entries
+        //
+        // We make use of the known indexing scheme for a
+        // RelativeLSJT basis, that the radial quantum number n is
+        // just the 0-based state index.
+        //
+        // The (LSJ') and (LSJ) subspaces are the same size, so this is a
+        // square block, and the block is simply proportional to the
+        // identity matrix.
+
+        std::size_t bra_subspace_size = bra_subspace.size();
+        std::size_t ket_subspace_size = ket_subspace.size();
+        assert(bra_subspace_size==ket_subspace_size);  // (LSJ') and (LSJ) subspaces same size
+        // matrix = angular_factor*basis::OperatorBlock<double>:Identity(bra_subspace.size(),ket_subspace.size());
+        for (std::size_t ket_n=0; ket_n<ket_subspace_size; ++ket_n)
+          {
+            std::size_t bra_n = ket_n;
+            matrix(bra_n,ket_n) = rme;
           }
 
       }
