@@ -67,7 +67,11 @@
 
       Isospin operator, construed as relative two-body operator.
 
-    coulomb p|n total steps
+    su4casimir
+
+      SU(4) quadratic Casimir operator, construed as relative two-body operator.
+
+    coulomb p|n|total steps
 
       Coulomb potential.
 
@@ -283,10 +287,6 @@ void ReadParameters(Parameters& parameters)
           parameters.operator_parameters.Jmax = std::min(parameters.operator_parameters.Jmax, 6);
 #endif  // USE_DAEJEON16
       }
-    else
-      {
-        mcutils::ParsingError(line_count,line,"unknown operator name");
-      }
   }
 
   // line 4: output filename
@@ -412,6 +412,13 @@ void PopulateOperator(
           relative_space,relative_component_sectors,relative_component_blocks
         );
     }
+  else if (parameters.operator_name == "su4casimir")
+    {
+      relative::ConstructSU4CasimirOperator(
+          operator_parameters,
+          relative_space,relative_component_sectors,relative_component_blocks
+        );
+    }
   else if (parameters.operator_name == "coulomb")
     {
       // 500 steps seems to suffice for ~8 digits precision at Nmax20
@@ -531,6 +538,11 @@ void PopulateOperator(
           std::cerr << std::endl;
           std::exit(EXIT_FAILURE);
         }
+    }
+  else
+    {
+      std::cerr << "ERROR: unknown operator name " << parameters.operator_name << std::endl;
+      std::exit(EXIT_FAILURE);
     }
 }
 
