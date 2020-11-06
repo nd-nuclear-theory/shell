@@ -996,6 +996,9 @@ namespace relative {
     )
   {
 
+    // diagnostic output
+    std::cout << "  Generating Coulomb operator" << std::flush;
+
     // validate operator parameters
     assert(operator_labels.J0==0);
     assert(operator_labels.g0==0);
@@ -1015,6 +1018,8 @@ namespace relative {
         // iterate over sectors
         for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
           {
+            // diagnostic output
+            std::cout << "." << std::flush;
 
             // extract sector
             const basis::RelativeSectorsLSJT::SectorType& sector = sectors.GetSector(sector_index);
@@ -1094,6 +1099,9 @@ namespace relative {
 
           }
       }
+
+    // diagnostic output
+    std::cout << "done." << std::endl;
 
   }
 

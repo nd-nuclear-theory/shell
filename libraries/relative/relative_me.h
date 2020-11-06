@@ -60,6 +60,7 @@
   + 06/20/19 (pjf): Add isospin operator.
   + 10/06/19 (pjf): Fix sqrt(5/16pi) prefactor in ConstructQuadrupoleOperator.
   + 11/02/20 (pjf): Add SU(4) Casimir operator.
+  + 11/06/20 (pjf): Add diagnostic output to ConstructCoulombOperator.
 
 ****************************************************************/
 
