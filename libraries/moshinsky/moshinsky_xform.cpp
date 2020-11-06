@@ -236,7 +236,16 @@ namespace moshinsky {
           << " Nmax " << relative_space.Nmax()
           << " Jmax " << relative_space.Jmax()
           << std::endl;
+      }
 
+    for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+      // enumerate sectors for each isospin component
+      relative_cm_lsjtn_component_sectors[T0]
+        = basis::RelativeCMSectorsLSJTN(relative_cm_lsjtn_space,operator_labels.J0,T0,operator_labels.g0);
+
+    // write diagnostics
+    if (verbose)
+      {
         std::cout << "  Matrix elements:";
         for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
           std::cout << " " << basis::UpperTriangularEntries(relative_cm_lsjtn_component_sectors[T0]);
