@@ -35,6 +35,7 @@
   + 06/19/19 (pjf): Generalize TwoBodyMatrixJJJPN and
     TransformOperatorTwoBodyJJJTToTwoBodyJJJPN for branching to Tz0 > 0.
   + 11/06/20 (pjf): Add diagnostics to TransformOperatorRelativeLSJTToRelativeCMLSJTN.
+  + 11/13/20 (pjf): Fix crash when JT-unallowed subspaces retrieved in jjJpn branching.
 
 ****************************************************************/
 

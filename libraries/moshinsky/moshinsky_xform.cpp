@@ -879,8 +879,11 @@ namespace moshinsky {
                       two_body_jjjpn_sector.bra_subspace().g()
                     )
                 );
+              if (two_body_jjjt_subspace_index_bra == basis::kNone)
+                continue;
               const basis::TwoBodySubspaceJJJT& two_body_jjjt_subspace_bra
                 = two_body_jjjt_space.GetSubspace(two_body_jjjt_subspace_index_bra);
+
               std::size_t two_body_jjjt_subspace_index_ket = two_body_jjjt_space.LookUpSubspaceIndex(
                   basis::TwoBodySubspaceJJJTLabels(
                       two_body_jjjpn_sector.ket_subspace().J(),
@@ -888,6 +891,8 @@ namespace moshinsky {
                       two_body_jjjpn_sector.ket_subspace().g()
                     )
                 );
+              if (two_body_jjjt_subspace_index_ket == basis::kNone)
+                continue;
               const basis::TwoBodySubspaceJJJT& two_body_jjjt_subspace_ket
                 = two_body_jjjt_space.GetSubspace(two_body_jjjt_subspace_index_ket);
 
