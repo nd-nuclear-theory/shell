@@ -77,6 +77,7 @@
   + 08/22/19 (pjf): Remove ability to overwrite existing one-body channels.
   + 09/06/19 (pjf): Truncate target orbitals before constructing orbital space.
   + 09/13/20 (pjf): Fix xform ob source.
+  + 11/25/20 (pjf): Allow Eigen multithreading.
 ******************************************************************************/
 
 #include <omp.h>
@@ -1985,8 +1986,6 @@ int main(int argc, char **argv)
     );
 
   // set up parallelization
-
-  // for now, disable Eigen internal parallelization (but we will want it later for the matmul)
   std::cout
     << fmt::format("Parallelization: max_threads {}, num_procs {}",
                    omp_get_max_threads(), omp_get_num_procs()
@@ -1994,7 +1993,6 @@ int main(int argc, char **argv)
     << std::endl
     << std::endl;
   Eigen::initParallel();
-  Eigen::setNbThreads(0);
 
   // start timing
   mcutils::SteadyTimer total_time;
