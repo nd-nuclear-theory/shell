@@ -13,6 +13,7 @@
     - Add RemappedMatrixJJJPN.
     - Rename to tbme_mapping.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 11/25/20 (pjf): Add OpenMP parallelization to RemappedMatrixJJJPN.
 
 ****************************************************************/
 
