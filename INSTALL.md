@@ -1,15 +1,18 @@
 # Installation instructions for shell #
 
-This repository includes submodules, so be sure to do a recursive clone.  Thus,
-e.g., for the Notre Dame development repository:
+This repository includes submodules, so be sure to do a recursive clone:
 
-  git clone --recursive ssh://<netid>@crcfe01.crc.nd.edu/afs/crc.nd.edu/group/nuclthy/git/shell.git
+  ~~~~~~~~~~~~~~~~
+  % git clone --recursive https://github.com/nd-nuclear-theory/shell.git
+  ~~~~~~~~~~~~~~~~
 
-Or, for the public mirror repository at GitHub:
+You will also need a suitable config.mk file.  Most likely you will want to
+clone the ndconfig repository, if you do not already have it:
 
-   git clone --recursive https://github.com/nd-nuclear-theory/shell.git
+  ~~~~~~~~~~~~~~~~
+  % git clone https://github.com/nd-nuclear-theory/ndconfig.git
+  ~~~~~~~~~~~~~~~~
 
-Then please see the general "Installation instructions for ND nuclear theory
-projects":
-
-   config/ndconfig/INSTALL.md
+This is where you will also find the full installation instructions
+("Installation instructions for ND nuclear theory projects using `ndconfig`") in
+`ndconfig/INSTALL.md`.
