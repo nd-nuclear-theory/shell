@@ -285,6 +285,7 @@ RemappedMatrixJJJPN(
     collapse(2)            \
     default(none),         \
     shared(                \
+      source_bra_subspace_size, source_ket_subspace_size, \
       source_sector, target_sector, two_body_mapping, \
       source_matrix, target_matrix \
       )
