@@ -33,6 +33,7 @@
 #include "density/obdme_io.h"
 #include "basis/operator.h"
 #include "mcutils/eigen.h"
+#include "mcutils/parsing.h"
 
 ////////////////////////////////////////////////////////////////
 // process arguments

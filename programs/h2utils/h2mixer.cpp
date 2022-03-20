@@ -92,6 +92,7 @@
 #include "basis/operator.h"
 #include "fmt/format.h"
 #include "mcutils/eigen.h"
+#include "mcutils/parsing.h"
 #include "mcutils/profiling.h"
 #include "obme/obme.h"
 #include "obme/obme_io.h"

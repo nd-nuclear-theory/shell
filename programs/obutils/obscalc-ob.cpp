@@ -75,6 +75,7 @@
 #include "basis/proton_neutron.h"
 #include "fmt/format.h"
 #include "density/obdme_io.h"
+#include "mcutils/parsing.h"
 #include "obme/obme_operator.h"
 #include "obme/obme_io.h"
 

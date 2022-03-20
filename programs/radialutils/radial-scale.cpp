@@ -25,6 +25,7 @@
 #include <string>
 #include <vector>
 
+#include "mcutils/parsing.h"
 #include "mcutils/profiling.h"
 #include "basis/nlj_orbital.h"
 #include "obme/obme_io.h"

@@ -35,6 +35,7 @@
 #include "basis/operator.h"
 #include "density/obdme_io.h"
 #include "mcutils/eigen.h"
+#include "mcutils/parsing.h"
 #include "obme/obme_io.h"
 #include "spline/wavefunction_basis.h"
 

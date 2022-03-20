@@ -48,6 +48,7 @@
 #include "obme/obme_io.h"
 #include "basis/operator.h"
 #include "mcutils/eigen.h"
+#include "mcutils/parsing.h"
 
 ////////////////////////////////////////////////////////////////
 // define a function mapping eigenvalue to weight

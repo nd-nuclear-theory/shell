@@ -56,6 +56,7 @@
 #include "basis/nlj_orbital.h"
 #include "basis/proton_neutron.h"
 #include "fmt/format.h"
+#include "mcutils/parsing.h"
 #include "obme/obme.h"
 #include "obme/obme_operator.h"
 #include "obme/obme_io.h"

@@ -30,6 +30,7 @@
 
 #include "basis/nlj_operator.h"
 #include "basis/nlj_orbital.h"
+#include "mcutils/parsing.h"
 #include "mcutils/profiling.h"
 #include "obme/obme_io.h"
 #include "obme/radial.h"
