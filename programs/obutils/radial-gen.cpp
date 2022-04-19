@@ -21,6 +21,11 @@
     define-radial-target <operator_type> <order> <j0> <g0> <tz0> <output_filename>
       operator_type = r|k
     define-xform-target <scale_factor> <bra_basis_type> <bra_orbital_file> <output_filename>
+
+  @note `solid-harmonic` mode generates matrix elements of r^n Y_n (using the
+  more common normalization of the spherical harmonic) rather than matrix
+  elements of r^n C_n (a.k.a. Racah's normalization).
+
   @note Currently only computes operator/radial matrix elements between harmonic oscillator
   or Laguerre basis functions with identical bra and ket spaces.
 
@@ -56,6 +61,7 @@
   + 08/27/19 (pjf): Separate out solid harmonic generation as a separate mode.
   + 08/28/19 (pjf): Remove operator species option from am mode.
   + 09/04/19 (pjf): Fix typo in kKinematicOneBodyOperatorDefinitions for "k".
+  + 04/19/22 (pjf): Clarify solid harmonic normalization convention.
 
 ******************************************************************************/
 
