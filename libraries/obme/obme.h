@@ -15,6 +15,8 @@
     - AngularMomentumSquaredOneBodyOperator
     - IsospinOneBodyOperator
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 04/19/22 (mac): Expand docstrings.
+  + 04/19/22 (pjf): Add additional comments/documentation to docstrings.
 ****************************************************************/
 
 #ifndef OBME_OBME_H_
@@ -36,10 +38,10 @@ void SolidHarmonicOneBodyOperator(
   );
 // Generate reduced matrix elements of r^n C_j0 and (ik)^n C_j0.
 //
-// Spherical harmonic is in C normalization [Brink & Satchler (1993),
-// eqn. (2.9)].
+// Spherical harmonic is in Racah's normalization [G. Racah, Phys. Rev. 62,
+// 438 (1942), eqn. (46); Brink & Satchler (1993), eqn. (2.9)].
 //
-//   C_l = ((4*pi)/(2*l+1))^(1/2) * Y_l
+//   C_j0 = ((4*pi)/(2*j0+1))^(1/2) * Y_j0
 //
 // RMEs are in Rose convention.
 //
@@ -47,9 +49,11 @@ void SolidHarmonicOneBodyOperator(
 //   - For order=0, j0=0, this is the identity operator.
 //   - For order=1, j0=1, this is $\vec{r}$.
 //   - For order=2, j0=0, this is $\vec{r}\cdot\vec{r}$.
-//   - For order=2, j0=2, this (4*pi/5)^(1/2) times the transition E2 operator
-//     Q=r^2Y_2, or 1/2 the "quadrupole moment" operator Qmom [see footnote 10
-//     of "intrinsic" JPG 47, 122001 (2020)].
+//   - For order=2, j0=2, this is $\sqrt{3/2} [\vec{r}\otimes\vec{r}]_2$ [see
+//       sec. 3.2, eqn. (23) of Varshalovich (1988)]; alternatively, this is
+//       (4*pi/5)^(1/2) times the transition E2 operator Q=r^2Y_2, or 1/2 the
+//       "quadrupole moment" operator Qmom [see footnote 10 of "intrinsic"
+//       JPG 47, 122001 (2020)].
 //
 // Arguments:
 //   basis_type (shell::RadialBasisType): radial basis type
