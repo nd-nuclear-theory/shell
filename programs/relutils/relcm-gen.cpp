@@ -48,11 +48,7 @@
 #include "basis/lsjt_operator.h"
 #include "fmt/format.h"
 #include "mcutils/parsing.h"
-#include "relative/relcm_lenpic_me.h"
-
-#ifdef USE_DAEJEON16
-#  include "Daejeon16/Daejeon16_wrapper.h"
-#endif  // USE_DAEJEON16
+#include "relative/lenpic_relcm_me.h"
 
 ////////////////////////////////////////////////////////////////
 // parameter input

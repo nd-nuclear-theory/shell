@@ -1,7 +1,7 @@
 /****************************************************************
-  relcm_lenpic_me.h
+  lenpic_relative_me.h
 
-  Construction of LENPIC consistent M1 operators in relative-cm basis.
+  Construction of LENPIC consistent Gamow-Teller operators in relative basis.
 
   See relative_me.h for note on oscillator length.
 
@@ -10,13 +10,12 @@
   Patrick J. Fasano
   University of Notre Dame
 
-  + 03/01/22 (pjf): Created.
-  + 03/20/22 (pjf): Cleanup/polishing.
+  + 05/25/22 (pjf): Created.
 
 ****************************************************************/
 
-#ifndef RELCM_LENPIC_M1_H_
-#define RELCM_LENPIC_M1_H_
+#ifndef LENPIC_RELATIVE_ME_H_
+#define LENPIC_RELATIVE_ME_H_
 
 #include "basis/lsjt_operator.h"
 #include "basis/proton_neutron.h"
@@ -25,19 +24,19 @@ namespace relative::lenpic
 {
 
 ////////////////////////////////////////////////////////////////
-// N2LO M1 operator
+// N2LO Gamow-Teller operator
 ////////////////////////////////////////////////////////////////
 
-void ConstructNLOM1Operator(
+void ConstructN2LOGTOperator(
     const basis::OperatorLabelsJT& operator_labels,
-    const basis::RelativeCMSpaceLSJT& relative_cm_space,
-    std::array<basis::RelativeCMSectorsLSJT, 3>& relative_cm_component_sectors,
-    std::array<basis::OperatorBlocks<double>, 3>& relative_cm_component_matrices,
+    const basis::RelativeSpaceLSJT& relative_space,
+    std::array<basis::RelativeSectorsLSJT, 3>& relative_component_sectors,
+    std::array<basis::OperatorBlocks<double>, 3>& relative_component_matrices,
     double regulator_R,
     double single_particle_b,
     std::size_t num_points=3000
   );
-// Construct NLO M1 operator in relative-cm LSJT basis.
+// Construct N2LO Gamow-Teller operator in relative LSJT basis.
 //
 // The matrix elements are calculated for *single-particle* oscillator length
 // parameter b, which is related to the relative and center-of-mass oscillator
@@ -57,4 +56,4 @@ void ConstructNLOM1Operator(
 
 };  // namespace relative::lenpic
 
-#endif  // RELCM_LENPIC_M1_H_
+#endif  // LENPIC_RELATIVE_ME_H_

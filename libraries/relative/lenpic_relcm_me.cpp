@@ -1,20 +1,18 @@
 /****************************************************************
 
-  relcm_lenpic_me.cpp
+  lenpic_relcm_me.cpp
 
   Patrick J. Fasano
   University of Notre Dame
 
 ****************************************************************/
 
-#include "relcm_lenpic_me.h"
+#include "lenpic_relcm_me.h"
+#include "lenpic_constants.h"
 
 #include <Eigen/Dense>
 #include <stdexcept>
 #include <vector>
-#if __has_include(<numbers>)
-#  include <numbers>
-#endif
 
 #include "am/racah_reduction.h"
 #include "am/rme.h"
@@ -29,77 +27,7 @@ namespace relative::lenpic
 {
 
 ////////////////////////////////////////////////////////////////
-// physical constants
-//
-// constants modified from chime/programs/constants.h (S. Pal, MIT license)
-//
-// Note: some alternative values of constants are included as comments below
-//
-// updated with data from:
-// [1] E. Tiesinga, P. J. Mohr, D. B. Newell, and B. N. Taylor (2020), "The 2018
-//     CODATA Recommended Values of the Fundamental Physical Constants" (Web
-//     Version 8.1). Database developed by J. Baker, M. Douma, and S.
-//     Kotochigova. Available at http://physics.nist.gov/constants, National
-//     Institute of Standards and Technology, Gaithersburg, MD
-//     20899.
-// [2] P.A. Zyla et al. (Particle Data Group), Prog. Theor. Exp. Phys. 2020,
-//     083C01 (2020).
-// [3] Epelbaum, Krebs, Meissner, Eur. Phys. J. A 51, 53 (2015).
-////////////////////////////////////////////////////////////////
-namespace constants
-{
-
-// mathematical constants
-#ifdef __cpp_lib_math_constants
-using std::numbers::pi;
-#else
-inline constexpr double pi = 3.14159265358979323846;
-#endif
-
-// Constants copied from S. Pal:
-// constexpr double hbarc = 197.326'960'2;  // (in MeV fm)
-// constexpr double charged_pion_mass_MeV = 139.570'61;
-// constexpr double neutral_pion_mass_MeV = 134.977'0;
-// constexpr double pion_decay_constant_MeV = 92.4;
-// constexpr double pion_mass_MeV =
-//     (2 * charged_pion_mass_MeV + neutral_pion_mass_MeV) / 3.;
-
-// fundamental constants
-constexpr double hbarc = 197.326'980'4;     // (in MeV fm) [1]
-constexpr double hbarc_GeV = 1000 * hbarc;  // (in GeV fm)
-
-// masses in MeV
-// constexpr double charged_pion_mass_MeV = 139.57039;  // [2]
-// constexpr double neutral_pion_mass_MeV = 134.9768;   // [2]
-constexpr double charged_pion_mass_MeV = 139.57;  // [3]
-constexpr double neutral_pion_mass_MeV = 134.98;  // [3]
-constexpr double pion_mass_MeV = 138.03;          // [3]
-// constexpr double proton_mass_MeV = 938.272'088'16;  // [1]
-constexpr double proton_mass_MeV = 938.272;  // [3]
-// constexpr double neutron_mass_MeV = 939.565'420'52;  // [1]
-constexpr double neutron_mass_MeV = 939.565;  // [3]
-
-// masses fm^{-1}
-constexpr double pion_mass_fm = pion_mass_MeV / hbarc;
-constexpr double proton_mass_fm = proton_mass_MeV / hbarc;
-constexpr double neutron_mass_fm = neutron_mass_MeV / hbarc;
-constexpr double nucleon_mass_MeV = ((proton_mass_MeV + neutron_mass_MeV) / 2);
-constexpr double nucleon_mass_fm = nucleon_mass_MeV / hbarc;
-
-// electroweak properties
-constexpr double nuclear_magneton_MeV =
-    1.0 / (proton_mass_MeV * 2);  // (e = 1), note m_p in denominator [1]
-constexpr double nuclear_magneton_fm =
-    1.0 / (proton_mass_fm * 2);  // (e = 1), note m_p in denominator [1]
-// constexpr double pion_decay_constant_MeV = 92.3;  // [2]
-constexpr double pion_decay_constant_MeV = 92.4;  // [3]
-constexpr double pion_decay_constant_fm = pion_decay_constant_MeV / hbarc;
-// constexpr double gA = 1.2754;  // [2]
-constexpr double gA = 1.29;  // [3], see note about Goldberger-Treiman discrepancy
-}  // namespace constants
-
-////////////////////////////////////////////////////////////////
-// N2LO M1 operator
+// NLO M1 operator
 ////////////////////////////////////////////////////////////////
 
 void ConstructNLOM1Operator(
@@ -115,7 +43,7 @@ void ConstructNLOM1Operator(
   // diagnostic output
   fmt::print("  Generating LENPIC SCS NLO M1 two-body operator");
 
-  // (iso)spin coefficients for [sigma1 x sigma2]_1
+  // (iso)spin coefficients for [sigma1 x sigma2]_S0
   //
   // evaluated using an immediately-invoked lambda function so kSpinFactors can
   // be const
@@ -217,8 +145,8 @@ void ConstructNLOM1Operator(
   )
   for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
   {
-    // diagnostic output
-    #pragma omp critical
+// diagnostic output
+#pragma omp critical
     if (sector_index % 10 == 0)
       std::cout << "." << std::flush;
 
