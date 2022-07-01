@@ -85,6 +85,11 @@
       Two-body interaction.
       interaction = Daejeon16
 
+    LENPIC-N2LOGT regulator oscillator_length steps
+
+      LENPIC N2LO Gamow-Teller operator
+      Note: oscillator_length is the *single-particle* oscillator length
+
   Other operator parameter values are taken as:
     symmetry_phase_mode = kHermitian
     Jmax = Nmax+1
@@ -114,6 +119,7 @@
   + 06/20/19 (pjf): Add isospin operator.
   + 10/30/20 (pjf): Add (optional) Daejeon16 interaction.
   + 10/31/20 (pjf): Remove Jmax option from interaction generation.
+  + 06/02/22 (pjf): Add LENPIC N2LO Gamow-Teller operator.
 
 ****************************************************************/
 
@@ -127,6 +133,7 @@
 #include "fmt/format.h"
 #include "mcutils/parsing.h"
 #include "relative/relative_me.h"
+#include "relative/lenpic_relative_me.h"
 #include "spline/wavefunction_class.h"
 
 #ifdef USE_DAEJEON16
@@ -156,6 +163,8 @@ struct Parameters
   UnitTensorLabels unit_tensor_labels;
   basis::OperatorTypePN operator_type_pn;
   relative::CoordinateType coordinate_type;
+  double regulator_parameter;
+  double oscillator_length;
   int num_steps;
   int T0;
 };
@@ -286,6 +295,13 @@ void ReadParameters(Parameters& parameters)
         if (parameters.interaction_name == "Daejeon16")
           parameters.operator_parameters.Jmax = std::min(parameters.operator_parameters.Jmax, 6);
 #endif  // USE_DAEJEON16
+      }
+    else if (parameters.operator_name == "LENPIC-N2LOGT")
+      {
+        line_stream >> parameters.regulator_parameter
+                    >> parameters.oscillator_length
+                    >> parameters.num_steps;
+        mcutils::ParsingCheck(line_stream,line_count,line);
       }
   }
 
@@ -538,6 +554,14 @@ void PopulateOperator(
           std::cerr << std::endl;
           std::exit(EXIT_FAILURE);
         }
+    }
+  else if (parameters.operator_name == "LENPIC-N2LOGT")
+    {
+      relative::lenpic::ConstructN2LOGTOperator(
+          operator_parameters,
+          relative_space, relative_component_sectors, relative_component_blocks,
+          parameters.regulator_parameter, parameters.oscillator_length, parameters.num_steps
+        );
     }
   else
     {
