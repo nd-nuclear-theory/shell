@@ -11,7 +11,9 @@
 
 #include "fmt/format.h"
 #include "mcutils/eigen.h"
-#include "spline/spline_me.h"
+#include "quadrature/mesh.h"
+#include "quadrature/oscillator_wf.h"
+#include "spline/spline.h"
 
 namespace relative {
 
@@ -44,29 +46,45 @@ namespace relative {
 
     // symmetrically distribute ratio between source and target
     assert(b_ratio>0);
-    const double source_b = 1/std::sqrt(b_ratio);
+    const double source_b = 1./std::sqrt(b_ratio);
     const double target_b = std::sqrt(b_ratio);
 
     // convert number of steps to number of points
     const int num_size = num_steps+1;
 
+    const Eigen::ArrayXd z_grid = shell::UniformMesh(num_size);
+    const Eigen::ArrayXd r_grid = shell::TransformedCoordinate<+1>(1.0, z_grid);
+    const Eigen::ArrayXd jacobian_grid =
+        shell::TransformedCoordinateJacobian<+1>(1.0, z_grid);
+
+    const auto source_oscillator_functions = shell::OscillatorWaveFunctions<+1>(
+        source_dim-1, L, source_b, r_grid, 0
+      );
+    const auto target_oscillator_functions = shell::OscillatorWaveFunctions<+1>(
+        target_dim-1, L, target_b, r_grid, 0
+      );
+
     // initialize matrix
     xform_matrix = basis::OperatorBlock<double>::Zero(source_dim,target_dim);
 
     // populate nonzero entries
-    #pragma omp parallel for collapse(2) default(none)                             \
-      shared(source_dim, target_dim, L, source_b, target_b, num_size, xform_matrix)
+    #pragma omp parallel for collapse(2) default(none)                  \
+      shared(                                                           \
+          xform_matrix, z_grid, jacobian_grid, source_dim, target_dim,  \
+          source_oscillator_functions, target_oscillator_functions      \
+        )
     for (std::size_t source_n=0; source_n<source_dim; ++source_n)
       for (std::size_t target_n=0; target_n<target_dim; ++target_n)
       {
         // evaluate radial integral
-        double radial_integral =
-          spline::RadialMatrixElement(
-            source_n, L, source_b, spline::BasisType::kOscillator,
-            target_n, L, target_b, spline::BasisType::kOscillator,
-            spline::OperatorType::kR, 0,
-            num_size
-          );
+        Eigen::ArrayXd integrand =
+          source_oscillator_functions[source_n]
+          * target_oscillator_functions[target_n]
+          * jacobian_grid;
+        shell::FixEndpointSingularitiesToZero(integrand);
+        double radial_integral = spline::CubicIntegrate(z_grid, integrand);
+        if (std::isnan(radial_integral))
+          throw std::runtime_error("radial_integral is nan");
         xform_matrix(source_n,target_n) = radial_integral;
       }
   }
