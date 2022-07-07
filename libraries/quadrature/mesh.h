@@ -94,15 +94,15 @@ template<typename T, std::enable_if_t<std::is_floating_point_v<typename T::value
 inline void FixEndpointSingularitiesToZero(T& values)
 // Fix endpoint singularities to zero.
 //
-// This function assumes that a value of NaN at the endpoint of the array-like
-// corresponds to a removable point singularity with limit zero.
+// This function assumes that a value of NaN or inf at the endpoint of the
+// array-like corresponds to a removable point singularity with limit zero.
 //
 // Arguments:
 //   values (T): array-like of floating-point values to be modified
 {
-  if (std::isnan(values[0]))
+  if (!std::isfinite(values[0]))
     values[0] = 0.;
-  if (std::isnan(values[values.size() - 1]))
+  if (!std::isfinite(values[values.size() - 1]))
     values[values.size() - 1] = 0.;
 }
 
