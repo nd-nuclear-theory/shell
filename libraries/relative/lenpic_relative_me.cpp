@@ -21,10 +21,35 @@
 #include "lenpic_constants.h"
 #include "quadrature/mesh.h"
 #include "quadrature/oscillator_wf.h"
+#include "relative/relative_me.h"
 #include "spline/spline.h"
 
 namespace relative::lenpic
 {
+
+////////////////////////////////////////////////////////////////
+// LO Gamow-Teller operator (as two-body operator)
+////////////////////////////////////////////////////////////////
+
+void ConstructLOGTOperator(
+    const basis::OperatorLabelsJT& operator_labels,
+    const basis::RelativeSpaceLSJT& relative_space,
+    std::array<basis::RelativeSectorsLSJT, 3>& relative_component_sectors,
+    std::array<basis::OperatorBlocks<double>, 3>& relative_component_matrices
+  )
+{
+  ConstructSpinAMOperator(
+      operator_labels,
+      relative_space,
+      relative_component_sectors,
+      relative_component_matrices,
+      /*T0=*/1
+    );
+
+  basis::ScalarMultiplyOperator(
+      relative_component_sectors[1], relative_component_matrices[1], -constants::gA
+    );
+}
 
 ////////////////////////////////////////////////////////////////
 // N2LO Gamow-Teller operator

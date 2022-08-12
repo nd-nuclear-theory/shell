@@ -11,6 +11,7 @@
   University of Notre Dame
 
   + 05/25/22 (pjf): Created.
+  + 08/08/22 (pjf): Added LO GT operator (ConstructLOGTOperator).
   + 08/11/22 (pjf): Fixed N2LO GT operator to be consistent with 220607-lenpic-gt-notes.
 
 ****************************************************************/
@@ -23,6 +24,35 @@
 
 namespace relative::lenpic
 {
+
+////////////////////////////////////////////////////////////////
+// LO Gamow-Teller operator (as two-body operator)
+////////////////////////////////////////////////////////////////
+
+void ConstructLOGTOperator(
+    const basis::OperatorLabelsJT& operator_labels,
+    const basis::RelativeSpaceLSJT& relative_space,
+    std::array<basis::RelativeSectorsLSJT, 3>& relative_component_sectors,
+    std::array<basis::OperatorBlocks<double>, 3>& relative_component_matrices
+  );
+// Construct LO Gamow-Teller operator in relative LSJT basis.
+//
+// These are the leading-order (one-body) matrix elements recast as a two-body
+// relative operator. They are calculated in terms of the isovector spin
+// operator:
+//
+//     GT_rel = -g_A/2 (\sigma_1 \tau_1 + \sigma_2 \tau_2)
+//            = -g_A S_{IV,rel}
+//
+// See notes on "internal representation of an operator in JT
+// scheme" in lsjt_operator.h for the general principles of how the
+// operators are represented.
+//
+// Arguments:
+//   operator_labels (input): tensorial properties of operator
+//   relative_space (input): target space
+//   relative_cm_component_sectors (output): target sectors
+//   relative_cm_component_matrices (output): target matrices
 
 ////////////////////////////////////////////////////////////////
 // N2LO Gamow-Teller operator
