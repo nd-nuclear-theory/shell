@@ -85,6 +85,10 @@
       Two-body interaction.
       interaction = Daejeon16
 
+    LENPIC-LOGT
+
+      LENPIC LO Gamow-Teller operator, construed as relative two-body operator
+
     LENPIC-N2LOGT regulator oscillator_length steps
 
       LENPIC N2LO Gamow-Teller operator
@@ -120,6 +124,7 @@
   + 10/30/20 (pjf): Add (optional) Daejeon16 interaction.
   + 10/31/20 (pjf): Remove Jmax option from interaction generation.
   + 06/02/22 (pjf): Add LENPIC N2LO Gamow-Teller operator.
+  + 08/08/22 (pjf): Add LENPIC LO Gamow-Teller operator.
 
 ****************************************************************/
 
@@ -554,6 +559,13 @@ void PopulateOperator(
           std::cerr << std::endl;
           std::exit(EXIT_FAILURE);
         }
+    }
+  else if (parameters.operator_name == "LENPIC-LOGT")
+    {
+      relative::lenpic::ConstructLOGTOperator(
+          operator_parameters,
+          relative_space, relative_component_sectors, relative_component_blocks
+        );
     }
   else if (parameters.operator_name == "LENPIC-N2LOGT")
     {
