@@ -143,14 +143,14 @@ constexpr double SCS_cE(double R)  // [4]
 };
 constexpr double SCS_E_fm3(double R)  // E in units of fm^5
 {
-  return SCS_cD(R)
+  return SCS_cE(R)
          / (pion_decay_constant_fm * pion_decay_constant_fm
             * pion_decay_constant_fm * pion_decay_constant_fm
             * chiral_breaking_scale_fm);
 }
 constexpr double SCS_E_MeV3(double R)  // E in units of MeV^-5
 {
-  return SCS_cD(R)
+  return SCS_cE(R)
          / (pion_decay_constant_MeV * pion_decay_constant_MeV
             * pion_decay_constant_MeV * pion_decay_constant_MeV
             * chiral_breaking_scale_MeV);
