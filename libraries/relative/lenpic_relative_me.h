@@ -11,6 +11,7 @@
   University of Notre Dame
 
   + 05/25/22 (pjf): Created.
+  + 08/11/22 (pjf): Fixed N2LO GT operator to be consistent with 220607-lenpic-gt-notes.
 
 ****************************************************************/
 

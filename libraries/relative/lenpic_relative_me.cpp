@@ -46,13 +46,11 @@ void ConstructN2LOGTOperator(
   // overall constants
   //
   // opep_prefactor = g_A M_pi^3 / 12 pi F_pi^2
-  // contact_prefactor = -1/(4 pi R^6) * D
+  // contact_prefactor = (-1/4) * D
   const double opep_prefactor =
       constants::gA * std::pow(constants::pion_mass_fm, 3)
       / (12. * constants::pi * std::pow(constants::pion_decay_constant_fm, 2));
-  const double contact_prefactor =
-      -constants::SCS_D_fm3(regulator_R)
-      / (4. * std::pow(constants::pi, 3) * std::pow(regulator_R, 6));
+  const double contact_prefactor = -constants::SCS_D_fm3(regulator_R) / 4.;
 
   // (iso)spin coefficients for [sigma_1 x sigma_2]_S0
   //
@@ -126,10 +124,13 @@ void ConstructN2LOGTOperator(
 
   // common setup
   const double b_rel = single_particle_b * std::sqrt(2);
+  // z \in [0,1]
   const Eigen::ArrayXd z_grid = shell::UniformMesh(num_points);
+  // r \in [0,infty]
   const Eigen::ArrayXd r_grid = shell::TransformedCoordinate<+1>(b_rel, z_grid);
   const Eigen::ArrayXd jacobian_grid =
       shell::TransformedCoordinateJacobian<+1>(b_rel, z_grid);
+  // exp(- M_pi * r)
   const Eigen::ArrayXd exp_mpi_r_grid = exp(-constants::pion_mass_fm * r_grid);
   // W(r) = 1+3*(1+M_pi*r)/(M_pi r)^2
   const Eigen::ArrayXd w_grid =
@@ -137,20 +138,24 @@ void ConstructN2LOGTOperator(
        + 3. * (1. + constants::pion_mass_fm * r_grid)
              / (constants::pion_mass_fm * constants::pion_mass_fm * r_grid
                 * r_grid));
+  // [1-exp(-r^2/R^2)]^6
   const Eigen::ArrayXd local_regulator_grid =
       (regulator_R == 0)
           ? Eigen::ArrayXd::Ones(num_points).eval()
           : (pow(1. - exp(-r_grid * r_grid / (regulator_R * regulator_R)), 6)).eval();
+  // exp(-r^2/R^2)/(pi R^2)^3/2
   const Eigen::ArrayXd nonlocal_regulator_grid =
       (regulator_R == 0)
-          ? Eigen::ArrayXd::Ones(num_points).eval()
+          ? [&](){ auto tmp = Eigen::ArrayXd::Zero(num_points).eval(); tmp(0) = 1; return tmp; }()
           : (exp(-r_grid * r_grid / (regulator_R * regulator_R))
-             / pow(constants::pi * regulator_R * regulator_R, 3))
+             / pow(constants::pi * regulator_R * regulator_R, 1.5))
                 .eval();
 
   std::vector<std::vector<Eigen::ArrayXd>> oscillator_functions_grid,
       oscillator_functions_rm1_grid;
+  // psi_{l,n}(r)
   oscillator_functions_grid.reserve(relative_space.Nmax() + 1);
+  // psi_{l,n}(r)/r^{1/2} -- factor out 1/r symmetrically between bra and ket w.f.
   oscillator_functions_rm1_grid.reserve(relative_space.Nmax() + 1);
   for (int l = 0; l <= relative_space.Nmax(); ++l)
   {
@@ -165,6 +170,7 @@ void ConstructN2LOGTOperator(
 // iterate over sectors
 #pragma omp parallel for default(none) schedule(dynamic) shared( \
     std::cout,                                                   \
+    constants::pion_mass_fm,                                     \
     sectors,                                                     \
     matrices,                                                    \
     kSpinFactors,                                                \
@@ -209,24 +215,29 @@ void ConstructN2LOGTOperator(
 
 
     ////////////////////////////////////////////////////////////////
-    // angular momentum factors
+    // angular momentum/isospin factors in the LSJT basis
     //
-    // su4_generator_rme is (sigma_1 tau_1 + sigma_2 tau_2) in the LSJT basis
-    // spinisospin_rme is [tau_1 x tau_2]_1 * [sigma_1 x sigma_2]_1 in the LSJT basis
+    // * su4_generator_rme is (sigma_1 tau_1 + sigma_2 tau_2)
+    // * spinisospin_rme is [tau_1 x tau_2]_1 * [sigma_1 x sigma_2]_1
+    // * C2_su4_generator_rme is [C_2 x (sigma_1 tau_1 + sigma_2 tau_2)]_1
+    // * C2_spinisospin_rme is [tau_1 x tau_2]_1 [C_2 x [sigma_1 x sigma_2]_1]_1
     ////////////////////////////////////////////////////////////////
-    const double su4_generator_rme = kSU4Factors[bra_S][ket_S][bra_T][ket_T];
+    const double su4_generator_rme =
+        am::RacahReductionFactor2Rose(bra_L, bra_S, bra_J, ket_L, ket_S, ket_J, 1)
+        * kSU4Factors[bra_S][ket_S][bra_T][ket_T];
     const double spinisospin_rme =
-        kSpinFactors[bra_S][ket_S] * kSpinFactors[bra_T][ket_T];
+        am::RacahReductionFactor2Rose(bra_L, bra_S, bra_J, ket_L, ket_S, ket_J, 1)
+        * kSpinFactors[bra_S][ket_S] * kSpinFactors[bra_T][ket_T];
     const double C2_su4_generator_rme =
         am::RacahReductionFactor12Rose(
             bra_L, bra_S, bra_J, ket_L, ket_S, ket_J, 2, 1, 1
           )
-        * C2_rme * su4_generator_rme;
+        * C2_rme * kSU4Factors[bra_S][ket_S][bra_T][ket_T];
     const double C2_spinisospin_rme =
         am::RacahReductionFactor12Rose(
             bra_L, bra_S, bra_J, ket_L, ket_S, ket_J, 2, 1, 1
           )
-        * C2_rme * spinisospin_rme;
+        * C2_rme * kSpinFactors[bra_S][ket_S] * kSpinFactors[bra_T][ket_T];
 
     for (std::size_t bra_index = 0; bra_index < bra_subspace.size(); ++bra_index)
     {
@@ -247,6 +258,10 @@ void ConstructN2LOGTOperator(
         // (1+3*(1+M_pi*r)/(M_pi r)^2)
         // * nonlocal_regulator_integral is integral
         // of e^(-(r'^2+r^2)/R^2)
+        //
+        // note: additional factor of 1/M_pi is here in yukawa_integral and
+        // yukawa_w_integral because only 1/r is factored out into oscillator
+        // functions
         ////////////////////////////////////////////////////////////////
         double yukawa_integral = 0, yukawa_w_integral = 0,
                nonlocal_regulator_integral = 0;
@@ -255,7 +270,8 @@ void ConstructN2LOGTOperator(
             * oscillator_functions_rm1_grid[ket_L][ket_nr]
             * local_regulator_grid * jacobian_grid;
         shell::FixEndpointSingularitiesToZero(yukawa_integrand);
-        yukawa_integral = spline::CubicIntegrate(z_grid, yukawa_integrand);
+        yukawa_integral = spline::CubicIntegrate(z_grid, yukawa_integrand)
+                          / constants::pion_mass_fm;
         if (std::isnan(yukawa_integral))
           throw std::runtime_error("yukawa_integral is nan");
 
@@ -264,7 +280,8 @@ void ConstructN2LOGTOperator(
             * w_grid * oscillator_functions_rm1_grid[ket_L][ket_nr]
             * local_regulator_grid * jacobian_grid;
         shell::FixEndpointSingularitiesToZero(yukawa_w_integrand);
-        yukawa_w_integral = spline::CubicIntegrate(z_grid, yukawa_w_integrand);
+        yukawa_w_integral = spline::CubicIntegrate(z_grid, yukawa_w_integrand)
+                            / constants::pion_mass_fm;
         if (std::isnan(yukawa_w_integral))
           throw std::runtime_error("yukawa_w_integral is nan");
 
