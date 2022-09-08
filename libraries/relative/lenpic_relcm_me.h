@@ -12,6 +12,7 @@
 
   + 03/01/22 (pjf): Created.
   + 03/20/22 (pjf): Cleanup/polishing.
+  + 09/07/22 (pjf): Fix mu vs M1 confusion; standardize on M1 operator.
 
 ****************************************************************/
 

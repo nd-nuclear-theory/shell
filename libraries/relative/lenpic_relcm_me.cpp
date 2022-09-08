@@ -10,6 +10,7 @@
 #include "lenpic_relcm_me.h"
 #include "lenpic_constants.h"
 
+#include <cmath>
 #include <Eigen/Dense>
 #include <stdexcept>
 #include <vector>
@@ -424,10 +425,10 @@ void ConstructNLOM1Operator(
         }
       }
     }
-    matrix *= -constants::gA * constants::gA * constants::nucleon_mass_fm
-              * constants::pion_mass_fm
-              / (24 * constants::pi * constants::pion_decay_constant_fm
-                 * constants::pion_decay_constant_fm)
+    matrix *= - std::sqrt(3./(4.*constants::pi))
+              * std::pow(constants::gA, 2)
+              * constants::nucleon_mass_fm * constants::pion_mass_fm
+              / (24 * constants::pi * std::pow(constants::pion_decay_constant_fm, 2))
               * isospin_rme;
   }
   std::cout << "done." << std::endl;
