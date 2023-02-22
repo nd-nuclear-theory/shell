@@ -34,6 +34,8 @@
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
   + 06/19/19 (pjf): Generalize TwoBodyMatrixJJJPN and
     TransformOperatorTwoBodyJJJTToTwoBodyJJJPN for branching to Tz0 > 0.
+  + 11/06/20 (pjf): Add diagnostics to TransformOperatorRelativeLSJTToRelativeCMLSJTN.
+  + 11/13/20 (pjf): Fix crash when JT-unallowed subspaces retrieved in jjJpn branching.
 
 ****************************************************************/
 
@@ -115,7 +117,8 @@ namespace moshinsky {
       const std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       const basis::RelativeCMSpaceLSJTN& relative_cm_lsjtn_space,
       std::array<basis::RelativeCMSectorsLSJTN,3>& relative_cm_lsjtn_component_sectors,
-      std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_matrices
+      std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_matrices,
+      bool verbose
     );
   // Construct relative-cm representation of operator in LSJTN basis,
   // from relative representation.

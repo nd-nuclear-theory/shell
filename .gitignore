@@ -28,6 +28,7 @@ config.mk
 # Doxygen-generated docs
 doc/html/
 doc/latex/
+doc/xml/
 
 ###### python ###### 
 # Byte-compiled / optimized / DLL files 

@@ -76,6 +76,8 @@
     - Remove all builtin two-body angular momentum operator code.
   + 08/22/19 (pjf): Remove ability to overwrite existing one-body channels.
   + 09/06/19 (pjf): Truncate target orbitals before constructing orbital space.
+  + 09/13/20 (pjf): Fix xform ob source.
+  + 11/25/20 (pjf): Allow Eigen multithreading.
 ******************************************************************************/
 
 #include <omp.h>
@@ -1369,7 +1371,7 @@ void OneBodyXformChannel::ConstructOneBodyOperatorData(
   const OneBodyOperatorData& source_data = operators.at(ob_source_id);
 
   // look up xform data
-  if (!operators.count(xform_id))
+  if (!xforms.count(xform_id))
   {
     std::cerr << fmt::format("ERROR {}: xform {} not found.", __LINE__, xform_id)
               << std::endl;
@@ -1860,7 +1862,7 @@ void XformChannel::PopulateSourceMatrix(
   // nonexistence check currently suppressed, as
   // should have already occurred
 
-  // if (!operators.count(xform_id))
+  // if (!xforms.count(xform_id))
   // {
   //   std::cerr << fmt::format("ERROR {}: xform {} not found.", __LINE__, xform_id)
   //             << std::endl;
@@ -1984,8 +1986,6 @@ int main(int argc, char **argv)
     );
 
   // set up parallelization
-
-  // for now, disable Eigen internal parallelization (but we will want it later for the matmul)
   std::cout
     << fmt::format("Parallelization: max_threads {}, num_procs {}",
                    omp_get_max_threads(), omp_get_num_procs()
@@ -1993,7 +1993,6 @@ int main(int argc, char **argv)
     << std::endl
     << std::endl;
   Eigen::initParallel();
-  Eigen::setNbThreads(0);
 
   // start timing
   mcutils::SteadyTimer total_time;

@@ -11,6 +11,7 @@
   + 02/20/18 (pjf): Created.
   + 12/11/18 (pjf): Add LadderOperatorType enum.
   + 08/26/19 (pjf): Add reverse definition for RadialOperatorType.
+  + 09/08/20 (pjf): Add "ik" as alias for RadialOperatorType::kK.
 ****************************************************************/
 
 #ifndef OBME_OPERATOR_H_

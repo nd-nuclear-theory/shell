@@ -4,6 +4,8 @@ define-radial-source r 1 obme-r1-Nmax06.dat
 define-radial-source r 2 obme-r2-Nmax06.dat
 define-am-source l obme-l-Nmax06.dat
 define-am-source s obme-s-Nmax06.dat
+define-target E 1 p obme-E1p-Nmax06.dat
+define-target E 1 n obme-E1n-Nmax06.dat
 define-target E 2 p obme-E2p-Nmax06.dat
 define-target E 2 n obme-E2n-Nmax06.dat
 define-target Dl 1 p obme-Dl1p-Nmax06.dat

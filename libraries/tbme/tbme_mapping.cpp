@@ -277,9 +277,20 @@ RemappedMatrixJJJPN(
   Eigen::MatrixXd target_matrix
     =Eigen::MatrixXd::Zero(target_sector.bra_subspace().size(),target_sector.ket_subspace().size());
 
+  const std::size_t source_bra_subspace_size = source_sector.bra_subspace().size();
+  const std::size_t source_ket_subspace_size = source_sector.ket_subspace().size();
+
   // copy matrix elements
-  for (std::size_t source_bra_index=0; source_bra_index<source_sector.bra_subspace().size(); ++source_bra_index)
-    for (std::size_t source_ket_index=0; source_ket_index<source_sector.ket_subspace().size(); ++source_ket_index)
+  #pragma omp parallel for \
+    collapse(2)            \
+    default(none),         \
+    shared(                \
+      source_bra_subspace_size, source_ket_subspace_size, \
+      source_sector, target_sector, two_body_mapping, \
+      source_matrix, target_matrix \
+      )
+  for (std::size_t source_bra_index=0; source_bra_index<source_bra_subspace_size; ++source_bra_index)
+    for (std::size_t source_ket_index=0; source_ket_index<source_ket_subspace_size; ++source_ket_index)
           {
             // look up target matrix entry indices
             std::size_t remapped_bra_index;

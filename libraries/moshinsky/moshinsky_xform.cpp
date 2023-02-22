@@ -217,9 +217,45 @@ namespace moshinsky {
       const std::array<basis::OperatorBlocks<double>,3>& relative_component_matrices,
       const basis::RelativeCMSpaceLSJTN& relative_cm_lsjtn_space,
       std::array<basis::RelativeCMSectorsLSJTN,3>& relative_cm_lsjtn_component_sectors,
-      std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_matrices
+      std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_matrices,
+      bool verbose
     )
   {
+    // write diagnostics
+    if (verbose)
+      {
+        std::cout
+          << "  Operator properties:"
+          << " J0 " << operator_labels.J0
+          << " g0 " << operator_labels.g0
+          << " T0_min " << operator_labels.T0_min
+          << " T0_max " << operator_labels.T0_max
+          << " symmetry " << int(operator_labels.symmetry_phase_mode)
+          << std::endl
+          << "  Truncation:"
+          << " Nmax " << relative_space.Nmax()
+          << " Jmax " << relative_space.Jmax()
+          << std::endl;
+      }
+
+    for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+      // enumerate sectors for each isospin component
+      relative_cm_lsjtn_component_sectors[T0]
+        = basis::RelativeCMSectorsLSJTN(relative_cm_lsjtn_space,operator_labels.J0,T0,operator_labels.g0);
+
+    // write diagnostics
+    if (verbose)
+      {
+        std::cout << "  Matrix elements:";
+        for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+          std::cout << " " << basis::UpperTriangularEntries(relative_cm_lsjtn_component_sectors[T0]);
+        std::cout << std::endl;
+        std::cout << "  Allocated:";
+        for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
+          std::cout << " " << basis::AllocatedEntries(relative_cm_lsjtn_component_matrices[T0]);
+        std::cout << std::endl;
+      }
+
     for (int T0=operator_labels.T0_min; T0<=operator_labels.T0_max; ++T0)
       // for each isospin component
       {
@@ -843,8 +879,11 @@ namespace moshinsky {
                       two_body_jjjpn_sector.bra_subspace().g()
                     )
                 );
+              if (two_body_jjjt_subspace_index_bra == basis::kNone)
+                continue;
               const basis::TwoBodySubspaceJJJT& two_body_jjjt_subspace_bra
                 = two_body_jjjt_space.GetSubspace(two_body_jjjt_subspace_index_bra);
+
               std::size_t two_body_jjjt_subspace_index_ket = two_body_jjjt_space.LookUpSubspaceIndex(
                   basis::TwoBodySubspaceJJJTLabels(
                       two_body_jjjpn_sector.ket_subspace().J(),
@@ -852,6 +891,8 @@ namespace moshinsky {
                       two_body_jjjpn_sector.ket_subspace().g()
                     )
                 );
+              if (two_body_jjjt_subspace_index_ket == basis::kNone)
+                continue;
               const basis::TwoBodySubspaceJJJT& two_body_jjjt_subspace_ket
                 = two_body_jjjt_space.GetSubspace(two_body_jjjt_subspace_index_ket);
 

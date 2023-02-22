@@ -11,10 +11,10 @@
       basis_type = oscillator|laguerre
     define-operator-target <mode> <id> ...
       define-operator-target kinematic <id> <output_filename>
-        id = identity|r|k|r.r|k.k
+        id = identity|r|ik|r.r|ik.ik
       define-operator-target solid-harmonic <id> <order> <output_filename>
-        id = r|k
-      define-operator-target am <id> <output_filename>
+        id = r|ik
+      define-operator-source am <id> <output_filename>
         id = l|l2|s|s2|j|j2
       define-operator-target isospin <id> <output_filename>
         id = tz|t+|t-
@@ -95,9 +95,9 @@ kKinematicOneBodyOperatorDefinitions =
     // {id, {operator type, order, j0}}
     {"identity", {shell::RadialOperatorType::kO, 0, 0}},
     {"r", {shell::RadialOperatorType::kR, 1, 1}},
-    {"k", {shell::RadialOperatorType::kK, 1, 1}},
+    {"ik", {shell::RadialOperatorType::kK, 1, 1}},
     {"r.r", {shell::RadialOperatorType::kR, 2, 0}},
-    {"k.k", {shell::RadialOperatorType::kK, 2, 0}},
+    {"ik.ik", {shell::RadialOperatorType::kK, 2, 0}},
   };
 
 std::unordered_map<std::string,std::tuple<am::AngularMomentumOperatorType,int,int>>

@@ -42,6 +42,7 @@
   + 06/20/19 (pjf):
     - Allow final branching to Tz0 > 0.
     - Branch to jjJpn and write sector-by-sector.
+  + 10/06/19 (pjf): Fix input file for target coupling other than jjjpn.
 
 ****************************************************************/
 
@@ -154,14 +155,24 @@ void ReadParameters(Parameters& parameters)
     std::string target_coupling_code;
 
     line_stream >> parameters.output_filename
-                >> target_coupling_code
-                >> parameters.output_h2_format
-                >> parameters.Tz0;
+                >> target_coupling_code;
     mcutils::ParsingCheck(line_stream,line_count,line);
     if (kCouplingDefinitions.count(target_coupling_code))
       parameters.target_coupling = kCouplingDefinitions.at(target_coupling_code);
     else
       mcutils::ParsingError(line_count,line,"unrecognized coupling scheme code");
+
+    if (parameters.target_coupling == Coupling::kJJJPN)
+    {
+      line_stream >> parameters.output_h2_format
+                  >> parameters.Tz0;
+      mcutils::ParsingCheck(line_stream,line_count,line);
+    }
+    else
+    {
+      parameters.output_h2_format = basis::kNone;
+      parameters.Tz0 = 0;
+    }
   }
 }
 
@@ -481,7 +492,8 @@ int main(int argc, char **argv)
       moshinsky::TransformOperatorRelativeLSJTToRelativeCMLSJTN(
           operator_labels,
           relative_space,relative_component_sectors,relative_component_blocks,
-          relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_blocks
+          relative_cm_lsjtn_space,relative_cm_lsjtn_component_sectors,relative_cm_lsjtn_component_blocks,
+          true
         );
       relative_cm_lsjtn_timer.Stop();
       std::cout << "  Time: " << relative_cm_lsjtn_timer.ElapsedTime() << std::endl;

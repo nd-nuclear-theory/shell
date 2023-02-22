@@ -13,6 +13,7 @@ namespace shell
   const std::unordered_map<std::string, RadialOperatorType> kCharCodeRadialOperatorType({
     {"r", RadialOperatorType::kR},
     {"k", RadialOperatorType::kK},
+    {"ik", RadialOperatorType::kK},
     {"o", RadialOperatorType::kO},
     {"g", RadialOperatorType::kGeneric}
     });

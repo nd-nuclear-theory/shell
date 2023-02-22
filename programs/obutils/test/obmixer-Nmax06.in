@@ -1,0 +1,20 @@
+set-basis oscillator orbitals-Nmax06.dat
+
+define-source kinematic r.r
+define-source kinematic ik.ik
+define-source kinematic r orbitals-Nmax12.dat
+define-source kinematic ik orbitals-Nmax12.dat
+define-source am j2
+define-source ladder c+
+
+define-source tensor-product r2 r r 0 -1.732050808
+define-source linear-combination raising
+  add-source r  +0.707106781
+  add-source ik -0.707106781
+
+define-target r.r obme-r.r.dat
+define-target ik.ik obme-ik.ik.dat
+define-target r obme-r.dat
+define-target r2 obme-r2.dat
+define-target raising obme-raising.dat
+define-target c+ obme-c+.dat

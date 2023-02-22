@@ -43,13 +43,13 @@ namespace shell {
       const basis::OrbitalSectorsLJPN& ob_sectors,
       const basis::OperatorBlocks<double>& ob_matrices,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
-      int A
+      const int A
     )
   {
     // set up aliases
-    int j0 = ob_sectors.j0();
-    int g0 = ob_sectors.g0();
-    int Tz0 = ob_sectors.Tz0();
+    const int j0 = ob_sectors.j0();
+    const int g0 = ob_sectors.g0();
+    const int Tz0 = ob_sectors.Tz0();
     const basis::TwoBodySubspaceJJJPN& bra_subspace = sector.bra_subspace();
     const std::size_t bra_subspace_size = bra_subspace.size();
     const basis::TwoBodySubspaceJJJPN& ket_subspace = sector.ket_subspace();
@@ -63,6 +63,14 @@ namespace shell {
       return matrix;
 
     // build sector matrix
+    #pragma omp parallel for \
+      collapse(2)            \
+      default(none),         \
+      shared(                \
+        matrix, j0, g0, Tz0, \
+        bra_subspace, bra_subspace_size, ket_subspace, ket_subspace_size, \
+        ob_orbital_space, ob_sectors, ob_matrices, sector, A \
+        )
     for (std::size_t bra_index = 0; bra_index < bra_subspace_size; ++bra_index)
       for (std::size_t ket_index = 0; ket_index < ket_subspace_size; ++ket_index)
       {
@@ -185,6 +193,9 @@ namespace shell {
         if (c == d)
           matrix_element *= 1/(sqrt(2.));
 
+        // NOTE(pjf): uncertain if this write needs to be in a critical region,
+        // but the synchronization cost is high
+        // #pragma omp critical
         matrix(bra_index, ket_index) = matrix_element;
       }
     return 1./(A-1)*matrix;
@@ -203,7 +214,7 @@ namespace shell {
       const basis::OrbitalSectorsLJPN& ob_sectors2,
       const basis::OperatorBlocks<double>& ob_matrices2,
       const basis::TwoBodySectorsJJJPN::SectorType& sector,
-      int J0
+      const int J0
     )
   {
     // sanity check on angular momenta
@@ -222,6 +233,14 @@ namespace shell {
       return matrix;
 
     // build sector matrix
+    #pragma omp parallel for                                                    \
+      collapse(2)                                                               \
+      default(none),                                                            \
+      shared(                                                                   \
+        matrix, bra_subspace, bra_subspace_size, ket_subspace, ket_subspace_size,\
+        ob_orbital_space, ob_sectors1, ob_matrices1, ob_sectors2, ob_matrices2, \
+        sector, J0                                                              \
+        )
     for (std::size_t bra_index = 0; bra_index < bra_subspace_size; ++bra_index)
       for (std::size_t ket_index = 0; ket_index < ket_subspace_size; ++ket_index)
       {
@@ -288,73 +307,88 @@ namespace shell {
 
         double matrix_element = 0.;
         int phase = 1;
+        double factor_c1a_d2b, factor_d2b_c1a, factor_d1b_c2a, factor_c2a_d1b,
+          factor_c1b_d2a, factor_d2a_c1b, factor_d1a_c2b, factor_c2b_d1a;
 
-        // (cd;J'||v12||ab;J)+(cd;J'||v21||ab;J)
-        matrix_element += phase
-          * am::RacahReductionFactor12Rose(
-                c.j(), d.j(), bra.J(),
-                a.j(), b.j(), ket.J(),
-                ob_sectors1.j0(), ob_sectors2.j0(), J0
-            )
-          * matel_c1a * matel_d2b;
-        matrix_element += phase
-          * am::RacahReductionFactor21Rose(
-                c.j(), d.j(), bra.J(),
-                a.j(), b.j(), ket.J(),
-                ob_sectors1.j0(), ob_sectors2.j0(), J0
-            )
-          * matel_c2a * matel_d1b;
+        factor_c1a_d2b =
+          am::RacahReductionFactor12Rose(
+              c.j(), d.j(), bra.J(),
+              a.j(), b.j(), ket.J(),
+              ob_sectors1.j0(), ob_sectors2.j0(), J0
+            );
+        // factor_d2b_c1a =
+        //   ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j())
+        //   * factor_c1a_d2b;
 
-        // - (-)**(J-ja-jb) * [(cd;J'||v12||ba;J)+(cd;J'||v21||ba;J)]
-        phase = - ParitySign(ket.J()-a.j()-b.j());  // AS phase
-        matrix_element += phase
-          * am::RacahReductionFactor12Rose(
-                c.j(), d.j(), bra.J(),
-                b.j(), a.j(), ket.J(),
-                ob_sectors1.j0(), ob_sectors2.j0(), J0
-            )
-          * matel_c1b * matel_d2a;
-        matrix_element += phase
-          * am::RacahReductionFactor21Rose(
-                c.j(), d.j(), bra.J(),
-                b.j(), a.j(), ket.J(),
-                ob_sectors1.j0(), ob_sectors2.j0(), J0
-            )
-          * matel_c2b * matel_d1a;
+        // phase = 1;
+        // matrix_element += phase * factor_c1a_d2b * matel_c1a * matel_d2b;
+        // phase = ParitySign(bra.J()-c.j()-d.j()+ket.J()-a.j()-b.j());  // AS phase
+        // matrix_element += phase * factor_d2b_c1a * matel_d2b * matel_c1a;
+        matrix_element += 2 * factor_c1a_d2b * matel_d2b * matel_c1a;
 
-        // - (-)**(J'-jc-jd) * [(dc;J'||v12||ab;J)+(dc;J'||v21||ab;J)]
-        phase = - ParitySign(bra.J()-c.j()-d.j());  // AS phase
-        matrix_element += phase
-          * am::RacahReductionFactor12Rose(
-                d.j(), c.j(), bra.J(),
-                a.j(), b.j(), ket.J(),
-                ob_sectors1.j0(), ob_sectors2.j0(), J0
-            )
-          * matel_d1a * matel_c2b;
-        matrix_element += phase
-          * am::RacahReductionFactor21Rose(
-                d.j(), c.j(), bra.J(),
-                a.j(), b.j(), ket.J(),
-                ob_sectors1.j0(), ob_sectors2.j0(), J0
-            )
-          * matel_d2a * matel_c1b;
 
-        // (-)**(J'-jc-jd+J-ja-jb) * [(dc;J'||v12||ba;J)+(dc;J'||v21||ba;J)]
-        phase = ParitySign(bra.J()-c.j()-d.j()+ket.J()-a.j()-b.j());  // AS phase
-        matrix_element += phase
-          * am::RacahReductionFactor12Rose(
+        if (ob_sectors1.j0() == ob_sectors2.j0())
+          factor_d1b_c2a =
+            ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j()+ob_sectors1.j0()+ob_sectors2.j0()+J0)
+            * factor_c1a_d2b;
+        else
+          factor_d1b_c2a =
+            am::RacahReductionFactor12Rose(
                 d.j(), c.j(), bra.J(),
                 b.j(), a.j(), ket.J(),
                 ob_sectors1.j0(), ob_sectors2.j0(), J0
-            )
-          * matel_d1b * matel_c2a;
-        matrix_element += phase
-          * am::RacahReductionFactor21Rose(
+              );
+        // factor_c2a_d1b =
+        //   ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j())
+        //   * factor_d1b_c2a;
+
+        // phase = ParitySign(bra.J()-c.j()-d.j()+ket.J()-a.j()-b.j());  // AS phase
+        // matrix_element += phase * factor_d1b_c2a * matel_d1b * matel_c2a;
+        // phase = 1;
+        // matrix_element += phase * factor_c2a_d1b * matel_c2a * matel_d1b;
+        // matrix_element += (ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j()) + ParitySign(bra.J()-c.j()-d.j()+ket.J()-a.j()-b.j())) * factor_d1b_c2a * matel_d1b * matel_c2a;
+        matrix_element += 2 * ParitySign(bra.J()-c.j()-d.j()+ket.J()-a.j()-b.j()) * factor_d1b_c2a * matel_d1b * matel_c2a;
+
+
+        factor_c1b_d2a =
+          am::RacahReductionFactor12Rose(
+              c.j(), d.j(), bra.J(),
+              b.j(), a.j(), ket.J(),
+              ob_sectors1.j0(), ob_sectors2.j0(), J0
+            );
+        // factor_d2a_c1b =
+        //   ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j())
+        //   * factor_c1b_d2a;
+
+        // phase = - ParitySign(ket.J()-a.j()-b.j());  // AS phase
+        // matrix_element += phase * factor_c1b_d2a * matel_c1b * matel_d2a;
+        // phase = - ParitySign(bra.J()-c.j()-d.j());  // AS phase
+        // matrix_element += phase * factor_d2a_c1b * matel_d2a * matel_c1b;
+        // matrix_element += -(ParitySign(ket.J()-a.j()-b.j()) + ParitySign(ket.J()+a.j()+b.j())) * factor_c1b_d2a * matel_d2a * matel_c1b;
+        matrix_element += -2 * ParitySign(ket.J()-a.j()-b.j()) * factor_c1b_d2a * matel_d2a * matel_c1b;
+
+
+        if (ob_sectors1.j0() == ob_sectors2.j0())
+          factor_d1a_c2b =
+            ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j()+ob_sectors1.j0()+ob_sectors2.j0()+J0)
+            * factor_c1b_d2a;
+        else
+          factor_d1a_c2b =
+            am::RacahReductionFactor12Rose(
                 d.j(), c.j(), bra.J(),
-                b.j(), a.j(), ket.J(),
+                a.j(), b.j(), ket.J(),
                 ob_sectors1.j0(), ob_sectors2.j0(), J0
-            )
-          * matel_d2b * matel_c1a;
+              );
+        // factor_c2b_d1a =
+        //   ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j())
+        //   * factor_d1a_c2b;
+
+        // phase = - ParitySign(bra.J()-c.j()-d.j());  // AS phase
+        // matrix_element += phase * factor_d1a_c2b * matel_d1a * matel_c2b;
+        // phase = - ParitySign(ket.J()-a.j()-b.j());  // AS phase
+        // matrix_element += phase * factor_c2b_d1a * matel_c2b * matel_d1a;
+        matrix_element += -2 * ParitySign(bra.J()-c.j()-d.j()) * factor_d1a_c2b * matel_d1a * matel_c2b;
+
 
         // normalize (from symmetrization of v and sqrt(2) in AS state)
         matrix_element *= 0.25;
@@ -365,6 +399,9 @@ namespace shell {
         if (c == d)
           matrix_element *= 1/(sqrt(2.));
 
+        // NOTE(pjf): uncertain if this write needs to be in a critical region,
+        // but the synchronization cost is high
+        // #pragma omp critical
         matrix(bra_index, ket_index) = matrix_element;
       }
     return matrix;

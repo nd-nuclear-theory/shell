@@ -35,6 +35,10 @@
       sectors as a function of j0.
     + Fix indexing problems for j0_min != 0.
   + 08/17/19 (pjf): Fix conversion to Rose convention.
+  + 02/27/20 (pjf): Restructure class hierarchy:
+    - Make InOBDMEStream a virtual base class.
+    - Move common accessors into InOBDMEStream.
+    - Require quantum numbers to construct stream.
 
 ****************************************************************/
 
@@ -59,17 +63,38 @@ namespace shell {
 class InOBDMEStream {
  public:
   InOBDMEStream() = default;
+  virtual ~InOBDMEStream() = default;
+
   void GetMultipole(
       int j0,
       basis::OrbitalSectorsLJPN& sectors,
       basis::OperatorBlocks<double>& matrices
     ) const;
+
+  // accessors
+  int Z_bra() const { return Z_bra_; }
+  int N_bra() const { return N_bra_; }
+  int A_bra() const { return Z_bra_ + N_bra_; }
+  HalfInt Tz_bra() const { return HalfInt(Z_bra_-N_bra_, 2); }
+  HalfInt J_bra() const { return J_bra_; }
+  HalfInt M_bra() const { return M_bra_; }
+  int g_bra() const { return g_bra_; }
+  int n_bra() const { return n_bra_; }
+  double T_bra() const { return T_bra_; }
+
+  int Z_ket() const { return Z_ket_; }
+  int N_ket() const { return N_ket_; }
+  int A_ket() const { return Z_ket_ + N_ket_; }
+  HalfInt Tz_ket() const { return HalfInt(Z_ket_-N_ket_, 2); }
+  HalfInt J_ket() const { return J_ket_; }
+  HalfInt M_ket() const { return M_ket_; }
+  int g_ket() const { return g_ket_; }
+  int n_ket() const { return n_ket_; }
+  double T_ket() const { return T_ket_; }
   int j0_min() const { return j0_min_; }
   int j0_max() const { return j0_max_; }
-  int g0()     const { return g0_;     }
-  int Tz0()    const { return Tz0_;    }
-  DEPRECATED("use j0_min() instead") inline int min_K() const { return j0_min_; }
-  DEPRECATED("use j0_max() instead") inline int max_K() const { return j0_max_; }
+  int g0()     const { return (g_bra_+g_ket_)%2; }
+  int Tz0()    const { return int(Tz_bra()-Tz_ket());}
 
   // indexing accessors
   const basis::OrbitalSpaceLJPN& orbital_space() const { return orbital_space_; }
@@ -87,16 +112,23 @@ class InOBDMEStream {
  protected:
   InOBDMEStream(
       const basis::OrbitalSpaceLJPN& orbital_space,
-      int g0 = 0,
-      int Tz0 = 0
-    ) : orbital_space_(orbital_space), g0_(g0), Tz0_(Tz0) {};
+      HalfInt J_bra, int g_bra, int n_bra,
+      HalfInt J_ket, int g_ket, int n_ket
+    ) : orbital_space_(orbital_space),
+        J_bra_(J_bra), g_bra_(g_bra), n_bra_(n_bra),
+        J_ket_(J_ket), g_ket_(g_ket), n_ket_(n_ket)
+    {};
 
   // allocate and zero indexing and matrices
   void InitStorage();
 
+  // header quantum numbers (extracted from file)
+  int Z_bra_, Z_ket_;
+  int N_bra_, N_ket_;
+  HalfInt M_bra_, M_ket_;
+  float T_bra_, T_ket_;
   // indexing information
   basis::OrbitalSpaceLJPN orbital_space_;
-  int g0_, Tz0_;
   int j0_min_, j0_max_;
 
   // indexing accessors
@@ -110,7 +142,11 @@ class InOBDMEStream {
     return matrices_.at(j0-j0_min());
   }
 
-  private:
+ private:
+  // state quantum numbers
+  HalfInt J_bra_, J_ket_;
+  int g_bra_, g_ket_;
+  int n_bra_, n_ket_;
 
   // matrix element storage
   std::vector<basis::OrbitalSectorsLJPN> sectors_;
@@ -133,8 +169,8 @@ class InOBDMEStreamMulti : public InOBDMEStream {
       const std::string& info_filename,
       const std::string& data_filename,
       const basis::OrbitalSpaceLJPN& orbital_space,
-      int g0 = 0,
-      int Tz0 = 0
+      HalfInt J_bra, int g_bra, int n_bra,
+      HalfInt J_ket, int g_ket, int n_ket
     );
   // Construct a reader by parsing an info file.
 
@@ -144,6 +180,7 @@ class InOBDMEStreamMulti : public InOBDMEStream {
       delete info_stream_ptr_;
   }
 
+ private:
   // info file data structure
   struct InfoLine {
     basis::FullOrbitalLabels bra_labels;
@@ -156,8 +193,6 @@ class InOBDMEStreamMulti : public InOBDMEStream {
   // accessors
   const std::vector<InfoLine>& obdme_info() const { return obdme_info_; }
 
- private:
-
   // read info header
   void ReadInfoHeader();
   void ReadInfoHeader1405();
@@ -169,7 +204,7 @@ class InOBDMEStreamMulti : public InOBDMEStream {
   void ReadInfo1500();
 
   // read data header
-  void ReadDataHeader(std::ifstream& data_stream, int& data_line_count) const;
+  void ReadDataHeader(std::ifstream& data_stream, int& data_line_count);
   // void ReadDataHeader1405(std::ifstream& data_stream, int& data_line_count) const;
   // void ReadDataHeader1500(std::ifstream& data_stream, int& data_line_count) const;
 
@@ -208,29 +243,14 @@ class InOBDMEStreamSingle : public InOBDMEStream {
 
   InOBDMEStreamSingle(
       const std::string& filename,
-      const basis::OrbitalSpaceLJPN& orbital_space
+      const basis::OrbitalSpaceLJPN& orbital_space,
+      HalfInt J_bra, int g_bra, int n_bra,
+      HalfInt J_ket, int g_ket, int n_ket
     );
   // Construct a reader by parsing an info file.
 
   // accessors
-  int Z_bra() const { return Z_bra_; }
-  int N_bra() const { return N_bra_; }
-  HalfInt J_bra() const { return HalfInt(TwiceJ_bra_, 2); }
-  HalfInt M_bra() const { return HalfInt(TwiceM_bra_, 2); }
-  HalfInt Tz_bra() const { return HalfInt(Z_bra_-N_bra_, 2); }
-  int g_bra() const { return g_bra_; }
-  int n_bra() const { return n_bra_; }
-  double T_bra() const { return T_bra_; }
   double E_bra() const { return E_bra_; }
-
-  int Z_ket() const { return Z_ket_; }
-  int N_ket() const { return N_ket_; }
-  HalfInt J_ket() const { return HalfInt(TwiceJ_ket_, 2); }
-  HalfInt M_ket() const { return HalfInt(TwiceM_ket_, 2); }
-  HalfInt Tz_ket() const { return HalfInt(Z_ket_-N_ket_, 2); }
-  int g_ket() const { return g_ket_; }
-  int n_ket() const { return n_ket_; }
-  double T_ket() const { return T_ket_; }
   double E_ket() const { return E_ket_; }
 
   // destructor
@@ -259,10 +279,8 @@ private:
 
   // file header
   int version_number_;
-  int Z_bra_, N_bra_, seq_bra_, TwiceJ_bra_, TwiceM_bra_, g_bra_, n_bra_;
-  float T_bra_, E_bra_;
-  int Z_ket_, N_ket_, seq_ket_, TwiceJ_ket_, TwiceM_ket_, g_ket_, n_ket_;
-  float T_ket_, E_ket_;
+  int seq_bra_, seq_ket_;
+  float E_bra_, E_ket_;
 
   std::size_t num_proton_obdme_;
   std::size_t num_neutron_obdme_;
