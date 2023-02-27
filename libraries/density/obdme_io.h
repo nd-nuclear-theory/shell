@@ -66,7 +66,7 @@ class InOBDMEStream {
   virtual ~InOBDMEStream() = default;
 
   void GetMultipole(
-      int j0,
+      int J0,
       basis::OrbitalSectorsLJPN& sectors,
       basis::OperatorBlocks<double>& matrices
     ) const;
@@ -91,22 +91,22 @@ class InOBDMEStream {
   int g_ket() const { return g_ket_; }
   int n_ket() const { return n_ket_; }
   double T_ket() const { return T_ket_; }
-  int j0_min() const { return j0_min_; }
-  int j0_max() const { return j0_max_; }
+  int J0_min() const { return J0_min_; }
+  int J0_max() const { return J0_max_; }
   int g0()     const { return (g_bra_+g_ket_)%2; }
   int Tz0()    const { return int(Tz_bra()-Tz_ket());}
 
   // indexing accessors
   const basis::OrbitalSpaceLJPN& orbital_space() const { return orbital_space_; }
 
-  const basis::OrbitalSectorsLJPN& sectors(int j0) const {
-    assert((j0 >= j0_min()) && (j0 <= j0_max()));
-    return sectors_.at(j0-j0_min());
+  const basis::OrbitalSectorsLJPN& sectors(int J0) const {
+    assert((J0 >= J0_min()) && (J0 <= J0_max()));
+    return sectors_.at(J0-J0_min());
   }
 
-  const basis::OperatorBlocks<double>& matrices(int j0) const {
-    assert((j0 >= j0_min()) && (j0 <= j0_max()));
-    return matrices_.at(j0-j0_min());
+  const basis::OperatorBlocks<double>& matrices(int J0) const {
+    assert((J0 >= J0_min()) && (J0 <= J0_max()));
+    return matrices_.at(J0-J0_min());
   }
 
  protected:
@@ -129,17 +129,17 @@ class InOBDMEStream {
   float T_bra_, T_ket_;
   // indexing information
   basis::OrbitalSpaceLJPN orbital_space_;
-  int j0_min_, j0_max_;
+  int J0_min_, J0_max_;
 
   // indexing accessors
-  basis::OrbitalSectorsLJPN& sectors(int j0) {
-    assert((j0 >= j0_min()) && (j0 <= j0_max()));
-    return sectors_.at(j0-j0_min());
+  basis::OrbitalSectorsLJPN& sectors(int J0) {
+    assert((J0 >= J0_min()) && (J0 <= J0_max()));
+    return sectors_.at(J0-J0_min());
   }
 
-  basis::OperatorBlocks<double>& matrices(int j0) {
-    assert((j0 >= j0_min()) && (j0 <= j0_max()));
-    return matrices_.at(j0-j0_min());
+  basis::OperatorBlocks<double>& matrices(int J0) {
+    assert((J0 >= J0_min()) && (J0 <= J0_max()));
+    return matrices_.at(J0-J0_min());
   }
 
  private:

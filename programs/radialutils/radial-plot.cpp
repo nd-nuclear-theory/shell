@@ -170,7 +170,7 @@ int main(int argc, const char *argv[]) {
 
   // check that xform is valid
   assert(xform_s.operator_type() == basis::OneBodyOperatorType::kRadial);
-  assert(sectors.j0() == 0);
+  assert(sectors.J0() == 0);
   assert(sectors.g0() == 0);
   assert(sectors.Tz0() == 0);
 

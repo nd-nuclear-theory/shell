@@ -36,20 +36,20 @@ void SolidHarmonicOneBodyOperator(
     const basis::OrbitalSectorsLJPN& sectors,
     basis::OperatorBlocks<double>& matrices
   );
-// Generate reduced matrix elements of r^n C_j0 and (ik)^n C_j0.
+// Generate reduced matrix elements of r^n C_J0 and (ik)^n C_J0.
 //
 // Spherical harmonic is in Racah's normalization [G. Racah, Phys. Rev. 62,
 // 438 (1942), eqn. (46); Brink & Satchler (1993), eqn. (2.9)].
 //
-//   C_j0 = ((4*pi)/(2*j0+1))^(1/2) * Y_j0
+//   C_J0 = ((4*pi)/(2*J0+1))^(1/2) * Y_J0
 //
 // RMEs are in Rose convention.
 //
 // Examples:
-//   - For order=0, j0=0, this is the identity operator.
-//   - For order=1, j0=1, this is $\vec{r}$.
-//   - For order=2, j0=0, this is $\vec{r}\cdot\vec{r}$.
-//   - For order=2, j0=2, this is $\sqrt{3/2} [\vec{r}\otimes\vec{r}]_2$ [see
+//   - For order=0, J0=0, this is the identity operator.
+//   - For order=1, J0=1, this is $\vec{r}$.
+//   - For order=2, J0=0, this is $\vec{r}\cdot\vec{r}$.
+//   - For order=2, J0=2, this is $\sqrt{3/2} [\vec{r}\otimes\vec{r}]_2$ [see
 //       sec. 3.2, eqn. (23) of Varshalovich (1988)]; alternatively, this is
 //       (4*pi/5)^(1/2) times the transition E2 operator Q=r^2Y_2, or 1/2 the
 //       "quadrupole moment" operator Qmom [see footnote 10 of "intrinsic"

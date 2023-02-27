@@ -24,24 +24,24 @@ namespace shell {
 constexpr double k_sqrt_4pi = 3.54490770181103205459633496668229;
 
 void InOBDMEStream::GetMultipole(
-    int j0,
+    int J0,
     basis::OrbitalSectorsLJPN& out_sectors,
     basis::OperatorBlocks<double>& out_matrices
   ) const
 {
-  out_sectors = sectors(j0);
-  out_matrices = matrices(j0);
+  out_sectors = sectors(J0);
+  out_matrices = matrices(J0);
 }
 
 void InOBDMEStream::InitStorage()
 {
   // initialize storage
-  int num_multipoles = j0_max() - j0_min() + 1;
+  int num_multipoles = J0_max() - J0_min() + 1;
   sectors_.resize(num_multipoles);
   matrices_.resize(num_multipoles);
-  for (int j0 = j0_min(); j0 <= j0_max(); j0++) {
-    sectors(j0) = basis::OrbitalSectorsLJPN(orbital_space_, j0, g0(), Tz0());
-    basis::SetOperatorToZero(sectors(j0), matrices(j0));
+  for (int J0 = J0_min(); J0 <= J0_max(); J0++) {
+    sectors(J0) = basis::OrbitalSectorsLJPN(orbital_space_, J0, g0(), Tz0());
+    basis::SetOperatorToZero(sectors(J0), matrices(J0));
   }
 }
 
@@ -118,13 +118,13 @@ void InOBDMEStreamMulti::ReadInfoHeader1405() {
     assert(pn_space.GetSubspace(1).size() == num_sp_orbitals);
   }
 
-  // line 3: max j0 in multipole expansion
+  // line 3: max J0 in multipole expansion
   {
     mcutils::GetLine(info_stream(), line, line_count_);
     std::istringstream line_stream(line);
-    line_stream >> j0_max_;
+    line_stream >> J0_max_;
     mcutils::ParsingCheck(line_stream, line_count_, line);
-    j0_min_ = 0;
+    J0_min_ = 0;
   }
 
   // line 4: number of OBDMEs per type
@@ -143,13 +143,13 @@ void InOBDMEStreamMulti::ReadInfoHeader1500() {
   // make sure we didn't get here by mistake
   assert(version_number_ == 1500);
 
-  // line 2: max j0 in multipole expansion
+  // line 2: max J0 in multipole expansion
   {
     mcutils::GetLine(info_stream(), line, line_count_);
     std::istringstream line_stream(line);
-    line_stream >> j0_max_;
+    line_stream >> J0_max_;
     mcutils::ParsingCheck(line_stream, line_count_, line);
-    j0_min_ = 0;
+    J0_min_ = 0;
   }
 
   // line 3: number of p and n orbitals
@@ -202,17 +202,17 @@ void InOBDMEStreamMulti::ReadInfo1405() {
   // loop through lines and put them into obdme_info_
   for (std::size_t i=0; i < num_proton_obdme_; ++i) {
     std::string line;
-    int index, na, la, twoja, nb, lb, twojb, j0;
+    int index, na, la, twoja, nb, lb, twojb, J0;
 
     mcutils::GetLine(info_stream(), line, line_count_);
     std::istringstream line_stream(line);
-    line_stream >> index >> na >> la >> twoja >> nb >> lb >> twojb >> j0;
+    line_stream >> index >> na >> la >> twoja >> nb >> lb >> twojb >> J0;
     mcutils::ParsingCheck(line_stream, line_count_, line);
 
     basis::FullOrbitalLabels orbital_a(basis::OrbitalSpeciesPN::kP, na, la, HalfInt(twoja,2));
     basis::FullOrbitalLabels orbital_b(basis::OrbitalSpeciesPN::kP, nb, lb, HalfInt(twojb,2));
 
-    obdme_info_.emplace_back(orbital_a, orbital_b, j0);
+    obdme_info_.emplace_back(orbital_a, orbital_b, J0);
   }
 
   // version 1405 only stores one set of info for both species
@@ -232,17 +232,17 @@ void InOBDMEStreamMulti::ReadInfo1500() {
   // loop through lines and put them into obdme_info_
   for (std::size_t i=0; i < num_proton_obdme_ + num_neutron_obdme_; ++i) {
     std::string line;
-    int index, ia, na, la, twoja, ib, nb, lb, twojb, j0, cls;
+    int index, ia, na, la, twoja, ib, nb, lb, twojb, J0, cls;
 
     mcutils::GetLine(info_stream(), line, line_count_);
     std::istringstream line_stream(line);
-    line_stream >> index >> ia >> na >> la >> twoja >> ib >> nb >> lb >> twojb >> j0 >> cls;
+    line_stream >> index >> ia >> na >> la >> twoja >> ib >> nb >> lb >> twojb >> J0 >> cls;
     mcutils::ParsingCheck(line_stream, line_count_, line);
 
     basis::FullOrbitalLabels orbital_a(basis::OrbitalSpeciesPN(cls-1), na, la, HalfInt(twoja,2));
     basis::FullOrbitalLabels orbital_b(basis::OrbitalSpeciesPN(cls-1), nb, lb, HalfInt(twojb,2));
 
-    obdme_info_.emplace_back(orbital_a, orbital_b, j0);
+    obdme_info_.emplace_back(orbital_a, orbital_b, J0);
   }
 }
 
@@ -445,19 +445,19 @@ void InOBDMEStreamSingle::ReadHeader1520() {
 
   assert((Tz_bra()-Tz_ket()).IsInteger());
 
-  // line 4: min j0 in multipole expansion
+  // line 4: min J0 in multipole expansion
   {
     mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
-    line_stream >> j0_min_;
+    line_stream >> J0_min_;
     mcutils::ParsingCheck(line_stream, line_count_, line);
   }
 
-  // line 5: max j0 in multipole expansion
+  // line 5: max J0 in multipole expansion
   {
     mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
-    line_stream >> j0_max_;
+    line_stream >> J0_max_;
     mcutils::ParsingCheck(line_stream, line_count_, line);
   }
 
@@ -514,11 +514,11 @@ void InOBDMEStreamSingle::ReadData() {
 void InOBDMEStreamSingle::ReadData1520() {
   std::string line;
   while (!mcutils::GetLine(stream(), line, line_count_).eof()) {
-    int ia, ib, j0;
+    int ia, ib, J0;
     double matrix_element;
 
     std::istringstream line_stream(line);
-    line_stream >> ia >> ib >> j0 >> matrix_element;
+    line_stream >> ia >> ib >> J0 >> matrix_element;
     mcutils::ParsingCheck(line_stream, line_count_, line);
 
     // get location of matrix element
@@ -526,7 +526,7 @@ void InOBDMEStreamSingle::ReadData1520() {
     basis::FullOrbitalLabels orbital_b = orbital_list_.at(ib-1);
     std::size_t sector_index, bra_index, ket_index;
     std::tie(sector_index, bra_index, ket_index) = basis::MatrixElementIndicesLJPN(
-      orbital_space(), orbital_space(), sectors(j0), orbital_a, orbital_b
+      orbital_space(), orbital_space(), sectors(J0), orbital_a, orbital_b
     );
     assert(sector_index != basis::kNone);
     assert(bra_index != basis::kNone);
@@ -536,7 +536,7 @@ void InOBDMEStreamSingle::ReadData1520() {
     matrix_element /= Hat(std::get<3>(orbital_a));
 
     // store matrix element
-    matrices(j0)[sector_index](bra_index,ket_index) = matrix_element;
+    matrices(J0)[sector_index](bra_index,ket_index) = matrix_element;
   }
 
 }
