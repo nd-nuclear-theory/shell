@@ -19,7 +19,7 @@ The lsjt relative matrix element file format is defined in header file comments:
   operator file, you need to know the ordering of basis subpaces and
   states, which is defined in
 
-    libraries/basis/lsjt_basis.h
+    libraries/basis/lsjt_scheme.h
 
 The relavant comments from both these files are copied below for your
 reference.  Please refer to the original files for further information

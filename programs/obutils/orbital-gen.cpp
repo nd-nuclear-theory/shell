@@ -27,6 +27,7 @@
 
 #include "basis/nlj_orbital.h"
 #include "mcutils/io.h"
+#include "mcutils/parsing.h"
 
 ////////////////////////////////////////////////////////////////
 // process arguments

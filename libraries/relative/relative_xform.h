@@ -9,6 +9,7 @@
   University of Notre Dame
 
   + 10/13/20 (pjf): Created.
+  + 07/06/22 (pjf): Switch to quadrature library for matrix element generation.
 
 ****************************************************************/
 

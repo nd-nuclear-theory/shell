@@ -31,6 +31,7 @@
 #include "fmt/format.h"
 #include "basis/nlj_orbital.h"
 #include "basis/operator.h"
+#include "mcutils/parsing.h"
 #include "obme/obme_io.h"
 
 ////////////////////////////////////////////////////////////////

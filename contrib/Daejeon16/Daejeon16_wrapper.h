@@ -29,9 +29,9 @@ namespace contrib {
     );
   // Construct Daejeon16 operator in relative LSJT basis.
   //
-  // These matrix elements are calculated for oscillator length
-  // parameter b_rel = 2^(1/2) in the relative coordinate.  (See "Note
-  // on oscillator length" at start of this header file.)
+  // These matrix elements are calculated for oscillator frequency hw=25MeV in
+  // the relative coordinate.  (See "Note on oscillator length" at start of
+  // relative/relative_me.h)
   //
   // See notes on "internal representation of an operator in JT
   // scheme" in lsjt_operator.h for the general principles of how the

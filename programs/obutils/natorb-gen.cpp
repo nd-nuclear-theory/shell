@@ -13,7 +13,7 @@
 
     set-indexing orbital_filename
     define-densities J g n robdme_filename [robdme_info_filename]
-    set-output-xform output_orbital_filename output_xform_filename
+    set-output-xform output_orbital_filename output_xform_filename [output_info_filename]
 
   Patrick J. Fasano
   University of Notre Dame
@@ -48,6 +48,8 @@
 #include "obme/obme_io.h"
 #include "basis/operator.h"
 #include "mcutils/eigen.h"
+#include "mcutils/parsing.h"
+#include "am/halfint_fmt.h"
 
 ////////////////////////////////////////////////////////////////
 // define a function mapping eigenvalue to weight
@@ -91,6 +93,7 @@ struct RunParameters {
   std::unique_ptr<shell::InOBDMEStream> density_stream;
   std::string output_xform_filename;
   std::string output_orbital_filename;
+  std::string output_info_filename;
 };
 
 void PrintUsage(char **argv) { std::cout << "Usage: " << argv[0] << std::endl; }
@@ -112,6 +115,13 @@ void ReadParameters(RunParameters& run_parameters) {
       mcutils::ParsingCheck(line_stream, line_count, line);
       mcutils::FileExistCheck(run_parameters.output_orbital_filename, false, true);
       mcutils::FileExistCheck(run_parameters.output_xform_filename, false, true);
+      if (!line_stream.eof()) {
+        line_stream >> run_parameters.output_info_filename;
+        mcutils::ParsingCheck(line_stream, line_count, line);
+        mcutils::FileExistCheck(run_parameters.output_info_filename,false,true);
+      } else {
+        run_parameters.output_info_filename = "";
+      }
     }
     else if (keyword == "set-indexing")
     {
@@ -179,7 +189,7 @@ int main(int argc, const char *argv[]) {
   // Here we loop through the density matrices and diagonalize each sector.
   basis::OperatorBlocks<double> xform_matrices;
   // TODO(pjf) generalize to use eigenvalues for orbital weights
-  // std::vector<basis::OrbitalPNInfo> output_orbitals;
+  std::vector<basis::OrbitalPNInfo> orbital_occupation_info;
   for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index) {
     // get next sector
     const auto& sector = sectors.GetSector(sector_index);
@@ -199,9 +209,12 @@ int main(int argc, const char *argv[]) {
     // add to output
     xform_matrices.push_back(eigenvectors);
     // TODO(pjf) generalize to use eigenvalues for orbital weights
-    // for (int i=0; i < eigenvalues.size(); ++i) {
-    //   output_orbitals.emplace_back(species, i, l, j, eigenvalues(i));
-    // }
+    for (int i=0; i < eigenvalues.size(); ++i) {
+      orbital_occupation_info.emplace_back(
+          species, i, l, j,
+          eigenvalues(i)
+        );
+    }
   }
 
   // TODO(pjf) generalize to use eigenvalues for orbital weights
@@ -213,6 +226,27 @@ int main(int argc, const char *argv[]) {
   std::ofstream output_orbital_s(run_parameters.output_orbital_filename);
   output_orbital_s << basis::OrbitalDefinitionStr(output_orbitals, true);
   output_orbital_s.close();
+
+  if (run_parameters.output_info_filename != "") {
+    std::sort(
+        orbital_occupation_info.begin(), orbital_occupation_info.end(),
+        basis::OrbitalSortCmpWeight
+      );
+    std::reverse(orbital_occupation_info.begin(), orbital_occupation_info.end());
+    std::ofstream output_info_s(run_parameters.output_info_filename);
+    output_info_s << fmt::format("# {:>3s}  {:>3s}  {:>3s}  {:>3s}  {:>15s}\n",
+        "n", "l", "2j", "2tz", "occupation"
+      );
+    for (const auto& orbital : orbital_occupation_info) {
+      output_info_s << fmt::format(
+          "  {:>3d}  {:>3d}  {:>3.1f}  {:>3.1f}  {:>15.8e}\n",
+          orbital.n, orbital.l, float(orbital.j),
+          float(basis::kOrbitalSpeciesPNCodeTz[static_cast<int>(orbital.orbital_species)]),
+          orbital.weight
+        );
+    }
+    output_info_s.close();
+  }
 
   // write xform out to file
   const basis::OrbitalSpaceLJPN output_space(output_orbitals);

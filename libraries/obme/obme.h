@@ -15,6 +15,8 @@
     - AngularMomentumSquaredOneBodyOperator
     - IsospinOneBodyOperator
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 04/19/22 (mac): Expand docstrings.
+  + 04/19/22 (pjf): Add additional comments/documentation to docstrings.
 ****************************************************************/
 
 #ifndef OBME_OBME_H_
@@ -34,10 +36,24 @@ void SolidHarmonicOneBodyOperator(
     const basis::OrbitalSectorsLJPN& sectors,
     basis::OperatorBlocks<double>& matrices
   );
-// Generate matrix elements of r^n C_j0 and (ik)^n C_j0 in Rose convention.
+// Generate reduced matrix elements of r^n C_j0 and (ik)^n C_j0.
 //
-// For j0=1, order=1, this is \vec{r}; for j0=0, order=2, this
-// coincides with r.r
+// Spherical harmonic is in Racah's normalization [G. Racah, Phys. Rev. 62,
+// 438 (1942), eqn. (46); Brink & Satchler (1993), eqn. (2.9)].
+//
+//   C_j0 = ((4*pi)/(2*j0+1))^(1/2) * Y_j0
+//
+// RMEs are in Rose convention.
+//
+// Examples:
+//   - For order=0, j0=0, this is the identity operator.
+//   - For order=1, j0=1, this is $\vec{r}$.
+//   - For order=2, j0=0, this is $\vec{r}\cdot\vec{r}$.
+//   - For order=2, j0=2, this is $\sqrt{3/2} [\vec{r}\otimes\vec{r}]_2$ [see
+//       sec. 3.2, eqn. (23) of Varshalovich (1988)]; alternatively, this is
+//       (4*pi/5)^(1/2) times the transition E2 operator Q=r^2Y_2, or 1/2 the
+//       "quadrupole moment" operator Qmom [see footnote 10 of "intrinsic"
+//       JPG 47, 122001 (2020)].
 //
 // Arguments:
 //   basis_type (shell::RadialBasisType): radial basis type
@@ -54,7 +70,10 @@ void LadderOneBodyOperator(
     const basis::OrbitalSectorsLJPN& sectors,
     basis::OperatorBlocks<double>& matrices
   );
-// Generate matrix elements of $b^\dagger$ and $\tilde{b}$ in Rose convention.
+// Generate reduced matrix elements of harmonic oscillator ladder operator
+// $c^\dagger$ or $\tilde{c}$.
+//
+// RMEs are in Rose convention.
 //
 // Arguments:
 //   basis_type (shell::RadialBasisType): radial basis type
@@ -69,7 +88,9 @@ void AngularMomentumOneBodyOperator(
     const basis::OrbitalSectorsLJPN& sectors,
     basis::OperatorBlocks<double>& matrices
   );
-// Generate matrix elements of angular momentum operator in Rose convention.
+// Generate reduced matrix elements of angular momentum operator.
+//
+// RMEs are in Rose convention.
 //
 // Arguments:
 //   operator_type (am::AngularMomentumOperatorType): angular momentum type
@@ -83,7 +104,9 @@ void AngularMomentumSquaredOneBodyOperator(
     const basis::OrbitalSectorsLJPN& sectors,
     basis::OperatorBlocks<double>& matrices
   );
-// Generate matrix elements of angular momentum squared operator in Rose convention.
+// Generate matrix elements of angular momentum squared operator.
+//
+// RMEs are in Rose convention.
 //
 // Arguments:
 //   operator_type (am::AngularMomentumOperatorType): angular momentum type
@@ -96,7 +119,9 @@ void IsospinOneBodyOperator(
     const basis::OrbitalSectorsLJPN& sectors,
     basis::OperatorBlocks<double>& matrices
   );
-// Generate matrix elements of isospin operator in Rose convention.
+// Generate reduced matrix elements of isospin operator.
+//
+// RMEs are in Rose convention.
 //
 // The spherical tensor component is deduced from Tz0 of input sectors, e.g.
 // if Tz0=+1, matrix elements of T_+ are computed.
@@ -114,7 +139,10 @@ void OneBodyOperatorTensorProduct(
     const basis::OperatorBlocks<double>& matrices_b,
     const basis::OrbitalSectorsLJPN& sectors,
     basis::OperatorBlocks<double>& matrices);
-// Compute coupled tensor product [AB]_J of two one-body operators.
+// Compute reduced matrix elements of coupled tensor product [AB]_J of two
+// one-body operators.
+//
+// RMEs are in Rose convention.
 //
 // Arguments:
 //   space (basis::OrbitalSpaceLJPN): one-body space
