@@ -22,6 +22,7 @@ install_prefix := $(install_prefix)/shell
 # programs
 ################
 
+modules += programs/partitionutils
 modules += programs/radialutils programs/relutils programs/h2utils
 modules += programs/obutils
 
