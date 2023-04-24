@@ -30,6 +30,7 @@
 
   05/15/19 (mac/jh): Created, absorbing code in relative-gen.cpp.
      06/19 (jh): Filtering ability added.
+  02/24/23 (zz): Add T0 filtering.
 
 ****************************************************************/
 
@@ -65,7 +66,7 @@ void ReadParameters(Parameters& parameters)
   // set up line counter for use in error messages
   std::string line;
   int line_count = 0;
-  
+
   // line 1: operator filenames
   {
     ++line_count;
@@ -131,15 +132,15 @@ void FilterOperator(
       {
         // extract sector
         const typename basis::RelativeSectorsLSJT::SectorType& sector = component_sectors[T0].GetSector(sector_index);
-	const typename basis::RelativeSectorsLSJT::SubspaceType& bra_subspace = sector.bra_subspace();
-	const typename basis::RelativeSectorsLSJT::SubspaceType& ket_subspace = sector.ket_subspace();
+	      const typename basis::RelativeSectorsLSJT::SubspaceType& bra_subspace = sector.bra_subspace();
+	      const typename basis::RelativeSectorsLSJT::SubspaceType& ket_subspace = sector.ket_subspace();
 
         // retrieve source block
         const basis::OperatorBlock<double>& source_block = source_component_blocks[T0][sector_index];
 
         // allocate target block
         basis::OperatorBlock<double> target_block = basis::OperatorBlock<double>::Zero(bra_subspace.size(),ket_subspace.size());
-        
+
         // copy matrix elements
         for (int bra_index = 0; bra_index < bra_subspace.size(); ++bra_index)
           for (int ket_index = 0; ket_index < ket_subspace.size(); ++ket_index)
@@ -150,23 +151,28 @@ void FilterOperator(
                   continue;
 
               // define states (for easy access to quantum numbers)
-	      const basis::RelativeStateLSJT bra(bra_subspace,bra_index);
-	      const basis::RelativeStateLSJT ket(ket_subspace,ket_index);
+	            const basis::RelativeStateLSJT bra(bra_subspace,bra_index);
+	            const basis::RelativeStateLSJT ket(ket_subspace,ket_index);
 
               // copy matrix element
 
               if(parameters.filter_name=="identity")
-	        target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
-	      else if(parameters.filter_name=="Nrelmax")
-	        {
+	              target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
+	            else if(parameters.filter_name=="Nrelmax")
+	              {
                  if((bra.N()<=parameters.cutoff)&&(ket.N()<=parameters.cutoff))
                    target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
-		}
-	      else if(parameters.filter_name=="N0max")
-		{
-	         if(abs(bra.N()-ket.N())<=parameters.cutoff)
+		            }
+	            else if(parameters.filter_name=="N0max")
+		            {
+	                 if(abs(bra.N()-ket.N())<=parameters.cutoff)
                    target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
-		}
+		            }
+              else if(parameters.filter_name=="T0")
+  		          {
+  	               if(T0<=parameters.cutoff)
+                   target_block(bra_index,ket_index) = source_block(bra_index,ket_index);
+  		          }
             }
 
         // diagnostics
