@@ -1200,7 +1200,7 @@ void OneBodyBuiltinChannel::ConstructOneBodyOperatorData(
           operator_data.orbital_space,
           j0, g0, tz0
         );
-      LadderOneBodyOperator(
+      shell::LadderOneBodyOperator(
           shell::RadialBasisType::kOscillator,
           kLadderOneBodyOperatorDefinitions.at(id),
           operator_data.orbital_space,
