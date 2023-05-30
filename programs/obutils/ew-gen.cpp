@@ -329,14 +329,14 @@ void GenerateTargetE(
   )
 {
   int radial_order = target.lambda;
-  int j0 = target.lambda;
+  int J0 = target.lambda;
   int g0 = radial_order % 2;
   int Tz0 = 0;
 
   // construct output sectors
   basis::OrbitalSectorsLJPN output_sectors(
       run_parameters.space, run_parameters.space,
-      j0, g0, Tz0
+      J0, g0, Tz0
     );
   // declare output storage
   basis::OperatorBlocks<double> output_matrices;
@@ -345,10 +345,10 @@ void GenerateTargetE(
   RadialOperatorLabels radial_key{shell::RadialOperatorType::kR, radial_order};
   if (run_parameters.radial_operators.count(radial_key) == 0) {
     std::cerr << fmt::format(
-                    "ERROR: Missing radial matrix elements: {}^{:d} j0={:d} "
+                    "ERROR: Missing radial matrix elements: {}^{:d} J0={:d} "
                     "g0={:d} Tz0={:d}",
                     static_cast<char>(shell::RadialOperatorType::kR),
-                    radial_order, j0, g0, Tz0
+                    radial_order, J0, g0, Tz0
                     )
               << std::endl;
     std::exit(EXIT_FAILURE);
@@ -409,14 +409,14 @@ void GenerateTargetM(
   )
 {
   int radial_order = target.lambda - 1;
-  int j0 = target.lambda;
+  int J0 = target.lambda;
   int g0 = radial_order % 2;
   int Tz0 = 0;
 
   // construct output sectors
   basis::OrbitalSectorsLJPN output_sectors(
       run_parameters.space, run_parameters.space,
-      j0, g0, Tz0
+      J0, g0, Tz0
     );
   // declare output storage
   basis::OperatorBlocks<double> output_matrices;
@@ -450,10 +450,10 @@ void GenerateTargetM(
     RadialOperatorLabels radial_key{shell::RadialOperatorType::kR, radial_order};
     if (run_parameters.radial_operators.count(radial_key) == 0) {
       std::cerr << fmt::format(
-                      "ERROR: Missing radial matrix elements: {}^{:d} j0={:d} "
+                      "ERROR: Missing radial matrix elements: {}^{:d} J0={:d} "
                       "g0={:d} Tz0={:d}",
                       static_cast<char>(shell::RadialOperatorType::kR),
-                      radial_order, j0, g0, Tz0
+                      radial_order, J0, g0, Tz0
                       )
                 << std::endl;
       std::exit(EXIT_FAILURE);
@@ -494,14 +494,14 @@ void GenerateTargetWeak(
   )
 {
   assert((target.lambda == 0) || (target.lambda == 1));
-  int j0 = target.lambda;
+  int J0 = target.lambda;
   int g0 = 0;
   int Tz0 = +1;
 
   // construct output sectors
   basis::OrbitalSectorsLJPN output_sectors(
       run_parameters.space, run_parameters.space,
-      j0, g0, Tz0
+      J0, g0, Tz0
     );
   // declare output storage
   basis::OperatorBlocks<double> output_matrices;
@@ -510,9 +510,9 @@ void GenerateTargetWeak(
   IsospinOperatorLabels isospin_key{Tz0};
   if (run_parameters.isospin_operators.count(isospin_key) == 0) {
     std::cerr << fmt::format(
-                    "ERROR: Missing isospin matrix elements: j0={:d} "
+                    "ERROR: Missing isospin matrix elements: J0={:d} "
                     "g0={:d} Tz0={:d}",
-                    j0, g0, Tz0
+                    J0, g0, Tz0
                     )
               << std::endl;
     std::exit(EXIT_FAILURE);

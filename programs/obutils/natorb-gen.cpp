@@ -252,7 +252,7 @@ int main(int argc, const char *argv[]) {
   const basis::OrbitalSpaceLJPN output_space(output_orbitals);
   basis::OrbitalSectorsLJPN output_sectors(
       run_parameters.input_space, output_space, 0, 0, 0
-      // note hard-coded j0=0, g0, Tz0=0
+      // note hard-coded J0=0, g0, Tz0=0
     );
   shell::OutOBMEStream xs(
       run_parameters.output_xform_filename,

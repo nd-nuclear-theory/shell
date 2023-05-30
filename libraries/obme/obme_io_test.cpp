@@ -50,7 +50,7 @@ basis::OperatorBlocks<double> TestRadialOut(const std::string& filename, bool ve
   // print sectors
   std::cout << "Sectors" << std::endl;
   basis::OrbitalSectorsLJPN sectors(bra_space, ket_space, 2, 0, 0);
-  std::cout << "j0: "   << sectors.j0()
+  std::cout << "J0: "   << sectors.J0()
             << "g0: "   << sectors.g0()
             << " Tz0: " << sectors.Tz0()
             << std::endl;

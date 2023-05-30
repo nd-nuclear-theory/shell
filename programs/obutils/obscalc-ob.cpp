@@ -210,7 +210,7 @@ double CalculateMatrixElement(
   HalfInt M_bra = obdme_s.M_bra(), M_ket = obdme_s.M_ket();
   assert(IsInteger(M_bra-M_ket));
   int M0 = int(M_bra-M_ket);
-  int j0 = op.sectors.j0();
+  int J0 = op.sectors.J0();
   int g0 = op.sectors.g0();
   int Tz0 = op.sectors.Tz0();
 
@@ -219,19 +219,19 @@ double CalculateMatrixElement(
   if (obdme_s.Tz0() != Tz0) return double_NaN;
 
   // check for triangularity; return NaN if triangle-disallowed
-  if (!am::AllowedTriangle(J_bra, j0, J_ket)) return double_NaN;
+  if (!am::AllowedTriangle(J_bra, J0, J_ket)) return double_NaN;
 
   // check for Clebsch zero; return NaN if accidental zero
-  double cg_coeff = am::Wigner3J(J_bra, j0, J_ket, -M_bra, M0, M_ket);
+  double cg_coeff = am::Wigner3J(J_bra, J0, J_ket, -M_bra, M0, M_ket);
   if (std::abs(cg_coeff) < 1e-8) return double_NaN;
 
   // output NaN if obdmes missing
-  if ((j0 < obdme_s.j0_min()) || (j0 > obdme_s.j0_max())) return double_NaN;
+  if ((J0 < obdme_s.J0_min()) || (J0 > obdme_s.J0_max())) return double_NaN;
 
   // get necessary density sectors
   basis::OrbitalSectorsLJPN density_sectors;
   basis::OperatorBlocks<double> density_blocks;
-  obdme_s.GetMultipole(op.sectors.j0(), density_sectors, density_blocks);
+  obdme_s.GetMultipole(op.sectors.J0(), density_sectors, density_blocks);
 
   // loop and sum over \sum_{a,b} rho_{ab} T_{ab}
   double value = 0.;
@@ -257,7 +257,7 @@ double CalculateMatrixElement(
     }
   }
   // convert to Edmonds convention
-  value /= Hat(op.sectors.j0());
+  value /= Hat(op.sectors.J0());
   // store value for return
   return value;
 }
@@ -296,7 +296,7 @@ int main(int argc, char** argv) {
       ) << std::endl;
     section_stream << fmt::format(
         "  {:>3d} {:>3d} {:>3d}  {:s}",
-        op.sectors.j0(), op.sectors.g0(), op.sectors.Tz0(), op.name
+        op.sectors.J0(), op.sectors.g0(), op.sectors.Tz0(), op.name
       ) << std::endl;
     section_stream << fmt::format(
         "# {:>4} {:>3} {:>3}  {:>4} {:>3} {:>3}  {:>15s}",

@@ -41,7 +41,7 @@ void InOBMEStream::SetToIndexing(basis::OrbitalSpaceLJPN& bra_orbital_space__,
 
   // sectors -- must reconstruct sectors pointing to these new copies of the subspaces
   sectors__ = basis::OrbitalSectorsLJPN(bra_orbital_space__, ket_orbital_space__,
-                                        sectors().j0(), sectors().g0(), sectors().Tz0());
+                                        sectors().J0(), sectors().g0(), sectors().Tz0());
 }
 
 void InOBMEStream::Read(basis::OperatorBlocks<double>& matrices)
@@ -59,7 +59,7 @@ void InOBMEStream::ReadHeader()
   std::string line;
   int version;
   char operator_type;
-  int j0, g0, Tz0;
+  int J0, g0, Tz0;
   std::size_t num_orbitals_bra, num_orbitals_ket;
   basis::MFDnOrbitalFormat orbital_format;
 
@@ -88,7 +88,7 @@ void InOBMEStream::ReadHeader()
     mcutils::ParsingCheck(line_stream, line_count_, line);
     orbital_format = basis::MFDnOrbitalFormat::kVersion15099;
     assert(l0max==0);
-    j0 = 0;
+    J0 = 0;
     g0 = 0;
   }
   else if (version == 1)
@@ -106,7 +106,7 @@ void InOBMEStream::ReadHeader()
       operator_type_ = basis::OneBodyOperatorType::kRadial;
     }
 
-    // constraint mode, l0max or j0 and g0, Tz0
+    // constraint mode, l0max or J0 and g0, Tz0
     // WARNING: only l0max=0 is supported now, with implied g0=0
     {
       char constraint_mode;
@@ -119,10 +119,10 @@ void InOBMEStream::ReadHeader()
         int l0max;
         line_stream >> l0max >> Tz0;
         assert(l0max==0);
-        j0 = 0;
+        J0 = 0;
         g0 = 0;
       } else if (constraint_mode == 'S') {
-        line_stream >> j0 >> g0 >> Tz0;
+        line_stream >> J0 >> g0 >> Tz0;
       }
       mcutils::ParsingCheck(line_stream, line_count_, line);
     }
@@ -139,11 +139,11 @@ void InOBMEStream::ReadHeader()
   }
   else if (version == 2)
   {
-    // operator type, j0, g0, and Tz0
+    // operator type, J0, g0, and Tz0
     {
       mcutils::GetLine(stream(), line, line_count_);
       std::istringstream line_stream(line);
-      line_stream >> operator_type >> j0 >> g0 >> Tz0;
+      line_stream >> operator_type >> J0 >> g0 >> Tz0;
       operator_type_ = static_cast<basis::OneBodyOperatorType>(operator_type);
       mcutils::ParsingCheck(line_stream, line_count_, line);
     }
@@ -198,7 +198,7 @@ void InOBMEStream::ReadHeader()
   // set up indexing
   bra_orbital_space_ = basis::OrbitalSpaceLJPN(bra_orbitals);
   ket_orbital_space_ = basis::OrbitalSpaceLJPN(ket_orbitals);
-  sectors_ = basis::OrbitalSectorsLJPN(bra_orbital_space_, ket_orbital_space_, j0, g0, Tz0);
+  sectors_ = basis::OrbitalSectorsLJPN(bra_orbital_space_, ket_orbital_space_, J0, g0, Tz0);
 }
 
 Eigen::MatrixXd InOBMEStream::ReadNextSector()
@@ -273,7 +273,7 @@ void OutOBMEStream::WriteHeader()
   stream() << "# shell radial matrix elements file" << std::endl;
   stream() << "# version number 2" << std::endl;
   stream() << "# header lines:" << std::endl;
-  stream() << "#   type j0 g0 Tz0" << std::endl;
+  stream() << "#   type J0 g0 Tz0" << std::endl;
   stream() << "#   bra_basis_size ket_basis_size" << std::endl;
 
   // version number
@@ -282,7 +282,7 @@ void OutOBMEStream::WriteHeader()
 
   // operator info
   stream() << " " << static_cast<char>(operator_type())  //
-           << " " << sectors_.j0()   //
+           << " " << sectors_.J0()   //
            << " " << sectors_.g0()   //
            << " " << sectors_.Tz0()  //
            << std::endl;

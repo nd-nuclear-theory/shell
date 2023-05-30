@@ -27,7 +27,7 @@ namespace shell {
     )
   {
     bool allowed = true;
-    allowed &= am::AllowedTriangle(ket.j(), sectors.j0(), bra.j());
+    allowed &= am::AllowedTriangle(ket.j(), sectors.J0(), bra.j());
     allowed &= ((ket.g()+sectors.g0()+bra.g())%2 == 0);
     allowed &= (bra.Tz() == ket.Tz() + sectors.Tz0());
     return allowed;
@@ -47,7 +47,7 @@ namespace shell {
     )
   {
     // set up aliases
-    const int j0 = ob_sectors.j0();
+    const int J0 = ob_sectors.J0();
     const int g0 = ob_sectors.g0();
     const int Tz0 = ob_sectors.Tz0();
     const basis::TwoBodySubspaceJJJPN& bra_subspace = sector.bra_subspace();
@@ -59,7 +59,7 @@ namespace shell {
       basis::OperatorBlock<double>::Zero(bra_subspace_size, ket_subspace_size);
 
     // short circuit on triangle constraint
-    if (!am::AllowedTriangle(bra_subspace.J(), ket_subspace.J(), j0))
+    if (!am::AllowedTriangle(bra_subspace.J(), ket_subspace.J(), J0))
       return matrix;
 
     // build sector matrix
@@ -67,7 +67,7 @@ namespace shell {
       collapse(2)            \
       default(none),         \
       shared(                \
-        matrix, j0, g0, Tz0, \
+        matrix, J0, g0, Tz0, \
         bra_subspace, bra_subspace_size, ket_subspace, ket_subspace_size, \
         ob_orbital_space, ob_sectors, ob_matrices, sector, A \
         )
@@ -114,7 +114,7 @@ namespace shell {
         {
           matrix_element += phase
             * am::RacahReductionFactor1Rose(
-                  c.j(), d.j(), bra.J(), a.j(), b.j(), ket.J(), j0
+                  c.j(), d.j(), bra.J(), a.j(), b.j(), ket.J(), J0
                 )
             * matel_ca;
         }
@@ -122,7 +122,7 @@ namespace shell {
         {
           matrix_element += phase
             * am::RacahReductionFactor2Rose(
-                  c.j(), d.j(), bra.J(), a.j(), b.j(), ket.J(), j0
+                  c.j(), d.j(), bra.J(), a.j(), b.j(), ket.J(), J0
                 )
             * matel_db;
         }
@@ -133,7 +133,7 @@ namespace shell {
         {
           matrix_element += phase
             * am::RacahReductionFactor1Rose(
-                  c.j(), d.j(), bra.J(), b.j(), a.j(), ket.J(), j0
+                  c.j(), d.j(), bra.J(), b.j(), a.j(), ket.J(), J0
                 )
             * matel_cb;
         }
@@ -141,7 +141,7 @@ namespace shell {
         {
           matrix_element += phase
             * am::RacahReductionFactor2Rose(
-                  c.j(), d.j(), bra.J(), b.j(), a.j(), ket.J(), j0
+                  c.j(), d.j(), bra.J(), b.j(), a.j(), ket.J(), J0
                 )
             * matel_da;
         }
@@ -152,7 +152,7 @@ namespace shell {
         {
           matrix_element += phase
             * am::RacahReductionFactor1Rose(
-                  d.j(), c.j(), bra.J(), a.j(), b.j(), ket.J(), j0
+                  d.j(), c.j(), bra.J(), a.j(), b.j(), ket.J(), J0
                 )
             * matel_da;
         }
@@ -160,7 +160,7 @@ namespace shell {
         {
           matrix_element += phase
             * am::RacahReductionFactor2Rose(
-                  d.j(), c.j(), bra.J(), a.j(), b.j(), ket.J(), j0
+                  d.j(), c.j(), bra.J(), a.j(), b.j(), ket.J(), J0
                 )
             * matel_cb;
         }
@@ -171,7 +171,7 @@ namespace shell {
         {
           matrix_element += phase
             * am::RacahReductionFactor1Rose(
-                  d.j(), c.j(), bra.J(), b.j(), a.j(), ket.J(), j0
+                  d.j(), c.j(), bra.J(), b.j(), a.j(), ket.J(), J0
                 )
             * matel_db;
         }
@@ -179,7 +179,7 @@ namespace shell {
         {
           matrix_element += phase
             * am::RacahReductionFactor2Rose(
-                  d.j(), c.j(), bra.J(), b.j(), a.j(), ket.J(), j0
+                  d.j(), c.j(), bra.J(), b.j(), a.j(), ket.J(), J0
                 )
             * matel_ca;
         }
@@ -218,7 +218,7 @@ namespace shell {
     )
   {
     // sanity check on angular momenta
-    assert(am::AllowedTriangle(ob_sectors1.j0(), ob_sectors2.j0(), J0));
+    assert(am::AllowedTriangle(ob_sectors1.J0(), ob_sectors2.J0(), J0));
 
     const basis::TwoBodySubspaceJJJPN& bra_subspace = sector.bra_subspace();
     const std::size_t bra_subspace_size = bra_subspace.size();
@@ -314,7 +314,7 @@ namespace shell {
           am::RacahReductionFactor12Rose(
               c.j(), d.j(), bra.J(),
               a.j(), b.j(), ket.J(),
-              ob_sectors1.j0(), ob_sectors2.j0(), J0
+              ob_sectors1.J0(), ob_sectors2.J0(), J0
             );
         // factor_d2b_c1a =
         //   ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j())
@@ -327,16 +327,16 @@ namespace shell {
         matrix_element += 2 * factor_c1a_d2b * matel_d2b * matel_c1a;
 
 
-        if (ob_sectors1.j0() == ob_sectors2.j0())
+        if (ob_sectors1.J0() == ob_sectors2.J0())
           factor_d1b_c2a =
-            ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j()+ob_sectors1.j0()+ob_sectors2.j0()+J0)
+            ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j()+ob_sectors1.J0()+ob_sectors2.J0()+J0)
             * factor_c1a_d2b;
         else
           factor_d1b_c2a =
             am::RacahReductionFactor12Rose(
                 d.j(), c.j(), bra.J(),
                 b.j(), a.j(), ket.J(),
-                ob_sectors1.j0(), ob_sectors2.j0(), J0
+                ob_sectors1.J0(), ob_sectors2.J0(), J0
               );
         // factor_c2a_d1b =
         //   ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j())
@@ -354,7 +354,7 @@ namespace shell {
           am::RacahReductionFactor12Rose(
               c.j(), d.j(), bra.J(),
               b.j(), a.j(), ket.J(),
-              ob_sectors1.j0(), ob_sectors2.j0(), J0
+              ob_sectors1.J0(), ob_sectors2.J0(), J0
             );
         // factor_d2a_c1b =
         //   ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j())
@@ -368,16 +368,16 @@ namespace shell {
         matrix_element += -2 * ParitySign(ket.J()-a.j()-b.j()) * factor_c1b_d2a * matel_d2a * matel_c1b;
 
 
-        if (ob_sectors1.j0() == ob_sectors2.j0())
+        if (ob_sectors1.J0() == ob_sectors2.J0())
           factor_d1a_c2b =
-            ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j()+ob_sectors1.j0()+ob_sectors2.j0()+J0)
+            ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j()+ob_sectors1.J0()+ob_sectors2.J0()+J0)
             * factor_c1b_d2a;
         else
           factor_d1a_c2b =
             am::RacahReductionFactor12Rose(
                 d.j(), c.j(), bra.J(),
                 a.j(), b.j(), ket.J(),
-                ob_sectors1.j0(), ob_sectors2.j0(), J0
+                ob_sectors1.J0(), ob_sectors2.J0(), J0
               );
         // factor_c2b_d1a =
         //   ParitySign(bra.J()+c.j()+d.j()+ket.J()+a.j()+b.j())

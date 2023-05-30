@@ -18,7 +18,7 @@
         id = l|l2|s|s2|j|j2
       define-operator-target isospin <id> <output_filename>
         id = tz|t+|t-
-    define-radial-target <operator_type> <order> <j0> <g0> <tz0> <output_filename>
+    define-radial-target <operator_type> <order> <J0> <g0> <Tz0> <output_filename>
       operator_type = r|k
     define-xform-target <scale_factor> <bra_basis_type> <bra_orbital_file> <output_filename>
 
@@ -98,7 +98,7 @@ enum class OperationMode {
 std::unordered_map<std::string,std::tuple<shell::RadialOperatorType,int,int>>
 kKinematicOneBodyOperatorDefinitions =
   {
-    // {id, {operator type, order, j0}}
+    // {id, {operator type, order, J0}}
     {"identity", {shell::RadialOperatorType::kO, 0, 0}},
     {"r", {shell::RadialOperatorType::kR, 1, 1}},
     {"ik", {shell::RadialOperatorType::kK, 1, 1}},
@@ -153,9 +153,9 @@ struct OperatorParameters {
     am::AngularMomentumOperatorType am_operator_type;
   };
   int order;
-  int j0;
+  int J0;
   int g0;
-  int tz0;
+  int Tz0;
 };
 
 void PrintUsage(char** argv) { std::cout << "Usage: " << argv[0] << std::endl; }
@@ -217,11 +217,11 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
         if (!kKinematicOneBodyOperatorDefinitions.count(id))
           mcutils::ParsingError(line_count,line,"Unrecognized kinematic operator ID");
         parameters.mode = OperationMode::kKinematic;
-        std::tie(parameters.radial_operator_type, parameters.order, parameters.j0)
+        std::tie(parameters.radial_operator_type, parameters.order, parameters.J0)
           = kKinematicOneBodyOperatorDefinitions.at(id);
 
-        parameters.g0 = parameters.j0%2;
-        parameters.tz0 = 0;
+        parameters.g0 = parameters.J0%2;
+        parameters.Tz0 = 0;
       }
       else if (mode == "solid-harmonic")
       {
@@ -231,9 +231,9 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
 
         parameters.mode = OperationMode::kSolidHarmonic;
         parameters.radial_operator_type = shell::kCharCodeRadialOperatorType.at(id);
-        parameters.order = parameters.j0 = order;
-        parameters.g0 = parameters.j0%2;
-        parameters.tz0 = 0;
+        parameters.order = parameters.J0 = order;
+        parameters.g0 = parameters.J0%2;
+        parameters.Tz0 = 0;
       }
       else if (mode == "am")
       {
@@ -241,10 +241,10 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
         if (!kAngularMomentumOneBodyOperatorDefinitions.count(id))
           mcutils::ParsingError(line_count,line,"Unrecognized angular momentum operator ID");
         parameters.mode = OperationMode::kAngularMomentum;
-        std::tie(parameters.am_operator_type, parameters.order, parameters.j0)
+        std::tie(parameters.am_operator_type, parameters.order, parameters.J0)
           = kAngularMomentumOneBodyOperatorDefinitions.at(id);
         parameters.g0 = 0;
-        parameters.tz0 = 0;
+        parameters.Tz0 = 0;
       }
       else if (mode == "isospin")
       {
@@ -253,9 +253,9 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
         parameters.mode = OperationMode::kIsospin;
         parameters.radial_operator_type = shell::RadialOperatorType::kGeneric;
         parameters.order = 0;
-        parameters.j0 = 0;
+        parameters.J0 = 0;
         parameters.g0 = 0;
-        parameters.tz0 = kIsospinOneBodyOperatorDefinitions.at(id);
+        parameters.Tz0 = kIsospinOneBodyOperatorDefinitions.at(id);
       }
 
       line_stream >> parameters.output_filename;
@@ -266,7 +266,7 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
     }
     else if (keyword == "define-radial-target")
     {
-      // define-radial-target <operator_type> <order> <j0> <g0> <Tz0> <output_filename>
+      // define-radial-target <operator_type> <order> <J0> <g0> <Tz0> <output_filename>
       //   operator_type = r|k
       OperatorParameters parameters;
       std::string operator_type;
@@ -281,7 +281,7 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
 
       // get parameters from input line
       line_stream >> operator_type >> parameters.order
-                  >> parameters.j0 >> parameters.g0 >> parameters.tz0
+                  >> parameters.J0 >> parameters.g0 >> parameters.Tz0
                   >> parameters.output_filename;
       mcutils::ParsingCheck(line_stream, line_count, line);
 
@@ -301,9 +301,9 @@ void ReadParameters(std::vector<OperatorParameters>& operator_parameters)
       parameters.ket_basis_type = ket_basis_type;
       parameters.mode = OperationMode::kXform;
       parameters.order = 0;
-      parameters.j0 = 0;
+      parameters.J0 = 0;
       parameters.g0 = 0;
-      parameters.tz0 = 0;
+      parameters.Tz0 = 0;
 
       line_stream >> parameters.scale_factor
                   >> basis_type_str
@@ -337,8 +337,8 @@ void BuildOperator(OperatorParameters operator_parameters)
   basis::OrbitalSpaceLJPN bra_space(bra_input_orbitals);
   basis::OrbitalSpaceLJPN ket_space(ket_input_orbitals);
   basis::OrbitalSectorsLJPN sectors = basis::OrbitalSectorsLJPN(
-      bra_space, ket_space, operator_parameters.j0, operator_parameters.g0,
-      operator_parameters.tz0);
+      bra_space, ket_space, operator_parameters.J0, operator_parameters.g0,
+      operator_parameters.Tz0);
   basis::OperatorBlocks<double> matrices;
 
   // main control logic

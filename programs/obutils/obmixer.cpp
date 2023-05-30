@@ -27,10 +27,10 @@
         id = c+|c
       define-source solid-harmonic <id> <coordinate> <order> [orbital_filename]
         coordinate = r|ik
-      define-source input <id> <filename> <j0> <g0> <tz0>
+      define-source input <id> <filename> <J0> <g0> <Tz0>
       define-source linear-combination <id>
         add-source <id> <coefficient>
-      define-source tensor-product <id> <ob_factor_a_id> <ob_factor_b_id> <j0> [scale_factor]
+      define-source tensor-product <id> <ob_factor_a_id> <ob_factor_b_id> <J0> [scale_factor]
       define-source xform <id> <ob_source_id> <xform_id>
     define-target <id> <filename>
   @note Currently only computes operator/radial matrix elements between harmonic oscillator
@@ -342,11 +342,11 @@ struct OneBodyTensorProductChannel : public OneBodySourceChannel
   OneBodyTensorProductChannel(
       const std::string& id_,
       const std::string& factor_a_id_, const std::string& factor_b_id_,
-      int j0_, double scale_factor_
+      int J0_, double scale_factor_
     )
     : OneBodySourceChannel(id_),
       ob_factor_a_id(factor_a_id_), ob_factor_b_id(factor_b_id_),
-      j0(j0_), scale_factor(scale_factor_)
+      J0(J0_), scale_factor(scale_factor_)
   {}
 
   void ConstructOneBodyOperatorData(
@@ -357,7 +357,7 @@ struct OneBodyTensorProductChannel : public OneBodySourceChannel
 
   // construction
   std::string ob_factor_a_id, ob_factor_b_id;
-  int j0;
+  int J0;
   double scale_factor;
 };
 
@@ -544,13 +544,13 @@ void ReadParameters(
       else if (mode == "solid-harmonic")
       {
         std::string coordinate;
-        int operator_order, j0, g0, tz0=0;
-        line_stream >> coordinate >> operator_order >> j0;
+        int operator_order, J0, g0, Tz0=0;
+        line_stream >> coordinate >> operator_order >> J0;
         mcutils::ParsingCheck(line_stream,line_count,line);
 
         OperatorType operator_type = shell::kCharCodeRadialOperatorType.at(coordinate);
-        g0 = j0%2;
-        tz0 = 0;
+        g0 = J0%2;
+        Tz0 = 0;
         if (!line_stream.eof())
         {
           line_stream >> orbital_filename;
@@ -558,18 +558,18 @@ void ReadParameters(
         }
         one_body_channels.emplace_back(
             new OneBodyGeneratedChannel(
-                id, operator_type, operator_order, {j0,g0,tz0}, orbital_filename
+                id, operator_type, operator_order, {J0,g0,Tz0}, orbital_filename
               )
           );
       }
       else if (mode=="input")
       {
         std::string filename;
-        int j0, g0, tz0;
-        line_stream >> filename >> j0 >> g0 >> tz0;
+        int J0, g0, Tz0;
+        line_stream >> filename >> J0 >> g0 >> Tz0;
         mcutils::ParsingCheck(line_stream,line_count,line);
         one_body_channels.emplace_back(
-            new OneBodyInputChannel(id, filename, {j0, g0, tz0})
+            new OneBodyInputChannel(id, filename, {J0, g0, Tz0})
           );
       }
       else if (mode=="linear-combination")
@@ -583,9 +583,9 @@ void ReadParameters(
       else if (mode=="tensor-product")
       {
         std::string ob_factor_a_id, ob_factor_b_id;
-        int j0;
+        int J0;
         double scale_factor = 1.0;
-        line_stream >> ob_factor_a_id >> ob_factor_b_id >> j0;
+        line_stream >> ob_factor_a_id >> ob_factor_b_id >> J0;
         mcutils::ParsingCheck(line_stream,line_count,line);
         if (!line_stream.eof())
           {
@@ -595,7 +595,7 @@ void ReadParameters(
 
         one_body_channels.emplace_back(
             new OneBodyTensorProductChannel(
-                id, ob_factor_a_id, ob_factor_b_id, j0, scale_factor
+                id, ob_factor_a_id, ob_factor_b_id, J0, scale_factor
               )
           );
       }
@@ -676,7 +676,7 @@ void InitializeXforms(
         xform_data.ket_orbital_space,
         xform_data.sectors
       );
-    assert(xform_data.sectors.j0() == 0);
+    assert(xform_data.sectors.J0() == 0);
     assert(xform_data.sectors.g0() == 0);
     assert(xform_data.sectors.Tz0() == 0);
 
@@ -736,10 +736,10 @@ void OneBodyInputChannel::ConstructOneBodyOperatorData(
       operator_data.orbital_space, ket_orbital_space, operator_data.sectors
     );
   assert(operator_data.orbital_space.OrbitalInfo() == ket_orbital_space.OrbitalInfo());
-  auto& [j0, g0, tz0] = operator_qn;
-  assert(j0 == operator_data.sectors.j0());
+  auto& [J0, g0, Tz0] = operator_qn;
+  assert(J0 == operator_data.sectors.J0());
   assert(g0 == operator_data.sectors.g0());
-  assert(tz0 == operator_data.sectors.Tz0());
+  assert(Tz0 == operator_data.sectors.Tz0());
 
   // read matrices
   operator_stream.Read(operator_data.matrices);
@@ -792,10 +792,10 @@ void OneBodyGeneratedChannel::ConstructOneBodyOperatorData(
     basis::OrbitalPNList orbital_info = basis::ParseOrbitalPNStream(orbital_file,true);
     operator_data.orbital_space = basis::OrbitalSpaceLJPN(orbital_info);
   }
-  auto [j0, g0, tz0] = operator_qn;
+  auto [J0, g0, Tz0] = operator_qn;
   operator_data.sectors = basis::OrbitalSectorsLJPN(
       operator_data.orbital_space,
-      j0, g0, tz0
+      J0, g0, Tz0
     );
 
   if (id == "identity")
@@ -932,11 +932,11 @@ void OneBodyLinearCombinationChannel::ConstructOneBodyOperatorData(
         // copy indexing from first source
         {
           operator_data.orbital_space = source_data.orbital_space;
-          int j0 = source_data.sectors.j0();
+          int J0 = source_data.sectors.J0();
           int g0 = source_data.sectors.g0();
           int Tz0 = source_data.sectors.Tz0();
           operator_data.sectors = basis::OrbitalSectorsLJPN(
-              operator_data.orbital_space, j0, g0, Tz0
+              operator_data.orbital_space, J0, g0, Tz0
             );
           basis::SetOperatorToZero(operator_data.sectors, operator_data.matrices);
           first_term = false;
@@ -944,7 +944,7 @@ void OneBodyLinearCombinationChannel::ConstructOneBodyOperatorData(
       else
         // assert same quantum numbers for later terms
         {
-          assert(operator_data.sectors.j0() == source_data.sectors.j0());
+          assert(operator_data.sectors.J0() == source_data.sectors.J0());
           assert(operator_data.sectors.g0() == source_data.sectors.g0());
           assert(operator_data.sectors.Tz0() == source_data.sectors.Tz0());
         }
@@ -975,7 +975,7 @@ void OneBodyTensorProductChannel::ConstructOneBodyOperatorData(
   std::cout
     << fmt::format(
         "Generating one-body tensor product {} = [({})({})]_{}",
-        id, ob_factor_a_id, ob_factor_b_id, j0
+        id, ob_factor_a_id, ob_factor_b_id, J0
       )
     << std::endl;
   // construct new OneBodyOperatorData in-place
@@ -1008,11 +1008,11 @@ void OneBodyTensorProductChannel::ConstructOneBodyOperatorData(
   // construct new indexing
   assert(data_a.orbital_space.OrbitalInfo() == data_b.orbital_space.OrbitalInfo());
   operator_data.orbital_space = data_a.orbital_space;
-  assert(am::AllowedTriangle(data_a.sectors.j0(), data_b.sectors.j0(), j0));
+  assert(am::AllowedTriangle(data_a.sectors.J0(), data_b.sectors.J0(), J0));
   int g0 = (data_a.sectors.g0() + data_b.sectors.g0())%2;
-  int tz0 = data_a.sectors.Tz0() + data_b.sectors.Tz0();
+  int Tz0 = data_a.sectors.Tz0() + data_b.sectors.Tz0();
   operator_data.sectors = basis::OrbitalSectorsLJPN(
-      operator_data.orbital_space, j0, g0, tz0
+      operator_data.orbital_space, J0, g0, Tz0
     );
 
   shell::OneBodyOperatorTensorProduct(
@@ -1086,7 +1086,7 @@ void OneBodyXformChannel::ConstructOneBodyOperatorData(
   operator_data.orbital_space = xform_data.ket_orbital_space;
   operator_data.sectors = basis::OrbitalSectorsLJPN(
       xform_data.ket_orbital_space,
-      source_data.sectors.j0(), source_data.sectors.g0(), source_data.sectors.Tz0()
+      source_data.sectors.J0(), source_data.sectors.g0(), source_data.sectors.Tz0()
     );
 
   // perform transformation
@@ -1165,7 +1165,7 @@ void TargetChannel::WriteChannel(
     // new sectors to be written to file
     auto sectors = basis::OrbitalSectorsLJPN(
         run_parameters.orbital_space,
-        operator_data.sectors.j0(), operator_data.sectors.g0(), operator_data.sectors.Tz0()
+        operator_data.sectors.J0(), operator_data.sectors.g0(), operator_data.sectors.Tz0()
       );
     basis::OperatorBlocks<double> matrices;
 
