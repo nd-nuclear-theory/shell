@@ -74,5 +74,3 @@ CPPFLAGS += -DBASIS_HASH
 # spline submodule
 #   disable integration routines requiring later versions of gsl
 CPPFLAGS += -DSPLINE_NO_FANCY_INTEGRATION
-
-CPPFLAGS += -I$(EIGEN3_DIR)/include/eigen3
