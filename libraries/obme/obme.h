@@ -73,6 +73,10 @@ void LadderOneBodyOperator(
 // Generate reduced matrix elements of harmonic oscillator ladder operator
 // $c^\dagger$ or $\tilde{c}$.
 //
+// TODO mac (3/24/23): Docstring still says c-tilde, but underlying code
+// indicates c.  Confirm and document which it is.  These differ by a minus
+// sign.  See Appendix F.1 of intrinsic.
+//
 // RMEs are in Rose convention.
 //
 // Arguments:
