@@ -24,24 +24,24 @@ namespace shell {
 constexpr double k_sqrt_4pi = 3.54490770181103205459633496668229;
 
 void InOBDMEStream::GetMultipole(
-    int j0,
+    int J0,
     basis::OrbitalSectorsLJPN& out_sectors,
     basis::OperatorBlocks<double>& out_matrices
   ) const
 {
-  out_sectors = sectors(j0);
-  out_matrices = matrices(j0);
+  out_sectors = sectors(J0);
+  out_matrices = matrices(J0);
 }
 
 void InOBDMEStream::InitStorage()
 {
   // initialize storage
-  int num_multipoles = j0_max() - j0_min() + 1;
+  int num_multipoles = J0_max() - J0_min() + 1;
   sectors_.resize(num_multipoles);
   matrices_.resize(num_multipoles);
-  for (int j0 = j0_min(); j0 <= j0_max(); j0++) {
-    sectors(j0) = basis::OrbitalSectorsLJPN(orbital_space_, j0, g0_, Tz0_);
-    basis::SetOperatorToZero(sectors(j0), matrices(j0));
+  for (int J0 = J0_min(); J0 <= J0_max(); J0++) {
+    sectors(J0) = basis::OrbitalSectorsLJPN(orbital_space_, J0, g0(), Tz0());
+    basis::SetOperatorToZero(sectors(J0), matrices(J0));
   }
 }
 
@@ -52,9 +52,11 @@ InOBDMEStreamMulti::InOBDMEStreamMulti(
     const std::string& info_filename,
     const std::string& data_filename,
     const basis::OrbitalSpaceLJPN& orbital_space,
-    int g0, int Tz0
+    HalfInt J_bra, int g_bra, int n_bra,
+    HalfInt J_ket, int g_ket, int n_ket
   )
-  : info_filename_(info_filename), data_filename_(data_filename), InOBDMEStream(orbital_space, g0, Tz0)
+  : info_filename_(info_filename), data_filename_(data_filename),
+    InOBDMEStream(orbital_space, J_bra, g_bra, n_bra, J_ket, g_ket, n_ket)
 {
   std::ios_base::openmode mode_argument = std::ios_base::in;
 
@@ -67,7 +69,6 @@ InOBDMEStreamMulti::InOBDMEStreamMulti(
   ReadInfo();
 
   // read data
-  InitStorage();
   ReadData();
 
   // close info stream
@@ -81,8 +82,7 @@ void InOBDMEStreamMulti::ReadInfoHeader() {
 
   // line 1: version
   {
-    ++line_count_;
-    std::getline(info_stream(), line);
+    mcutils::GetLine(info_stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> version_number_;
     mcutils::ParsingCheck(line_stream, line_count_, line);
@@ -107,8 +107,7 @@ void InOBDMEStreamMulti::ReadInfoHeader1405() {
   // line 2: number of sp orbitals
   {
     std::size_t num_sp_orbitals;
-    ++line_count_;
-    std::getline(info_stream(), line);
+    mcutils::GetLine(info_stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> num_sp_orbitals;
     mcutils::ParsingCheck(line_stream, line_count_, line);
@@ -119,34 +118,23 @@ void InOBDMEStreamMulti::ReadInfoHeader1405() {
     assert(pn_space.GetSubspace(1).size() == num_sp_orbitals);
   }
 
-  // line 3: max j0 in multipole expansion
+  // line 3: max J0 in multipole expansion
   {
-    ++line_count_;
-    std::getline(info_stream(), line);
+    mcutils::GetLine(info_stream(), line, line_count_);
     std::istringstream line_stream(line);
-    line_stream >> j0_max_;
+    line_stream >> J0_max_;
     mcutils::ParsingCheck(line_stream, line_count_, line);
-    j0_min_ = 0;
+    J0_min_ = 0;
   }
 
   // line 4: number of OBDMEs per type
   {
-    ++line_count_;
-    std::getline(info_stream(), line);
+    mcutils::GetLine(info_stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> num_proton_obdme_;
     num_neutron_obdme_ = num_proton_obdme_;
     mcutils::ParsingCheck(line_stream, line_count_, line);
   }
-
-  // line 5-6: comment line
-  {
-    ++line_count_;
-    std::getline(info_stream(), line);
-    ++line_count_;
-    std::getline(info_stream(), line);
-  }
-
 }
 
 void InOBDMEStreamMulti::ReadInfoHeader1500() {
@@ -155,21 +143,19 @@ void InOBDMEStreamMulti::ReadInfoHeader1500() {
   // make sure we didn't get here by mistake
   assert(version_number_ == 1500);
 
-  // line 2: max j0 in multipole expansion
+  // line 2: max J0 in multipole expansion
   {
-    ++line_count_;
-    std::getline(info_stream(), line);
+    mcutils::GetLine(info_stream(), line, line_count_);
     std::istringstream line_stream(line);
-    line_stream >> j0_max_;
+    line_stream >> J0_max_;
     mcutils::ParsingCheck(line_stream, line_count_, line);
-    j0_min_ = 0;
+    J0_min_ = 0;
   }
 
   // line 3: number of p and n orbitals
   {
     std::size_t num_proton_orbitals, num_neutron_orbitals;
-    ++line_count_;
-    std::getline(info_stream(), line);
+    mcutils::GetLine(info_stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> num_proton_orbitals >> num_neutron_orbitals;
     mcutils::ParsingCheck(line_stream, line_count_, line);
@@ -182,8 +168,7 @@ void InOBDMEStreamMulti::ReadInfoHeader1500() {
 
   // line 4: number of p and n OBDMEs
   {
-    ++line_count_;
-    std::getline(info_stream(), line);
+    mcutils::GetLine(info_stream(), line, line_count_);
     std::istringstream line_stream(line);
     line_stream >> num_proton_obdme_ >> num_neutron_obdme_;
     mcutils::ParsingCheck(line_stream, line_count_, line);
@@ -217,18 +202,17 @@ void InOBDMEStreamMulti::ReadInfo1405() {
   // loop through lines and put them into obdme_info_
   for (std::size_t i=0; i < num_proton_obdme_; ++i) {
     std::string line;
-    int index, na, la, twoja, nb, lb, twojb, j0;
+    int index, na, la, twoja, nb, lb, twojb, J0;
 
-    ++line_count_;
-    std::getline(info_stream(), line);
+    mcutils::GetLine(info_stream(), line, line_count_);
     std::istringstream line_stream(line);
-    line_stream >> index >> na >> la >> twoja >> nb >> lb >> twojb >> j0;
+    line_stream >> index >> na >> la >> twoja >> nb >> lb >> twojb >> J0;
     mcutils::ParsingCheck(line_stream, line_count_, line);
 
     basis::FullOrbitalLabels orbital_a(basis::OrbitalSpeciesPN::kP, na, la, HalfInt(twoja,2));
     basis::FullOrbitalLabels orbital_b(basis::OrbitalSpeciesPN::kP, nb, lb, HalfInt(twojb,2));
 
-    obdme_info_.emplace_back(orbital_a, orbital_b, j0);
+    obdme_info_.emplace_back(orbital_a, orbital_b, J0);
   }
 
   // version 1405 only stores one set of info for both species
@@ -248,18 +232,17 @@ void InOBDMEStreamMulti::ReadInfo1500() {
   // loop through lines and put them into obdme_info_
   for (std::size_t i=0; i < num_proton_obdme_ + num_neutron_obdme_; ++i) {
     std::string line;
-    int index, ia, na, la, twoja, ib, nb, lb, twojb, j0, cls;
+    int index, ia, na, la, twoja, ib, nb, lb, twojb, J0, cls;
 
-    ++line_count_;
-    std::getline(info_stream(), line);
+    mcutils::GetLine(info_stream(), line, line_count_);
     std::istringstream line_stream(line);
-    line_stream >> index >> ia >> na >> la >> twoja >> ib >> nb >> lb >> twojb >> j0 >> cls;
+    line_stream >> index >> ia >> na >> la >> twoja >> ib >> nb >> lb >> twojb >> J0 >> cls;
     mcutils::ParsingCheck(line_stream, line_count_, line);
 
     basis::FullOrbitalLabels orbital_a(basis::OrbitalSpeciesPN(cls-1), na, la, HalfInt(twoja,2));
     basis::FullOrbitalLabels orbital_b(basis::OrbitalSpeciesPN(cls-1), nb, lb, HalfInt(twojb,2));
 
-    obdme_info_.emplace_back(orbital_a, orbital_b, j0);
+    obdme_info_.emplace_back(orbital_a, orbital_b, J0);
   }
 }
 
@@ -274,6 +257,9 @@ void InOBDMEStreamMulti::ReadData() {
 
   // read header
   ReadDataHeader(data_stream, data_line_count);
+
+  // initialize storage (after header read)
+  InitStorage();
 
   // extract data we want for this multipole
   for (const auto& info_line : obdme_info()) {
@@ -301,17 +287,14 @@ void InOBDMEStreamMulti::ReadData() {
   data_stream.close();
 }
 
-void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_line_count) const {
+void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_line_count)
+{
   std::string line;
-  std::size_t num_protons, num_neutrons;
-  int bra_seq, ket_seq, bra_n, ket_n;
-  HalfInt bra_J, ket_J, bra_T, ket_T;
   int version;
 
   // line 1: version
   {
-    ++data_line_count;
-    std::getline(data_stream, line);
+    mcutils::GetLine(data_stream, line, data_line_count);
     std::istringstream line_stream(line);
     line_stream >> version;
     mcutils::ParsingCheck(line_stream, data_line_count, line);
@@ -321,44 +304,46 @@ void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_li
   // line 2: number of particles per class
   // note: hard coded two classes -- I don't care about neutron matter right now
   {
-    ++data_line_count;
-    std::getline(data_stream, line);
+    mcutils::GetLine(data_stream, line, data_line_count);
     std::istringstream line_stream(line);
-    line_stream >> num_protons >> num_neutrons;
+    line_stream >> Z_bra_ >> N_bra_;
     mcutils::ParsingCheck(line_stream, data_line_count, line);
+    Z_ket_ = Z_bra();
+    N_ket_ = N_bra();
   }
 
   // line 3: MFDn quantum numbers for bra
   // note: currently ignored
   {
-    int bra_2J, bra_2T;
-    ++data_line_count;
-    std::getline(data_stream, line);
+    int TwiceM_bra__, TwiceJ_bra__, n_bra__, TwiceT_bra__;
+    mcutils::GetLine(data_stream, line, data_line_count);
     std::istringstream line_stream(line);
-    line_stream >> bra_seq >> bra_2J >> bra_n >> bra_2T;
+    line_stream >> TwiceM_bra__ >> TwiceJ_bra__ >> n_bra__ >> TwiceT_bra__;
     mcutils::ParsingCheck(line_stream, data_line_count, line);
-    bra_J = HalfInt(bra_2J, 2);
-    bra_T = HalfInt(bra_2T, 2);
+    M_bra_ = HalfInt(TwiceM_bra__,2);
+    assert(TwiceJ_bra__ == J_bra().TwiceValue());
+    assert(n_bra__ == n_bra());
+    T_bra_ = TwiceT_bra__/2.;
   }
 
   // line 4: MFDn quantum numbers for ket
   // note: currently ignored
   {
-    int ket_2J, ket_2T;
-    ++data_line_count;
-    std::getline(data_stream, line);
+    int TwiceM_ket__, TwiceJ_ket__, n_ket__, TwiceT_ket__;
+    mcutils::GetLine(data_stream, line, data_line_count);
     std::istringstream line_stream(line);
-    line_stream >> ket_seq >> ket_2J >> ket_n >> ket_2T;
+    line_stream >> TwiceM_ket__ >> TwiceJ_ket__ >> n_ket__ >> TwiceT_ket__;
     mcutils::ParsingCheck(line_stream, data_line_count, line);
-    ket_J = HalfInt(ket_2J, 2);
-    ket_T = HalfInt(ket_2T, 2);
+    M_ket_ = HalfInt(TwiceM_ket__,2);
+    assert(TwiceJ_ket__ == J_ket().TwiceValue());
+    assert(n_ket__ == n_ket());
+    T_ket_ = TwiceT_ket__/2.;
   }
 
   // line 5: number of OBDMEs
   if (version == 1405) {
     std::size_t num_proton_obdmes, num_neutron_obdmes;
-    ++data_line_count;
-    std::getline(data_stream, line);
+    mcutils::GetLine(data_stream, line, data_line_count);
     std::istringstream line_stream(line);
     line_stream >> num_proton_obdmes >> num_neutron_obdmes;
     mcutils::ParsingCheck(line_stream, data_line_count, line);
@@ -366,8 +351,7 @@ void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_li
     assert(num_neutron_obdmes == num_neutron_obdme_);
   } else if (version == 1500) {
     std::size_t num_obdmes;
-    ++data_line_count;
-    std::getline(data_stream, line);
+    mcutils::GetLine(data_stream, line, data_line_count);
     std::istringstream line_stream(line);
     line_stream >> num_obdmes;
     mcutils::ParsingCheck(line_stream, data_line_count, line);
@@ -382,9 +366,12 @@ void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_li
 ****************************************************************/
 InOBDMEStreamSingle::InOBDMEStreamSingle(
     const std::string& filename,
-    const basis::OrbitalSpaceLJPN& orbital_space
+    const basis::OrbitalSpaceLJPN& orbital_space,
+    HalfInt J_bra, int g_bra, int n_bra,
+    HalfInt J_ket, int g_ket, int n_ket
   )
-  : filename_(filename), InOBDMEStream(orbital_space)
+  : filename_(filename),
+    InOBDMEStream(orbital_space, J_bra, g_bra, n_bra, J_ket, g_ket, n_ket)
 {
   std::ios_base::openmode mode_argument = std::ios_base::in;
 
@@ -430,43 +417,47 @@ void InOBDMEStreamSingle::ReadHeader1520() {
 
   // line 2: bra quantum numbers
   {
-    int parity_bra;
+    int parity_bra__, TwiceM_bra__, TwiceJ_bra__, n_bra__;
     mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
-    line_stream >> Z_bra_ >> N_bra_ >> seq_bra_ >> TwiceJ_bra_ >> TwiceM_bra_
-                >> parity_bra >> n_bra_ >> T_bra_ >> E_bra_;
-    assert((parity_bra==+1)||(parity_bra==-1));
-    g_bra_ = (parity_bra==-1);
+    line_stream >> Z_bra_ >> N_bra_ >> seq_bra_ >> TwiceJ_bra__ >> TwiceM_bra__
+                >> parity_bra__ >> n_bra__ >> T_bra_ >> E_bra_;
+    M_bra_ = HalfInt(TwiceM_bra__,2);
+    assert(TwiceJ_bra__ == J_bra().TwiceValue());
+    assert((parity_bra__==+1)||(parity_bra__==-1));
+    assert(g_bra() == (parity_bra__==-1));
+    assert(n_bra__ == n_bra());
   }
 
   // line 3: ket quantum numbers
   {
-    int parity_ket;
+    int parity_ket__, TwiceM_ket__, TwiceJ_ket__, n_ket__;
     mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
-    line_stream >> Z_ket_ >> N_ket_ >> seq_ket_ >> TwiceJ_ket_ >> TwiceM_ket_
-                >> parity_ket >> n_ket_ >> T_ket_ >> E_ket_;
-    assert((parity_ket==+1)||(parity_ket==-1));
-    g_ket_ = (parity_ket==-1);
+    line_stream >> Z_ket_ >> N_ket_ >> seq_ket_ >> TwiceJ_ket__ >> TwiceM_ket__
+                >> parity_ket__ >> n_ket__ >> T_ket_ >> E_ket_;
+    M_ket_ = HalfInt(TwiceM_ket__,2);
+    assert(TwiceJ_ket__ == J_ket().TwiceValue());
+    assert((parity_ket__==+1)||(parity_ket__==-1));
+    assert(g_ket() == (parity_ket__==-1));
+    assert(n_ket__ == n_ket());
   }
 
-  g0_ = (g_bra()-g_ket())%2;
   assert((Tz_bra()-Tz_ket()).IsInteger());
-  Tz0_ = static_cast<int>(Tz_bra()-Tz_ket());
 
-  // line 4: min j0 in multipole expansion
+  // line 4: min J0 in multipole expansion
   {
     mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
-    line_stream >> j0_min_;
+    line_stream >> J0_min_;
     mcutils::ParsingCheck(line_stream, line_count_, line);
   }
 
-  // line 5: max j0 in multipole expansion
+  // line 5: max J0 in multipole expansion
   {
     mcutils::GetLine(stream(), line, line_count_);
     std::istringstream line_stream(line);
-    line_stream >> j0_max_;
+    line_stream >> J0_max_;
     mcutils::ParsingCheck(line_stream, line_count_, line);
   }
 
@@ -523,11 +514,11 @@ void InOBDMEStreamSingle::ReadData() {
 void InOBDMEStreamSingle::ReadData1520() {
   std::string line;
   while (!mcutils::GetLine(stream(), line, line_count_).eof()) {
-    int ia, ib, j0;
+    int ia, ib, J0;
     double matrix_element;
 
     std::istringstream line_stream(line);
-    line_stream >> ia >> ib >> j0 >> matrix_element;
+    line_stream >> ia >> ib >> J0 >> matrix_element;
     mcutils::ParsingCheck(line_stream, line_count_, line);
 
     // get location of matrix element
@@ -535,7 +526,7 @@ void InOBDMEStreamSingle::ReadData1520() {
     basis::FullOrbitalLabels orbital_b = orbital_list_.at(ib-1);
     std::size_t sector_index, bra_index, ket_index;
     std::tie(sector_index, bra_index, ket_index) = basis::MatrixElementIndicesLJPN(
-      orbital_space(), orbital_space(), sectors(j0), orbital_a, orbital_b
+      orbital_space(), orbital_space(), sectors(J0), orbital_a, orbital_b
     );
     assert(sector_index != basis::kNone);
     assert(bra_index != basis::kNone);
@@ -545,7 +536,7 @@ void InOBDMEStreamSingle::ReadData1520() {
     matrix_element /= Hat(std::get<3>(orbital_a));
 
     // store matrix element
-    matrices(j0)[sector_index](bra_index,ket_index) = matrix_element;
+    matrices(J0)[sector_index](bra_index,ket_index) = matrix_element;
   }
 
 }

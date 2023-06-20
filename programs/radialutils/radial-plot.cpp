@@ -35,6 +35,7 @@
 #include "basis/operator.h"
 #include "density/obdme_io.h"
 #include "mcutils/eigen.h"
+#include "mcutils/parsing.h"
 #include "obme/obme_io.h"
 #include "spline/wavefunction_basis.h"
 
@@ -168,9 +169,8 @@ int main(int argc, const char *argv[]) {
   xform_s.Close();
 
   // check that xform is valid
-  assert(xform_s.radial_operator_type() == shell::RadialOperatorType::kO);
   assert(xform_s.operator_type() == basis::OneBodyOperatorType::kRadial);
-  assert(sectors.j0() == 0);
+  assert(sectors.J0() == 0);
   assert(sectors.g0() == 0);
   assert(sectors.Tz0() == 0);
 

@@ -1,0 +1,5 @@
+set-ket-basis oscillator orbitals-Nmax06.dat
+define-operator-target kinematic rY 1 radial-me-r1-Nmax06.dat
+define-operator-target kinematic rY 2 radial-me-r2-Nmax06.dat
+define-operator-target kinematic r.r radial-me-r.r-Nmax06.dat
+define-xform-target 2.0 oscillator orbitals-Nmax06.dat olaps.dat

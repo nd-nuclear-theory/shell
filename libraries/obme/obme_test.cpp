@@ -21,7 +21,7 @@
 // test code
 ////////////////////////////////////////////////////////////////
 
-basis::OperatorBlocks<double> TestRadial(const std::string& filename, int j0, int g0, int order, bool verbose = false) {
+basis::OperatorBlocks<double> TestRadial(const std::string& filename, int J0, int g0, int order, bool verbose = false) {
   std::cout << "Radial matrix elements test" << std::endl;
 
   // set up space
@@ -32,8 +32,8 @@ basis::OperatorBlocks<double> TestRadial(const std::string& filename, int j0, in
 
   // print sectors
   std::cout << "Sectors" << std::endl;
-  basis::OrbitalSectorsLJPN sectors(space, space, j0, g0, 0);
-  std::cout << "j0: "   << sectors.j0()
+  basis::OrbitalSectorsLJPN sectors(space, space, J0, g0, 0);
+  std::cout << "J0: "   << sectors.J0()
             << "g0: "   << sectors.g0()
             << " Tz0: " << sectors.Tz0()
             << std::endl;
@@ -64,7 +64,7 @@ basis::OperatorBlocks<double> TestRadial(const std::string& filename, int j0, in
   return matrices;
 }
 
-basis::OperatorBlocks<double> TestOperator(const std::string& filename, int j0, int g0, int order, bool verbose = false) {
+basis::OperatorBlocks<double> TestOperator(const std::string& filename, int J0, int g0, int order, bool verbose = false) {
   std::cout << "One-body operator matrix elements test" << std::endl;
 
   // set up space
@@ -75,8 +75,8 @@ basis::OperatorBlocks<double> TestOperator(const std::string& filename, int j0, 
 
   // print sectors
   std::cout << "Sectors" << std::endl;
-  basis::OrbitalSectorsLJPN sectors(space, space, j0, g0, 0);
-  std::cout << "j0: "   << sectors.j0()
+  basis::OrbitalSectorsLJPN sectors(space, space, J0, g0, 0);
+  std::cout << "J0: "   << sectors.J0()
             << "g0: "   << sectors.g0()
             << " Tz0: " << sectors.Tz0()
             << std::endl;
@@ -119,7 +119,7 @@ basis::OperatorBlocks<double> TestProduct(const std::string& filename, bool verb
   // print sectors
   std::cout << "Sectors" << std::endl;
   basis::OrbitalSectorsLJPN sectors(space, space, 1, 1, 0);
-  std::cout << "j0: "   << sectors.j0()
+  std::cout << "J0: "   << sectors.J0()
             << "g0: "   << sectors.g0()
             << " Tz0: " << sectors.Tz0()
             << std::endl;
@@ -139,7 +139,7 @@ basis::OperatorBlocks<double> TestProduct(const std::string& filename, bool verb
   // print output sectors
   std::cout << "Sectors" << std::endl;
   basis::OrbitalSectorsLJPN output_sectors(space, space, 0, 0, 0);
-  std::cout << "j0: "   << output_sectors.j0()
+  std::cout << "J0: "   << output_sectors.J0()
             << "g0: "   << output_sectors.g0()
             << " Tz0: " << output_sectors.Tz0()
             << std::endl;

@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+title: shell
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Mark Anthony
+    family-names: Caprio
+    affiliation: University of Notre Dame
+    orcid: 'https://orcid.org/0000-0001-5138-3740'
+  - given-names: Patrick James
+    family-names: Fasano
+    email: pfasano@nd.edu
+    affiliation: University of Notre Dame
+    orcid: 'https://orcid.org/0000-0003-2457-4976'
+repository-code: 'https://github.com/nd-nuclear-theory/shell.git'
+license: MIT

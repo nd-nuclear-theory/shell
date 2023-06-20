@@ -14,6 +14,7 @@
   + 11/06/16 (pjf): Created, based on radial-gen.
   + 11/28/17 (pjf): Print header with version.
   + 07/27/18 (pjf): Rename "oscillator" truncation to "Nmax"
+  + 10/10/19 (pjf): Add "convert" mode.
 
 ******************************************************************************/
 
@@ -25,17 +26,23 @@
 #include <algorithm>
 
 #include "basis/nlj_orbital.h"
+#include "mcutils/io.h"
+#include "mcutils/parsing.h"
 
 ////////////////////////////////////////////////////////////////
 // process arguments
 /////////////////////////////////////////////////////////////////
 
-enum class TruncationMode {kNmax, kTriangular};
+enum class TruncationMode {kConvert, kNmax, kTriangular};
 
 // Stores simple parameters for run
 struct RunParameters {
   // filename
   std::string output_filename;
+  std::string input_filename;
+  // format
+  basis::MFDnOrbitalFormat input_format;
+  basis::MFDnOrbitalFormat output_format;
   // mode
   TruncationMode mode;
   double weight_max;
@@ -44,10 +51,17 @@ struct RunParameters {
 
   /** default constructor */
   RunParameters()
-    : output_filename(""), mode(TruncationMode::kNmax), weight_max(0), a(0), b(0) {}
+    : output_filename(""), input_filename(""),
+      input_format(basis::MFDnOrbitalFormat::kVersion15099),
+      output_format(basis::MFDnOrbitalFormat::kVersion15099),
+      mode(TruncationMode::kNmax), weight_max(0), a(0), b(0)
+  {}
 };
 
 void PrintUsage(const char **argv) {
+  std::cout << "Usage: " << argv[0]
+            << " --convert input_format input_file output_format output_file"
+            << std::endl;
   std::cout << "Usage: " << argv[0]
             << " --Nmax Nmax output_file"
             << std::endl;
@@ -70,7 +84,9 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
   // operation mode
   {
     std::istringstream parameter_stream(argv[arg++]);
-    if (parameter_stream.str() == "--Nmax") {
+    if (parameter_stream.str() == "--convert") {
+      run_parameters.mode = TruncationMode::kConvert;
+    } else if (parameter_stream.str() == "--Nmax") {
       run_parameters.mode = TruncationMode::kNmax;
     } else if (parameter_stream.str() == "--triangular") {
       run_parameters.mode = TruncationMode::kTriangular;
@@ -82,7 +98,55 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
   }
 
   // mode-specific options
-  if (run_parameters.mode == TruncationMode::kNmax) {
+  if (run_parameters.mode == TruncationMode::kConvert) {
+    if (argc-1 != 5)
+    {
+      PrintUsage(argv);
+      std::cerr << "Incorrect number of arguments." << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
+    // input format
+    {
+      std::istringstream parameter_stream(argv[arg++]);
+      int format_code;
+      parameter_stream >> format_code;
+      if (!parameter_stream) {
+        PrintUsage(argv);
+        std::cerr << "Invalid input format" << std::endl;
+        std::exit(EXIT_FAILURE);
+      }
+      run_parameters.input_format = static_cast<basis::MFDnOrbitalFormat>(format_code);
+    }
+
+    // input filename
+    {
+      std::istringstream parameter_stream(argv[arg++]);
+      parameter_stream >> run_parameters.input_filename;
+      if (!parameter_stream) {
+        PrintUsage(argv);
+        std::cerr << "Invalid input filename" << std::endl;
+        std::exit(EXIT_FAILURE);
+      }
+      mcutils::FileExistCheck(run_parameters.input_filename, true, false);
+    }
+
+    // output format
+    {
+      std::istringstream parameter_stream(argv[arg++]);
+      int format_code;
+      parameter_stream >> format_code;
+      if (!parameter_stream) {
+        PrintUsage(argv);
+        std::cerr << "Invalid output format" << std::endl;
+        std::exit(EXIT_FAILURE);
+      }
+      run_parameters.output_format = static_cast<basis::MFDnOrbitalFormat>(format_code);
+    }
+
+  }
+  else if (run_parameters.mode == TruncationMode::kNmax)
+  {
     // check number of arguments
     if (argc-1 != 3) {
       PrintUsage(argv);
@@ -152,7 +216,7 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
       std::cerr << "Invalid output filename." << std::endl;
       std::exit(EXIT_FAILURE);
     }
-    /** @todo check and warn if overwriting existing file */
+    mcutils::FileExistCheck(run_parameters.output_filename, false, true);
   }
 }
 
@@ -167,7 +231,13 @@ int main(int argc, const char *argv[]) {
   ProcessArguments(argc, argv, run_parameters);
   std::vector<basis::OrbitalPNInfo> orbitals;
 
-  if (run_parameters.mode == TruncationMode::kNmax) {
+  if (run_parameters.mode == TruncationMode::kConvert)
+  {
+    std::ifstream is(run_parameters.input_filename);
+    orbitals = basis::ParseOrbitalPNStream(is, true, run_parameters.input_format);
+    is.close();
+  }
+  else if (run_parameters.mode == TruncationMode::kNmax) {
     orbitals = basis::OrbitalSpacePN(static_cast<int>(run_parameters.weight_max)).OrbitalInfo();
   } else if (run_parameters.mode == TruncationMode::kTriangular) {
     double& a = run_parameters.a;
@@ -197,7 +267,7 @@ int main(int argc, const char *argv[]) {
   std::sort(orbitals.begin(), orbitals.end(), basis::OrbitalSortCmpWeight);
 
   std::ofstream os(run_parameters.output_filename);
-  os << basis::OrbitalDefinitionStr(orbitals, true);
+  os << basis::OrbitalDefinitionStr(orbitals, true, run_parameters.output_format);
 
   /* return code */
   return EXIT_SUCCESS;

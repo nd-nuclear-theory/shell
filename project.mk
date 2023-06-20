@@ -23,7 +23,7 @@ install_prefix := $(install_prefix)/shell
 ################
 
 modules += programs/radialutils programs/relutils programs/h2utils
-modules += programs/obscalc
+modules += programs/obutils
 
 # legacy programs -- DEPRECATED
 ##modules += programs/h2utils_legacy
@@ -32,8 +32,10 @@ modules += programs/obscalc
 # libraries
 ################
 
+modules += contrib/Daejeon16
 modules += libraries/relative libraries/moshinsky
 modules += libraries/tbme libraries/obme libraries/density libraries/analytic
+modules += libraries/quadrature
 
 # legacy libraries -- DEPRECATED
 ##modules += libraries/no libraries/legacy
@@ -53,6 +55,9 @@ extras :=
 ################################################################
 # additional project-specific make settings and rules
 ################################################################
+
+# contrib
+src_library_dir += ./libraries ./contrib
 
 # gsl
 LDLIBS += -lgsl

@@ -31,6 +31,7 @@
 #include "fmt/format.h"
 #include "basis/nlj_orbital.h"
 #include "basis/operator.h"
+#include "mcutils/parsing.h"
 #include "obme/obme_io.h"
 
 ////////////////////////////////////////////////////////////////
@@ -100,7 +101,7 @@ int main(int argc, const char *argv[]) {
 
   // check that xform is valid
   assert(xform_s.operator_type() == basis::OneBodyOperatorType::kRadial);
-  assert(sectors.j0() == 0);
+  assert(sectors.J0() == 0);
   assert(sectors.g0() == 0);
   assert(sectors.Tz0() == 0);
 

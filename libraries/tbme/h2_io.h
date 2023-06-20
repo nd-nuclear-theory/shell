@@ -48,6 +48,8 @@
     orbitals listed in version 15200 file.
   + 09/06/19 (pjf): Ensure (for version 15200) that orbital space weight maxes
     match two-body space truncation.
+  + 10/10/20 (pjf): Dramatically improve binary I/O performance by using
+    buffered reads and writes (sector-at-a-time I/O).
 ****************************************************************/
 
 #ifndef H2_IO_H_

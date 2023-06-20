@@ -25,7 +25,7 @@ void GenerateRadialOperator(
     basis::OperatorBlocks<double>& matrices)
 {
   // convenience variables
-  const int j0 = sectors.j0();
+  const int J0 = sectors.J0();
   const int g0 = sectors.g0();
   const int Tz0 = sectors.Tz0();
 
@@ -78,12 +78,12 @@ void GenerateRadialOperator(
           const int bra_N = 2 * bra_n + bra_l;
           const int ket_N = 2 * ket_n + ket_l;
           const int operator_sign = (operator_type == shell::RadialOperatorType::kK) ? -1 : +1;
-          if ((order == 1) && (j0 == 1) && (g0 == 1))
+          if ((order == 1) && (J0 == 1) && (g0 == 1))
           {
             matrix_element = analytic::CoordinateOscillatorMatrixElement(
                 bra_N, bra_l, ket_N, ket_l, operator_sign);
           }
-          else if (order == 2 && ((j0 == 0) || (j0 == 2)) && (g0 == 0))
+          else if (order == 2 && ((J0 == 0) || (J0 == 2)) && (g0 == 0))
           {
             matrix_element = analytic::CoordinateSqrOscillatorMatrixElement(
                 bra_N, bra_l, ket_N, ket_l, operator_sign);
@@ -119,7 +119,7 @@ void GenerateRadialOverlaps(
     const basis::OrbitalSectorsLJPN& sectors,
     basis::OperatorBlocks<double>& matrices)
 {
-  assert(sectors.j0() == 0);
+  assert(sectors.J0() == 0);
   assert(sectors.g0() == 0);
   assert(sectors.Tz0() == 0);
 
@@ -194,15 +194,15 @@ void ComposeRadialOperators(
     basis::OperatorBlocks<double>& matrices)
 {
   // convenience variables
-  const int& j0_a = sectors_a.j0();
+  const int& J0_a = sectors_a.J0();
   const int& g0_a = sectors_a.g0();
   const int& Tz0_a = sectors_a.Tz0();
 
-  const int& j0_b = sectors_b.j0();
+  const int& J0_b = sectors_b.J0();
   const int& g0_b = sectors_b.g0();
   const int& Tz0_b = sectors_b.Tz0();
 
-  const int& j0 = sectors.j0();
+  const int& J0 = sectors.J0();
   const int& g0 = sectors.g0();
   const int& Tz0 = sectors.Tz0();
 
@@ -250,7 +250,7 @@ void SimilarityTransformOperator(
     basis::OperatorBlocks<double>& output_matrices)
 {
   // ensure that sectors for xform are valid for an xform
-  assert(xform_sectors.j0() == 0);
+  assert(xform_sectors.J0() == 0);
   assert(xform_sectors.g0() == 0);
   assert(xform_sectors.Tz0() == 0);
 

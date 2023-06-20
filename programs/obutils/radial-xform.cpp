@@ -30,6 +30,7 @@
 
 #include "basis/nlj_operator.h"
 #include "basis/nlj_orbital.h"
+#include "mcutils/parsing.h"
 #include "mcutils/profiling.h"
 #include "obme/obme_io.h"
 #include "obme/radial.h"
@@ -181,7 +182,7 @@ int main(int argc, const char* argv[])
   basis::OrbitalSectorsLJPN target_sectors;
   target_sectors = basis::OrbitalSectorsLJPN(
       target_space, target_space,
-      source_sectors.j0(), source_sectors.g0(), source_sectors.Tz0());
+      source_sectors.J0(), source_sectors.g0(), source_sectors.Tz0());
 
   // Eigen initialization
   basis::OperatorBlocks<double> xform_matrices, source_matrices, target_matrices;

@@ -41,7 +41,7 @@ void SolidHarmonicOneBodyOperator(
 
     double angular_factor = am::LJCoupledSphericalHarmonicCRME(
         sector.bra_subspace().l(), sector.bra_subspace().j(),
-        sector.ket_subspace().l(), sector.ket_subspace().j(), sectors.j0());
+        sector.ket_subspace().l(), sector.ket_subspace().j(), sectors.J0());
     matrices[sector_index] *= angular_factor;
   }
 }
@@ -55,7 +55,7 @@ void LadderOneBodyOperator(
   )
 {
   // convenience variables
-  const int j0 = sectors.j0();
+  const int J0 = sectors.J0();
   const int g0 = sectors.g0();
   const int Tz0 = sectors.Tz0();
 
@@ -80,7 +80,7 @@ void LadderOneBodyOperator(
     // angular momentum factor
     double angular_factor = am::LJCoupledSphericalHarmonicCRME(
         sector.bra_subspace().l(), sector.bra_subspace().j(),
-        sector.ket_subspace().l(), sector.ket_subspace().j(), sectors.j0());
+        sector.ket_subspace().l(), sector.ket_subspace().j(), sectors.J0());
 
     // main loop
     #pragma omp parallel for collapse(2)
@@ -126,7 +126,7 @@ void AngularMomentumOneBodyOperator(
   )
 {
   // must have valid quantum numbers
-  assert(sectors.j0() == 1);
+  assert(sectors.J0() == 1);
   assert(sectors.g0() == 0);
   assert(sectors.Tz0() == 0);
   // initialize output matrices
@@ -178,7 +178,7 @@ void AngularMomentumSquaredOneBodyOperator(
     basis::OperatorBlocks<double>& matrices
   )
 {
-  assert(sectors.j0() == 0);
+  assert(sectors.J0() == 0);
   assert(sectors.g0() == 0);
   assert(sectors.Tz0() == 0);
   // initialize output matrices
@@ -217,12 +217,12 @@ void IsospinOneBodyOperator(
   )
 {
   // convenience variables
-  const int& j0 = sectors.j0();
+  const int& J0 = sectors.J0();
   const int& g0 = sectors.g0();
   const int& Tz0 = sectors.Tz0();
 
   // check for valid tensor character
-  assert(j0==0);
+  assert(J0==0);
   assert(g0==0);
 
   // initialize output matrices
@@ -250,20 +250,20 @@ void OneBodyOperatorTensorProduct(
     basis::OperatorBlocks<double>& matrices)
 {
   // convenience variables
-  const int& j0_a = sectors_a.j0();
+  const int& J0_a = sectors_a.J0();
   const int& g0_a = sectors_a.g0();
   const int& Tz0_a = sectors_a.Tz0();
 
-  const int& j0_b = sectors_b.j0();
+  const int& J0_b = sectors_b.J0();
   const int& g0_b = sectors_b.g0();
   const int& Tz0_b = sectors_b.Tz0();
 
-  const int& j0 = sectors.j0();
+  const int& J0 = sectors.J0();
   const int& g0 = sectors.g0();
   const int& Tz0 = sectors.Tz0();
 
   // check that this is a valid tensor product
-  assert(am::AllowedTriangle(sectors_a.j0(), sectors_b.j0(), j0));
+  assert(am::AllowedTriangle(sectors_a.J0(), sectors_b.J0(), J0));
   assert((sectors_a.g0() + sectors_b.g0() + g0) % 2 == 0);
   assert(sectors_a.Tz0() + sectors_b.Tz0() == Tz0);
 
@@ -294,7 +294,7 @@ void OneBodyOperatorTensorProduct(
             sectors_b.LookUpSectorIndex(inner_subspace_index, ket_subspace_index);
         const HalfInt inner_j = space.GetSubspace(inner_subspace_index).j();
         matrices[sector_index] +=
-            am::RacahReductionFactorRose(bra_j, ket_j, inner_j, j0_a, j0_b, j0)
+            am::RacahReductionFactorRose(bra_j, ket_j, inner_j, J0_a, J0_b, J0)
             * matrices_a[sector_index_a] * matrices_b[sector_index_b];
       }
     }
