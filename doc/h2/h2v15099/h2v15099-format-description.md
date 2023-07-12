@@ -9,7 +9,8 @@ Mark A. Caprio, Patrick J. Fasano
   + 04/07/19 (pjf): Typographical corrections.
   + 06/03/19 (pjf): Clarify that all labels are written for proton orbitals
     before labels for neutron orbitals.
-
+  + 07/12/23 (mac): Restore reference to csbasis for definition of NAS.
+  
 ----------------------------------------------------------------
 
 ## Text vs. binary ##
@@ -178,8 +179,9 @@ Syntax:
     This matrix element differs by a factor of J_bra-hat from the RME under the
     Edmonds (=Suhonen=Varshalovich) convention for the Wigner-Eckart theorem.
 
-    * The bra and ket in the RME are *normalized* antisymmetrized J-coupled
-      two-body states.
+    * The bra and ket in the RME are *normalized* antisymmetrized (NAS)
+      J-coupled two-body states (see Appendix C of csbasis [PRC 86, 034312
+      (2012), http://dx.doi.org/10.1103/PhysRevC.86.034312]).
 
 Example:
 

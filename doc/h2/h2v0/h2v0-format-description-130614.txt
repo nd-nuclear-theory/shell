@@ -1,4 +1,5 @@
 
+
 MFDn H2 data format notes
 Mark A. Caprio, 6/14/13
 
@@ -64,10 +65,10 @@ The type is indicated by the string literal (which, bizarrely enough,
 may actually be interpreted as a decimal integer!) 11 for pp, 12 for
 pn, or 22 for nn.
 
-In the like-nucleon case, note that the matrix element is the
-*normalized* antisymmetrized (NAS) matrix element, rather than the
-unnormalized matrix element (see appendix to csbasis [PRC 86, 034312
-(2012)]).
+In the like-nucleon case, note that the matrix element is the *normalized*
+antisymmetrized (NAS) matrix element, rather than the *unnormalized*
+antisymmetrized (AS) matrix element (see Appendix C of csbasis [PRC 86, 034312
+(2012), http://dx.doi.org/10.1103/PhysRevC.86.034312]).
 
 As a simple example, let us inspect the first few data lines in a file
 representing a very simple "interaction", namely, the identity
