@@ -16,3 +16,12 @@ clone the ndconfig repository, if you do not already have it:
 This is where you will also find the full installation instructions
 ("Installation instructions for ND nuclear theory projects using `ndconfig`") in
 `ndconfig/INSTALL.md`.
+
+Note: If you are planning on using `shell` together with `mfdn`, and running
+under the Notre Dame scripting in `mcscript-ncci`, then you may wish to start by
+looking at quickstart guide in the `mcscript-ncci` `docs` directory.  You can
+find it online here:
+
+  ~~~~~~~~~~~~~~~~
+  https://github.com/nd-nuclear-theory/mcscript-ncci/blob/master/docs/nd-mfdn-quickstart-guide.md
+  ~~~~~~~~~~~~~~~~
