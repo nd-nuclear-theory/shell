@@ -118,7 +118,7 @@ namespace moshinsky {
       const basis::RelativeCMSpaceLSJTN& relative_cm_lsjtn_space,
       std::array<basis::RelativeCMSectorsLSJTN,3>& relative_cm_lsjtn_component_sectors,
       std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_matrices,
-      bool verbose
+      bool verbose = false
     );
   // Construct relative-cm representation of operator in LSJTN basis,
   // from relative representation.
