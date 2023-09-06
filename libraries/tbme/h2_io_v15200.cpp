@@ -18,9 +18,9 @@ namespace shell {
     basis::OrbitalPNList orbitals;
 
     // header parameters
-    int J0, g0, Tz0;
+    int32_t J0, g0, Tz0;
     float wp, wn, wpp, wnn, wpn;
-    long int size_pp, size_nn, size_pn;
+    int64_t size_pp, size_nn, size_pn;
 
     if (h2_mode()==H2Mode::kText)
       {
