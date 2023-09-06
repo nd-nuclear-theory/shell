@@ -42,7 +42,7 @@
 #ifndef MOSHINSKY_XFORM_H_
 #define MOSHINSKY_XFORM_H_
 
-#include "eigen3/Eigen/Sparse"
+#include <Eigen/Sparse>
 
 #include "basis/lsjt_scheme.h"
 #include "basis/lsjt_operator.h"

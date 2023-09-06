@@ -12,7 +12,7 @@
 #include <iomanip>
 #include <cmath>
 
-#include "eigen3/Eigen/Core"
+#include <Eigen/Core>
 
 #include "density/obdme_io.h"
 #include "basis/nlj_operator.h"

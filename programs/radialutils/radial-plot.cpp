@@ -27,8 +27,8 @@
 #include <vector>
 #include <cmath>
 
-#include "eigen3/Eigen/Core"
-#include "eigen3/Eigen/Eigenvalues"
+#include <Eigen/Core>
+#include <Eigen/Eigenvalues>
 
 #include "am/halfint.h"
 #include "basis/nlj_orbital.h"

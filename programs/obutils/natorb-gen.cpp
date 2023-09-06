@@ -40,8 +40,8 @@
 #include <vector>
 #include <cmath>
 
-#include "eigen3/Eigen/Core"
-#include "eigen3/Eigen/Eigenvalues"
+#include <Eigen/Core>
+#include <Eigen/Eigenvalues>
 
 #include "basis/nlj_orbital.h"
 #include "density/obdme_io.h"

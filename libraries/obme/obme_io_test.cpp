@@ -13,7 +13,7 @@
 
 #include "obme/obme_io.h"
 
-#include "eigen3/Eigen/Core"
+#include <Eigen/Core>
 #include "basis/nlj_orbital.h"
 
 ////////////////////////////////////////////////////////////////

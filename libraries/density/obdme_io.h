@@ -50,7 +50,7 @@
 #include <fstream>
 #include <string>
 
-#include "eigen3/Eigen/Core"
+#include <Eigen/Core>
 
 #include "basis/operator.h"
 #include "basis/nlj_orbital.h"

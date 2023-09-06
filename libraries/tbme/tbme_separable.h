@@ -55,7 +55,7 @@
 #ifndef TBME_SEPARABLE_H_
 #define TBME_SEPARABLE_H_
 
-#include "eigen3/Eigen/Dense"
+#include <Eigen/Dense>
 
 #include "am/rme.h"
 #include "basis/jjjpn_scheme.h"

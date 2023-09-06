@@ -30,7 +30,7 @@
 #ifndef TBME_XFORM_H_
 #define TBME_XFORM_H_
 
-#include "eigen3/Eigen/Dense"
+#include <Eigen/Dense>
 
 #include "basis/jjjpn_scheme.h"
 #include "basis/operator.h"

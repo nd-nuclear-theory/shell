@@ -25,7 +25,7 @@
 #include <vector>
 #include <limits>
 
-#include "eigen3/Eigen/Dense"
+#include <Eigen/Dense>
 
 #include "basis/nlj_orbital.h"
 #include "basis/jjjpn_scheme.h"

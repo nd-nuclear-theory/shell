@@ -62,7 +62,7 @@
 #include <vector>
 #include <memory>
 
-#include "eigen3/Eigen/Core"
+#include <Eigen/Core>
 
 #include "basis/jjjpn_scheme.h"
 
