@@ -3,7 +3,7 @@
   h2stat.cpp -- generate statistics for MFDn H2 TBME file
 
   Syntax:
-    h2stat mode [mode] input_filename
+    h2stat [mode] input_filename
 
   Mark A. Caprio
   University of Notre Dame
