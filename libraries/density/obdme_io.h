@@ -39,6 +39,7 @@
     - Make InOBDMEStream a virtual base class.
     - Move common accessors into InOBDMEStream.
     - Require quantum numbers to construct stream.
+  + 10/12/23 (pjf): Fix normalization of OBDMEs.
 
 ****************************************************************/
 
