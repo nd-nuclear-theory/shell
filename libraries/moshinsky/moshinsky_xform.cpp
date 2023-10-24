@@ -810,17 +810,20 @@ namespace moshinsky {
     // to Tz, not for the expansion of the pn state in terms of T
     // states.
 
-    // coefficients of <T=0||A0||T=0> source RMEs
+    // coefficients of <T=0||A_0||T=0> source RMEs
     constexpr double kIsospinCoefficientTToTzForT0 = 1.;
 
-    // coefficients of <T=1||A1,Tz0||T=0> and vice versa source RMEs
+    // coefficients of <T=1||A_1||T=0> and vice versa source RMEs
+    //
+    //   i.e., contribution of <T=1||A_1||T=0> to <Tz_bra||A_Tz0||Tz_ket>,
+    //
     //  indexed by Tz0
     static const double kIsospinCoefficientTToTzForT10[2] = {1., 1.};
     static const double kIsospinCoefficientTToTzForT01[2] = {-sqrt(1/3.), sqrt(1/3.)};
 
     // coefficients of <T=1||...||T=1> source RMEs
     //
-    //   i.e., contribution of <T=1||A_T0||T=1> to <Tz_bra||A,Tz0||Tz_ket>,
+    //   i.e., contribution of <T=1||A_T0||T=1> to <Tz_bra||A_Tz0||Tz_ket>,
     //
     //   indexed by (Tz0,Tz_ket+1,T0),
     static const double kIsospinCoefficientsTToTzForT11[3][3][3] =
