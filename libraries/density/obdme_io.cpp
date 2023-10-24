@@ -277,8 +277,10 @@ void InOBDMEStreamMulti::ReadData() {
     // multiply by sqrt(4*pi) to fix MFDn bug
     temp_matrix_element *= k_sqrt_4pi;
 
-    // convert to Rose convention (divide by Hat(j_a))
-    temp_matrix_element /= Hat(std::get<3>(info_line.bra_labels));
+    // normalize coupled product of a^\dagger a
+    temp_matrix_element *= Hat(std::get<3>(info_line.bra_labels))/Hat(info_line.multipole);
+    // convert to Rose convention (divide by Hat(J_bra))
+    temp_matrix_element /= Hat(J_bra());
 
     // store matrix element
     matrices(info_line.multipole)[sector_index](bra_index,ket_index) = temp_matrix_element;
@@ -532,8 +534,10 @@ void InOBDMEStreamSingle::ReadData1520() {
     assert(bra_index != basis::kNone);
     assert(ket_index != basis::kNone);
 
-    // convert to Rose convention (divide by Hat(j_a))
-    matrix_element /= Hat(std::get<3>(orbital_a));
+    // normalize coupled product of a^\dagger a
+    matrix_element *= Hat(std::get<3>(orbital_a))/Hat(J0);
+    // convert to Rose convention (divide by Hat(J_bra))
+    matrix_element /= Hat(J_bra());
 
     // store matrix element
     matrices(J0)[sector_index](bra_index,ket_index) = matrix_element;

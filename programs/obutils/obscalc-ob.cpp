@@ -58,6 +58,7 @@
     - New output format to use simple listings rather than tables.
     - Reorder loops over operators and densities.
   + 08/14/20 (pjf): Add append mode to allow repeated calls to obscalc-ob.
+  + 10/12/23 (pjf): Fix for corrected normalization of OBDMEs.
 ******************************************************************************/
 
 #include <sys/stat.h>
@@ -245,19 +246,16 @@ double CalculateMatrixElement(
           sectors.LookUpSectorIndex(subspace_index_a, subspace_index_b);
       if (sector_index == basis::kNone) continue;
 
-      // dimension factor only present in Rose convention
-      double dimension_factor = double(2*subspace_a.j()+1);
-
       for (std::size_t state_index_a = 0; state_index_a < subspace_a.size(); ++state_index_a) {
         for (std::size_t state_index_b = 0; state_index_b < subspace_b.size(); ++state_index_b) {
-          value += dimension_factor * operator_blocks[sector_index](state_index_a, state_index_b)
+          value += operator_blocks[sector_index](state_index_a, state_index_b)
                   * density_blocks[sector_index](state_index_a, state_index_b);
         }
       }
     }
   }
   // convert to Edmonds convention
-  value /= Hat(op.sectors.J0());
+  value *= Hat(J_bra);
   // store value for return
   return value;
 }

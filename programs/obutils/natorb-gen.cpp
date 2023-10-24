@@ -234,12 +234,12 @@ int main(int argc, const char *argv[]) {
       );
     std::reverse(orbital_occupation_info.begin(), orbital_occupation_info.end());
     std::ofstream output_info_s(run_parameters.output_info_filename);
-    output_info_s << fmt::format("# {:>3s}  {:>3s}  {:>3s}  {:>3s}  {:>15s}\n",
-        "n", "l", "2j", "2tz", "occupation"
+    output_info_s << fmt::format("# {:>4s}  {:>4s}  {:>4s}  {:>4s}  {:>15s}\n",
+        "n", "l", "j", "tz", "occupation"
       );
     for (const auto& orbital : orbital_occupation_info) {
       output_info_s << fmt::format(
-          "  {:>3d}  {:>3d}  {:>3.1f}  {:>3.1f}  {:>15.8e}\n",
+          "  {:>4d}  {:>4d}  {:>4.1f}  {:>+4.1f}  {:>15.8e}\n",
           orbital.n, orbital.l, float(orbital.j),
           float(basis::kOrbitalSpeciesPNCodeTz[static_cast<int>(orbital.orbital_species)]),
           orbital.weight

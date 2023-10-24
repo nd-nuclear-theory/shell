@@ -38,10 +38,9 @@
   M. A. Caprio
   University of Notre Dame
 
-  2/12/16 (mac): Created from code in moshinsky_bracket_test.
-  7/4//16 (mac): Comment and namespace updates in restructuring of shell package.
-
-  Note: Currently broken due to deprecation of shell_indexing_nl.
+  02/12/16 (mac): Created from code in moshinsky_bracket_test.
+  07/04/16 (mac): Comment and namespace updates in restructuring of shell package.
+  07/18/23 (pjf): Rewrite for updated indexing.
 
 ******************************************************************************/
 
@@ -50,65 +49,46 @@
 #include <ostream>
 #include <iomanip>
 #include <algorithm>
+#include <fmt/format.h>
+#include <fmt/ranges.h>
 
-
-#include "shell/moshinsky_bracket.h"
-#include "shell/shell_indexing_nl.h"
+#include "moshinsky/moshinsky_bracket.h"
+#include "basis/lsjt_scheme.h"
 
 
 int main(int argc, char **argv)
 {
 
-  int N_max = 6;
+  auto relcm_space = basis::RelativeCMSpaceLSJTN(4);
+  auto twobody_space = basis::TwoBodySpaceLSJTN(basis::Rank::kOneBody, 2);
 
   // iterate over sectors
-  for (int N = 0; N <= N_max; N++)
-    for (int L = 0; L <= N; ++L)
+  for (const auto& relcm_subspace : relcm_space)
+  {
+    if (relcm_subspace.J() != 2) continue;
+    if (relcm_subspace.T() != 0) continue;
+    if (relcm_subspace.g() != 0) continue;
+    if (!twobody_space.ContainsSubspace(relcm_subspace.labels())) continue;
+    const auto& twobody_subspace = twobody_space.LookUpSubspace(relcm_subspace.labels());
+    fmt::print(
+      "{:}\n",
+      relcm_subspace.LabelStr()
+    );
+    for (const auto& relcm_state : relcm_subspace)
+      for(const auto& twobody_state : twobody_subspace)
       {
+        double bracket = moshinsky::MoshinskyBracket(
+            relcm_state.nr(), relcm_state.lr(), relcm_state.nc(), relcm_state.lc(),
+            twobody_state.n1(), twobody_state.l1(), twobody_state.n2(), twobody_state.l2(),
+            relcm_subspace.L()
+          );
 
-        //    // TwoBodySpaceNL enumeration from shell_indexing_nl.cpp:
-        //
-        //    for (int N1 = 0; N1 <= N; ++N1)
-        //      for (int l1 = (N1 % 2); l1 <= N1; l1 += 2)
-        //        {
-        //          int N2 = N - N1;
-        //          int p = (N2 + l1 + L) % 2;
-        //          int l2_min = abs(l1 - L) + p;
-        //          int l2_max = min(N2, l1 + L - p);
-        //          for (int l2 = l2_min; l2 <= l2_max; l2 += 2)
-        //            {
-        //              state.a1 = SPOrbitalNl(N1,l1);
-        //              state.a2 = SPOrbitalNl(N2,l2);
-        //              state.L = L;
-        //              state_set.push_back(state);
-        //            }
-        //        }
-
-
-        // define (N,L) space -- used for both bra and ket iteration
-        TwoBodyStateSetNl states = TwoBodySpaceNL(N,L);
-        std::size_t two_body_dim = states.size();
-
-        // tabulate brackets within space
-        for (std::size_t i_bra = 0; i_bra < two_body_dim; ++i_bra)
-          for (std::size_t i_ket = 0; i_ket < two_body_dim; ++i_ket)
-            {
-              TwoBodyStateNl bra = states[i_bra];
-              TwoBodyStateNl ket = states[i_ket];
-              double bracket = shell::MoshinskyBracket(bra,ket);
-
-              std::cout << std::setw(4) << bra.a1.GetN() << std::setw(4) << bra.a1.Getl()
-                        << std::setw(4) << bra.a2.GetN() << std::setw(4) << bra.a2.Getl()
-                        << std::setw(4) << ket.a1.GetN() << std::setw(4) << ket.a1.Getl()
-                        << std::setw(4) << ket.a2.GetN() << std::setw(4) << ket.a2.Getl()
-                        << std::setw(4) << L
-                        << std::scientific << std::setw(18) << std::setprecision(8)  << bracket
-                        << std::endl;
-
-            }
-
-          }
-
+        fmt::print(
+            "    {:}  {:} -> {:18.8e}\n",
+            relcm_state.labels(), twobody_state.labels(), bracket
+          );
+      }
+  }
   // termination
   return 0;
 }

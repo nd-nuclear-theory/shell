@@ -56,6 +56,7 @@
 #define H2_IO_H_
 
 #include <cstdlib>
+#include <array>
 #include <iostream>
 #include <fstream>
 #include <string>
