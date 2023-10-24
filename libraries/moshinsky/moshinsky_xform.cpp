@@ -820,7 +820,7 @@ namespace moshinsky {
 
     // coefficients of <T=1||...||T=1> source RMEs
     //
-    //   i.e., contribution of <T=1||A_T0,Tz0||T=1> to <Tz_bra||A||Tz_ket>,
+    //   i.e., contribution of <T=1||A_T0||T=1> to <Tz_bra||A,Tz0||Tz_ket>,
     //
     //   indexed by (Tz0,Tz_ket+1,T0),
     static const double kIsospinCoefficientsTToTzForT11[3][3][3] =
