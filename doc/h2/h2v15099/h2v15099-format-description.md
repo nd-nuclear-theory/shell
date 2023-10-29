@@ -24,9 +24,11 @@ should be used for production purposes with large-scale runs.
 The I/O routines in the shell project and MFDn assume that a file with extension
 `.dat` is in text format, and that a file with extension `.bin` is in binary format.
 
-The data stored in binary format are essentially identical.  We thus first
-describe the text format in detail, then, for binary format, we need only
-describe the technicalities of binary representation.
+The data stored in binary format are essentially identical (except that the
+quantum number labels on the matrix elements are omitted in binary format, for
+conciseness, since they can be deduced from the known ordering of the matrix
+elements).  We thus first describe the text format in detail.  Then, for binary
+format, we need only describe the technicalities of binary representation.
 
 ## File formatting: text ##
 
