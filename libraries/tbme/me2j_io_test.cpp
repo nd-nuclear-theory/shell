@@ -46,7 +46,7 @@ int main(int argc, char **argv)
     sectors,matrices,
     basis::NormalizationConversion::kNone
   );
-  std::string output_filename = "output.txt";
+  std::string output_filename = "TBME_TUD.int.txt";
   shell::WriteMe2jFile(space,sectors,matrices,output_filename);
 
   // exit

@@ -79,10 +79,10 @@ namespace shell {
   // notational definitions for me2j file modes
   //
   // Use of these arrays requires conversion of the Me2jMode to int.
-  extern const std::array<const char*,2> kMe2jModeDescription; // ({"text","binary"});
-  extern const std::array<const char*,2> kMe2jModeExtension; // ({"dat","bin","int"}); or "bin" vs not "bin"
+  // extern const std::array<const char*,2> kMe2jModeDescription; // ({"text","binary"});
+  // extern const std::array<const char*,2> kMe2jModeExtension; // ({"dat","bin","int"}); or "bin" vs not "bin"
 
-  Me2jMode DeducedIOMode(const std::string& filename);
+  Me2jMode DeducedIOModeMe2j(const std::string& filename);
   // Deduce me2j file mode from filename extension.
   //
   //   .dat: ascii format

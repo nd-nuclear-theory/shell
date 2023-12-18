@@ -28,10 +28,10 @@ namespace shell {
   ////////////////////////////////////////////////////////////////
 
 
-  const std::array<const char*,2> kMe2jModeDescription({"text","binary"});
-  const std::array<const char*,2> kMe2jModeExtension({".dat",".bin"});
+  // const std::array<const char*,2> kMe2jModeDescription({"text","binary"});
+  // const std::array<const char*,2> kMe2jModeExtension({".dat",".bin"});
 
-  Me2jMode DeducedIOMode(const std::string& filename)
+  Me2jMode DeducedIOModeMe2j(const std::string& filename)
   {
     if (filename.length() < 3 )
       {
@@ -60,7 +60,7 @@ namespace shell {
     int Nmax = space.N2max();
 
     // choose file format (text or binary)
-    Me2jMode me2j_mode = DeducedIOMode(filename);
+    Me2jMode me2j_mode = DeducedIOModeMe2j(filename);
     std::ios_base::openmode mode_argument;
     if (me2j_mode == Me2jMode::kText) {
       mode_argument = std::ios_base::in;
@@ -68,8 +68,14 @@ namespace shell {
       mode_argument = (std::ios_base::in | std::ios_base::binary);
     }
     std::ifstream is(filename.c_str(), mode_argument);
+    // skip header
     if (me2j_mode == Me2jMode::kText) { // only text files have a header line
       is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    } else {
+      double temp;
+      for (size_t i = 0; i < 5; i++) {
+        mcutils::ReadBinary<double>(is, temp);
+      }
     }
 
     // find array size for given Nmax
@@ -109,6 +115,7 @@ namespace shell {
           N_array[array_index] = N;
           l_array[array_index] = l;
           j_array[array_index] = j;
+          // std::cout << "N,l,j" << N << " " << l << " " << j << std::endl;
           array_index += 1;
         }
       }
@@ -134,7 +141,7 @@ namespace shell {
           HalfInt jc = j_array[c];
           int dmax = c;
           if (a == c) {
-            dmax == b;
+            dmax = b;
           }
           for (int d = 0; d <= dmax; d++) {
             int Nd = N_array[d];
@@ -160,7 +167,11 @@ namespace shell {
                   if (me2j_mode == Me2jMode::kText) {
                     is >> matrix_element;
                   } else {
+                    float temp_matrix_element;
+                    // mcutils::ReadBinary<float>(is, temp_matrix_element);
+                    // matrix_element = double(temp_matrix_element);
                     mcutils::ReadBinary<double>(is, matrix_element);
+                    // std::cout << matrix_element << std::endl;
                   }
                   // std::cout << matrix_element << std::endl;
                   // if (!is) {
@@ -223,7 +234,7 @@ namespace shell {
     int Nmax = space.N2max();
 
     // choose file format (text or binary)
-    Me2jMode me2j_mode = DeducedIOMode(filename);
+    Me2jMode me2j_mode = DeducedIOModeMe2j(filename);
     std::ios_base::openmode mode_argument;
     if (me2j_mode == Me2jMode::kText) {
       mode_argument = std::ios_base::out;
@@ -231,6 +242,9 @@ namespace shell {
       mode_argument = (std::ios_base::out | std::ios_base::binary);
     }
     std::ofstream os(filename.c_str(), mode_argument);
+    os.precision(7);
+    os << std::fixed;
+    os << std::setw(12);
     if (me2j_mode == Me2jMode::kText) { // only text files have a header line
       os << "written by me2j_io(basis)" << std::endl;
     }
@@ -279,6 +293,7 @@ namespace shell {
 
 
     // enumerate and go through all matrix elements related to me2j, then write to the file
+    int count=0;
     double matrix_element;
     for (int a = 0; a < array_size; a++) {
       int Na = N_array[a];
@@ -297,7 +312,7 @@ namespace shell {
           HalfInt jc = j_array[c];
           int dmax = c;
           if (a == c) {
-            dmax == b;
+            dmax = b;
           }
           for (int d = 0; d <= dmax; d++) {
             int Nd = N_array[d];
@@ -319,6 +334,7 @@ namespace shell {
             for (int J = Jmin; J <= Jmax; J++) {
               for (int T = 0; T <= 1; T++) {
                 for (int Tz = -T; Tz <= T; Tz++) {
+                  count++;
                   if (d <= b) {
                     matrix_element = basis::GetTwoBodyOperatorMatrixElementJJJTTz(
                       space,
@@ -343,7 +359,10 @@ namespace shell {
                   if ((int(ja+jb+jc+jd))%2==1) {
                     matrix_element *= -1;
                   }
-                  os << matrix_element;
+                  os << matrix_element << " ";
+                  if (count%10==0) {
+                    os << std::endl;
+                  }
                 }
               }
             }

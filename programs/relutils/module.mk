@@ -13,6 +13,8 @@ module_programs_cpp += relative-xform
 module_programs_cpp += moshinsky
 module_programs_cpp += pn2rel
 module_programs_cpp += TTz_T_TFilter
+module_programs_cpp += me2j_test_moshinsky
+module_programs_cpp += TFiltering_test_moshinsky
 
 # module_programs_f :=
 # module_generated :=
