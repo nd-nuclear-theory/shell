@@ -28,8 +28,8 @@
 
 ****************************************************************/
 
-#ifndef TBME_XFORM_H_
-#define TBME_XFORM_H_
+#ifndef TBME_RADIAL_XFORM_H_
+#define TBME_RADIAL_XFORM_H_
 
 #include "eigen3/Eigen/Dense"
 
