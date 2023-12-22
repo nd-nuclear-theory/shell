@@ -5,7 +5,7 @@ $(eval $(begin-module))
 ################################################################
 
 module_units_h :=
-module_units_cpp-h := oscillator_parameters h2_io me2j_io tbme_separable tbme_xform tbme_mapping
+module_units_cpp-h := oscillator_parameters h2_io me2j_io tbme_separable tbme_radial_xform tbme_mapping
 # module_units_f :=
 module_programs_cpp_test := tbme_separable_test tbme_mapping_test me2j_io_test
 ## module_programs_cpp += moshinsky_bracket_table

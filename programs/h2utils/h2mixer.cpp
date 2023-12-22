@@ -99,7 +99,7 @@
 #include "obme/radial.h"
 #include "tbme/h2_io.h"
 #include "tbme/tbme_separable.h"
-#include "tbme/tbme_xform.h"
+#include "tbme/tbme_radial_xform.h"
 #include "tbme/tbme_mapping.h"
 
 ////////////////////////////////////////////////////////////////

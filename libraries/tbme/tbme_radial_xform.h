@@ -1,5 +1,5 @@
 /****************************************************************
-  tbme_xform.h
+  tbme_radial_xform.h
 
   Carries out radial basis transformation on two-body matrix elements.
 
@@ -24,6 +24,7 @@
   + 10/20/18 (pjf): Generalize TwoBodyTransformedMatrix for
       nonscalar operators.
   + 05/09/19 (pjf): Use std::size_t for basis indices and sizes.
+  + 12/22/23 (zz/mac): Rename from tbme_xform to tbme_radial_xform.
 
 ****************************************************************/
 
