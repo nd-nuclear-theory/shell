@@ -49,6 +49,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <memory>
 #include <string>
 
 #include <Eigen/Core>
@@ -175,12 +176,6 @@ class InOBDMEStreamMulti : public InOBDMEStream {
     );
   // Construct a reader by parsing an info file.
 
-  // destructor
-  ~InOBDMEStreamMulti() {
-    if (info_stream_ptr_)
-      delete info_stream_ptr_;
-  }
-
  private:
   // info file data structure
   struct InfoLine {
@@ -218,7 +213,7 @@ class InOBDMEStreamMulti : public InOBDMEStream {
 
   // info file stream
   std::ifstream& info_stream() const {return *info_stream_ptr_;}  // alias for convenience
-  std::ifstream* info_stream_ptr_;
+  std::unique_ptr<std::ifstream> info_stream_ptr_;
   int line_count_;
 
   // info file header
@@ -254,12 +249,6 @@ class InOBDMEStreamSingle : public InOBDMEStream {
   double E_bra() const { return E_bra_; }
   double E_ket() const { return E_ket_; }
 
-  // destructor
-  ~InOBDMEStreamSingle() {
-    if (stream_ptr_)
-      delete stream_ptr_;
-  }
-
 private:
 
   // read info header
@@ -275,7 +264,7 @@ private:
 
   // file stream
   std::ifstream& stream() const {return *stream_ptr_;}  // alias for convenience
-  std::ifstream* stream_ptr_;
+  std::unique_ptr<std::ifstream> stream_ptr_;
   int line_count_;
 
   // file header

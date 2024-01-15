@@ -61,7 +61,7 @@ InOBDMEStreamMulti::InOBDMEStreamMulti(
   std::ios_base::openmode mode_argument = std::ios_base::in;
 
   // open info stream
-  info_stream_ptr_ = new std::ifstream(info_filename_, mode_argument);
+  info_stream_ptr_ = std::make_unique<std::ifstream>(info_filename_, mode_argument);
   mcutils::StreamCheck(bool(info_stream()),info_filename_,"Failure opening OBDME info file for input");
 
   // ingest the file
@@ -378,7 +378,7 @@ InOBDMEStreamSingle::InOBDMEStreamSingle(
   std::ios_base::openmode mode_argument = std::ios_base::in;
 
   // open info stream
-  stream_ptr_ = new std::ifstream(filename_, mode_argument);
+  stream_ptr_ = std::make_unique<std::ifstream>(filename_, mode_argument);
   mcutils::StreamCheck(bool(stream()),filename_,"Failure opening OBDME file for input");
 
   // ingest the file
