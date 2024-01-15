@@ -10,6 +10,7 @@ module_units_cpp-h :=
 module_programs_cpp := obmixer obscalc-ob ew-gen
 module_programs_cpp += orbital-gen natorb-gen
 module_programs_cpp += radial-gen radial-xform radial-compose
+module_programs_cpp += obsolve
 # module_programs_cpp_test := obdme-compare_test
 
 # module_programs_f :=
