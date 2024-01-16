@@ -47,6 +47,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <string>
 
 #include "am/am.h"
