@@ -12,7 +12,7 @@
   Input format:
 
     set-indexing <orbital_filename>
-    define-densities <J_bra> <g_bra> <n_bra> <J_ket> <g_ket> <n_ket> <robdme_filename> [robdme_info_filename]
+    define-densities [<J_bra> <g_bra> <n_bra> <J_ket> <g_ket> <n_ket>] <robdme_filename> [robdme_info_filename]
     set-output-filename <output_filename> <J0>
 
   Patrick J. Fasano
@@ -48,9 +48,9 @@ struct RunParameters {
   std::string orbital_filename;
   std::string input_filename;
   std::optional<std::string> input_info_filename;
-  HalfInt J_bra, J_ket;
-  int g_bra, g_ket;
-  int n_bra, n_ket;
+  std::optional<HalfInt> J_bra, J_ket;
+  std::optional<int> g_bra, g_ket;
+  std::optional<int> n_bra, n_ket;
   std::vector<std::tuple<std::string,int>> multipole_filenames;
 };
 
@@ -82,22 +82,31 @@ RunParameters ReadParameters() {
     }
     else if (keyword == "define-densities")
     {
+      int num_tokens = mcutils::TokenizeString(line).size();
       float J_bra, J_ket;
       int g_bra, n_bra, g_ket, n_ket;
       std::string robdme_filename, robdme_info_filename="";
-      line_stream >> J_bra >> g_bra >> n_bra >> J_ket >> g_ket >> n_ket >> robdme_filename;
+
+      if (num_tokens == 7+1 || num_tokens == 8+1)
+      {
+        line_stream >> J_bra >> g_bra >> n_bra >> J_ket >> g_ket >> n_ket;
+        mcutils::ParsingCheck(line_stream, line_count, line);
+
+        run_parameters.J_bra = HalfInt(2*J_bra,2);
+        run_parameters.g_bra = g_bra;
+        run_parameters.n_bra = n_bra;
+        run_parameters.J_ket = HalfInt(2*J_ket,2);
+        run_parameters.g_ket = g_ket;
+        run_parameters.n_ket = n_ket;
+      }
+
+      line_stream >> robdme_filename;
       mcutils::ParsingCheck(line_stream, line_count, line);
       mcutils::FileExistCheck(robdme_filename, true, false);
 
-      run_parameters.J_bra = HalfInt(2*J_bra,2);
-      run_parameters.g_bra = g_bra;
-      run_parameters.n_bra = n_bra;
-      run_parameters.J_ket = HalfInt(2*J_ket,2);
-      run_parameters.g_ket = g_ket;
-      run_parameters.n_ket = n_ket;
       run_parameters.input_filename = std::move(robdme_filename);
 
-      if (!line_stream.eof()) {
+      if (num_tokens == 2+1 || num_tokens == 8+1) {
         line_stream >> robdme_info_filename;
         mcutils::ParsingCheck(line_stream, line_count, line);
         mcutils::FileExistCheck(robdme_info_filename, true, false);
