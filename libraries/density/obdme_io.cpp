@@ -52,8 +52,8 @@ InOBDMEStreamMulti::InOBDMEStreamMulti(
     const std::string& info_filename,
     const std::string& data_filename,
     const basis::OrbitalSpaceLJPN& orbital_space,
-    HalfInt J_bra, int g_bra, int n_bra,
-    HalfInt J_ket, int g_ket, int n_ket
+    std::optional<HalfInt> J_bra, std::optional<int> g_bra, std::optional<int> n_bra,
+    std::optional<HalfInt> J_ket, std::optional<int> g_ket, std::optional<int> n_ket
   )
   : info_filename_(info_filename), data_filename_(data_filename),
     InOBDMEStream(orbital_space, J_bra, g_bra, n_bra, J_ket, g_ket, n_ket)
@@ -215,6 +215,9 @@ void InOBDMEStreamMulti::ReadInfo1405() {
     obdme_info_.emplace_back(orbital_a, orbital_b, J0);
   }
 
+  // deduce g0 from indexing
+  g0_ = (std::get<2>(obdme_info_.front().bra_labels)+std::get<2>(obdme_info_.front().bra_labels))%2;
+
   // version 1405 only stores one set of info for both species
   // run through and copy the InfoLines changing only the class
   for (std::size_t i=0; i < num_neutron_obdme_; ++i) {
@@ -244,6 +247,9 @@ void InOBDMEStreamMulti::ReadInfo1500() {
 
     obdme_info_.emplace_back(orbital_a, orbital_b, J0);
   }
+
+  // deduce g0 from indexing
+  g0_ = (std::get<2>(obdme_info_.front().bra_labels)+std::get<2>(obdme_info_.front().bra_labels))%2;
 }
 
 void InOBDMEStreamMulti::ReadData() {
@@ -315,7 +321,6 @@ void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_li
   }
 
   // line 3: MFDn quantum numbers for bra
-  // note: currently ignored
   {
     int TwiceM_bra__, TwiceJ_bra__, n_bra__, TwiceT_bra__;
     mcutils::GetLine(data_stream, line, data_line_count);
@@ -323,8 +328,16 @@ void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_li
     line_stream >> TwiceM_bra__ >> TwiceJ_bra__ >> n_bra__ >> TwiceT_bra__;
     mcutils::ParsingCheck(line_stream, data_line_count, line);
     M_bra_ = HalfInt(TwiceM_bra__,2);
-    assert(TwiceJ_bra__ == J_bra().TwiceValue());
-    assert(n_bra__ == n_bra());
+
+    if (J_bra_)
+      assert(TwiceJ_bra__ == J_bra().TwiceValue());
+    else
+      J_bra_ = HalfInt(TwiceJ_bra__,2);
+    if (n_bra_)
+      assert(n_bra__ == n_bra());
+    else
+      n_bra_ = n_bra__;
+
     T_bra_ = TwiceT_bra__/2.;
   }
 
@@ -337,8 +350,16 @@ void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_li
     line_stream >> TwiceM_ket__ >> TwiceJ_ket__ >> n_ket__ >> TwiceT_ket__;
     mcutils::ParsingCheck(line_stream, data_line_count, line);
     M_ket_ = HalfInt(TwiceM_ket__,2);
-    assert(TwiceJ_ket__ == J_ket().TwiceValue());
-    assert(n_ket__ == n_ket());
+
+    if (J_ket_)
+      assert(TwiceJ_ket__ == J_ket().TwiceValue());
+    else
+      J_ket_ = HalfInt(TwiceJ_ket__,2);
+    if (n_ket_)
+      assert(n_ket__ == n_ket());
+    else
+      n_ket_ = n_ket__;
+
     T_ket_ = TwiceT_ket__/2.;
   }
 
@@ -369,8 +390,8 @@ void InOBDMEStreamMulti::ReadDataHeader(std::ifstream& data_stream, int& data_li
 InOBDMEStreamSingle::InOBDMEStreamSingle(
     const std::string& filename,
     const basis::OrbitalSpaceLJPN& orbital_space,
-    HalfInt J_bra, int g_bra, int n_bra,
-    HalfInt J_ket, int g_ket, int n_ket
+    std::optional<HalfInt> J_bra, std::optional<int> g_bra, std::optional<int> n_bra,
+    std::optional<HalfInt> J_ket, std::optional<int> g_ket, std::optional<int> n_ket
   )
   : filename_(filename),
     InOBDMEStream(orbital_space, J_bra, g_bra, n_bra, J_ket, g_ket, n_ket)
@@ -424,11 +445,21 @@ void InOBDMEStreamSingle::ReadHeader1520() {
     std::istringstream line_stream(line);
     line_stream >> Z_bra_ >> N_bra_ >> seq_bra_ >> TwiceJ_bra__ >> TwiceM_bra__
                 >> parity_bra__ >> n_bra__ >> T_bra_ >> E_bra_;
-    M_bra_ = HalfInt(TwiceM_bra__,2);
-    assert(TwiceJ_bra__ == J_bra().TwiceValue());
     assert((parity_bra__==+1)||(parity_bra__==-1));
-    assert(g_bra() == (parity_bra__==-1));
-    assert(n_bra__ == n_bra());
+    M_bra_ = HalfInt(TwiceM_bra__,2);
+
+    if (J_bra_)
+      assert(TwiceJ_bra__ == J_bra().TwiceValue());
+    else
+      J_bra_ = HalfInt(TwiceJ_bra__,2);
+    if (n_bra_)
+      assert((parity_bra__==-1) == g_bra());
+    else
+      g_bra_ = (parity_bra__==-1);
+    if (n_bra_)
+      assert(n_bra__ == n_bra());
+    else
+      n_bra_ = n_bra__;
   }
 
   // line 3: ket quantum numbers
@@ -438,11 +469,20 @@ void InOBDMEStreamSingle::ReadHeader1520() {
     std::istringstream line_stream(line);
     line_stream >> Z_ket_ >> N_ket_ >> seq_ket_ >> TwiceJ_ket__ >> TwiceM_ket__
                 >> parity_ket__ >> n_ket__ >> T_ket_ >> E_ket_;
-    M_ket_ = HalfInt(TwiceM_ket__,2);
-    assert(TwiceJ_ket__ == J_ket().TwiceValue());
     assert((parity_ket__==+1)||(parity_ket__==-1));
-    assert(g_ket() == (parity_ket__==-1));
-    assert(n_ket__ == n_ket());
+    M_ket_ = HalfInt(TwiceM_ket__,2);
+    if (J_ket_)
+      assert(TwiceJ_ket__ == J_ket().TwiceValue());
+    else
+      J_ket_ = HalfInt(TwiceJ_ket__,2);
+    if (n_ket_)
+      assert((parity_ket__==-1) == g_ket());
+    else
+      g_ket_ = (parity_ket__==-1);
+    if (n_ket_)
+      assert(n_ket__ == n_ket());
+    else
+      n_ket_ = n_ket__;
   }
 
   assert((Tz_bra()-Tz_ket()).IsInteger());

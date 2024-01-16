@@ -78,24 +78,24 @@ class InOBDMEStream {
   int N_bra() const { return N_bra_; }
   int A_bra() const { return Z_bra_ + N_bra_; }
   HalfInt Tz_bra() const { return HalfInt(Z_bra_-N_bra_, 2); }
-  HalfInt J_bra() const { return J_bra_; }
+  HalfInt J_bra() const { return J_bra_.value(); }
   HalfInt M_bra() const { return M_bra_; }
-  int g_bra() const { return g_bra_; }
-  int n_bra() const { return n_bra_; }
+  int g_bra() const { return g_bra_.value(); }
+  int n_bra() const { return n_bra_.value(); }
   double T_bra() const { return T_bra_; }
 
   int Z_ket() const { return Z_ket_; }
   int N_ket() const { return N_ket_; }
   int A_ket() const { return Z_ket_ + N_ket_; }
   HalfInt Tz_ket() const { return HalfInt(Z_ket_-N_ket_, 2); }
-  HalfInt J_ket() const { return J_ket_; }
+  HalfInt J_ket() const { return J_ket_.value(); }
   HalfInt M_ket() const { return M_ket_; }
-  int g_ket() const { return g_ket_; }
-  int n_ket() const { return n_ket_; }
+  int g_ket() const { return g_ket_.value(); }
+  int n_ket() const { return n_ket_.value(); }
   double T_ket() const { return T_ket_; }
   int J0_min() const { return J0_min_; }
   int J0_max() const { return J0_max_; }
-  int g0()     const { return (g_bra_+g_ket_)%2; }
+  int g0()     const { return g0_ ? g0_.value() : (g_bra()+g_ket())%2; }
   int Tz0()    const { return int(Tz_bra()-Tz_ket());}
 
   // indexing accessors
@@ -114,8 +114,8 @@ class InOBDMEStream {
  protected:
   InOBDMEStream(
       const basis::OrbitalSpaceLJPN& orbital_space,
-      HalfInt J_bra, int g_bra, int n_bra,
-      HalfInt J_ket, int g_ket, int n_ket
+      std::optional<HalfInt> J_bra={}, std::optional<int> g_bra={}, std::optional<int> n_bra={},
+      std::optional<HalfInt> J_ket={}, std::optional<int> g_ket={}, std::optional<int> n_ket={}
     ) : orbital_space_(orbital_space),
         J_bra_(J_bra), g_bra_(g_bra), n_bra_(n_bra),
         J_ket_(J_ket), g_ket_(g_ket), n_ket_(n_ket)
@@ -123,6 +123,11 @@ class InOBDMEStream {
 
   // allocate and zero indexing and matrices
   void InitStorage();
+
+  // state quantum numbers
+  std::optional<HalfInt> J_bra_, J_ket_;
+  std::optional<int> g_bra_, g_ket_;
+  std::optional<int> n_bra_, n_ket_;
 
   // header quantum numbers (extracted from file)
   int Z_bra_, Z_ket_;
@@ -132,6 +137,7 @@ class InOBDMEStream {
   // indexing information
   basis::OrbitalSpaceLJPN orbital_space_;
   int J0_min_, J0_max_;
+  std::optional<int> g0_;
 
   // indexing accessors
   basis::OrbitalSectorsLJPN& sectors(int J0) {
@@ -145,11 +151,6 @@ class InOBDMEStream {
   }
 
  private:
-  // state quantum numbers
-  HalfInt J_bra_, J_ket_;
-  int g_bra_, g_ket_;
-  int n_bra_, n_ket_;
-
   // matrix element storage
   std::vector<basis::OrbitalSectorsLJPN> sectors_;
   std::vector<basis::OperatorBlocks<double>> matrices_;
@@ -171,8 +172,8 @@ class InOBDMEStreamMulti : public InOBDMEStream {
       const std::string& info_filename,
       const std::string& data_filename,
       const basis::OrbitalSpaceLJPN& orbital_space,
-      HalfInt J_bra, int g_bra, int n_bra,
-      HalfInt J_ket, int g_ket, int n_ket
+      std::optional<HalfInt> J_bra={}, std::optional<int> g_bra={}, std::optional<int> n_bra={},
+      std::optional<HalfInt> J_ket={}, std::optional<int> g_ket={}, std::optional<int> n_ket={}
     );
   // Construct a reader by parsing an info file.
 
@@ -240,8 +241,8 @@ class InOBDMEStreamSingle : public InOBDMEStream {
   InOBDMEStreamSingle(
       const std::string& filename,
       const basis::OrbitalSpaceLJPN& orbital_space,
-      HalfInt J_bra, int g_bra, int n_bra,
-      HalfInt J_ket, int g_ket, int n_ket
+      std::optional<HalfInt> J_bra={}, std::optional<int> g_bra={}, std::optional<int> n_bra={},
+      std::optional<HalfInt> J_ket={}, std::optional<int> g_ket={}, std::optional<int> n_ket={}
     );
   // Construct a reader by parsing an info file.
 
@@ -249,8 +250,7 @@ class InOBDMEStreamSingle : public InOBDMEStream {
   double E_bra() const { return E_bra_; }
   double E_ket() const { return E_ket_; }
 
-private:
-
+ private:
   // read info header
   void ReadHeader();
   void ReadHeader1520();
@@ -279,4 +279,4 @@ private:
 };
 
 };  // namespace shell
-#endif  // RADIAL_IO_H_
+#endif  // OBDME_IO_H_
