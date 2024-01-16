@@ -165,6 +165,9 @@ int main(int argc, const char *argv[]) {
   }
 
   auto output_file = fmt::output_file(run_parameters.output_filename);
+  output_file.print("# {:>4s}  {:>4s}  {:>4s}  {:>4s}  {:>15s}\n",
+      "n", "l", "j", "tz", "occupation"
+    );
   for (const auto& info : orbitals_info)
   {
     output_file.print(
