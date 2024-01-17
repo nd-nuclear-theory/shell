@@ -1,14 +1,38 @@
 /****************************************************************
   me2j_io.cpp
 
-  Mark A. Caprio
+  Zhou Zhou
   University of Notre Dame
 
 ****************************************************************/
 
+////////////////////////////////////////////////////////////////
+// two-body matrix elements ordering: translate between me2j and jjjttz orderings
+////////////////////////////////////////////////////////////////
+// ABCD (jjjt/jjjttz)
+// NA+NB<NC+ND
+// and if NA+NB==NC+ND
+// A<=B
+// C<=D
+// A<=C
+// if A==C, B<=D
+// ABCD are single particle indexes for labels of each single particle state
+//
+// ABCD (me2j)
+// B<=A
+// C<=A
+// if C==A, D<=B
+// else D<=C
+//
+// To match me2j into jjjttz ordering, the shortcut is to do:
+// if ND+NC<NB+NA or (ND+NC==NB+NA and D<=B), return DCBA
+// else, return BADC
+////////////////////////////////////////////////////////////////
+
 #include "tbme/me2j_io.h"
 
 #include <cstddef>
+#include <cstring>
 #include <limits>
 #include <iostream>
 #include <fstream>
@@ -26,10 +50,6 @@ namespace shell {
   ////////////////////////////////////////////////////////////////
   // file text/binary I/O mode identification
   ////////////////////////////////////////////////////////////////
-
-
-  // const std::array<const char*,2> kMe2jModeDescription({"text","binary"});
-  // const std::array<const char*,2> kMe2jModeExtension({".dat",".bin"});
 
   Me2jMode DeducedIOModeMe2j(const std::string& filename)
   {
@@ -72,10 +92,21 @@ namespace shell {
     if (me2j_mode == Me2jMode::kText) { // only text files have a header line
       is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     } else {
-      double temp;
-      for (size_t i = 0; i < 5; i++) {
-        mcutils::ReadBinary<double>(is, temp);
-      }
+      char header[255];
+      // for TUD (me2j-f2): the header consists of 255 bytes, all elements are float (based on menj 2.1.0)
+      mcutils::ReadBinary<char>(is, header, 255);
+      if(std::strstr(header,"me2j-f2-bin")==NULL) {
+           std::cout << "unrecognized me2j file header" << std::endl;
+           std::exit(EXIT_FAILURE);
+         }
+
+      // for PN binary me2j: the header consists of 40 bytes, all elements are double (based on the example from Livermore)
+      // double temp;
+      // for (size_t i = 0; i < 5; i++) {
+      //   mcutils::ReadBinary<double>(is, temp);
+      // }
+
+      // for miyagi me2j: no headers for me2j, and the matrix elements can be either float or double
     }
 
     // find array size for given Nmax
@@ -91,6 +122,8 @@ namespace shell {
           if (j < HalfInt(1,2)) {
             continue;
           }
+          // to look at labels
+          // std::cout << array_size << " " << N << " " << l << " " << int(j*2) << std::endl;
           array_size+=1;
         }
       }
@@ -168,9 +201,9 @@ namespace shell {
                     is >> matrix_element;
                   } else {
                     float temp_matrix_element;
-                    // mcutils::ReadBinary<float>(is, temp_matrix_element);
-                    // matrix_element = double(temp_matrix_element);
-                    mcutils::ReadBinary<double>(is, matrix_element);
+                    mcutils::ReadBinary<float>(is, temp_matrix_element);
+                    matrix_element = double(temp_matrix_element);
+                    // mcutils::ReadBinary<double>(is, matrix_element);
                     // std::cout << matrix_element << std::endl;
                   }
                   // std::cout << matrix_element << std::endl;
@@ -181,7 +214,8 @@ namespace shell {
                   if (int((ja+jb+jc+jd))%2==1) {
                     matrix_element *= -1;
                   }
-                  if (d <= b) {
+                  if ((Nc+Nd)<(Na+Nb) || ((Nc+Nd)==(Na+Nb) && d <= b)) {
+                    // to make the indexes ordered the same way as jjjttz_operator
                     basis::SetTwoBodyOperatorMatrixElementJJJTTz( // save as dcba in matrices
                       space,
                       basis::TwoBodySubspaceJJJTTz::SubspaceLabelsType(J,T,gcd,Tz),
@@ -191,8 +225,14 @@ namespace shell {
                       sectors,
                       matrices,
                       matrix_element
+                      // 0
                     );
                   } else {
+                    // int test=0;
+                    // if (a==10 && b==0 && c==1 && d==1) {
+                    //   test=1;
+                    //   std::cout << matrix_element << " " << J << " " << T << " " << gab << " " << Tz << std::endl;
+                    // }
                     basis::SetTwoBodyOperatorMatrixElementJJJTTz( // save as dcba in matrices
                       space,
                       basis::TwoBodySubspaceJJJTTz::SubspaceLabelsType(J,T,gab,Tz),
@@ -202,6 +242,7 @@ namespace shell {
                       sectors,
                       matrices,
                       matrix_element
+                      // test
                     );
                   }
                 }
@@ -211,7 +252,7 @@ namespace shell {
         }
       }
     }
-    std::cout << count << std::endl;
+    std::cout << "Number of read matrix elements: " << count << std::endl;
     is >> matrix_element;
     if (is) {
       std::cout << "reading less than there are in the file" << std::endl;
@@ -246,7 +287,13 @@ namespace shell {
     os << std::fixed;
     os << std::setw(12);
     if (me2j_mode == Me2jMode::kText) { // only text files have a header line
-      os << "written by me2j_io(basis)" << std::endl;
+      os << "(*** written by shell (https://github.com/nd-nuclear-theory/shell) ***)" << std::endl;
+    } else {
+      char header[255]="me2j-f2-bin";
+      memset(&header[sizeof("me2j-f2-bin")], '\0', 255-sizeof("me2j-f2-bin"));
+      header[254] = '\0';
+      // for TUD (me2j-f2): the header consists of 255 bytes, all elements are float (based on menj 2.1.0)
+      mcutils::WriteBinary<char>(os, header, 255);
     }
 
     // find array size for given Nmax
@@ -335,7 +382,7 @@ namespace shell {
               for (int T = 0; T <= 1; T++) {
                 for (int Tz = -T; Tz <= T; Tz++) {
                   count++;
-                  if (d <= b) {
+                  if ((Nc+Nd)<(Na+Nb) || ((Nc+Nd)==(Na+Nb) && d <= b)) {
                     matrix_element = basis::GetTwoBodyOperatorMatrixElementJJJTTz(
                       space,
                       basis::TwoBodySubspaceJJJTTz::SubspaceLabelsType(J,T,gcd,Tz),
@@ -355,13 +402,20 @@ namespace shell {
                       sectors,
                       matrices
                     );
+                    if (a==10 && b==0 && c==1 && d==1) {
+                      std::cout << matrix_element << " " << J << " " << T << " " << gab << " " << Tz << std::endl;
+                    }
                   }
                   if ((int(ja+jb+jc+jd))%2==1) {
                     matrix_element *= -1;
                   }
-                  os << matrix_element << " ";
-                  if (count%10==0) {
-                    os << std::endl;
+                  if (me2j_mode == Me2jMode::kText) {
+                    os << " " << std::setw(12) << matrix_element;
+                    if (count%10==0) {
+                      os << std::endl;
+                    }
+                  } else {
+                    mcutils::WriteBinary<float>(os, float(matrix_element));
                   }
                 }
               }
