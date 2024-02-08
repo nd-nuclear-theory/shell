@@ -1,5 +1,5 @@
 /****************************************************************
-  tbme_xform.cpp
+  tbme_radial_xform.cpp
 
   Mark A. Caprio
   University of Notre Dame
@@ -8,7 +8,7 @@
 
 #include "basis/nlj_operator.h"
 #include "fmt/format.h"  // for debugging
-#include "tbme/tbme_xform.h"
+#include "tbme/tbme_radial_xform.h"
 
 namespace shell {
   ////////////////////////////////////////////////////////////////
