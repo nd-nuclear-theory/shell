@@ -3,9 +3,41 @@
   xpn2h2.cpp -- convert BIGSTICK xpn to h2
 
   Syntax:
-    xpn2h2 h2_format N1max N2max sps_filename xpn_filename orbitals_filename h2_filename
+    + xpn2h2 orbital_filename input_filename output_filename
 
-    programs/h2utils/xpn2h2 15099 6 6 ${HOME}/data/xpn/runmac0493-JISP16-tb-6/ncci-tb-6.sps ${HOME}/data/xpn/runmac0493-JISP16-tb-6/JISP16-tb-6-20.int orbitals.dat JISP16-tb-6-20.dat
+    programs/h2utils/xpn2h2 ncci-tb-6.dat JISP16-tb-6-20.int JISP16-tb-6-20.dat
+
+  Assumed file format:
+
+    + header lines beginning with bang
+
+    + header (possibly wrapped over multiple lines):
+
+        num_me spe1 spe2 ...
+
+        num_me (int): number of matrix elements to follow
+        spe1, ... (float): single particle energies
+
+    + lines of form
+
+        a b c d J T ME
+
+        a, b, c, d (int): 1-based orbital indices; for pn matrix elements (ab)
+        and (cd) are in order proton-neutron
+
+        J (int): J
+
+        T (int): nominally isospin, but ignored
+
+        ME (float): matrix element
+
+  Limitations:
+    + Input single particle energies or one-body matrix elements are ignored.
+    + Output h2 format is fixed as Version 15099.
+
+  See Sec 4.3.2 "Proton-neutron and other isospin-breaking formats" in
+  C. W. Johnson et al., "BIGSTICK: A flexible configuration-interaction
+  shell-model code", arXiv:1801.08432.
 
   Mark A. Caprio
   University of Notre Dame
@@ -16,17 +48,10 @@
 
 #include <fstream>
 
-#include "basis/jjjt_operator.h"
-#include "basis/jjjpn_scheme.h"
-#include "basis/jjjpn_operator.h"
+#include "basis/operator.h"
 #include "mcutils/eigen.h"
 #include "mcutils/parsing.h"
-#include "mcutils/profiling.h"
 #include "tbme/h2_io.h"
-#include "tbme/me2j_io.h"
-#include "tbme/tbme_scheme_xform.h"
-
-#include "moshinsky/moshinsky_xform.h"
 
 ////////////////////////////////////////////////////////////////
 // process arguments
@@ -36,80 +61,59 @@ struct RunParameters
 // Stores simple parameters for run
 {
   // filenames
-  std::string sps_filename;
-  std::string xpn_filename;
-  std::string orbitals_filename;
-  std::string h2_filename;
-  // mode
-  shell::H2Format output_h2_format;
-  // truncation
-  basis::WeightMax weight_max;
+  std::string orbital_filename;
+  std::string input_filename;
+  std::string output_filename;
+  // format
+  shell::H2Format output_format;
+  
+  // default constructor
+  RunParameters()
+    : orbital_filename(""), output_filename(""), input_filename(""),
+      output_format(shell::kVersion15099)
+  {}
 };
 
-void ProcessArguments(int argc, char **argv, RunParameters& run_parameters)
+void PrintUsage(const char **argv) {
+  std::cout << "Usage: " << argv[0]
+            << " orbital_file input_file output_file"
+            << std::endl;
+}
+
+void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameters)
 {
   // usage message
-  if (argc-1 < 7)
+  if (argc-1 < 3)
     {
-      std::cout << "Syntax: xpn2h2 h2_format N1max N2max sps_filename xpn_filename orbitals_filename h2_filename" << std::endl;
+      PrintUsage(argv);
       std::exit(EXIT_SUCCESS);
     }
 
-  // format
-  {
-    std::istringstream parameter_stream(argv[1]);
-    parameter_stream >> run_parameters.output_h2_format;
-    if (!parameter_stream)
-      {
-        std::cerr << "Expecting numeric value for H2 format argument" << std::endl;
-        std::exit(EXIT_FAILURE);
-      }
-  }
+  // orbital filename
+  run_parameters.orbital_filename = argv[1];
+  mcutils::FileExistCheck(run_parameters.orbital_filename, true, false);
 
-  // truncation
-  int N1max, N2max;
-  {
-    std::istringstream parameter_stream(argv[2]);
-    parameter_stream >> N1max;
-    if (!parameter_stream)
-      {
-        std::cerr << "Expecting numeric value for N1max argument" << std::endl;
-        std::exit(EXIT_FAILURE);
-      }
-  }
-  {
-    std::istringstream parameter_stream(argv[3]);
-    parameter_stream >> N2max;
-    if (!parameter_stream)
-      {
-        std::cerr << "Expecting numeric value for N2max argument" << std::endl;
-        std::exit(EXIT_FAILURE);
-      }
-  }
-  run_parameters.weight_max = basis::WeightMax(N1max, N2max);
+  // input filename
+  run_parameters.input_filename = argv[2];
+  mcutils::FileExistCheck(run_parameters.input_filename, true, false);
 
-
-  // input sps filename
-  run_parameters.sps_filename = argv[4];
-
-  // input xpn filename
-  run_parameters.xpn_filename = argv[5];
-
-  // output orbitals filename
-  run_parameters.orbitals_filename = argv[6];
-
-  // output h2 filename
-  run_parameters.h2_filename = argv[7];
+  // output filename
+  run_parameters.output_filename = argv[3];
   
 }
 
-basis::OrbitalSpacePN ReadOrbitals(const std::string& filename)
-// Read BIGSTICK sps file for single-particle space.
-//
-// See Sec 4.2 "Defining the model space" of Johnson arXiv:1801.08432.
+struct XPNTBMEDatum
+// Stores raw data from XPN file me data line
+{
+  int a, b, c, d, J, T;
+  double me;
+};
+
+std::vector<XPNTBMEDatum> ReadXPNFile(const std::string& filename, int num_orbitals)
+// Read raw BIGSTICK xpn file tbme data.
 {
 
-  // open sps file
+  // open xpn file
   std::ifstream is(filename);
   if (!is)
     {
@@ -121,66 +125,66 @@ basis::OrbitalSpacePN ReadOrbitals(const std::string& filename)
   std::string line;
   int line_count = 0;
 
-  // parse header
-  // line 1: mode
-  // Only "iso" mode supported.
-  {
-    mcutils::GetLine(is,line,line_count);
-    std::istringstream line_stream(line);
-    std::string mode;
-    line_stream >> mode;
-    mcutils::ParsingCheck(line_stream,line_count,line);
-    assert(mode=="iso");
-  }
+  // data
+  int num_mes;
+  std::vector<XPNTBMEDatum> tbme_data;
+  
+  // progress flags
+  bool have_read_num_mes = false;
+  int num_spes_read = 0;
+  bool have_read_spes = false;
+  int num_mes_read = 0;
+  bool have_read_mes = false;
 
-  // line 2: number of orbitals (same for p and n)
-  int num_orbitals;
-  {
-    mcutils::GetLine(is,line,line_count);
-    std::istringstream line_stream(line);
-    std::string mode;
-    line_stream >> num_orbitals;
-    mcutils::ParsingCheck(line_stream,line_count,line);
-    assert(num_orbitals>0);
-  }
-
-  // read in orbital info
-  basis::OrbitalPNList states;
-  for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
+  while (!have_read_mes)
     {
+
+      // get line
       mcutils::GetLine(is,line,line_count);
       std::istringstream line_stream(line);
-      std::string mode;
-      float n_raw, l_raw, j_raw, w_raw;
-      line_stream >> n_raw >> l_raw >> j_raw >> w_raw;
-      mcutils::ParsingCheck(line_stream,line_count,line);
-      //std::cout << fmt::format("{} {} {} {}", n_raw, l_raw, j_raw, w_raw) << std::endl;
+      // std::cout << line_count << ": " << line << std::endl;
+      
+      // skip comment line
+      if (line[0]=='!')
+        continue;
 
-      // convert orbital parameters
-      int n = int(n_raw);
-      int l = int(l_raw);
-      HalfInt j = HalfInt(2*j_raw, 2);
-      float weight = w_raw;
-
-      // store as proton orbital
-      basis::OrbitalPNInfo proton_orbital(basis::OrbitalSpeciesPN::kP, n, l, j, weight);
-      states.push_back(proton_orbital);
+      // read header
+      if (!have_read_spes)
+        {
+          if (!have_read_num_mes)
+            {
+              line_stream >> num_mes;
+              mcutils::ParsingCheck(line_stream,line_count,line);
+              have_read_num_mes = true;
+            }
+          while (!have_read_spes && !line_stream.eof())
+            {
+              double spe;
+              line_stream >> spe;
+              mcutils::ParsingCheck(line_stream,line_count,line);
+              ++num_spes_read;
+              have_read_spes = num_spes_read == num_orbitals;
+            }
+        }
+      //read mes
+      else
+        {
+          XPNTBMEDatum datum;
+          line_stream >> datum.a >> datum.b >> datum.c >> datum.d
+                      >> datum.J >> datum.T
+                      >> datum.me;
+          mcutils::ParsingCheck(line_stream,line_count,line);
+          tbme_data.push_back(datum);
+          ++num_mes_read;
+          have_read_mes = num_mes_read == num_mes;
+          // std::cout << "  read me: " << num_mes_read << " of " << num_mes << std::endl;
+        }
     }
-  
-  // append identical list of neutron orbitals
-  for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
-    {
-      const basis::OrbitalPNInfo& proton_orbital = states[orbital_index];
-      basis::OrbitalPNInfo neutron_orbital(basis::OrbitalSpeciesPN::kN, proton_orbital.n, proton_orbital.l, proton_orbital.j, proton_orbital.weight);
-      states.push_back(neutron_orbital);
-    }
-  basis::OrbitalSpacePN orbital_space(states);
 
-  return orbital_space;
+  return tbme_data;
 }
 
-
-int main(int argc, char **argv)
+int main(int argc, const char *argv[])
 {
   // header
   std::cout << std::endl;
@@ -192,13 +196,18 @@ int main(int argc, char **argv)
   RunParameters run_parameters;
   ProcessArguments(argc,argv,run_parameters);
 
-  // read orbitals from sps file
-  basis::OrbitalSpacePN orbital_space = ReadOrbitals(run_parameters.sps_filename);
-  
-  // write orbitals
-  std::ofstream os(run_parameters.orbitals_filename);
-  os << basis::OrbitalDefinitionStr(orbital_space.OrbitalInfo(), true, basis::MFDnOrbitalFormat::kVersion15099);
+  // read orbitals
+  std::ifstream orbital_stream(run_parameters.orbital_filename);
+  basis::OrbitalPNList orbitals =
+    basis::ParseOrbitalPNStream(orbital_stream, true);
+  basis::OrbitalSpacePN orbital_space(orbitals);
 
+  // read xpn file
+  std::vector<XPNTBMEDatum> tbme_data = ReadXPNFile(run_parameters.input_filename, orbital_space.dimension());
+  
+  // set truncation
+  basis::WeightMax weight_max(2,2,2,2,2);  // WIP
+  
   // set up operator storage
   // Note: Both xpn and h2 use NAS storage, so use NAS internally as well.
   int J0 = 0;
@@ -206,8 +215,8 @@ int main(int argc, char **argv)
   int Tz0 = 0;
   const basis::TwoBodySpaceJJJPN two_body_space(
       orbital_space,
-      run_parameters.weight_max,
-      shell::kH2SpaceOrdering.at(run_parameters.output_h2_format)
+      weight_max,
+      shell::kH2SpaceOrdering.at(run_parameters.output_format)
     );
   const basis::TwoBodySectorsJJJPN two_body_sectors(
       two_body_space,
@@ -216,14 +225,11 @@ int main(int argc, char **argv)
   basis::OperatorBlocks<double> two_body_matrices;
   basis::SetOperatorToZero(two_body_sectors, two_body_matrices);
 
-  // read xpn file
-  // ReadXPNFile(two_body_space, two_body_sectors, two_body_matrices, run_parameters.input_filename);
-  
   // write h2 file
   shell::OutH2Stream output_stream(
-      run_parameters.h2_filename,
+      run_parameters.output_filename,
       orbital_space, two_body_space, two_body_sectors,
-      run_parameters.output_h2_format
+      run_parameters.output_format
     );
   std::cout << output_stream.DiagnosticStr();
 
