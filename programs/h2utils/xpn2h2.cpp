@@ -9,7 +9,7 @@
 
   Assumed file format:
 
-    + header lines beginning with bang
+    + comment lines beginning with hash ('#')
 
     + header (possibly wrapped over multiple lines):
 
@@ -49,6 +49,7 @@
 #include <fstream>
 
 #include "basis/operator.h"
+#include "fmt/format.h"
 #include "mcutils/eigen.h"
 #include "mcutils/parsing.h"
 #include "tbme/h2_io.h"
@@ -109,7 +110,7 @@ struct XPNTBMEDatum
   double me;
 };
 
-std::vector<XPNTBMEDatum> ReadXPNFile(const std::string& filename, int num_orbitals)
+std::vector<XPNTBMEDatum> ReadXPNFile(const std::string& filename, std::size_t num_orbitals)
 // Read raw BIGSTICK xpn file tbme data.
 {
 
@@ -126,14 +127,14 @@ std::vector<XPNTBMEDatum> ReadXPNFile(const std::string& filename, int num_orbit
   int line_count = 0;
 
   // data
-  int num_mes;
+  std::size_t num_mes;
   std::vector<XPNTBMEDatum> tbme_data;
   
   // progress flags
   bool have_read_num_mes = false;
-  int num_spes_read = 0;
+  std::size_t num_spes_read = 0;
   bool have_read_spes = false;
-  int num_mes_read = 0;
+  std::size_t num_mes_read = 0;
   bool have_read_mes = false;
 
   while (!have_read_mes)
@@ -144,10 +145,6 @@ std::vector<XPNTBMEDatum> ReadXPNFile(const std::string& filename, int num_orbit
       std::istringstream line_stream(line);
       // std::cout << line_count << ": " << line << std::endl;
       
-      // skip comment line
-      if (line[0]=='!')
-        continue;
-
       // read header
       if (!have_read_spes)
         {
@@ -184,6 +181,67 @@ std::vector<XPNTBMEDatum> ReadXPNFile(const std::string& filename, int num_orbit
   return tbme_data;
 }
 
+//basis::TwoBodyStateJJJPN
+void LookUpStateFromXPNLabels(
+    const basis::OrbitalSpacePN& orbital_space,
+    const basis::TwoBodySpaceJJJPN& two_body_space,
+    int a, int b, int J
+  )
+// Look up state within two body space matching given XPN labels.
+//
+// CAVEAT: Need to implement canonicalization.
+{
+
+  std::size_t num_orbitals = orbital_space.dimension()/2;  // orbitals for single species
+  
+  // convert state indices
+  std::size_t index1 = (a-1) % num_orbitals;
+  const basis::OrbitalSpeciesPN& species1 = basis::OrbitalSpeciesPN((a-1) / num_orbitals);
+  const basis::OrbitalStatePN& orbital_state1 = orbital_space.LookUpSubspace(basis::OrbitalSubspacePNLabels(species1)).GetState(index1);
+  std::size_t index2 = (b-1) % num_orbitals;
+  const basis::OrbitalSpeciesPN& species2 = basis::OrbitalSpeciesPN((b-1) / num_orbitals);
+  const basis::OrbitalStatePN& orbital_state2 = orbital_space.LookUpSubspace(basis::OrbitalSubspacePNLabels(species2)).GetState(index2);
+
+  // look up subspace
+  int g = (orbital_state1.g() + orbital_state2.g()) % 2;
+  std::cout << fmt::format("{} {} {}", orbital_state1.LabelStr(), orbital_state2.LabelStr(), g)
+            << std::endl;
+
+  //return basis::TwoBodyStateJJJPN();
+}
+
+void StoreTBMEs(
+    const basis::OrbitalSpacePN& orbital_space,
+    const std::vector<XPNTBMEDatum>& tbme_data,
+    const basis::TwoBodySpaceJJJPN& two_body_space,
+    const basis::TwoBodySectorsJJJPN& two_body_sectors,
+    basis::OperatorBlocks<double>& two_body_matrices
+  )
+// Store raw XPN tbmes into standard JJJPN storage structures.
+//
+// Arguments:
+//    orbital_space (basis::OrbitalSpacePN, input): orbitals
+//    tbme_data (std::vector<XPNTBMEDatum>, input): raw data from input xpn file
+//    two_body_space (basis::TwoBodySpaceJJJPN, input): space for storage of tbmes
+//    two_body_sectors (basis::TwoBodySectorsJJJPN, input): sectors for storage of tbmes
+//    two_body_matrices (basis::OperatorBlocks<double>, output): matrices for storage of tbmes
+{
+
+  for (std::size_t datum_index=0; datum_index<tbme_data.size(); ++datum_index)
+    {
+      const auto& datum = tbme_data[datum_index];
+
+      // find bra state
+      
+      std::cout << fmt::format(
+          "{:6d} {:2d} {:2d} {:2d} {:2d} {:2d} {:2d} {:e}",
+          datum_index,
+          datum.a, datum.b, datum.c, datum.d, datum.J, datum.T, datum.me
+        ) << std::endl;
+    }
+
+  
+}
 int main(int argc, const char *argv[])
 {
   // header
@@ -204,10 +262,20 @@ int main(int argc, const char *argv[])
 
   // read xpn file
   std::vector<XPNTBMEDatum> tbme_data = ReadXPNFile(run_parameters.input_filename, orbital_space.dimension());
+  for (std::size_t datum_index=0; datum_index<tbme_data.size(); ++datum_index)
+    {
+      const auto& datum = tbme_data[datum_index];
+      std::cout << fmt::format(
+          "{:6d} {:2d} {:2d} {:2d} {:2d} {:2d} {:2d} {:e}",
+          datum_index,
+          datum.a, datum.b, datum.c, datum.d, datum.J, datum.T, datum.me
+        ) << std::endl;
+    }
   
   // set truncation
-  basis::WeightMax weight_max(2,2,2,2,2);  // WIP
-  
+  // basis::WeightMax weight_max(2,2,2,2,2);  // WIP
+  basis::WeightMax weight_max(6, 6);  // WIP
+
   // set up operator storage
   // Note: Both xpn and h2 use NAS storage, so use NAS internally as well.
   int J0 = 0;
@@ -225,6 +293,9 @@ int main(int argc, const char *argv[])
   basis::OperatorBlocks<double> two_body_matrices;
   basis::SetOperatorToZero(two_body_sectors, two_body_matrices);
 
+  LookUpStateFromXPNLabels(orbital_space, two_body_space, 1, 1, 0);
+  std::exit(EXIT_SUCCESS);
+  
   // write h2 file
   shell::OutH2Stream output_stream(
       run_parameters.output_filename,
