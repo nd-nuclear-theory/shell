@@ -9,6 +9,9 @@
     + Input sps file support is limited to "iso"-type sps files.
     + Output orbital file format is fixed as Version 15099.
 
+  See Sec 4.2 "Defining the model space" in C. W. Johnson et al., "BIGSTICK: A
+  flexible configuration-interaction shell-model code", arXiv:1801.08432.
+
   Mark A. Caprio
   University of Notre Dame
 
@@ -18,17 +21,8 @@
 
 #include <fstream>
 
-#include "basis/jjjt_operator.h"
-#include "basis/jjjpn_scheme.h"
-#include "basis/jjjpn_operator.h"
-#include "mcutils/eigen.h"
+#include "basis/nlj_orbital.h"
 #include "mcutils/parsing.h"
-#include "mcutils/profiling.h"
-#include "tbme/h2_io.h"
-#include "tbme/me2j_io.h"
-#include "tbme/tbme_scheme_xform.h"
-
-#include "moshinsky/moshinsky_xform.h"
 
 ////////////////////////////////////////////////////////////////
 // process arguments
@@ -51,7 +45,6 @@ struct RunParameters
  
 };
 
-
 void PrintUsage(const char **argv) {
   std::cout << "Usage: " << argv[0]
             << " input_file output_file"
@@ -71,15 +64,13 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
   run_parameters.input_filename = argv[1];
   mcutils::FileExistCheck(run_parameters.input_filename, true, false);
 
-  // output orbitals filename
+  // output filename
   run_parameters.output_filename = argv[2];
 
 }
 
-basis::OrbitalSpacePN ReadSPS(const std::string& filename)
-// Read BIGSTICK sps file for single-particle space.
-//
-// See Sec 4.2 "Defining the model space" of Johnson arXiv:1801.08432.
+basis::OrbitalPNList ReadSPS(const std::string& filename)
+// Read BIGSTICK sps file for single-particle orbitals.
 {
 
   // open sps file
@@ -118,7 +109,7 @@ basis::OrbitalSpacePN ReadSPS(const std::string& filename)
   }
 
   // read in orbital info
-  basis::OrbitalPNList states;
+  basis::OrbitalPNList orbitals;
   for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
     {
       mcutils::GetLine(is,line,line_count);
@@ -137,19 +128,18 @@ basis::OrbitalSpacePN ReadSPS(const std::string& filename)
 
       // store as proton orbital
       basis::OrbitalPNInfo proton_orbital(basis::OrbitalSpeciesPN::kP, n, l, j, weight);
-      states.push_back(proton_orbital);
+      orbitals.push_back(proton_orbital);
     }
   
   // append identical list of neutron orbitals
   for (int orbital_index=0; orbital_index<num_orbitals; ++orbital_index)
     {
-      const basis::OrbitalPNInfo& proton_orbital = states[orbital_index];
+      const basis::OrbitalPNInfo& proton_orbital = orbitals[orbital_index];
       basis::OrbitalPNInfo neutron_orbital(basis::OrbitalSpeciesPN::kN, proton_orbital.n, proton_orbital.l, proton_orbital.j, proton_orbital.weight);
-      states.push_back(neutron_orbital);
+      orbitals.push_back(neutron_orbital);
     }
-  basis::OrbitalSpacePN orbital_space(states);
 
-  return orbital_space;
+  return orbitals;
 }
 
 
@@ -166,12 +156,12 @@ int main(int argc, const char *argv[])
   ProcessArguments(argc,argv,run_parameters);
 
   // read orbitals from sps file
-  basis::OrbitalSpacePN orbital_space = ReadSPS(run_parameters.input_filename);
+  basis::OrbitalPNList orbitals = ReadSPS(run_parameters.input_filename);
   
   // write orbitals
   std::ofstream os(run_parameters.output_filename);
   os << basis::OrbitalDefinitionStr(
-      orbital_space.OrbitalInfo(), true, run_parameters.output_format
+      orbitals, true, run_parameters.output_format
     );
 
   std::exit(EXIT_SUCCESS);
