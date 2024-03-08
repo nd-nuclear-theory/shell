@@ -5,7 +5,7 @@
   Syntax:
     + xpn2h2 orbital_filename input_filename output_filename
 
-    programs/h2utils/xpn2h2 ncci-tb-6.dat JISP16-tb-6-20.int JISP16-tb-6-20.dat
+    programs/h2utils/xpn2h2 --truncation 6 6 ncci-tb-6.dat JISP16-tb-6-20.int JISP16-tb-6-20.dat
 
   Assumed file format:
 
@@ -33,6 +33,7 @@
 
   Limitations:
     + Input single particle energies or one-body matrix elements are ignored.
+    + Input XPN files with extra numbers after the SPEs (specifying the scaling) are *not* supported.
     + Output h2 format is fixed as Version 15099.
 
   See Sec 4.3.2 "Proton-neutron and other isospin-breaking formats" in
@@ -42,171 +43,22 @@
   Mark A. Caprio
   University of Notre Dame
 
-  + 03/01/23 (mac): Created, based on me2j2h2.
-
+  + 03/01/24 (mac): Created.
+  + 03/06/24 (mac): Complete basic support for TBME conversion
+  + 03/07/24 (mac):
+    - Provide --truncation option to specify output weight truncation.
+    - Factor out canonicalization routines to basis/jjjpn_operator.
+      
 ******************************************************************************/
 
 #include <fstream>
 
-#include "basis/operator.h"
+#include "basis/jjjpn_operator.h"
 #include "fmt/format.h"
 #include "mcutils/eigen.h"
 #include "mcutils/parsing.h"
 #include "tbme/h2_io.h"
 
-
-namespace basis {
-
-  std::tuple<std::size_t,std::size_t,std::size_t,std::size_t,double> CanonicalizeTwoBodyOrbitalIndicesJJJPN(
-      const OrbitalSpacePN& space,
-      int J,
-      std::size_t subspace_index1, std::size_t subspace_index2,
-      std::size_t state_index1, std::size_t state_index2
-    )
-  // Convert subspace (proton-neutron) and state (orbital) indices for a JJJPN
-  // two-particle state to canonical indices for state look-up.
-  //
-  // Canonicalization of orbitals is lexicographical by (subspace,state), so (1)
-  // np state will be swapped to pn, then (2) like-species orbitals will be
-  // swapped to numerical order.
-  //
-  // The canonicalization factor for swapping orbitals is -(-)^(J-j1-j2).  See,
-  // e.g., equation (C3) of csbasis
-  // [http://dx.doi.org/10.1103/PhysRevC.86.034312].
-  //
-  // Arguments:
-  //
-  //   space (basis::OrbitalSpacePN): space, for retrieving
-  //     orbital quantum numbers to calculate canonicalization factor
-  //   J (int): two-particle state J, to calculate canonicalization factor
-  //   subspace_index1, subspace_index2 (std::size_t):
-  //     orbital subspace indices, possibly to be swapped (if np state given)
-  //     (may be implicitly cast as int from basis::OrbitalSpeciesPN)
-  //   state_index1, state_index2 (std::size_t):
-  //     naive orbital indices, possibly to be swapped if sector
-  //     is diagonal sector
-  //
-  // Returns:
-  //   canonicalized indices and swap flag and phase as:
-  //
-  //        subspace_index1, subspace_index2,
-  //        state_index1, state_index2,
-  //        canonicalization_factor
-  {
-
-    // Note: We use the local copies of the indices (on the stack)
-    // as working variables.  Slightly unnerving.
-
-    // swap if necessary
-    bool swapped = !(
-        std::make_tuple(subspace_index1, state_index1)
-        <= std::make_tuple(subspace_index2, state_index2)
-      );
-    if (swapped)
-      {
-        std::swap(subspace_index1, subspace_index2);
-        std::swap(state_index1, state_index2);  // so index stays with sector
-      }
-
-    // calculate canonicalization factor
-    double canonicalization_factor = +1.;
-    if (swapped)
-      {
-        const HalfInt j1 = space.GetSubspace(subspace_index1).GetState(state_index1).j();
-        const HalfInt j2 = space.GetSubspace(subspace_index2).GetState(state_index2).j();
-        canonicalization_factor = ParitySign(J-j1-j2);
-      }
-
-    // bundle return values
-    return std::tuple<std::size_t,std::size_t,std::size_t,std::size_t,double>(
-        subspace_index1, subspace_index2,
-        state_index1, state_index2,
-        canonicalization_factor
-      );
-  }
-
-  std::tuple<std::size_t,std::size_t,std::size_t,std::size_t,double> CanonicalizeIndicesJJJPN(
-      const TwoBodySpaceJJJPN& space,
-      int J0, int g0,
-      std::size_t subspace_index_bra, std::size_t subspace_index_ket,
-      std::size_t state_index_bra, std::size_t state_index_ket
-    )
-  // Convert subspace and state indices for a matrix element to
-  // canonical ("upper triangle") indices.
-  //
-  // It is assumed that the operator is a standard hermitian self-adjoint
-  // spherical tensor operator.
-  //
-  // This is a customized wrapper for basis::CanonicalizeIndices (see
-  // operator.h), for use with JJJPN operators.
-  //
-  // Arguments:
-  //   space (basis::TwoBodySpaceJJJPN): space, for retrieving
-  //     subspace quantum numbers to calculate canonicalization factor
-  //   J0, g0 (int): operator tensorial properties
-  //   bra_subspace_index, ket_subspace_index (std::size_t):
-  //     naive sector bra and ket subspace indices, possibly to be swapped
-  //   bra_state_index, ket_state_index (std::size_t):
-  //     naive bra and ket state indices, possibly to be swapped if sector
-  //     is diagonal sector
-  //
-  // Returns:
-  //   canonicalized indices and swap flag and phase as:
-  //
-  //        subspace_index_bra,subspace_index_ket,
-  //        state_index_bra,state_index_ket,
-  //        swapped_subspaces,
-  //        canonicalization_factor
-  {
-
-    // Note: We use the local copies of the indices (on the stack)
-    // as working variables.  Slightly unnerving.
-
-    // canonicalize indices
-    bool swapped_subspaces;
-    std::tie(
-        subspace_index_bra,subspace_index_ket,
-        state_index_bra,state_index_ket,
-        swapped_subspaces
-      )
-      = basis::CanonicalizeIndices(
-          subspace_index_bra, subspace_index_ket,
-          state_index_bra, state_index_ket
-        );
-
-    // calculate canonicalization factor
-    //
-    // Beware that the indices now describe the "new" bra and ket
-    // *after* any swap, so one must take care in matching up bra and
-    // ket labels to those in any formula describing the symmetry.
-
-    double canonicalization_factor = 1.;
-    if (swapped_subspaces)
-      {
-
-        // retrieve sector labels (*after* swap, i.e., canonical m.e. on RHS)
-        const TwoBodySubspaceJJJPN& subspace_bra = space.GetSubspace(
-            subspace_index_bra
-          );
-        const TwoBodySubspaceJJJPN& subspace_ket = space.GetSubspace(
-            subspace_index_ket
-          );
-        int J_bra = subspace_bra.J();
-        int J_ket = subspace_ket.J();
-
-        canonicalization_factor *= ParitySign(J_bra-J_ket)*Hat(J_bra)/Hat(J_ket);
-      }
-
-    // bundle return values
-    return std::tuple<std::size_t,std::size_t,std::size_t,std::size_t,double>(
-        subspace_index_bra, subspace_index_ket,
-        state_index_bra, state_index_ket,
-        canonicalization_factor
-      );
-  }
-
-}
-  
 ////////////////////////////////////////////////////////////////
 // process arguments
 /////////////////////////////////////////////////////////////////
@@ -218,42 +70,109 @@ struct RunParameters
   std::string orbital_filename;
   std::string input_filename;
   std::string output_filename;
+  std::string obme_filename;
   // format
   shell::H2Format output_format;
-  
+  // output truncation
+  basis::WeightMax weight_max;
+
   // default constructor
   RunParameters()
-    : orbital_filename(""), output_filename(""), input_filename(""),
-      output_format(shell::kVersion15099)
+    : orbital_filename(""), input_filename(""), output_filename(""), obme_filename(""),
+      output_format(shell::kVersion15099), weight_max(0,0)
   {}
 };
 
 void PrintUsage(const char **argv) {
   std::cout << "Usage: " << argv[0]
-            << " orbital_file input_file output_file"
+            << " [--truncation w1max w2max] [--obme-filename obme_file]" << std::endl
+            << "       orbital_file input_file output_file"
             << std::endl;
 }
 
 void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameters)
 {
   // usage message
-  if (argc-1 < 3)
+  if (argc-1 == 0)
     {
       PrintUsage(argv);
       std::exit(EXIT_SUCCESS);
     }
 
+  int arg = 1;
+  while (arg < argc && argv[arg][0] == '-')
+    {
+      std::istringstream parameter_stream(argv[arg++]);
+
+      if (parameter_stream.str() == "--help" || parameter_stream.str() == "-h")
+        {
+          PrintUsage(argv);
+          std::exit(EXIT_SUCCESS);
+        }
+      else if (parameter_stream.str() == "--truncation")
+        {
+          if (argc-arg < 2)
+            {
+              PrintUsage(argv);
+              std::cerr << "Insufficient arguments for --truncation" << std::endl;
+              std::exit(EXIT_FAILURE);
+            }
+
+          float w1max, w2max;
+          std::istringstream w1max_stream(argv[arg++]);
+          w1max_stream >> w1max;
+          if (!w1max_stream) {
+            PrintUsage(argv);
+            std::cerr << "Invalid w1max" << std::endl;
+            std::exit(EXIT_FAILURE);
+          }
+          std::istringstream w2max_stream(argv[arg++]);
+          w2max_stream >> w2max;
+          if (!w2max_stream) {
+            PrintUsage(argv);
+            std::cerr << "Invalid w2max" << std::endl;
+            std::exit(EXIT_FAILURE);
+          }
+          run_parameters.weight_max = basis::WeightMax(w1max, w1max, w2max, w2max, w2max);
+        }
+      else if (parameter_stream.str() == "--obme-filename")
+        {
+          if (argc-arg < 1)
+            {
+              PrintUsage(argv);
+              std::cerr << "Insufficient arguments for --obme-filename" << std::endl;
+              std::exit(EXIT_FAILURE);
+            }
+
+          run_parameters.obme_filename = argv[arg++];
+        }
+      else
+        {
+          PrintUsage(argv);
+          std::cerr << "Unrecognized option '" << parameter_stream.str() << "'" << std::endl;
+          std::exit(EXIT_FAILURE);
+        }
+        
+    }
+
+  if (argc-arg < 3)
+    {
+      PrintUsage(argv);
+      std::cerr << "Insufficient arguments" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
   // orbital filename
-  run_parameters.orbital_filename = argv[1];
+  run_parameters.orbital_filename = argv[arg++];
   mcutils::FileExistCheck(run_parameters.orbital_filename, true, false);
 
   // input filename
-  run_parameters.input_filename = argv[2];
+  run_parameters.input_filename = argv[arg++];
   mcutils::FileExistCheck(run_parameters.input_filename, true, false);
 
   // output filename
-  run_parameters.output_filename = argv[3];
-  
+  run_parameters.output_filename = argv[arg++];
+
 }
 
 struct XPNTBMEDatum
@@ -263,8 +182,17 @@ struct XPNTBMEDatum
   double me;
 };
 
-std::vector<XPNTBMEDatum> ReadXPNFile(const std::string& filename, std::size_t num_orbitals)
-// Read raw BIGSTICK xpn file tbme data.
+void ReadXPNFile(
+    const std::string& filename, std::size_t num_orbitals,
+    std::vector<double>& spe_data, std::vector<XPNTBMEDatum>& tbme_data
+  )
+// Read raw data from BIGSTICK XPN file.
+//
+// Arguments:
+//   filename (std::string): XPN filename
+//   num_orbitals (std::size_t): number of orbitals (per species)
+//   spe_data (std::vector<double>): vector to store SPEs
+//   tbme_data (std::vector<XPNTBMEDatum>): vector to store TBMEs
 {
 
   // open xpn file
@@ -279,11 +207,8 @@ std::vector<XPNTBMEDatum> ReadXPNFile(const std::string& filename, std::size_t n
   std::string line;
   int line_count = 0;
 
-  // data
+  // variables for tracking read progress
   std::size_t num_mes;
-  std::vector<XPNTBMEDatum> tbme_data;
-  
-  // progress flags
   bool have_read_num_mes = false;
   std::size_t num_spes_read = 0;
   bool have_read_spes = false;
@@ -312,6 +237,7 @@ std::vector<XPNTBMEDatum> ReadXPNFile(const std::string& filename, std::size_t n
               double spe;
               line_stream >> spe;
               mcutils::ParsingCheck(line_stream,line_count,line);
+              spe_data.push_back(spe);
               ++num_spes_read;
               have_read_spes = num_spes_read == num_orbitals;
             }
@@ -332,6 +258,15 @@ std::vector<XPNTBMEDatum> ReadXPNFile(const std::string& filename, std::size_t n
     }
 
   // diagnostic data dump
+  // for (std::size_t spe_index=0; spe_index<spe_data.size(); ++spe_index)
+  //   {
+  //     double spe = spe_data[spe_index];
+  //     std::cout << fmt::format(
+  //         "{:6d} {:e}",
+  //         spe_index,
+  //         spe
+  //       ) << std::endl;
+  //   }
   // for (std::size_t datum_index=0; datum_index<tbme_data.size(); ++datum_index)
   //   {
   //     const auto& datum = tbme_data[datum_index];
@@ -341,8 +276,6 @@ std::vector<XPNTBMEDatum> ReadXPNFile(const std::string& filename, std::size_t n
   //         datum.a, datum.b, datum.c, datum.d, datum.J, datum.T, datum.me
   //       ) << std::endl;
   //   }
-    
-  return tbme_data;
 }
 
 std::tuple<std::size_t,std::size_t,double>
@@ -521,17 +454,11 @@ int main(int argc, const char *argv[])
   ProcessArguments(argc,argv,run_parameters);
 
   // read orbitals
+  std::cout << fmt::format("Reading orbital file {}...", run_parameters.orbital_filename) << std::endl;
   std::ifstream orbital_stream(run_parameters.orbital_filename);
   basis::OrbitalPNList orbitals =
     basis::ParseOrbitalPNStream(orbital_stream, true);
   basis::OrbitalSpacePN orbital_space(orbitals);
-
-  // read xpn file
-  std::vector<XPNTBMEDatum> tbme_data = ReadXPNFile(run_parameters.input_filename, orbital_space.dimension());
-
-  // set truncation
-  // basis::WeightMax weight_max(2,2,2,2,2);  // WIP
-  basis::WeightMax weight_max(6, 6);  // WIP
 
   // set up operator storage
   // Note: Both xpn and h2 use NAS storage, so use NAS internally as well.
@@ -540,7 +467,7 @@ int main(int argc, const char *argv[])
   int Tz0 = 0;
   const basis::TwoBodySpaceJJJPN two_body_space(
       orbital_space,
-      weight_max,
+      run_parameters.weight_max,
       shell::kH2SpaceOrdering.at(run_parameters.output_format)
     );
   const basis::TwoBodySectorsJJJPN two_body_sectors(
@@ -550,11 +477,12 @@ int main(int argc, const char *argv[])
   basis::OperatorBlocks<double> two_body_matrices;
   basis::SetOperatorToZero(two_body_sectors, two_body_matrices);
 
-  // lookup tests
-  // LookUpStateFromXPNLabels(orbital_space, two_body_space, 1, 1, 0);
-  // LookUpStateFromXPNLabels(orbital_space, two_body_space, 2, 1, 0);
-  // LookUpStateFromXPNLabels(orbital_space, two_body_space, 1, 29, 0);
-  // LookUpStateFromXPNLabels(orbital_space, two_body_space, 29, 1, 0);  // FAILS
+  // read xpn file
+  // Note: If memory limitations become severe, can combine the read and storage steps.
+  std::cout << fmt::format("Reading XPN file {}...", run_parameters.input_filename) << std::endl;
+  std::vector<double> spe_data;
+  std::vector<XPNTBMEDatum> tbme_data;
+  ReadXPNFile(run_parameters.input_filename, orbital_space.dimension(), spe_data, tbme_data);
 
   // accumulate XPN matrix elements into operator matrices
   StoreTBMEs(
@@ -565,7 +493,19 @@ int main(int argc, const char *argv[])
     two_body_matrices
     );
 
+  // process OBMEs
+  if (run_parameters.obme_filename != "")
+    {
+      std::cout << fmt::format("Writing OBME file {}...", run_parameters.obme_filename) << std::endl
+                << "Implementation in progress!" << std::endl
+                << std::endl;
+      std::exit(EXIT_FAILURE);
+      //WIP
+    }
+  
   // write h2 file
+  std::cout << fmt::format("Writing h2 file {}...", run_parameters.output_filename) << std::endl
+            << std::endl;
   shell::OutH2Stream output_stream(
       run_parameters.output_filename,
       orbital_space, two_body_space, two_body_sectors,
