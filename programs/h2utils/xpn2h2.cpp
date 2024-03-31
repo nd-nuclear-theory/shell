@@ -2,12 +2,19 @@
 
   xpn2h2.cpp -- convert BIGSTICK xpn to h2
 
+  An XPN file can only be interpreted if it is accompanied by the definitions
+  for the single-particle space on which it is defined.  To use xpn2h2, it is
+  assumed that you have already created the relevant "orbitals" file, typically
+  by running obutils/sps2orbital on to convert a BIGSTICK SPS file to shell's
+  orbital file format.
+
   Syntax:
-    + xpn2h2 orbital_filename input_filename output_filename
 
-    programs/h2utils/xpn2h2 --truncation 6 6 ncci-tb-6.dat JISP16-tb-6-20.int JISP16-tb-6-20.dat
+    + xpn2h2 orbital_filename input_filename output_tbme_filename
 
-  Assumed file format:
+    programs/h2utils/xpn2h2 --truncation 6 6 --obme-filename JISP16-tb-6-20_obme.dat ncci-tb-6.dat JISP16-tb-6-20.int JISP16-tb-6-20.dat
+
+  Assumed file format for XPN file:
 
     + comment lines beginning with hash ('#')
 
@@ -57,7 +64,9 @@
 #include "fmt/format.h"
 #include "mcutils/eigen.h"
 #include "mcutils/parsing.h"
+#include "obme/obme_io.h"
 #include "tbme/h2_io.h"
+
 
 ////////////////////////////////////////////////////////////////
 // process arguments
@@ -69,8 +78,8 @@ struct RunParameters
   // filenames
   std::string orbital_filename;
   std::string input_filename;
-  std::string output_filename;
-  std::string obme_filename;
+  std::string output_tbme_filename;
+  std::string output_obme_filename;
   // format
   shell::H2Format output_format;
   // output truncation
@@ -78,15 +87,15 @@ struct RunParameters
 
   // default constructor
   RunParameters()
-    : orbital_filename(""), input_filename(""), output_filename(""), obme_filename(""),
+    : orbital_filename(""), input_filename(""), output_tbme_filename(""), output_obme_filename(""),
       output_format(shell::kVersion15099), weight_max(0,0)
   {}
 };
 
 void PrintUsage(const char **argv) {
   std::cout << "Usage: " << argv[0]
-            << " [--truncation w1max w2max] [--obme-filename obme_file]" << std::endl
-            << "       orbital_file input_file output_file"
+            << " [--truncation w1max w2max] [--obme-filename output_obme_file] " << std::endl
+            << "       orbital_file input_file output_tbme_file"
             << std::endl;
 }
 
@@ -144,7 +153,18 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
               std::exit(EXIT_FAILURE);
             }
 
-          run_parameters.obme_filename = argv[arg++];
+          run_parameters.output_obme_filename = argv[arg++];
+        }
+      else if (parameter_stream.str() == "--tbme-filename")
+        {
+          if (argc-arg < 1)
+            {
+              PrintUsage(argv);
+              std::cerr << "Insufficient arguments for --tbme-filename" << std::endl;
+              std::exit(EXIT_FAILURE);
+            }
+
+          run_parameters.output_tbme_filename = argv[arg++];
         }
       else
         {
@@ -171,7 +191,7 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
   mcutils::FileExistCheck(run_parameters.input_filename, true, false);
 
   // output filename
-  run_parameters.output_filename = argv[arg++];
+  run_parameters.output_tbme_filename = argv[arg++];
 
 }
 
@@ -369,6 +389,77 @@ LookUpStateFromXPNLabels(
     );
 }
 
+void StoreOBMEs(
+    const basis::OrbitalSpacePN& orbital_space,
+    const std::vector<double>& spe_data,
+    const basis::OrbitalSpaceLJPN& one_body_space,
+    const basis::OrbitalSectorsLJPN& one_body_sectors,
+    basis::OperatorBlocks<double>& one_body_matrices
+  )
+// Store raw XPN tbmes into standard JJJPN storage structures.
+//
+// Arguments:
+//   orbital_space (basis::OrbitalSpacePN, input): orbitals
+//   spe_data (std::vector<double>): vector to store SPEs
+//   one_body_space (basis::OrbitalSpaceLJPN, input): space for storage of obmes
+//   one_body_sectors (basis::OrbitalSectorsLJPN, input): sectors for storage of obmes
+//   one_body_matrices (basis::OperatorBlocks<double>, output): matrices for storage of obmes
+{
+
+  for (std::size_t orbital_index=0; orbital_index<orbital_space.size(); ++orbital_index)
+    {
+      // retrieve XPN TMBE datum
+      const auto& spe = spe_data[orbital_index];
+
+      // std::cout << fmt::format(
+      //     "{:6d} {:2d} {:2d} {:2d} {:2d} {:2d} {:2d} {:e}",
+      //     datum_index,
+      //     datum.a, datum.b, datum.c, datum.d, datum.J, datum.T, datum.me
+      //   ) << std::endl;
+
+      // // look up bra and ket states
+      // std::size_t subspace_index_bra, subspace_index_ket;
+      // std::size_t state_index_bra, state_index_ket;
+      // double canonicalization_factor_bra, canonicalization_factor_ket;
+      // std::tie(subspace_index_bra, state_index_bra, canonicalization_factor_bra)
+      //   = LookUpStateFromXPNLabels(orbital_space, two_body_space, datum.a, datum.b, datum.J);
+      // std::tie(subspace_index_ket, state_index_ket, canonicalization_factor_ket)
+      //   = LookUpStateFromXPNLabels(orbital_space, two_body_space, datum.c, datum.d, datum.J);
+      // // std::cout << fmt::format("before canonicalization: subspace indices {} {} state indices {} {}", subspace_index_bra, subspace_index_ket, state_index_bra, state_index_ket) << std::endl;
+      // 
+      // // canonicalize matrix element labels
+      // int J0 = 0, g0 = 0;
+      // double canonicalization_factor;
+      // std::tie(
+      //     subspace_index_bra, subspace_index_ket,
+      //     state_index_bra, state_index_ket,
+      //     canonicalization_factor
+      //   ) =
+      //   CanonicalizeIndicesJJJPN(
+      //       two_body_space, J0, g0,
+      //       subspace_index_bra, subspace_index_ket,
+      //       state_index_bra, state_index_ket
+      //     );
+      // // std::cout << fmt::format("after canonicalization: subspace indices {} {} state indices {} {}", subspace_index_bra, subspace_index_ket, state_index_bra, state_index_ket) << std::endl;
+      // 
+      // // store ME
+      // double value = canonicalization_factor * canonicalization_factor_bra * canonicalization_factor_ket * datum.me;
+      // std::size_t sector_index = two_body_sectors.LookUpSectorIndex(subspace_index_bra, subspace_index_ket);
+      // if (sector_index == basis::kNone)
+      //   {
+      //     std::cout << fmt::format("ERROR: matrix element in nonexistent sector (subspace indices {} {} => sector index {}", subspace_index_bra, subspace_index_ket, sector_index) << std::endl;
+      //   }
+      // // std::cout
+      // //   << fmt::format(
+      // //       "subspace indices {} {} sector index {} state indices {} {} value {}",
+      // //       subspace_index_bra, subspace_index_ket, sector_index, state_index_bra, state_index_ket, value
+      // //     )
+      // //   << std::endl;      
+      // two_body_matrices[sector_index](state_index_bra, state_index_ket) = value;
+      
+    }
+}
+
 void StoreTBMEs(
     const basis::OrbitalSpacePN& orbital_space,
     const std::vector<XPNTBMEDatum>& tbme_data,
@@ -379,11 +470,11 @@ void StoreTBMEs(
 // Store raw XPN tbmes into standard JJJPN storage structures.
 //
 // Arguments:
-//    orbital_space (basis::OrbitalSpacePN, input): orbitals
-//    tbme_data (std::vector<XPNTBMEDatum>, input): raw data from input xpn file
-//    two_body_space (basis::TwoBodySpaceJJJPN, input): space for storage of tbmes
-//    two_body_sectors (basis::TwoBodySectorsJJJPN, input): sectors for storage of tbmes
-//    two_body_matrices (basis::OperatorBlocks<double>, output): matrices for storage of tbmes
+//   orbital_space (basis::OrbitalSpacePN, input): orbitals
+//   tbme_data (std::vector<XPNTBMEDatum>, input): raw data from input xpn file
+//   two_body_space (basis::TwoBodySpaceJJJPN, input): space for storage of tbmes
+//   two_body_sectors (basis::TwoBodySectorsJJJPN, input): sectors for storage of tbmes
+//   two_body_matrices (basis::OperatorBlocks<double>, output): matrices for storage of tbmes
 {
 
   for (std::size_t datum_index=0; datum_index<tbme_data.size(); ++datum_index)
@@ -438,9 +529,8 @@ void StoreTBMEs(
       two_body_matrices[sector_index](state_index_bra, state_index_ket) = value;
       
     }
-
-  
 }
+
 int main(int argc, const char *argv[])
 {
   // header
@@ -460,11 +550,33 @@ int main(int argc, const char *argv[])
     basis::ParseOrbitalPNStream(orbital_stream, true);
   basis::OrbitalSpacePN orbital_space(orbitals);
 
-  // set up operator storage
+  // read xpn file
+  // Note: If memory limitations become severe, can combine the read and storage steps.
+  std::cout << fmt::format("Reading XPN file {}...", run_parameters.input_filename) << std::endl;
+  std::vector<double> spe_data;
+  std::vector<XPNTBMEDatum> tbme_data;
+  ReadXPNFile(run_parameters.input_filename, orbital_space.dimension(), spe_data, tbme_data);
+
+  // define quantum numbers for Hamiltonian-like operator
+  const int J0 = 0;
+  const int g0 = 0;
+  const int Tz0 = 0;
+
+  // store obmes
+  const basis::OrbitalSpaceLJPN one_body_space(orbital_space);
+  const basis::OrbitalSectorsLJPN one_body_sectors(one_body_space, J0, g0, Tz0);
+  basis::OperatorBlocks<double> one_body_matrices;
+  basis::SetOperatorToZero(one_body_sectors, one_body_matrices);
+  StoreOBMEs(
+    orbital_space,
+    spe_data,
+    one_body_space,
+    one_body_sectors,
+    one_body_matrices
+    );
+  
+  // store tbmes
   // Note: Both xpn and h2 use NAS storage, so use NAS internally as well.
-  int J0 = 0;
-  int g0 = 0;
-  int Tz0 = 0;
   const basis::TwoBodySpaceJJJPN two_body_space(
       orbital_space,
       run_parameters.weight_max,
@@ -476,15 +588,6 @@ int main(int argc, const char *argv[])
     );
   basis::OperatorBlocks<double> two_body_matrices;
   basis::SetOperatorToZero(two_body_sectors, two_body_matrices);
-
-  // read xpn file
-  // Note: If memory limitations become severe, can combine the read and storage steps.
-  std::cout << fmt::format("Reading XPN file {}...", run_parameters.input_filename) << std::endl;
-  std::vector<double> spe_data;
-  std::vector<XPNTBMEDatum> tbme_data;
-  ReadXPNFile(run_parameters.input_filename, orbital_space.dimension(), spe_data, tbme_data);
-
-  // accumulate XPN matrix elements into operator matrices
   StoreTBMEs(
     orbital_space,
     tbme_data,
@@ -493,26 +596,30 @@ int main(int argc, const char *argv[])
     two_body_matrices
     );
 
-  // process OBMEs
-  if (run_parameters.obme_filename != "")
+  // write OBME file
+  if (run_parameters.output_obme_filename != "")
     {
-      std::cout << fmt::format("Writing OBME file {}...", run_parameters.obme_filename) << std::endl
+      std::cout << fmt::format("Writing OBME file {}...", run_parameters.output_obme_filename) << std::endl
                 << "Implementation in progress!" << std::endl
                 << std::endl;
-      std::exit(EXIT_FAILURE);
-      //WIP
+      shell::OutOBMEStream os(
+          run_parameters.output_obme_filename,
+          one_body_space, one_body_space, one_body_sectors,
+          basis::OneBodyOperatorType::kSpherical
+        );
+      os.Write(one_body_matrices);
+      os.Close();
     }
   
   // write h2 file
-  std::cout << fmt::format("Writing h2 file {}...", run_parameters.output_filename) << std::endl
+  std::cout << fmt::format("Writing h2 file {}...", run_parameters.output_tbme_filename) << std::endl
             << std::endl;
   shell::OutH2Stream output_stream(
-      run_parameters.output_filename,
+      run_parameters.output_tbme_filename,
       orbital_space, two_body_space, two_body_sectors,
       run_parameters.output_format
     );
   std::cout << output_stream.DiagnosticStr();
-
   for (std::size_t sector_index=0; sector_index<two_body_sectors.size(); ++sector_index)
     {
       // make reference to target sector
