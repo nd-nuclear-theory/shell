@@ -1,0 +1,6 @@
+set-indexing test-data/orbitals.dat
+set-output-file nomixer-test.out
+
+define-densities 0 0 1  0  0 1  test-data/mfdn.statrobdme.seq003.2J00.n01.2T02 test-data/mfdn.rppobdme.info
+
+interaction-file ../../../data/JISP16-tb-20-10.bin
