@@ -170,7 +170,8 @@ double GetInteractionMatrixElement(shell::InH2Stream& input_stream,// (TODO (slv
 				   std::size_t state_index_b,
 				   std::size_t state_index_c,
 				   std::size_t state_index_d,
-				   int J, int g
+				   const basis::TwoBodySpeciesPN two_body_species,
+				   HalfInt J, int g
 				   ){
   // references
   const basis::OrbitalSpacePN& orbital_space = input_stream.orbital_space();
@@ -178,7 +179,7 @@ double GetInteractionMatrixElement(shell::InH2Stream& input_stream,// (TODO (slv
   const basis::TwoBodySectorsJJJPN& input_sectors = input_stream.sectors();
 
    // TODO (slv) This should be selected according to what species a,b,c and d belong
-  basis::TwoBodySpeciesPN two_body_species = basis::TwoBodySpeciesPN::kPN; // selecting pp interaction
+  //  basis::TwoBodySpeciesPN two_body_species = basis::TwoBodySpeciesPN::kPN; // selecting pp interaction
 
   // objects
   // Hard coded right now but output_h2_format  can be passed later
@@ -342,13 +343,12 @@ int main(){
       // I presume this is equivalent to multipolarity K of the density operator, ref mfdn.rppobdme.info
       // this is my lambda
       int J0=0;
-
+      int g = 0; // setting positive parity
+      
       //This stores density_sectors and  and density_blocks of multipole J0
       obdme_s.GetMultipole(J0, density_sectors, density_blocks);
 
-      // There will be a summation over this as well but as of now it is hardcoded
-      int J = 0; // This is 2*J?
-      int g = 0; // setting positive parity
+      
 
       std::cout<< "Size of the LJPN space : " << space.size() << std::endl;
       
@@ -387,70 +387,89 @@ int main(){
 			      const auto& subspace_a = space.GetSubspace(subspace_index_a);
 			      const auto& subspace_c = space.GetSubspace(subspace_index_c);
 
-			      if(subspace_a.j() != subspace_c.j()){
-				continue;
-			      }
+			      int species_a =int(subspace_a.orbital_species());
+			      int species_b =int(subspace_b.orbital_species());
+			      int species_c =int(subspace_c.orbital_species());
+			      int species_d =int(subspace_d.orbital_species());
+			      basis::TwoBodySpeciesPN two_body_species;
 			      
-			      // This is where I have to check the triangle condition
-			      // Here I am taking J = J'
-			      // The following is zero condition for the 6J symbol
-			      // (J,   j_b,   j_a)
-			      // (j_d, J , lambda)
-				  
-			      if (!am::AllowedTriangle(J, subspace_b.j(), subspace_a.j())||
-				  !am::AllowedTriangle(subspace_d.j(), J, subspace_a.j())||
-				  !am::AllowedTriangle(subspace_d.j(), subspace_b.j(), J0 )||
-				  !am::AllowedTriangle(J, J, J0)){
-				continue;
+			      if(species_a != species_c || species_b != species_d) continue;
+
+			      if(species_a==0 && species_b==0){
+				two_body_species= basis::TwoBodySpeciesPN::kPP;
 			      }
-
-			      // check for 6J symbol to be zero; skip the rest of the loop if accidental zero
-			      double cg_coeff_6j = am::Wigner6J(J, subspace_b.j(), subspace_a.j(),
-							     subspace_d.j(), J, J0);
-
-			      if (std::abs(cg_coeff_6j) < 1e-8) {
-				continue;
+			      else if(species_a==1 && species_b==0 ||species_a==0 && species_b==1  ){
+				two_body_species = basis::TwoBodySpeciesPN::kPN;
 			      }
-			      
-			      // TO DO : Must figure out how to include this phase factor
-			      double phase_factor = 1; // - 2*((3 * subspace_a.j() + 3*J0 + 2*subspace_b.j()+ 2* J + J +subspace_d.j()) % 2);
-
-			      phase_factor *= Hat(subspace_a.j());
-			      phase_factor *= Hat(J0);
+			      else if(species_a==1 && species_b==1){
+				two_body_species = basis::TwoBodySpeciesPN::kNN;
+			      }
 				
-				
-			      auto sector_index = density_sectors.LookUpSectorIndex(subspace_index_a, subspace_index_c);
-		  
-			      if (sector_index == basis::kNone) continue;
+			      if(subspace_a.j() != subspace_c.j()) continue;
 
-			      for (std::size_t state_index_a = 0; state_index_a < subspace_a.size(); ++state_index_a) {
-				for (std::size_t state_index_c = 0; state_index_c < subspace_c.size(); ++state_index_c) {
+			      HalfInt::vector valid_J = am::ProductAngularMomenta(subspace_a.j(),subspace_b.j());
+			      // Here I need to be decent to use iterators
+				for(int i=0; i<valid_J.size(); i++)
+				{
+				  // This is where I have to check the triangle condition
+				  // Here I am taking J = J'
+				  // The following is zero condition for the 6J symbol
+				  // (J,   j_b,   j_a)
+				  // (j_d, J , lambda)
 				  
-				  double interaction_matrix_element =
-				    GetInteractionMatrixElement(input_stream, state_index_a, state_index_b, state_index_c, state_index_d, J, g );
-				  if(interaction_matrix_element != 0.0){
-
-				    // std::cout<< "density matrix element : " << std::endl;
-				    // std::cout<< "< " << state_index_a <<"| ca_dag cc |" << state_index_c << ">  : " 
-				    //	     << density_blocks[sector_index](state_index_a, state_index_c) << " \n";
-				    // Not very certain if density_blocks[sector_index](n_a, n_c) is a number or a matrix.
-
-				    // std::cout<< "interaction_matrix_element : " << "< " << state_index_a
-				    //	     << ", " << state_index_b << "| " << interaction_matrix_element
-				    //	     << " |" << state_index_c << ", " << state_index_d
-				    //	     << "> " << std::endl;
-				    matrix_element_output += phase_factor * cg_coeff_6j * density_blocks[sector_index](state_index_a, state_index_c) *
-				      interaction_matrix_element;
+				  if (!am::AllowedTriangle(valid_J[i], subspace_b.j(), subspace_a.j())||
+				      !am::AllowedTriangle(subspace_d.j(), valid_J[i], subspace_a.j())||
+				      !am::AllowedTriangle(subspace_d.j(), subspace_b.j(), J0 )||
+				      !am::AllowedTriangle(valid_J[i], valid_J[i], J0)){
+				    continue;
 				  }
-				}
-				// std::cout<< "\n";
+
+				  // check for 6J symbol to be zero; skip the rest of the loop if accidental zero
+				  double cg_coeff_6j = am::Wigner6J(valid_J[i], subspace_b.j(), subspace_a.j(),
+								    subspace_d.j(), valid_J[i], J0);
+
+				  if (std::abs(cg_coeff_6j) < 1e-8) continue;
+			      
+			      
+				  // TO DO : Must figure out how to include this phase factor
+				  double phase_factor = 1; // - 2*((3 * subspace_a.j() + 3*J0 + 2*subspace_b.j()+ 2* J + J +subspace_d.j()) % 2);
+
+				  phase_factor *= Hat(subspace_a.j());
+				  phase_factor *= Hat(J0);
+				
+				
+				  auto sector_index = density_sectors.LookUpSectorIndex(subspace_index_a, subspace_index_c);
+		  
+				  if (sector_index == basis::kNone) continue;
+
+				  for (std::size_t state_index_a = 0; state_index_a < subspace_a.size(); ++state_index_a) {
+				    for (std::size_t state_index_c = 0; state_index_c < subspace_c.size(); ++state_index_c) {
+
+				      double interaction_matrix_element =
+					GetInteractionMatrixElement(input_stream, state_index_a, state_index_b, state_index_c, state_index_d, two_body_species,valid_J[i], g );
+				      if(interaction_matrix_element != 0.0){
+
+					// std::cout<< "density matrix element : " << std::endl;
+					// std::cout<< "< " << state_index_a <<"| ca_dag cc |" << state_index_c << ">  : " 
+					//	     << density_blocks[sector_index](state_index_a, state_index_c) << " \n";
+
+					// std::cout<< "interaction_matrix_element : " << "< " << state_index_a
+					//	     << ", " << state_index_b << "| " << interaction_matrix_element
+					//	     << " |" << state_index_c << ", " << state_index_d
+					//	     << "> " << std::endl;
+					matrix_element_output += phase_factor * cg_coeff_6j * density_blocks[sector_index](state_index_a, state_index_c) *
+					  interaction_matrix_element;
+				      }
+				    }
+				    // std::cout<< "\n";
+				  }
 		      
-			      }
+				}
 			      
 			    }
-			  std::cout<< "< "<< state_index_b << " , " << subspace_index_b << "| " << " V " << " |"
-				   << state_index_d << " , " << subspace_index_b  << "> = " << matrix_element_output << std::endl;
 			}
+		      std::cout<< "< "<< state_index_b << " , " << subspace_index_b << "| " << " V " << " |"
+			       << state_index_d << " , " << subspace_index_d  << "> = " << matrix_element_output << std::endl;
 		    }
 		}
 	    }
