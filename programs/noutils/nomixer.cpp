@@ -165,21 +165,19 @@ void ReadParameters(RunParameters& run_parameters, std::string input_filename) {
   
 }
 
-double GetInteractionMatrixElement(shell::InH2Stream& input_stream,// (TODO (slv) should not pass an entire)
+double GetInteractionMatrixElement(shell::InH2Stream& input_stream,// (TODO (slv) should not pass an entire stream)
+				   // But the refernce to the object is not same as the object itself
 				   std::size_t state_index_a,
 				   std::size_t state_index_b,
 				   std::size_t state_index_c,
 				   std::size_t state_index_d,
 				   const basis::TwoBodySpeciesPN two_body_species,
-				   HalfInt J, int g
+				   HalfInt J,HalfInt JPrime,  int g
 				   ){
   // references
   const basis::OrbitalSpacePN& orbital_space = input_stream.orbital_space();
   const basis::TwoBodySpaceJJJPN& input_space = input_stream.space();
   const basis::TwoBodySectorsJJJPN& input_sectors = input_stream.sectors();
-
-   // TODO (slv) This should be selected according to what species a,b,c and d belong
-  //  basis::TwoBodySpeciesPN two_body_species = basis::TwoBodySpeciesPN::kPN; // selecting pp interaction
 
   // objects
   // Hard coded right now but output_h2_format  can be passed later
@@ -203,12 +201,14 @@ double GetInteractionMatrixElement(shell::InH2Stream& input_stream,// (TODO (slv
 
   // look up indices
   // tb_subspace_index = subspace_index_bra = subspace_index_ket
-  std::size_t tb_subspace_index =
+  std::size_t tb_subspace_index_bra =
     tb_space.LookUpSubspaceIndex(basis::TwoBodySubspaceJJJPN::LabelsType(two_body_species, J , g));
+  std::size_t tb_subspace_index_ket =
+    tb_space.LookUpSubspaceIndex(basis::TwoBodySubspaceJJJPN::LabelsType(two_body_species, JPrime , g));
   // std::cout<< "tb_subspace index " << tb_subspace_index << std::endl;
 
-  const basis::TwoBodySubspaceJJJPN& tb_subspace = tb_space.GetSubspace(tb_subspace_index);
-
+  const basis::TwoBodySubspaceJJJPN& tb_subspace_bra = tb_space.GetSubspace(tb_subspace_index_bra);
+  const basis::TwoBodySubspaceJJJPN& tb_subspace_ket = tb_space.GetSubspace(tb_subspace_index_ket);
   // std::cout<< tb_subspace.DebugStr() << std::endl;
 
   // std::cout<< "tb_subspace size " << tb_subspace.size() << std::endl;
@@ -217,13 +217,13 @@ double GetInteractionMatrixElement(shell::InH2Stream& input_stream,// (TODO (slv
   // std::cout<< "tb_subspace J " << tb_subspace.J() << std::endl;
   // std::cout<< "tb_subspace g " << tb_subspace.g() << std::endl;
   
-  std::size_t sector_index = tb_sectors.LookUpSectorIndex(tb_subspace_index, tb_subspace_index);
+  std::size_t sector_index = tb_sectors.LookUpSectorIndex(tb_subspace_index_bra, tb_subspace_index_ket);
   // std::cout<< "sector_index " << sector_index << std::endl;
 
   std::size_t state_index_bra =
-    tb_subspace.LookUpStateIndex(basis::TwoBodyStateJJJPN::StateLabelsType(state_index_a, state_index_b));
+    tb_subspace_bra.LookUpStateIndex(basis::TwoBodyStateJJJPN::StateLabelsType(state_index_a, state_index_b));
   std::size_t state_index_ket =
-    tb_subspace.LookUpStateIndex(basis::TwoBodyStateJJJPN::StateLabelsType(state_index_c, state_index_d));
+    tb_subspace_ket.LookUpStateIndex(basis::TwoBodyStateJJJPN::StateLabelsType(state_index_c, state_index_d));
 
   double matrix_element = 0.0;
 
@@ -241,6 +241,7 @@ double GetInteractionMatrixElement(shell::InH2Stream& input_stream,// (TODO (slv
   return matrix_element;
 }
 
+
 int main(){
   
   RunParameters run_parameters;
@@ -254,6 +255,13 @@ int main(){
   std::cout << input_stream.DiagnosticStr();
   std::cout << std::endl;
 
+  // open output
+  std::ofstream out_stream(run_parameters.output_filename, run_parameters.file_mode);
+  mcutils::StreamCheck( bool(out_stream), run_parameters.output_filename,
+		       "Failure opening file for output"
+		       );
+  std::ostringstream section_stream;
+  
   /*
   
   // testing with hardcoded state_indices
@@ -348,7 +356,6 @@ int main(){
       //This stores density_sectors and  and density_blocks of multipole J0
       obdme_s.GetMultipole(J0, density_sectors, density_blocks);
 
-      
 
       std::cout<< "Size of the LJPN space : " << space.size() << std::endl;
       
@@ -408,70 +415,83 @@ int main(){
 			      if(subspace_a.j() != subspace_c.j()) continue;
 
 			      HalfInt::vector valid_J = am::ProductAngularMomenta(subspace_a.j(),subspace_b.j());
+			      HalfInt::vector valid_JPrime = am::ProductAngularMomenta(subspace_c.j(),subspace_d.j());
+
 			      // Here I need to be decent to use iterators
-				for(int i=0; i<valid_J.size(); i++)
+				for(int x=0; x<valid_J.size(); x++)
 				{
-				  // This is where I have to check the triangle condition
-				  // Here I am taking J = J'
-				  // The following is zero condition for the 6J symbol
-				  // (J,   j_b,   j_a)
-				  // (j_d, J , lambda)
+				  for(int y=0; y<valid_JPrime.size();y++)
+				    {
+				      // This is where I have to check the triangle condition
+				      // Here I am taking J!= J'
+				      // The following is zero condition for the 6J symbol
+				      // (J,   j_b,   j_a)
+				      // (j_d, J' , lambda)
 				  
-				  if (!am::AllowedTriangle(valid_J[i], subspace_b.j(), subspace_a.j())||
-				      !am::AllowedTriangle(subspace_d.j(), valid_J[i], subspace_a.j())||
-				      !am::AllowedTriangle(subspace_d.j(), subspace_b.j(), J0 )||
-				      !am::AllowedTriangle(valid_J[i], valid_J[i], J0)){
-				    continue;
-				  }
-
-				  // check for 6J symbol to be zero; skip the rest of the loop if accidental zero
-				  double cg_coeff_6j = am::Wigner6J(valid_J[i], subspace_b.j(), subspace_a.j(),
-								    subspace_d.j(), valid_J[i], J0);
-
-				  if (std::abs(cg_coeff_6j) < 1e-8) continue;
-			      
-			      
-				  // TO DO : Must figure out how to include this phase factor
-				  double phase_factor = 1; // - 2*((3 * subspace_a.j() + 3*J0 + 2*subspace_b.j()+ 2* J + J +subspace_d.j()) % 2);
-
-				  phase_factor *= Hat(subspace_a.j());
-				  phase_factor *= Hat(J0);
-				
-				
-				  auto sector_index = density_sectors.LookUpSectorIndex(subspace_index_a, subspace_index_c);
-		  
-				  if (sector_index == basis::kNone) continue;
-
-				  for (std::size_t state_index_a = 0; state_index_a < subspace_a.size(); ++state_index_a) {
-				    for (std::size_t state_index_c = 0; state_index_c < subspace_c.size(); ++state_index_c) {
-
-				      double interaction_matrix_element =
-					GetInteractionMatrixElement(input_stream, state_index_a, state_index_b, state_index_c, state_index_d, two_body_species,valid_J[i], g );
-				      if(interaction_matrix_element != 0.0){
-
-					// std::cout<< "density matrix element : " << std::endl;
-					// std::cout<< "< " << state_index_a <<"| ca_dag cc |" << state_index_c << ">  : " 
-					//	     << density_blocks[sector_index](state_index_a, state_index_c) << " \n";
-
-					// std::cout<< "interaction_matrix_element : " << "< " << state_index_a
-					//	     << ", " << state_index_b << "| " << interaction_matrix_element
-					//	     << " |" << state_index_c << ", " << state_index_d
-					//	     << "> " << std::endl;
-					matrix_element_output += phase_factor * cg_coeff_6j * density_blocks[sector_index](state_index_a, state_index_c) *
-					  interaction_matrix_element;
+				      if (!am::AllowedTriangle(valid_J[x], subspace_b.j(), subspace_a.j())||
+					  !am::AllowedTriangle(subspace_d.j(), valid_JPrime[y], subspace_a.j())||
+					  !am::AllowedTriangle(subspace_d.j(), subspace_b.j(), J0 )||
+					  !am::AllowedTriangle(valid_J[y], valid_JPrime[y], J0)){
+					continue;
 				      }
-				    }
-				    // std::cout<< "\n";
-				  }
-		      
-				}
+
+				      // check for 6J symbol to be zero; skip the rest of the loop if accidental zero
+				      double cg_coeff_6j = am::Wigner6J(valid_J[x], subspace_b.j(), subspace_a.j(),
+									subspace_d.j(), valid_JPrime[y], J0);
+
+				      if (std::abs(cg_coeff_6j) < 1e-8) continue;
 			      
+				      // TO DO : Must figure out how to include this phase factor
+				      double phase_factor = 1; // - 2*((3 * subspace_a.j() + 3*J0 + 2*subspace_b.j()+ 2* J + J +subspace_d.j()) % 2);
+				      
+				      phase_factor *= Hat(subspace_a.j());
+				      phase_factor *= Hat(valid_J[x]);
+				      phase_factor *= Hat(valid_JPrime[y]);
+
+				      auto sector_index = density_sectors.LookUpSectorIndex(subspace_index_a, subspace_index_c);
+		  
+				      if (sector_index == basis::kNone) continue;
+				  
+				      for (std::size_t state_index_a = 0; state_index_a < subspace_a.size(); ++state_index_a) {
+					for (std::size_t state_index_c = 0; state_index_c < subspace_c.size(); ++state_index_c) {
+
+					  double interaction_matrix_element =
+					    GetInteractionMatrixElement(input_stream, state_index_a, state_index_b, state_index_c,
+									state_index_d, two_body_species, valid_J[x],valid_JPrime[y], g );
+					  if(interaction_matrix_element != 0.0){
+
+					    // std::cout<< "density matrix element : " << std::endl;
+					    // std::cout<< "< " << state_index_a <<"| ca_dag cc |" << state_index_c << ">  : " 
+					    //	     << density_blocks[sector_index](state_index_a, state_index_c) << " \n";
+
+					    // std::cout<< "interaction_matrix_element : " << "< " << state_index_a
+					    //	     << ", " << state_index_b << "| " << interaction_matrix_element
+					    //	     << " |" << state_index_c << ", " << state_index_d
+					    //	     << "> " << std::endl;
+					    matrix_element_output +=  phase_factor * cg_coeff_6j * density_blocks[sector_index](state_index_a, state_index_c) *
+					      interaction_matrix_element;
+					  }
+					}
+					// std::cout<< "\n";
+				      }
+		      
+				    }
+				}
 			    }
 			}
+		      //section_stream << fmt::format(
+		      //				    "  {:>4.1f} {:>3d} {:>3d}  {:>4.1f} {:>3d} {:>3d}  {:15.8e}",
+		      //				    float(density_stream->J_bra()), density_stream->g_bra(), density_stream->n_bra(),
+		      //				    float(density_stream->J_ket()), density_stream->g_ket(), density_stream->n_ket(),
+		      //                                     matrix_element_output
+		      //				    ) << std::endl;
+		      
 		      std::cout<< "< "<< state_index_b << " , " << subspace_index_b << "| " << " V " << " |"
-			       << state_index_d << " , " << subspace_index_d  << "> = " << matrix_element_output << std::endl;
+			       << state_index_d << " , " << subspace_index_d  << "> = " << std::pow(Hat(J0),4) *matrix_element_output << std::endl;
 		    }
 		}
+
+	      out_stream << section_stream.str() << std::flush;
 	    }
 	}
     }
