@@ -38,14 +38,15 @@
 ////////////////////////////////////////////////////////////////
 // process arguments
 /////////////////////////////////////////////////////////////////
+/*
 // Store one-body operators
-/* // (slv): I will need this to store the matrix elements
+// (slv): I will need this to store the matrix elements
 struct OneBodyOperator {
--  std::string name;
+  //std::string name;
   basis::OrbitalSpaceLJPN space;
   basis::OrbitalSectorsLJPN sectors;
   basis::OperatorBlocks<double> blocks;
-
+  
   explicit OneBodyOperator(const std::string& name__, const std::string& filename)
       : name(name__)
   {
@@ -59,17 +60,17 @@ struct OneBodyOperator {
     assert(space.OrbitalInfo() == ket_space.OrbitalInfo());
     is.Close();
   }
+  
 };
 */
 
 // Stores parameters for run
 struct RunParameters {
   // filenames
-  std::string output_filename; //(slv) Needed for saving matrix elements later
+  std::string output_filename; //(slv) Needed for saving matrix elements
   std::string interaction_filename;
   std::ios_base::openmode file_mode; //(slv)TODO: Check what this does
   basis::OrbitalSpaceLJPN space;
-  // std::vector<OneBodyOperator> operators;  // (slv) Not needed for storing ROBDMEs
   std::vector<std::unique_ptr<shell::InOBDMEStream>> density_streams;
   // shell::H2Format output_h2_format;
 };
@@ -166,7 +167,7 @@ void ReadParameters(RunParameters& run_parameters, std::string input_filename) {
 }
 
 double GetInteractionMatrixElement(shell::InH2Stream& input_stream,// (TODO (slv) should not pass an entire stream)
-				   // But the refernce to the object is not same as the object itself
+				   // But the reference to the object is not same as the object itself
 				   std::size_t state_index_a,
 				   std::size_t state_index_b,
 				   std::size_t state_index_c,
@@ -255,12 +256,39 @@ int main(){
   std::cout << input_stream.DiagnosticStr();
   std::cout << std::endl;
 
+  //OneBodyOperator ob_operator;  //(slv) storing the operator matrix elements
+  // I presume this is equivalent to multipolarity K of the density operator, ref mfdn.rppobdme.info
+  // this is my lambda
+  //  const basis::OrbitalSectorsLJPN& out_sector = ob_operator.sectors;
+  const int J0= 0;
+  const int g0 = 0; // setting positive parity
+  const int Tz0 = 0; // setting kP
   // open output
   std::ofstream out_stream(run_parameters.output_filename, run_parameters.file_mode);
   mcutils::StreamCheck( bool(out_stream), run_parameters.output_filename,
 		       "Failure opening file for output"
 		       );
   std::ostringstream section_stream;
+  section_stream << "[One-body observable]" << std::endl;
+  section_stream << fmt::format(
+				"# {:>3} {:>3} {:>3}  {:s}",
+				"J0", "g0", "Tz0", "name"
+				) << std::endl;
+  section_stream << fmt::format(
+				"  {:>3d} {:>3d} {:>3d}  {:s}",
+				J0, g0 , Tz0, "Hamiltonian-Like" // (slv) :I need to input this
+				) << std::endl;
+  section_stream << fmt::format(
+				"# {:>4} {:>3} {:>3}  {:>4} {:>3} {:>3}  {:>15s}",
+				"Jf", "gf", "nf",
+				"Ji", "gi", "ni",
+				"rme"
+				) << std::endl;
+
+  //=================================================================================
+  // Following bit of code can be used to select particular interaction matrix element
+  //
+  //=================================================================================
   
   /*
   
@@ -278,8 +306,11 @@ int main(){
 
 
   /*
-  
+  //===================================================================================
   // Accessing the density matrix elements
+  //
+  //=====================================================================================
+  
   for (const auto& density_stream : run_parameters.density_streams)
     {
       
@@ -319,7 +350,6 @@ int main(){
 
 
     */
-
   
   
   //========================================================================
@@ -346,12 +376,6 @@ int main(){
       basis::OrbitalSectorsLJPN density_sectors;
       basis::OperatorBlocks<double> density_blocks;
       
-      //(slv) Here I should perhaps use an accessor like op.sectors.J0() but density_sectors.J0()
-      // throws an error; Assertion `(J0 >= J0_min()) && (J0 <= J0_max())' failed.
-      // I presume this is equivalent to multipolarity K of the density operator, ref mfdn.rppobdme.info
-      // this is my lambda
-      int J0=0;
-      int g = 0; // setting positive parity
       
       //This stores density_sectors and  and density_blocks of multipole J0
       obdme_s.GetMultipole(J0, density_sectors, density_blocks);
@@ -369,13 +393,20 @@ int main(){
 
 	      const auto& subspace_b = space.GetSubspace(subspace_index_b);
 	      const auto& subspace_d = space.GetSubspace(subspace_index_d);
-	      if(subspace_b.j() != subspace_d.j()){
-			continue;
-		      }
-	      auto sector_index_output = density_sectors.LookUpSectorIndex(subspace_index_b, subspace_index_d);
-	      std::cout<< "Size of subspace b with index : " << subspace_index_b << " in LJPN space of size : " << subspace_b.size() << std::endl;
-	      std::cout<< "Size of subspace d with index : " << subspace_index_d << " in LJPN space of size : " << subspace_d.size() << std::endl;
+	      int species_b =int(subspace_b.orbital_species());
+	      int species_d =int(subspace_d.orbital_species());
 
+	      if(species_b != species_d) continue;
+	      // For now I have to apply this condition for the results to make sense
+	      // But does an operator has isospin? It has parity  and rank.
+	      if(species_b != Tz0) continue;
+	      
+	      if(subspace_b.j() != subspace_d.j()) continue;
+		      	      
+	      auto sector_index_output = density_sectors.LookUpSectorIndex(subspace_index_b, subspace_index_d);
+	      // std::cout<< "Size of subspace b with index : " << subspace_index_b << " in LJPN space of size : " << subspace_b.size() << std::endl;
+	      //std::cout<< "Size of subspace d with index : " << subspace_index_d << " in LJPN space of size : " << subspace_d.size() << std::endl;
+	      
 	      for (std::size_t state_index_b = 0; state_index_b < subspace_b.size(); ++state_index_b)
 		{
 		  for (std::size_t state_index_d = 0; state_index_d < subspace_d.size(); ++state_index_d)
@@ -383,7 +414,7 @@ int main(){
 		      
 		      // Set the output matrix element to be zero
 		      double matrix_element_output = 0.0;
-
+		      		      
 		      //the following is the summation
 
 		      for (std::size_t subspace_index_a=0; subspace_index_a<space.size(); ++subspace_index_a)
@@ -395,13 +426,13 @@ int main(){
 			      const auto& subspace_c = space.GetSubspace(subspace_index_c);
 
 			      int species_a =int(subspace_a.orbital_species());
-			      int species_b =int(subspace_b.orbital_species());
 			      int species_c =int(subspace_c.orbital_species());
-			      int species_d =int(subspace_d.orbital_species());
+			      
 			      basis::TwoBodySpeciesPN two_body_species;
 			      
-			      if(species_a != species_c || species_b != species_d) continue;
+			      if(species_a != species_c) continue;
 
+			      // (slv) Double check the following conditions
 			      if(species_a==0 && species_b==0){
 				two_body_species= basis::TwoBodySpeciesPN::kPP;
 			      }
@@ -419,81 +450,86 @@ int main(){
 
 			      // Here I need to be decent to use iterators
 				for(int x=0; x<valid_J.size(); x++)
-				{
-				  for(int y=0; y<valid_JPrime.size();y++)
-				    {
-				      // This is where I have to check the triangle condition
-				      // Here I am taking J!= J'
-				      // The following is zero condition for the 6J symbol
-				      // (J,   j_b,   j_a)
-				      // (j_d, J' , lambda)
+				  {
+				    for(int y=0; y<valid_JPrime.size();y++)
+				      {
+					// This is where I have to check the triangle condition
+					// Here I am taking J!= J'
+					// The following is zero condition for the 6J symbol
+					// (J,   j_b,   j_a)
+					// (j_d, J' , lambda)
 				  
-				      if (!am::AllowedTriangle(valid_J[x], subspace_b.j(), subspace_a.j())||
-					  !am::AllowedTriangle(subspace_d.j(), valid_JPrime[y], subspace_a.j())||
-					  !am::AllowedTriangle(subspace_d.j(), subspace_b.j(), J0 )||
-					  !am::AllowedTriangle(valid_J[y], valid_JPrime[y], J0)){
-					continue;
-				      }
-
-				      // check for 6J symbol to be zero; skip the rest of the loop if accidental zero
-				      double cg_coeff_6j = am::Wigner6J(valid_J[x], subspace_b.j(), subspace_a.j(),
-									subspace_d.j(), valid_JPrime[y], J0);
-
-				      if (std::abs(cg_coeff_6j) < 1e-8) continue;
-			      
-				      // TO DO : Must figure out how to include this phase factor
-				      double phase_factor = 1; // - 2*((3 * subspace_a.j() + 3*J0 + 2*subspace_b.j()+ 2* J + J +subspace_d.j()) % 2);
-				      
-				      phase_factor *= Hat(subspace_a.j());
-				      phase_factor *= Hat(valid_J[x]);
-				      phase_factor *= Hat(valid_JPrime[y]);
-
-				      auto sector_index = density_sectors.LookUpSectorIndex(subspace_index_a, subspace_index_c);
-		  
-				      if (sector_index == basis::kNone) continue;
-				  
-				      for (std::size_t state_index_a = 0; state_index_a < subspace_a.size(); ++state_index_a) {
-					for (std::size_t state_index_c = 0; state_index_c < subspace_c.size(); ++state_index_c) {
-
-					  double interaction_matrix_element =
-					    GetInteractionMatrixElement(input_stream, state_index_a, state_index_b, state_index_c,
-									state_index_d, two_body_species, valid_J[x],valid_JPrime[y], g );
-					  if(interaction_matrix_element != 0.0){
-
-					    // std::cout<< "density matrix element : " << std::endl;
-					    // std::cout<< "< " << state_index_a <<"| ca_dag cc |" << state_index_c << ">  : " 
-					    //	     << density_blocks[sector_index](state_index_a, state_index_c) << " \n";
-
-					    // std::cout<< "interaction_matrix_element : " << "< " << state_index_a
-					    //	     << ", " << state_index_b << "| " << interaction_matrix_element
-					    //	     << " |" << state_index_c << ", " << state_index_d
-					    //	     << "> " << std::endl;
-					    matrix_element_output +=  phase_factor * cg_coeff_6j * density_blocks[sector_index](state_index_a, state_index_c) *
-					      interaction_matrix_element;
-					  }
+					if (!am::AllowedTriangle(valid_J[x], subspace_b.j(), subspace_a.j())||
+					    !am::AllowedTriangle(subspace_d.j(), valid_JPrime[y], subspace_a.j())||
+					    !am::AllowedTriangle(subspace_d.j(), subspace_b.j(), J0 )||
+					    !am::AllowedTriangle(valid_J[y], valid_JPrime[y], J0)){
+					  continue;
 					}
-					// std::cout<< "\n";
-				      }
+
+					// check for 6J symbol to be zero; skip the rest of the loop if accidental zero
+					double cg_coeff_6j = am::Wigner6J(valid_J[x], subspace_b.j(), subspace_a.j(),
+									  subspace_d.j(), valid_JPrime[y], J0);
+
+					if (std::abs(cg_coeff_6j) < 1e-8) continue;
+			      
+					// TO DO : Must figure out how to include this phase factor - done
+					double phase_factor = double(ParitySign(3 * subspace_a.j() +
+										3*J0 + 2*subspace_b.j()+
+										valid_JPrime[y] + subspace_d.j()));
+					phase_factor *= Hat(subspace_a.j());
+					phase_factor *= Hat(valid_J[x]);
+					phase_factor *= Hat(valid_JPrime[y]);
+
+					auto sector_index = density_sectors.LookUpSectorIndex(subspace_index_a, subspace_index_c);
+		  
+					if (sector_index == basis::kNone) continue;
+				  
+					for (std::size_t state_index_a = 0; state_index_a < subspace_a.size(); ++state_index_a)
+					  {
+					    for (std::size_t state_index_c = 0; state_index_c < subspace_c.size(); ++state_index_c)
+					      {
+
+						double interaction_matrix_element =
+						  GetInteractionMatrixElement(input_stream, state_index_a, state_index_b, state_index_c,
+									      state_index_d, two_body_species, valid_J[x],valid_JPrime[y], g0 );
+						if(interaction_matrix_element != 0.0)
+						  {
+
+						    // std::cout<< "density matrix element : " << std::endl;
+						    // std::cout<< "< " << state_index_a <<"| ca_dag cc |" << state_index_c << ">  : " 
+						    //	     << density_blocks[sector_index](state_index_a, state_index_c) << " \n";
+						    
+						    // std::cout<< "interaction_matrix_element : " << "< " << state_index_a
+						    //	     << ", " << state_index_b << "| " << interaction_matrix_element
+						    //	     << " |" << state_index_c << ", " << state_index_d
+						    //	     << "> " << std::endl;
+						    matrix_element_output +=  phase_factor * cg_coeff_6j *
+						      density_blocks[sector_index](state_index_a, state_index_c) *
+						      interaction_matrix_element;
+						  }
+					      }
+					    // std::cout<< "\n";
+					  }
 		      
-				    }
-				}
+				      }
+				  }
 			    }
 			}
-		      //section_stream << fmt::format(
-		      //				    "  {:>4.1f} {:>3d} {:>3d}  {:>4.1f} {:>3d} {:>3d}  {:15.8e}",
-		      //				    float(density_stream->J_bra()), density_stream->g_bra(), density_stream->n_bra(),
-		      //				    float(density_stream->J_ket()), density_stream->g_ket(), density_stream->n_ket(),
-		      //                                     matrix_element_output
-		      //				    ) << std::endl;
+		      section_stream << fmt::format(
+		      				    "  {:>4.1f} {:>3d} {:>3d}  {:>4.1f} {:>3d} {:>3d}  {:15.8e}",
+		      				    float(subspace_b.j()), subspace_b.g(), state_index_b,// here I think state indices are n
+		      				    float(subspace_d.j()), subspace_d.g(), state_index_d,
+						    matrix_element_output * (-1) * pow(Hat(J0),4)
+						    ) << std::endl;
 		      
-		      std::cout<< "< "<< state_index_b << " , " << subspace_index_b << "| " << " V " << " |"
+		       std::cout<< "< "<< state_index_b << " , " << subspace_index_b << "| " << " V " << " |"
 			       << state_index_d << " , " << subspace_index_d  << "> = " << std::pow(Hat(J0),4) *matrix_element_output << std::endl;
 		    }
 		}
 
-	      out_stream << section_stream.str() << std::flush;
 	    }
 	}
+      out_stream << section_stream.str() << std::flush;
     }
   
   return EXIT_SUCCESS;
