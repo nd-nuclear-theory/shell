@@ -22,6 +22,7 @@
 #include <fstream>
 
 #include "basis/nlj_orbital.h"
+#include "fmt/format.h"
 #include "mcutils/parsing.h"
 
 ////////////////////////////////////////////////////////////////
@@ -93,6 +94,7 @@ basis::OrbitalPNList ReadSPS(const std::string& filename)
     std::istringstream line_stream(line);
     std::string mode;
     line_stream >> mode;
+    // std::cout << fmt::format("mode {}", mode) << std::endl;
     mcutils::ParsingCheck(line_stream,line_count,line);
     assert(mode=="iso");
   }
@@ -104,6 +106,7 @@ basis::OrbitalPNList ReadSPS(const std::string& filename)
     std::istringstream line_stream(line);
     std::string mode;
     line_stream >> num_orbitals;
+    // std::cout << fmt::format("num_orbitals {}", num_orbitals) << std::endl;
     mcutils::ParsingCheck(line_stream,line_count,line);
     assert(num_orbitals>0);
   }
@@ -118,7 +121,7 @@ basis::OrbitalPNList ReadSPS(const std::string& filename)
       float n_raw, l_raw, j_raw, w_raw;
       line_stream >> n_raw >> l_raw >> j_raw >> w_raw;
       mcutils::ParsingCheck(line_stream,line_count,line);
-      //std::cout << fmt::format("{} {} {} {}", n_raw, l_raw, j_raw, w_raw) << std::endl;
+      // std::cout << fmt::format("Raw input data: {} {} {} {}", n_raw, l_raw, j_raw, w_raw) << std::endl;
 
       // convert orbital parameters
       int n = int(n_raw);
@@ -156,13 +159,16 @@ int main(int argc, const char *argv[])
   ProcessArguments(argc,argv,run_parameters);
 
   // read orbitals from sps file
+  std::cout << fmt::format("Reading orbital file {}...", run_parameters.input_filename) << std::endl;
   basis::OrbitalPNList orbitals = ReadSPS(run_parameters.input_filename);
   
   // write orbitals
+  std::cout << fmt::format("Writing orbital file {}...", run_parameters.output_filename) << std::endl;
   std::ofstream os(run_parameters.output_filename);
   os << basis::OrbitalDefinitionStr(
       orbitals, true, run_parameters.output_format
     );
+  os.close();
 
-  std::exit(EXIT_SUCCESS);
+  return EXIT_SUCCESS;
 }

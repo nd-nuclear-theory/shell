@@ -148,5 +148,5 @@ int main(int argc, char **argv)
   std::cout << std::endl;
   std::cout << "  Time: " << two_body_jjjpn_timer.ElapsedTime() << std::endl;
 
-  std::exit(EXIT_SUCCESS);
+  return EXIT_SUCCESS;
 }

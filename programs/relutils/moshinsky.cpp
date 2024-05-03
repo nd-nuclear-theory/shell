@@ -713,5 +713,5 @@ int main(int argc, char **argv)
   total_run_timer.Stop();
   std::cout << "Total run time: " << total_run_timer.ElapsedTime() << std::endl;
 
-  std::exit(EXIT_SUCCESS);
+  return EXIT_SUCCESS;
 }
