@@ -10,20 +10,19 @@
 
   Syntax:
 
-    + xpn2h2 orbital_filename input_filename output_tbme_filename
-
-    programs/h2utils/xpn2h2 --truncation 6 6 --obme-filename JISP16-tb-6-20_obme.dat ncci-tb-6.dat JISP16-tb-6-20.int JISP16-tb-6-20.dat
+    + xpn2h2 [--truncation w1max w2max] [--obme-filename output_obme_filename] 
+          orbital_filename input_filename output_tbme_filename
 
   Assumed file format for XPN file:
 
-    + comment lines beginning with hash ('#')
+    + comment lines beginning with hash ('#') or bang ('!')
 
     + header (possibly wrapped over multiple lines):
 
         num_me spe1 spe2 ...
 
         num_me (int): number of matrix elements to follow
-        spe1, ... (float): single particle energies
+        spe1, ... (float): single particle energies (first protons, then neutrons)
 
     + lines of form
 
@@ -39,14 +38,27 @@
         ME (float): matrix element
 
   Limitations:
-    + Input single particle energies or one-body matrix elements are ignored.
-    + Input XPN files with extra numbers after the SPEs (specifying the scaling) are *not* supported.
-    + Output h2 format is fixed as Version 15099.
 
-  See Sec 4.3.2 "Proton-neutron and other isospin-breaking formats" in
-  C. W. Johnson et al., "BIGSTICK: A flexible configuration-interaction
-  shell-model code", arXiv:1801.08432.
+    + Although this is not documented in the BIGSTICK manual, XPN files may
+      contain three extra floating point numbers in the header, after the SPEs,
+      defining Oxbash-style parameters for the scaling of TBMEs with mass.  Any
+      such parameters must be manually deleted from the file before use with
+      xpn2h2.
 
+  References:
+
+    + Sec 4.3.2 "Proton-neutron and other isospin-breaking formats" in
+      C. W. Johnson et al., "BIGSTICK: A flexible configuration-interaction
+      shell-model code", arXiv:1801.08432.
+
+  Examples:
+
+    programs/obutils/sps2orbital test/ncci-tb-6.sps test/ncci-tb-6_orbital.dat
+    programs/h2utils/xpn2h2 --truncation 6 6 --obme-filename test/JISP16-tb-6-20_obme.dat test/ncci-tb-6_orbital.dat test/JISP16-tb-6-20.int test/JISP16-tb-6-20_tbme.dat
+
+    programs/obutils/sps2orbital test/sd.sps test/sd_orbital.dat
+    programs/h2utils/xpn2h2 --truncation 3 6 --obme-filename test/usdb_obme.dat test/sd_orbital.dat test/usdbpn-EDT.int test/usdb_tbme.dat
+      
   Mark A. Caprio
   University of Notre Dame
 
@@ -55,7 +67,8 @@
   + 03/07/24 (mac):
     - Provide --truncation option to specify output weight truncation.
     - Factor out canonicalization routines to basis/jjjpn_operator.
-      
+  + 05/03/24 (mac): Implement handling of SPEs.
+
 ******************************************************************************/
 
 #include <fstream>
@@ -94,8 +107,8 @@ struct RunParameters
 
 void PrintUsage(const char **argv) {
   std::cout << "Usage: " << argv[0]
-            << " [--truncation w1max w2max] [--obme-filename output_obme_file] " << std::endl
-            << "       orbital_file input_file output_tbme_file"
+            << " [--truncation w1max w2max] [--obme-filename output_obme_filename] " << std::endl
+            << "       orbital_filename input_filename output_tbme_filename"
             << std::endl;
 }
 
@@ -406,56 +419,42 @@ void StoreOBMEs(
 //   one_body_matrices (basis::OperatorBlocks<double>, output): matrices for storage of obmes
 {
 
-  for (std::size_t orbital_index=0; orbital_index<orbital_space.size(); ++orbital_index)
+  for (std::size_t global_orbital_index=0; global_orbital_index<orbital_space.dimension(); ++global_orbital_index)
     {
-      // retrieve XPN TMBE datum
-      const auto& spe = spe_data[orbital_index];
 
-      // std::cout << fmt::format(
-      //     "{:6d} {:2d} {:2d} {:2d} {:2d} {:2d} {:2d} {:e}",
-      //     datum_index,
-      //     datum.a, datum.b, datum.c, datum.d, datum.J, datum.T, datum.me
-      //   ) << std::endl;
 
-      // // look up bra and ket states
-      // std::size_t subspace_index_bra, subspace_index_ket;
-      // std::size_t state_index_bra, state_index_ket;
-      // double canonicalization_factor_bra, canonicalization_factor_ket;
-      // std::tie(subspace_index_bra, state_index_bra, canonicalization_factor_bra)
-      //   = LookUpStateFromXPNLabels(orbital_space, two_body_space, datum.a, datum.b, datum.J);
-      // std::tie(subspace_index_ket, state_index_ket, canonicalization_factor_ket)
-      //   = LookUpStateFromXPNLabels(orbital_space, two_body_space, datum.c, datum.d, datum.J);
-      // // std::cout << fmt::format("before canonicalization: subspace indices {} {} state indices {} {}", subspace_index_bra, subspace_index_ket, state_index_bra, state_index_ket) << std::endl;
-      // 
-      // // canonicalize matrix element labels
-      // int J0 = 0, g0 = 0;
-      // double canonicalization_factor;
-      // std::tie(
-      //     subspace_index_bra, subspace_index_ket,
-      //     state_index_bra, state_index_ket,
-      //     canonicalization_factor
-      //   ) =
-      //   CanonicalizeIndicesJJJPN(
-      //       two_body_space, J0, g0,
-      //       subspace_index_bra, subspace_index_ket,
-      //       state_index_bra, state_index_ket
-      //     );
-      // // std::cout << fmt::format("after canonicalization: subspace indices {} {} state indices {} {}", subspace_index_bra, subspace_index_ket, state_index_bra, state_index_ket) << std::endl;
-      // 
-      // // store ME
-      // double value = canonicalization_factor * canonicalization_factor_bra * canonicalization_factor_ket * datum.me;
-      // std::size_t sector_index = two_body_sectors.LookUpSectorIndex(subspace_index_bra, subspace_index_ket);
-      // if (sector_index == basis::kNone)
-      //   {
-      //     std::cout << fmt::format("ERROR: matrix element in nonexistent sector (subspace indices {} {} => sector index {}", subspace_index_bra, subspace_index_ket, sector_index) << std::endl;
-      //   }
-      // // std::cout
-      // //   << fmt::format(
-      // //       "subspace indices {} {} sector index {} state indices {} {} value {}",
-      // //       subspace_index_bra, subspace_index_ket, sector_index, state_index_bra, state_index_ket, value
-      // //     )
-      // //   << std::endl;      
-      // two_body_matrices[sector_index](state_index_bra, state_index_ket) = value;
+      // retrieve XPN SPE
+      //
+      // The RME of the number operator for an orbital, in Rose convention, is simply
+      // unity, so the independent particle hamiltonian simply has RMEs given by
+      //
+      //   <a||H_sp||b>_Rose = epsilon_a delta_{a,b}
+      const auto& value = spe_data[global_orbital_index];
+
+      // deduce indexing of orbital within PN orbitals
+      //
+      // Orbital indexing arithmetic assumes BIGSTICK space is symmetric between
+      // protons and neutrons (as in the SPS file "iso" mode).
+      std::size_t num_orbitals_per_species = orbital_space.dimension()/2;
+      std::size_t subspace_index = global_orbital_index / num_orbitals_per_species;
+      std::size_t state_index = global_orbital_index % num_orbitals_per_species;
+      
+      // deduce indexing of matrix element within LJPN storage
+      basis::OrbitalStatePN state = orbital_space.GetSubspace(subspace_index).GetState(state_index);
+      basis::FullOrbitalLabels orbital_labels = state.full_labels();
+      std::size_t one_body_sector_index, one_body_bra_state_index, one_body_ket_state_index;
+      std::tie(one_body_sector_index, one_body_bra_state_index, one_body_ket_state_index)
+        = basis::MatrixElementIndicesLJPN(
+            one_body_space,
+            one_body_space,
+            one_body_sectors,
+            orbital_labels,
+            orbital_labels
+          );
+      assert(one_body_bra_state_index == one_body_ket_state_index);
+
+      // store value
+      one_body_matrices[one_body_sector_index](one_body_bra_state_index, one_body_ket_state_index) = value;
       
     }
 }
@@ -599,9 +598,7 @@ int main(int argc, const char *argv[])
   // write OBME file
   if (run_parameters.output_obme_filename != "")
     {
-      std::cout << fmt::format("Writing OBME file {}...", run_parameters.output_obme_filename) << std::endl
-                << "Implementation in progress!" << std::endl
-                << std::endl;
+      std::cout << fmt::format("Writing OBME file {}...", run_parameters.output_obme_filename) << std::endl;
       shell::OutOBMEStream os(
           run_parameters.output_obme_filename,
           one_body_space, one_body_space, one_body_sectors,
@@ -634,8 +631,7 @@ int main(int argc, const char *argv[])
         );
       std::cout << "." << std::flush;
     }
-  output_stream.Close();
   std::cout << std::endl;
 
-  std::exit(EXIT_SUCCESS);
+  return EXIT_SUCCESS;
 }
