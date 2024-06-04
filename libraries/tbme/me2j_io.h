@@ -17,7 +17,7 @@
 #include <vector>
 #include <memory>
 
-#include "eigen3/Eigen/Core"
+#include <Eigen/Core>
 
 #include "basis/jjjttz_scheme.h"
 #include "basis/operator.h"

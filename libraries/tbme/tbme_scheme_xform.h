@@ -19,7 +19,7 @@
 #ifndef TBME_SCHEME_XFORM_H_
 #define TBME_SCHEME_XFORM_H_
 
-#include "eigen3/Eigen/Dense"
+#include <Eigen/Dense>
 
 #include "basis/jjjt_operator.h"
 #include "basis/jjjttz_operator.h"
