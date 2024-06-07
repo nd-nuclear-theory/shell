@@ -173,10 +173,11 @@ Syntax:
     * This is the RME <i1 i2 J_bra || T || i3 i4 J_ket>_species.
 
     * The RME follows the group theory (=Rose) normalization and phase
-    convention for the Wigner-Eckart theorem.  Thus, for scalar operators, it is
-    simply the M-independent matrix element
+    convention for the Wigner-Eckart theorem.  Thus, for scalar operators (thus,
+    J_bra=J_ket=J), it is simply the M-independent matrix element
 
-        <i1 i2 J || T_0 || i2 i4 J> = <i1 i2 J M || T_0 || i3 i4 J M>
+          <i1 i2 J || T_0 || i3 i4 J> = <i1 i2 J M | T_00 | i3 i4 J M>
+               = <i1 i2 J | T_00 | i3 i4 J>
 
     This matrix element differs by a factor of J_bra-hat from the RME under the
     Edmonds (=Suhonen=Varshalovich) convention for the Wigner-Eckart theorem.
