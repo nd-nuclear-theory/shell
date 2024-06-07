@@ -10,6 +10,7 @@ Mark A. Caprio, Patrick J. Fasano
   + 06/03/19 (pjf): Clarify that all labels are written for proton orbitals
     before labels for neutron orbitals.
   + 07/12/23 (mac): Restore reference to csbasis for definition of NAS.
+  + 06/07/24 (mac): Fix notation in ME in discussion of Wigner-Eckart convention.
   
 ----------------------------------------------------------------
 
