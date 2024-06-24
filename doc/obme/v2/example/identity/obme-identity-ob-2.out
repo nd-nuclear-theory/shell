@@ -1,0 +1,12 @@
+
+obmixer -- one-body matrix element generation
+version: 1.0.0-56-g7fe3f9e
+
+Parallelization: max_threads 8, num_procs 8
+
+Constructing one-body matrix elements for operator identity...
+  10 sectors; 16 matrix elements
+
+Writing one-body matrix element for operator identity to file obme-identity-ob-2.dat...
+(Total time: 0.000388411)
+
