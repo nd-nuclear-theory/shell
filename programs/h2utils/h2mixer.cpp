@@ -1220,6 +1220,7 @@ void OneBodyBuiltinChannel::ConstructOneBodyOperatorData(
   else
     {
       std::ifstream orbital_file(orbital_filename);
+      mcutils::StreamCheck(bool(orbital_file), orbital_filename, "Failure opening orbital file for input");
       basis::OrbitalPNList orbital_info = basis::ParseOrbitalPNStream(orbital_file,true);
       operator_data.orbital_space = basis::OrbitalSpaceLJPN(orbital_info);
     }
@@ -1526,6 +1527,7 @@ void InitializeTargetIndexing(
     // generic indexing
     {
       std::ifstream orbital_file(run_parameters.orbital_filename);
+      mcutils::StreamCheck(bool(orbital_file), run_parameters.orbital_filename, "Failure opening orbital file for input");
       basis::OrbitalPNList orbital_info = basis::ParseOrbitalPNStream(orbital_file,true);
       orbital_info = basis::TruncateOrbitalList(run_parameters.weight_max, orbital_info);
       target_indexing.orbital_space = basis::OrbitalSpacePN(orbital_info);
