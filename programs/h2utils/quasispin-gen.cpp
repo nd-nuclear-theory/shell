@@ -1,10 +1,10 @@
 /***************************************
 
-  h2pair.cpp -- create h2 file representing NAS pair-counting operator
+  quasispin-gen.cpp -- create h2 file representing NAS S+S- operator
 
   Syntax:
 
-    + h2pair orbital_filename n l 2*j particle_species truncation_rank N_max output_filename output_format
+    + quasispin-gen orbital_filename n l 2*j particle_species truncation_rank N_max output_filename output_format
 
 				orbital_filename (str): filename for orbitals.dat file used to make h2 file
 
@@ -87,7 +87,7 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters)
 	if (argc - 1 != 9)
 	{
 		std::cout << "9 arguments expected, " << argc - 1 << " arguments found." << std::endl;
-		std::cout << "Usage: h2pair orbital_filename n l 2*j particle_species truncation_rank N_max output_filename output_format" << std::endl;
+		std::cout << "Usage: quasispin-gen orbital_filename n l 2*j particle_species truncation_rank N_max output_filename output_format" << std::endl;
 		std::exit(EXIT_SUCCESS);
 	}
 	
@@ -120,7 +120,7 @@ void ProcessArguments(int argc, char **argv, RunParameters& run_parameters)
 	}
 	run_parameters.j = HalfInt(twice_j, 2);
 	
-	// input 5 (particle species of pair-counting operator)
+	// input 5 (particle species of operator)
 	std::string s5 = std::string(argv[5]);
 	if (s5 == "1" || s5 == "p")
 	{
@@ -181,7 +181,7 @@ int main(int argc, char** argv)
 {
 	// header
   std::cout << std::endl;
-  std::cout << "h2pair -- generating H2 files for pair-counting operators" << std::endl;
+  std::cout << "quasispin-gen -- generating H2 files for S+S- operators" << std::endl;
   std::cout << "version: " << VCS_REVISION << std::endl;
   std::cout << std::endl;
 
@@ -216,7 +216,7 @@ int main(int argc, char** argv)
 	std::size_t orbital_index = orbital_subspace.LookUpStateIndex(orbital_state_labels);
 	std::cout << "Done" << std::endl;
 	
-	// define quantum numbers for pair-counting operator
+	// define quantum numbers for S+S- operator
   const int J0 = 0;
   const int g0 = 0;
   const int Tz0 = 0;
@@ -245,7 +245,7 @@ int main(int argc, char** argv)
 		std::cout << "\nERROR: Orbital index entered has been truncated away by N_max entered" << std::endl;
 		std::exit(EXIT_FAILURE);
 	}
-	two_body_matrices[sector_index](two_body_state_index, two_body_state_index) = -2; // nonzero element for NAS pair-counting operator is always -2
+	two_body_matrices[sector_index](two_body_state_index, two_body_state_index) = 0.5 * (run_parameters.j.TwiceValue() + 1);
 	std::cout << "Done" << std::endl;
 	
 	// write h2 file
