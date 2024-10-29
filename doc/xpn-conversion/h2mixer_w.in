@@ -1,0 +1,15 @@
+# h2mixer_w.in -- upgrade SPEs to TBMEs for two-nucleon system
+
+set-target-indexing sd_orbital.dat 0. 0. 0. 0. 0.
+set-target-multipolarity 0 0 0
+set-output-format 15099
+set-mass 2
+
+# define input OBMEs and TBMEs
+define-ob-source input spes_ob w_obme.dat 0 0 0
+
+# define A-dependent two-body Hamiltonian
+define-tb-source operatorU spes_tb spes_ob
+define-target w-U.dat
+  add-source spes_tb 1.0
+  

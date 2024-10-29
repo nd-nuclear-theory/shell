@@ -41,9 +41,17 @@
 
     + Although this is not documented in the BIGSTICK manual, XPN files may
       contain three extra floating point numbers in the header, after the SPEs,
-      defining Oxbash-style parameters for the scaling of TBMEs with mass.  Any
-      such parameters must be manually deleted from the file before use with
-      xpn2h2.
+      defining Oxbash-style parameters for the scaling of TBMEs with mass.  For
+      example:
+
+      158     2.11170    -3.92570    -3.20790     2.11170    -3.92570    -3.20790 16. 18. 0.30 
+
+      These three extra number are normally harmless, in that they will be
+      ignored by xpn2h2.  An exception could occur if, in the input file, one or
+      more of these three numbers wrapped to a new line, without any preceding
+      SPEs on the same line.  Then this line would be confused with a corrupted
+      TBME line.  The solution would be to manually delete the extra numbers
+      from the file before use with xpn2h2.
 
   References:
 
@@ -51,14 +59,6 @@
       C. W. Johnson et al., "BIGSTICK: A flexible configuration-interaction
       shell-model code", arXiv:1801.08432.
 
-  Examples:
-
-    programs/obutils/sps2orbital test/ncci-tb-6.sps test/ncci-tb-6_orbital.dat
-    programs/h2utils/xpn2h2 --truncation 6 6 --obme-filename test/JISP16-tb-6-20_obme.dat test/ncci-tb-6_orbital.dat test/JISP16-tb-6-20.int test/JISP16-tb-6-20_tbme.dat
-
-    programs/obutils/sps2orbital test/sd.sps test/sd_orbital.dat
-    programs/h2utils/xpn2h2 --truncation 3 6 --obme-filename test/usdb_obme.dat test/sd_orbital.dat test/usdbpn-EDT.int test/usdb_tbme.dat
-      
   Mark A. Caprio
   University of Notre Dame
 
