@@ -255,7 +255,7 @@ namespace shell {
     // I/O
 
     void ReadSector(std::size_t sector_index, Eigen::MatrixXd& matrix);
-    // Read current sector.
+    // Read specified sector.
 
     void Close();
 
@@ -267,8 +267,11 @@ namespace shell {
     // Skip (read but do not store) current sector.
 
     void SeekToSector(std::size_t seek_index);
-    // Skip (read but do not store) through sectors until arriving at
-    // given sector.
+    // Seek to specified sector
+    //
+    // Seeks directly to file position if sector has already been encountered,
+    // or skip (without storing data) through sectors until arriving at given
+    // sector.
 
     // ... Version0
     void ReadHeader_Version0();
