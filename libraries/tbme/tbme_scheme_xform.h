@@ -29,7 +29,9 @@ namespace shell {
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
 
-  void TransformOperatorTwoBodyJJJTToTwoBodyJJJTTz( // assumptions: J, T, g, Tz are the same between bra and ket for a given matrix element
+  // JJJTT <-> JJJTTz
+  
+  void TransformOperatorTwoBodyJJJTToTwoBodyJJJTTz(
       const basis::TwoBodySpaceJJJT& two_body_jjjt_space,
       const std::array<basis::TwoBodySectorsJJJT,3>& two_body_jjjt_component_sectors,
       const std::array<basis::OperatorBlocks<double>,3>& two_body_jjjt_component_matrices,
@@ -37,12 +39,14 @@ namespace shell {
       basis::TwoBodySectorsJJJTTz& two_body_jjjttz_sectors,
       basis::OperatorBlocks<double>& two_body_jjjttz_matrices
     );
-  // Carry out radial basis transformation on two-body matrix.
+  // Branch operator to two-body jjJTTz scheme representation (in TwoBodyJJJTTz
+  // basis), from two-body JJJT representation (in TwoBodyJJJT basis).
   //
-  // Precondition: The given source matrix must obey the
-  // symmetrization condition, i.e., full square matrices must have
-  // been populated for diagonal sectors.
-
+  // Assumptions: J, T, g, Tz are the same between bra and ket for a given matrix element.
+  //
+  // Arguments:
+  //   ...
+  
   void TransformOperatorTwoBodyJJJTTzToTwoBodyJJJT(
       const basis::TwoBodySpaceJJJTTz& two_body_jjjttz_space,
       const basis::TwoBodySectorsJJJTTz& two_body_jjjttz_sectors,
@@ -51,6 +55,32 @@ namespace shell {
       std::array<basis::TwoBodySectorsJJJT,3>& two_body_jjjt_component_sectors,
       std::array<basis::OperatorBlocks<double>,3>& two_body_jjjt_component_matrices
     );
+  // Upcouple operator to two-body JJJT representation (in TwoBodyJJJT basis),
+  // from two-body jjJTTz scheme representation (in TwoBodyJJJTTz basis).
+  //
+  // Arguments:
+  //   ...
+
+
+  // JJJTTz <-> JJJPN
+  
+  //void TransformOperatorTwoBodyJJJTTzToTwoBodyJJJPN(
+  //    const basis::TwoBodySpaceJJJTTz& two_body_jjjttz_space,
+  //    const basis::TwoBodySectorsJJJTTz& two_body_jjjttz_sectors,
+  //    const basis::OperatorBlocks<double>& two_body_jjjttz_matrices,
+  //    //const basis::TwoBodySpaceJJJT& two_body_jjjt_space,
+  //    //std::array<basis::TwoBodySectorsJJJT,3>& two_body_jjjt_component_sectors,
+  //    //std::array<basis::OperatorBlocks<double>,3>& two_body_jjjt_component_matrices
+  //  );
+
+  //void TransformOperatorTwoBodyJJJJPNToTwoBodyJJJTTz(
+  //    //const basis::TwoBodySpaceJJJT& two_body_jjjt_space,
+  //    //const std::array<basis::TwoBodySectorsJJJT,3>& two_body_jjjt_component_sectors,
+  //    //const std::array<basis::OperatorBlocks<double>,3>& two_body_jjjt_component_matrices,
+  //    const basis::TwoBodySpaceJJJTTz& two_body_jjjttz_space,
+  //    basis::TwoBodySectorsJJJTTz& two_body_jjjttz_sectors,
+  //    basis::OperatorBlocks<double>& two_body_jjjttz_matrices
+  //  );
 
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////

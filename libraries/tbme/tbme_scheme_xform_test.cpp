@@ -13,19 +13,6 @@
 #include "tbme/me2j_io.h"
 #include "tbme/tbme_scheme_xform.h"
 
-void TFilter(
-    size_t mode, // 0 for isoscalar, 1 for non-isoscalar
-    const std::array<basis::TwoBodySectorsJJJT,3>& two_body_jjjt_component_sectors,
-    std::array<basis::OperatorBlocks<double>,3>& two_body_jjjt_component_matrices
-  ) {
-    if (mode == 0) {
-      basis::SetOperatorToZero(two_body_jjjt_component_sectors[1],two_body_jjjt_component_matrices[1]);
-      basis::SetOperatorToZero(two_body_jjjt_component_sectors[2],two_body_jjjt_component_matrices[2]);
-    } else if (mode == 1) {
-      basis::SetOperatorToZero(two_body_jjjt_component_sectors[0],two_body_jjjt_component_matrices[0]);
-    }
-  }
-
 void TestTToTz () {
   int Nmax = 4;
   int J0 = 0;
