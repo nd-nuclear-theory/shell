@@ -490,52 +490,52 @@ int main(){
 	      if(subspace_b.j() != subspace_d.j()) continue;
 
 	      for (std::size_t state_index_b = 0; state_index_b < subspace_b.size(); ++state_index_b)
-		{
-		  for (std::size_t state_index_d = 0; state_index_d < subspace_d.size(); ++state_index_d)
-		    {
-		      // The following should be updated if transition OBDMEs are allowed
-		      // Here the density_sectors and density_blocks are common for both [c_dag_a c_til_c]_0 and [c_dag_b c_til_d]_lambda
-		      auto sector_index = density_sectors.LookUpSectorIndex(subspace_index_b, subspace_index_d);
-		      std::cout<< "Sector_index : " << sector_index << std::endl;
+			{
+			for (std::size_t state_index_d = 0; state_index_d < subspace_d.size(); ++state_index_d)
+				{
+				// The following should be updated if transition OBDMEs are allowed
+				// Here the density_sectors and density_blocks are common for both [c_dag_a c_til_c]_0 and [c_dag_b c_til_d]_lambda
+				auto sector_index = density_sectors.LookUpSectorIndex(subspace_index_b, subspace_index_d);
+				std::cout<< "Sector_index : " << sector_index << std::endl;
 
-		      if(sector_index == basis::kNone) continue;
+				if(sector_index == basis::kNone) continue;
 
-		      matrix_element_output = density_blocks[sector_index](state_index_b, state_index_d);
-		      
-		      /*
-		      matrix_element_output *= CalculateMatrixElement(space, input_stream, density_sectors,
-								     density_blocks, state_index_b,
-								     state_index_d, subspace_b, subspace_d,
-								     species_b,species_d, J0, g0 );
-		      */
-		      matrix_element_output *= RestrictedCalculateMatrixElement(space, input_stream, density_sectors,
-								     density_blocks, state_index_b,
-								     state_index_d, subspace_b, subspace_d,
-								     species_b,species_d, J0, g0 );      
-		      /*
-		      section_stream << fmt::format(
-		      				    "  {:>4.1f} {:>3d} {:>3d}  {:>4.1f} {:>3d} {:>3d}  {:15.8e}",
-		      				    float(subspace_b.j()), subspace_b.g(), state_index_b,
-		      				    float(subspace_d.j()), subspace_d.g(), state_index_d,
-						    matrix_element_output * pow(Hat(J0),2)
-						    ) << std::endl;
-		      std::cout<< "< "<< state_index_b << " , " << subspace_index_b << "| " << " V " << " |"
-			       << state_index_d << " , " << subspace_index_d  << "> = "
-			       << std::pow(Hat(J0),2) *matrix_element_output << std::endl;
+				matrix_element_output = density_blocks[sector_index](state_index_b, state_index_d);
+				
+				/*
+				matrix_element_output *= CalculateMatrixElement(space, input_stream, density_sectors,
+										density_blocks, state_index_b,
+										state_index_d, subspace_b, subspace_d,
+										species_b,species_d, J0, g0 );
+				*/
+				matrix_element_output *= RestrictedCalculateMatrixElement(space, input_stream, density_sectors,
+										density_blocks, state_index_b,
+										state_index_d, subspace_b, subspace_d,
+										species_b,species_d, J0, g0 );      
+				/*
+				section_stream << fmt::format(
+									"  {:>4.1f} {:>3d} {:>3d}  {:>4.1f} {:>3d} {:>3d}  {:15.8e}",
+									float(subspace_b.j()), subspace_b.g(), state_index_b,
+									float(subspace_d.j()), subspace_d.g(), state_index_d,
+								matrix_element_output * pow(Hat(J0),2)
+								) << std::endl;
+				std::cout<< "< "<< state_index_b << " , " << subspace_index_b << "| " << " V " << " |"
+					<< state_index_d << " , " << subspace_index_d  << "> = "
+					<< std::pow(Hat(J0),2) *matrix_element_output << std::endl;
 
-		      */
-		      section_stream << fmt::format(
-		      				    "  {:>4.1f} {:>3d} {:>3d}  {:>4.1f} {:>3d} {:>3d}  {:15.8e}",
-		      				    float(subspace_b.j()), subspace_b.g(), state_index_b,
-		      				    float(subspace_d.j()), subspace_d.g(), state_index_d,
-						    matrix_element_output
-						    ) << std::endl;
-		      std::cout<< "< "<< state_index_b << " , " << subspace_index_b << "| " << " V " << " |"
-			       << state_index_d << " , " << subspace_index_d  << "> = "
-			       << matrix_element_output << std::endl;
+				*/
+				section_stream << fmt::format(
+									"  {:>4.1f} {:>3d} {:>3d}  {:>4.1f} {:>3d} {:>3d}  {:15.8e}",
+									float(subspace_b.j()), subspace_b.g(), state_index_b,
+									float(subspace_d.j()), subspace_d.g(), state_index_d,
+								matrix_element_output
+								) << std::endl;
+				std::cout<< "< "<< state_index_b << " , " << subspace_index_b << "| " << " V " << " |"
+					<< state_index_d << " , " << subspace_index_d  << "> = "
+					<< matrix_element_output << std::endl;
 
-		    }
-		}
+				}
+			}
 
 	    }
 	}
