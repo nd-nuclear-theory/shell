@@ -19,3 +19,9 @@
         branch = submodule
 	url = ../fmt
         shallow = true
+[submodule "basis"]
+	branch = submodule
+[submodule "mcutils"]
+	branch = submodule
+[submodule "am"]
+	branch = submodule
