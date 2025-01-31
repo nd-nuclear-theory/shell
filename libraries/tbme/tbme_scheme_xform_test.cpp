@@ -13,7 +13,8 @@
 #include "tbme/me2j_io.h"
 #include "tbme/tbme_scheme_xform.h"
 
-void TestTToTz () {
+void TestTToTz()
+{
   int Nmax = 4;
   int J0 = 0;
   int g0 = 0;
@@ -108,7 +109,8 @@ template <typename tSectorsType, typename tFloat>
       }
   }
 
-void TestTzToTToTz () {
+void TestTzToTToTz()
+{
   int Nmax = 4;
   int J0 = 0;
   int g0 = 0;
@@ -154,7 +156,8 @@ void TestTzToTToTz () {
   shell::WriteMe2jFile(two_body_jjjttz_space,two_body_jjjttz_sectors,two_body_jjjttz_matrices,output_filename);
 }
 
-void TestTToTzToT () {
+void TestTToTzToT()
+{
 
   int Nmax = 4;
   int J0 = 0;
@@ -209,10 +212,58 @@ void TestTToTzToT () {
   }
 }
 
+void TestJPNToTTz()
+{
+  // define source operator
+  //
+  // since we set the operator to a "naive identity" operator, the
+  // matrix elements are taken to be NAS
+  int J0 = 0;
+  int g0 = 0;
+  int Tz0 = 0;
+  int Nmax = 2;
+  basis::OrbitalSpacePN orbital_space(Nmax);
+  basis::TwoBodySpaceJJJPN two_body_jjjpn_space(
+      orbital_space,
+      basis::WeightMax(basis::Rank::kTwoBody, Nmax)
+    );
+  basis::TwoBodySectorsJJJPN two_body_jjjpn_sectors;
+  basis::OperatorBlocks<double> two_body_jjjpn_matrices;
+  two_body_jjjpn_sectors = basis::TwoBodySectorsJJJPN(two_body_jjjpn_space, J0, g0, Tz0);
+  basis::SetOperatorToIdentity(two_body_jjjpn_sectors, two_body_jjjpn_matrices);
+
+  // define target operator
+  basis::TwoBodySpaceJJJTTz two_body_jjjttz_space(basis::Rank::kTwoBody, Nmax);
+  basis::TwoBodySectorsJJJTTz two_body_jjjttz_sectors;
+  basis::OperatorBlocks<double> two_body_jjjttz_matrices;
+
+  // transform operator
+  shell::TransformOperatorTwoBodyJJJJPNToTwoBodyJJJTTz(
+      two_body_jjjpn_space,
+      two_body_jjjpn_sectors,
+      two_body_jjjpn_matrices,
+      two_body_jjjttz_space,
+      two_body_jjjttz_sectors,
+      two_body_jjjttz_matrices
+    );
+
+  // write matrices
+  std::ios_base::openmode mode_argument = std::ios_base::out;
+  std::ofstream os("tbme_scheme_xform_test_pn_to_TTz.txt", mode_argument);
+  basis::WriteTwoBodyOperatorJJJTTz(
+    os,
+    two_body_jjjttz_sectors,two_body_jjjttz_matrices,
+    basis::NormalizationConversion::kNone
+  );
+  
+}
+
 int main(int argc, char **argv)
 {
   TestTToTz();
   TestTzToT();
   TestTzToTToTz(); // see if the output is the same as the input
   TestTToTzToT();
+
+  TestJPNToTTz();
 }
