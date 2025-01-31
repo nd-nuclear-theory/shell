@@ -133,7 +133,10 @@ namespace shell {
       }
   };
 
-  void InH2Stream::ReadSector_Version0(Eigen::MatrixXd& matrix)
+  void InH2Stream::ReadSector_Version0(
+      Eigen::MatrixXd& matrix,
+      basis::NormalizationConversion conversion_mode
+    )
   {
     // Note: Although H2 format Version0 only suports *diagonal* sectors
     // (operator conserves Tz, J, g), we treat the bra and ket
@@ -205,14 +208,14 @@ namespace shell {
             if (!(bra_index<=ket_index))
               continue;
 
+          // retrieve states
+          const basis::TwoBodyStateJJJPN bra(bra_subspace,bra_index);
+          const basis::TwoBodyStateJJJPN ket(ket_subspace,ket_index);
+
           // read input matrix element
           float input_matrix_element;
           if (h2_mode()==H2Mode::kText)
             {
-              // retrieve states
-              const basis::TwoBodyStateJJJPN bra(bra_subspace,bra_index);
-              const basis::TwoBodyStateJJJPN ket(ket_subspace,ket_index);
-
               // input fields for text mode only
               int input_i1, input_i2, input_i3, input_i4, input_twice_J;
               int input_two_body_species_code;
@@ -243,7 +246,20 @@ namespace shell {
               input_matrix_element = buffer[i++];
             }
 
-          matrix(bra_index,ket_index) = input_matrix_element;
+          // determine matrix element normalization factor
+          double conversion_factor = 1.;
+          if (conversion_mode == basis::NormalizationConversion::kNASToAS)
+            {
+              if (bra.two_body_species()!=basis::TwoBodySpeciesPN::kPN)
+                if (bra.index1()==bra.index2())
+                  conversion_factor *= sqrt(2.);
+              if (ket.two_body_species()!=basis::TwoBodySpeciesPN::kPN)
+                if (ket.index1()==ket.index2())
+                  conversion_factor *= sqrt(2.);
+            }
+
+          // store matrix element
+          matrix(bra_index,ket_index) = conversion_factor * input_matrix_element;
         }
 
     // read FORTRAN record ending delimiter

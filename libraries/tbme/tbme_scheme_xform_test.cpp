@@ -238,7 +238,7 @@ void TestJPNToTTz()
   basis::OperatorBlocks<double> two_body_jjjttz_matrices;
 
   // transform operator
-  shell::TransformOperatorTwoBodyJJJJPNToTwoBodyJJJTTz(
+  shell::TransformOperatorTwoBodyJJJPNToTwoBodyJJJTTz(
       two_body_jjjpn_space,
       two_body_jjjpn_sectors,
       two_body_jjjpn_matrices,

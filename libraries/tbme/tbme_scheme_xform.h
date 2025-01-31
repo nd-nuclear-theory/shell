@@ -86,7 +86,7 @@ namespace shell {
   //    //std::array<basis::OperatorBlocks<double>,3>& two_body_jjjt_component_matrices
   //  );
 
-  void TransformOperatorTwoBodyJJJJPNToTwoBodyJJJTTz(
+  void TransformOperatorTwoBodyJJJPNToTwoBodyJJJTTz(
       const basis::TwoBodySpaceJJJPN& two_body_jjjpn_space,
       const basis::TwoBodySectorsJJJPN& two_body_jjjpn_sectors,
       const basis::OperatorBlocks<double>& two_body_jjjpn_matrices,

@@ -27,9 +27,6 @@ namespace shell {
 
   enum class Me2jMode {kText,kBinary};
   // text/binary mode
-  //
-  // Note: Not currently implementing matrix mode (for interchange
-  // with applied math group).
 
   // notational definitions for me2j file modes
   //

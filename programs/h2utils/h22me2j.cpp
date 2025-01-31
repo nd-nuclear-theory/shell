@@ -31,6 +31,7 @@
 
 #include "tbme/h2_io.h"
 #include "tbme/me2j_io.h"
+#include "tbme/tbme_scheme_xform.h"
 
 ////////////////////////////////////////////////////////////////
 // process arguments
@@ -104,16 +105,18 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
 void ReadH2File(
     const std::string& filename,
     basis::OrbitalSpacePN& orbital_space, basis::TwoBodySpaceJJJPN& two_body_space,
-    basis::TwoBodySectorsJJJPN& two_body_sectors, basis::OperatorBlocks<double>& two_body_matrices
+    basis::TwoBodySectorsJJJPN& two_body_sectors, basis::OperatorBlocks<double>& two_body_matrices,
+    basis::NormalizationConversion conversion_mode
   )
 // Read all data from h2 file.
 //
 // Arguments:
-//   filename (std::string): XPN filename
+//   filename (std::string): filename
 //   orbital_space (basis::OrbitalSpacePN, output): orbitals
 //   two_body_space (basis::TwoBodySpaceJJJPN, output): two-body space
 //   two_body_sectors (basis::TwoBodySectorsJJJPN, output): two-body sectors
 //   two_body_matrices (basis::OperatorBlocks<double>, output): TBME matrices
+//   conversion_mode (basis::NormalizationConversion, optional): selects AS/NAS conversion mode
 {
 
   // initialize stream
@@ -143,7 +146,7 @@ void ReadH2File(
   for (std::size_t sector_index = 0; sector_index < input_stream.num_sectors(); ++sector_index)
     {
       auto& matrix = two_body_matrices[sector_index];
-      input_stream.ReadSector(sector_index, matrix);
+      input_stream.ReadSector(sector_index, matrix, conversion_mode);
     }
 
   // close stream
@@ -189,7 +192,8 @@ int main(int argc, const char **argv)
   ReadH2File(
       run_parameters.input_filename,
       orbital_space, two_body_jjjpn_space,
-      two_body_jjjpn_sectors, two_body_jjjpn_matrices
+      two_body_jjjpn_sectors, two_body_jjjpn_matrices,
+      basis::NormalizationConversion::kNASToAS
     );
 
   // extract source operator information
@@ -250,7 +254,7 @@ int main(int argc, const char **argv)
   basis::TwoBodySpaceJJJTTz two_body_jjjttz_space(basis::Rank::kTwoBody, N2max);
   basis::TwoBodySectorsJJJTTz two_body_jjjttz_sectors;
   basis::OperatorBlocks<double> two_body_jjjttz_matrices;
-  shell::TransformOperatorTwoBodyJJJJPNToTwoBodyJJJTTz(
+  shell::TransformOperatorTwoBodyJJJPNToTwoBodyJJJTTz(
       two_body_jjjpn_space,
       two_body_jjjpn_sectors,
       two_body_jjjpn_matrices,

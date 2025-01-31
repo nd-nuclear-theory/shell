@@ -3,11 +3,17 @@
 
   Defines I/O class for MFDn H2 interaction file formats.
 
-  Normalization convention: All matrix elements are stored as NAS
-  RMEs.  These RMEs are stored under the group theory Wigner-Eckart
-  normalization convention (i.e., "no dimension factor out front, just
-  the Clebsch"), but, for scalar operators, note that this RME is
-  equivalently, and more simply, the branched ME (with M'=M).
+  State normalization convention: In the file format, all matrix elements are
+  stored as NAS RMEs.  The I/O functions WriteSector and ReadSector by default
+  assume that storage in memory is also for NAS RMEs.  However, on output,
+  conversion from AS RMEs can be specified via the optional argument
+  conversion_mode to WriteSector.
+
+  Wigner-Eckart normalization convention: These RMEs are stored under the group
+  theory Wigner-Eckart normalization convention (i.e., "no dimension factor out
+  front, just the Clebsch").  For scalar operators, note that this RME is
+  equivalently, and more simply, the ME (with M'=M), as commonly used in shell
+  model interaction files.
 
   Symmetrization convention: The full square matrix is *not* populated
   on diagonal sectors.  For these sectors, the lower triangle is
@@ -50,6 +56,8 @@
     match two-body space truncation.
   + 10/10/20 (pjf): Dramatically improve binary I/O performance by using
     buffered reads and writes (sector-at-a-time I/O).
+  + 01/31/25 (mac): Add optional on-the-fly conversion from NAS to
+    AS matrix elements on input.
 ****************************************************************/
 
 #ifndef H2_IO_H_
@@ -254,8 +262,16 @@ namespace shell {
 
     // I/O
 
-    void ReadSector(std::size_t sector_index, Eigen::MatrixXd& matrix);
+    void ReadSector(
+        std::size_t sector_index,
+        Eigen::MatrixXd& matrix,
+        basis::NormalizationConversion conversion_mode = basis::NormalizationConversion::kNone
+      );
     // Read specified sector.
+    //
+    //  conversion_mode (basis::NormalizationConversion, optional): selects AS/NAS conversion mode
+    //    - basis::NormalizationConversion::kNone if retrieved RMEs are to be stored in matrix as NAS
+    //    - basis::NormalizationConversion::kNASToAS if retrieved RMEs are to be stored in matrix as AS
 
     void Close();
 
@@ -275,17 +291,17 @@ namespace shell {
 
     // ... Version0
     void ReadHeader_Version0();
-    void ReadSector_Version0(Eigen::MatrixXd& matrix);
+    void ReadSector_Version0(Eigen::MatrixXd& matrix, basis::NormalizationConversion conversion_mode);
     void SkipSector_Version0();
 
     // ... Version15099
     void ReadHeader_Version15099();
-    void ReadSector_Version15099(Eigen::MatrixXd& matrix);
+    void ReadSector_Version15099(Eigen::MatrixXd& matrix, basis::NormalizationConversion conversion_mode);
     void SkipSector_Version15099();
 
     // ... Version15200
     void ReadHeader_Version15200();
-    void ReadSector_Version15200(Eigen::MatrixXd& matrix);
+    void ReadSector_Version15200(Eigen::MatrixXd& matrix, basis::NormalizationConversion conversion_mode);
     void SkipSector_Version15200();
 
     // file stream
@@ -321,17 +337,25 @@ namespace shell {
       );
 
     // destructor
+    
     ~OutH2Stream()
       {
         Close();
       };
 
     // I/O
+    
     void WriteSector(
         std::size_t sector_index,
         const Eigen::MatrixXd& matrix,
         basis::NormalizationConversion conversion_mode = basis::NormalizationConversion::kNone
       );
+    // Write specified sector.
+    //
+    //  conversion_mode (basis::NormalizationConversion, optional): selects AS/NAS conversion mode
+    //    - basis::NormalizationConversion::kNone if RMEs in matrix are already NAS
+    //    - basis::NormalizationConversion::kASToNAS if RMEs in matrix are AS
+    
     void Close();
 
     // debugging

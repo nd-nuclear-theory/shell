@@ -335,18 +335,28 @@ namespace shell {
   };
 
 
-  void InH2Stream::ReadSector(std::size_t sector_index, Eigen::MatrixXd& matrix)
+  void InH2Stream::ReadSector(
+      std::size_t sector_index,
+      Eigen::MatrixXd& matrix,
+      basis::NormalizationConversion conversion_mode
+    )
   {
     // jump to correct sector
     SeekToSector(sector_index);
 
+    // validate conversion mode
+    assert(
+        (conversion_mode == basis::NormalizationConversion::kNone)
+        || (conversion_mode == basis::NormalizationConversion::kNASToAS)
+      );
+
     // read sector
     if (h2_format()==kVersion0)
-      ReadSector_Version0(matrix);
+      ReadSector_Version0(matrix, conversion_mode);
     else if (h2_format()==kVersion15099)
-      ReadSector_Version15099(matrix);
+      ReadSector_Version15099(matrix, conversion_mode);
     else if (h2_format()==kVersion15200)
-      ReadSector_Version15200(matrix);
+      ReadSector_Version15200(matrix, conversion_mode);
     else
       // format version was already checked when reading header, so we should
       // never get here, unless perhaps someday we implement header-only support
@@ -481,7 +491,7 @@ namespace shell {
     assert(sector_index==sector_index_);
     assert((matrix.rows()==sector.bra_subspace().size())&&(matrix.cols()==sector.ket_subspace().size()));
 
-    // validate output as NAS
+    // validate conversion mode
     assert(
         (conversion_mode == basis::NormalizationConversion::kNone)
         || (conversion_mode == basis::NormalizationConversion::kASToNAS)

@@ -207,7 +207,7 @@ namespace shell {
     return N*(N+1)/2 + (j.TwiceValue()-1)/2;
   }
   
-  void TransformOperatorTwoBodyJJJJPNToTwoBodyJJJTTz(
+  void TransformOperatorTwoBodyJJJPNToTwoBodyJJJTTz(
       const basis::TwoBodySpaceJJJPN& two_body_jjjpn_space,
       const basis::TwoBodySectorsJJJPN& two_body_jjjpn_sectors,
       const basis::OperatorBlocks<double>& two_body_jjjpn_matrices,
@@ -261,7 +261,9 @@ namespace shell {
             two_body_jjjpn_ket_subspace.orbital_subspace2().is_oscillator_like()
           );
         
-        // Relations of canonicalized NAS states:
+        // Relations of canonicalized NAS states
+        //
+        // (Omit delta factors to obtain relations of canonicalized AS states.)
         //
         // In the following expressions, orbitals are ordered a<=b.
         //
@@ -297,8 +299,9 @@ namespace shell {
         //
         //     |aa;J;T=1,Tz=0> = |aa;J;pn>
         //
-        //   recalling the constraint for like-particle pn states that J even,
-        //   and for like-particle T-coupled states that J+T odd.
+        //   in conjunction with the constraint for like-orbital states that J
+        //   must be even for the pn state to be nonvanishing, and that J+T must
+        //   be odd for the T-coupled state to be nonvanishing.
         
         // populate matrix elements
         for (std::size_t two_body_jjjttz_bra_state_index=0; two_body_jjjttz_bra_state_index<two_body_jjjttz_sector.bra_subspace().size(); two_body_jjjttz_bra_state_index++)
@@ -360,15 +363,12 @@ namespace shell {
                     std::size_t two_body_jjjpn_sector_index
                       = two_body_jjjpn_sectors.LookUpSectorIndex(two_body_jjjpn_bra_subspace_index_canonical, two_body_jjjpn_ket_subspace_index_canonical);
                     double source_rme = canonicalization_factor * two_body_jjjpn_matrices[two_body_jjjpn_sector_index](two_body_jjjpn_bra_state_index_canonical, two_body_jjjpn_ket_state_index_canonical);
-                    //std::cout << fmt::format("  source rme canonicalization {:f} value {:f}", canonicalization_factor, source_rme) << std::endl;
 
                     // accumulate to target matrix element
                     double bra_prefactor = 1.;
                     if (bra_Tz == 0)
                       {
                         bra_prefactor *= 1/std::sqrt(2); // 1/sqrt(2)
-                        if (bra_index_1==bra_index_2)
-                          bra_prefactor *= 1/std::sqrt(2);  // (1+delta_ab)^(-1/2)
                         if (bra_swap_orbitals && bra_T==0)
                           bra_prefactor *= -1;  // {+,-} 
                         if (bra_swap_orbitals)
@@ -378,15 +378,13 @@ namespace shell {
                     if (ket_Tz == 0)
                       {
                         ket_prefactor *= 1/std::sqrt(2); // 1/sqrt(2)
-                        if (ket_index_1==ket_index_2)
-                          ket_prefactor *= 1/std::sqrt(2);  // (1+delta_ab)^(-1/2)
                         if (ket_swap_orbitals && ket_T==0)
                           ket_prefactor *= -1;  // {+,-} 
                         if (ket_swap_orbitals)
                           ket_prefactor *= (-1)*ParitySign(ket_J-ket_j1-ket_j2);  // (-)(-)^(J-ja-jb)
                       }
+                    
                     target_rme += bra_prefactor * ket_prefactor * source_rme;
-                    //std::cout << fmt::format("  running value {:f}", target_rme) << std::endl;
                   }
               
               two_body_jjjttz_matrix(two_body_jjjttz_bra_state_index, two_body_jjjttz_ket_state_index) = target_rme;
