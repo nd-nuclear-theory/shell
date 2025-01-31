@@ -82,7 +82,7 @@
 
 
 ////////////////////////////////////////////////////////////////
-// process arguments
+// argument handling
 /////////////////////////////////////////////////////////////////
 
 struct RunParameters
@@ -114,14 +114,10 @@ void PrintUsage(const char **argv) {
 
 void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameters)
 {
-  // usage message
-  if (argc-1 == 0)
-    {
-      PrintUsage(argv);
-      std::exit(EXIT_SUCCESS);
-    }
 
   int arg = 1;
+
+  // process options
   while (arg < argc && argv[arg][0] == '-')
     {
       std::istringstream parameter_stream(argv[arg++]);
@@ -188,6 +184,7 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
         
     }
 
+  // process fixed arguments
   if (argc-arg < 3)
     {
       PrintUsage(argv);
@@ -207,6 +204,11 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
   run_parameters.output_tbme_filename = argv[arg++];
 
 }
+
+
+////////////////////////////////////////////////////////////////
+// SPE/XPN input
+/////////////////////////////////////////////////////////////////
 
 struct XPNTBMEDatum
 // Stores raw data from XPN file me data line
@@ -529,6 +531,11 @@ void StoreTBMEs(
       
     }
 }
+
+
+////////////////////////////////////////////////////////////////
+// main program
+/////////////////////////////////////////////////////////////////
 
 int main(int argc, const char *argv[])
 {
