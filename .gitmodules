@@ -1,9 +1,11 @@
 [submodule "libraries/am"]
 	path = libraries/am
 	url = ../am
+	branch = submodule
 [submodule "libraries/basis"]
 	path = libraries/basis
 	url = ../basis
+	branch = submodule
 [submodule "libraries/spline"]
 	path = libraries/spline
         branch = submodule
@@ -11,6 +13,7 @@
 [submodule "libraries/mcutils"]
 	path = libraries/mcutils
 	url = ../mcutils.git
+	branch = submodule
 [submodule "config/ndmakefile"]
 	path = config/ndmakefile
 	url = ../ndmakefile
@@ -19,9 +22,3 @@
         branch = submodule
 	url = ../fmt
         shallow = true
-[submodule "basis"]
-	branch = submodule
-[submodule "mcutils"]
-	branch = submodule
-[submodule "am"]
-	branch = submodule
