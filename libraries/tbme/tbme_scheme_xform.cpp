@@ -27,7 +27,7 @@ namespace shell {
     // enforce assumed operator labels
     for (int T0 = 0; T0 <= 2; T0++) {
       if (two_body_jjjt_component_sectors[T0].J0()!=0 || two_body_jjjt_component_sectors[T0].g0()!=0) {
-        std::cout << "Provided operator has unsupported (J0,g0)!=(0,0)." << std::endl;
+        std::cerr << "ERROR: Provided operator has unsupported (J0,g0)!=(0,0)." << std::endl;
         std::exit(EXIT_FAILURE);
       }
     }
@@ -118,7 +118,7 @@ namespace shell {
 
     // enforce assumed operator labels
     if (two_body_jjjttz_sectors.J0()!=0 || two_body_jjjttz_sectors.g0()!=0 || two_body_jjjttz_sectors.Tz0()!=0) {
-      std::cout << "Provided operator has unsupported (J0,g0,Tz0)!=(0,0,0)." << std::endl;
+      std::cerr << "ERROR: Provided operator has unsupported (J0,g0,Tz0)!=(0,0,0)." << std::endl;
       std::exit(EXIT_FAILURE);
     }
     int J0=0;
@@ -216,6 +216,20 @@ namespace shell {
       basis::OperatorBlocks<double>& two_body_jjjttz_matrices
     )
   {
+    // check space truncation
+    //
+    // TODO debug:
+    //
+    // terminate called after throwing an instance of 'std::bad_alloc'
+    //  what():  std::bad_alloc
+    //
+    //  if (!(two_body_jjjpn_space.orbital_space().is_oscillator_like()))
+    //    {
+    //    std::cout << "ERROR: Two-body space not constructed from oscillator-like orbital space."
+    //              << std::endl;
+    //    std::exit(EXIT_FAILURE);
+    //    }
+    
     // extract operator labels
     int J0 = two_body_jjjpn_sectors.J0();
     int g0 = two_body_jjjpn_sectors.g0();
@@ -231,7 +245,7 @@ namespace shell {
         // make references to target sector
         const basis::TwoBodySectorsJJJTTz::SectorType& two_body_jjjttz_sector
           = two_body_jjjttz_sectors.GetSector(two_body_jjjttz_sector_index);
-        std::cout << two_body_jjjttz_sector.DebugStr() << std::endl;
+        //std::cout << two_body_jjjttz_sector.DebugStr() << std::endl;
         Eigen::MatrixXd& two_body_jjjttz_matrix = two_body_jjjttz_matrices[two_body_jjjttz_sector_index];
 
         // extract target sector labels
@@ -328,7 +342,7 @@ namespace shell {
                 for (int ket_swap_orbitals=0; ket_swap_orbitals <= int(ket_must_swap_orbitals); ++ket_swap_orbitals)
                   {
                     
-                    std::cout << fmt::format("source swap iteration {:2d} {:2d}", bra_swap_orbitals, ket_swap_orbitals) << std::endl;
+                    // std::cout << fmt::format("source swap iteration {:2d} {:2d}", bra_swap_orbitals, ket_swap_orbitals) << std::endl;
 
                     // deduce orbital indices from (N,j) labels
                     //

@@ -4,9 +4,10 @@
 
   Restrictions:
 
-    
+    Matrix elements connecting T=0 and T=1 states are discarded in me2j format.    
 
   Syntax:
+
     h22me2j input_filename output_filename
 
   Mark A. Caprio
@@ -173,7 +174,7 @@ int main(int argc, const char **argv)
 
   // read parameters
   RunParameters run_parameters;
-  ProcessArguments(argc,argv,run_parameters);
+  ProcessArguments(argc, argv, run_parameters);
 
   // start timing
   mcutils::SteadyTimer total_time;
@@ -208,10 +209,10 @@ int main(int argc, const char **argv)
   
   // validate and extract two-body space truncation
   const basis::WeightMax& weight_max = two_body_jjjpn_space.weight_max();
-  if (
-      (weight_max.one_body[0] != int(weight_max.one_body[0]))
-      || (weight_max.one_body[0] != weight_max.one_body[1])
-    )
+  if (!(
+      (weight_max.one_body[0] == int(weight_max.one_body[0]))
+      && (weight_max.one_body[0] == weight_max.one_body[1])
+        ))
     {
       std::cerr << "ERROR: Input h2 file one-body truncation not pn-symmetric and oscillator-like" << std::endl;
       std::exit(EXIT_FAILURE);
@@ -222,22 +223,29 @@ int main(int argc, const char **argv)
       std::cerr << "ERROR: Input h2 file one-body truncation not consistent with orbital set" << std::endl;
       std::exit(EXIT_FAILURE);
     }
-  if (
-      (weight_max.two_body[0] != int(weight_max.two_body[0]))
-      || (weight_max.two_body[0] != weight_max.two_body[1])
-      || (weight_max.two_body[0] != weight_max.two_body[2])
-    )
+  if (!(
+          (weight_max.two_body[0] == int(weight_max.two_body[0]))
+          && (weight_max.two_body[0] == weight_max.two_body[1])
+          && (weight_max.two_body[0] == weight_max.two_body[2])
+        ))
     {
       std::cerr << "ERROR: Input h2 file two-body truncation not pn-symmetric and oscillator-like" << std::endl;
       std::exit(EXIT_FAILURE);
     }
   int N2max = int(weight_max.two_body[0]);
-  if (N1max != N2max)
+  basis::Rank truncation_rank;
+  if (N2max==2*N1max)
+    truncation_rank = basis::Rank::kOneBody;
+  else if (N2max==N1max)
+    truncation_rank = basis::Rank::kTwoBody;
+  else
     {
-      std::cerr << "ERROR: Input h2 file not in two-body (triangular) truncation scheme" << std::endl;
+      std::cerr << "ERROR: Unsupported combination of N1max and N2max" << std::endl;
       std::exit(EXIT_FAILURE);
     }
-  std::cout << fmt::format("Input truncation: tb-{:d}", N2max) << std::endl;
+  int truncation_cutoff = N1max;
+  // std::cout << fmt::format("Input truncation: rank {:d} cutoff {:d}", int(truncation_rank), truncation_cutoff) << std::endl;
+  // std::cout << std::endl;
   
   // extract and validate operator quantum numbers
   int J0 = two_body_jjjpn_sectors.J0();
@@ -251,7 +259,10 @@ int main(int argc, const char **argv)
   
   // convert scheme
 
-  basis::TwoBodySpaceJJJTTz two_body_jjjttz_space(basis::Rank::kTwoBody, N2max);
+  std::cout << "Upcouple to two-body jjJTTz..." << std::endl
+            << std::endl;
+  
+  basis::TwoBodySpaceJJJTTz two_body_jjjttz_space(truncation_rank, truncation_cutoff);
   basis::TwoBodySectorsJJJTTz two_body_jjjttz_sectors;
   basis::OperatorBlocks<double> two_body_jjjttz_matrices;
   shell::TransformOperatorTwoBodyJJJPNToTwoBodyJJJTTz(
@@ -264,12 +275,14 @@ int main(int argc, const char **argv)
     );
   
   // write output
+  std::cout << "Output stream" << std::endl;
   shell::WriteMe2jFile(
       two_body_jjjttz_space,
       two_body_jjjttz_sectors,
       two_body_jjjttz_matrices,
       run_parameters.output_filename
     );
+  std::cout << std::endl;
   
   ////////////////////////////////////////////////////////////////
   // termination

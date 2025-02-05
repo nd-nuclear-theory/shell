@@ -99,8 +99,8 @@ namespace shell {
   enum class H2Mode {kText,kBinary,kMatrix};
   // text/binary mode
   //
-  // Note: Not currently implementing matrix mode (for interchange
-  // with applied math group).
+  // Note: Not currently implementing matrix mode (intended for interchange with
+  // applied math group).
 
   // notational definitions for h2 file modes
   //

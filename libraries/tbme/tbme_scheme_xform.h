@@ -12,7 +12,8 @@
   Zhou Zhou
   University of Notre Dame
 
-  + 12/22/23 (zz): Created using function from TTz_T_TFilter.
+  + 12/22/23 (zz): Created using functions from TTz_T_TFilter.
+  + 02/04/25 (mac): Provide jjJpn to jjJTTz conversion.
 
 ****************************************************************/
 

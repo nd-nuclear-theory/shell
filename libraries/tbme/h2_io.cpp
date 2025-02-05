@@ -150,7 +150,6 @@ namespace shell {
   // file text/binary I/O mode identification
   ////////////////////////////////////////////////////////////////
 
-
   const std::array<const char*,3> kH2ModeDescription({"text","binary","matrix"});
   const std::array<const char*,3> kH2ModeExtension({".dat",".bin",".mat"});
 
