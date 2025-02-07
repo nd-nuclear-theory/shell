@@ -60,7 +60,8 @@ namespace shell {
       const basis::TwoBodySpaceJJJTTz& space,
       const basis::TwoBodySectorsJJJTTz& sectors,
       basis::OperatorBlocks<double>& matrices,
-      const std::string filename
+      const std::string filename,
+      std::size_t float_size = 4
     );
   // Read me2j files and save as jjjttz format in memory (AS).
 
@@ -68,7 +69,8 @@ namespace shell {
       const basis::TwoBodySpaceJJJTTz& space,
       const basis::TwoBodySectorsJJJTTz& sectors,
       const basis::OperatorBlocks<double>& matrices,
-      const std::string filename
+      const std::string filename,
+      std::size_t float_size = 4
     );
   // Write me2j files from jjjttz format in memory (AS).
 

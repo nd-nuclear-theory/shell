@@ -14,6 +14,7 @@
   University of Notre Dame
 
   + 10/25/24 (mac): Created, based on h2stat/xpn2h2/h22me2j.
+  + 02/07/25 (mac): Add support for double precision me2j output.
 
 ******************************************************************************/
 
@@ -45,15 +46,19 @@ struct RunParameters
   std::string input_filename;
   std::string output_filename;
 
+  // file format
+  std::size_t float_size;
+
   // default constructor
   RunParameters()
-    : input_filename(""), output_filename("")
+    : input_filename(""), output_filename(""), float_size(4)
   {}
   
 };
 
 void PrintUsage(const char **argv) {
   std::cout << "Usage: " << argv[0]
+            << " [--float-size 4|8]"
             << " input_filename output_filename"
             << std::endl;
 }
@@ -72,6 +77,25 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
         {
           PrintUsage(argv);
           std::exit(EXIT_SUCCESS);
+        }
+      else if (parameter_stream.str() == "--float-size")
+        {
+          if (argc-arg < 1)
+            {
+              PrintUsage(argv);
+              std::cerr << "Insufficient arguments for --float-size" << std::endl;
+              std::exit(EXIT_FAILURE);
+            }
+
+          std::size_t float_size;
+          std::istringstream float_size_stream(argv[arg++]);
+          float_size_stream >> float_size;
+          if (!float_size_stream || ! ((float_size == 4) || (float_size == 8))) {
+            PrintUsage(argv);
+            std::cerr << "Invalid float_size" << std::endl;
+            std::exit(EXIT_FAILURE);
+          }
+          run_parameters.float_size = float_size;
         }
       else
         {
@@ -280,7 +304,8 @@ int main(int argc, const char **argv)
       two_body_jjjttz_space,
       two_body_jjjttz_sectors,
       two_body_jjjttz_matrices,
-      run_parameters.output_filename
+      run_parameters.output_filename,
+      run_parameters.float_size
     );
   std::cout << std::endl;
   

@@ -82,12 +82,12 @@ namespace shell {
       const basis::TwoBodySpaceJJJTTz& space,
       const basis::TwoBodySectorsJJJTTz& sectors,
       basis::OperatorBlocks<double>& matrices,
-      const std::string filename
+      const std::string filename,
+      std::size_t float_size
     )
   {
     // binary file parameters
     const std::size_t header_length = 255;
-    const std::size_t float_size = 4;
     assert((float_size == 4) || (float_size == 8));
 
     // validate operator labels
@@ -112,14 +112,20 @@ namespace shell {
 
     // write diagnostics
     std::cout << fmt::format("  File: {}", filename) << std::endl;
-    std::cout << fmt::format("  Format: {}", kMe2jModeDescription[int(me2j_mode)]) << std::endl;
+    std::string float_size_description;
+    if (me2j_mode == Me2jMode::kText) {
+      float_size_description = "";
+    } else {
+      float_size_description = fmt::format("(float size {})", float_size);
+    }
+    std::cout << fmt::format("  Format: {} {}", kMe2jModeDescription[int(me2j_mode)], float_size_description) << std::endl;
     std::cout << fmt::format("  Truncation: N1max {} N2max {}", N1max, N2max) << std::endl;
     
     // open input file
     std::ifstream is(filename.c_str(), mode_argument);
 
     // skip file header
-    if (me2j_mode == Me2jMode::kText) { // only text files have a header line
+    if (me2j_mode == Me2jMode::kText) {
       is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     } else {
       // presently hard coded for TUD header
@@ -264,12 +270,12 @@ namespace shell {
       const basis::TwoBodySpaceJJJTTz& space,
       const basis::TwoBodySectorsJJJTTz& sectors,
       const basis::OperatorBlocks<double>& matrices,
-      const std::string filename
+      const std::string filename,
+      std::size_t float_size
     )
   {
     // binary file parameters
     const std::size_t header_length = 255;
-    const std::size_t float_size = 4;
     assert((float_size == 4) || (float_size == 8));
 
     // validate operator labels
@@ -293,7 +299,13 @@ namespace shell {
 
     // write diagnostics
     std::cout << fmt::format("  File: {}", filename) << std::endl;
-    std::cout << fmt::format("  Format: {}", kMe2jModeDescription[int(me2j_mode)]) << std::endl;
+    std::string float_size_description;
+    if (me2j_mode == Me2jMode::kText) {
+      float_size_description = "";
+    } else {
+      float_size_description = fmt::format("(float size {})", float_size);
+    }
+    std::cout << fmt::format("  Format: {} {}", kMe2jModeDescription[int(me2j_mode)], float_size_description) << std::endl;
     std::cout << fmt::format("  Truncation: N1max {} N2max {}", N1max, N2max) << std::endl;
     
     // open output file
@@ -305,7 +317,7 @@ namespace shell {
     }
     
     // write file header
-    if (me2j_mode == Me2jMode::kText) { // only text files have a header line
+    if (me2j_mode == Me2jMode::kText) {
       os << "(*** written by shell (https://github.com/nd-nuclear-theory/shell) ***)" << std::endl;
     } else {
       // presently hard coded for TUD header

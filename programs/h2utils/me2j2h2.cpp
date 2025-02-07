@@ -41,13 +41,24 @@ struct RunParameters
   // filenames
   std::string input_filename;
   std::string output_filename;
+
+  // file format
+  std::size_t float_size;
+
   // truncation
   basis::Rank truncation_rank;
   int truncation_cutoff;
+
+  // default constructor
+  RunParameters()
+    : input_filename(""), output_filename(""), float_size(4)
+  {}
+
 };
 
 void PrintUsage(const char **argv) {
   std::cout << "Usage: " << argv[0]
+            << " [--float-size 4|8]"
             << " rank cutoff input_filename output_filename"
             << std::endl;
 }
@@ -66,6 +77,25 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
         {
           PrintUsage(argv);
           std::exit(EXIT_SUCCESS);
+        }
+      else if (parameter_stream.str() == "--float-size")
+        {
+          if (argc-arg < 1)
+            {
+              PrintUsage(argv);
+              std::cerr << "Insufficient arguments for --float-size" << std::endl;
+              std::exit(EXIT_FAILURE);
+            }
+
+          std::size_t float_size;
+          std::istringstream float_size_stream(argv[arg++]);
+          float_size_stream >> float_size;
+          if (!float_size_stream || ! ((float_size == 4) || (float_size == 8))) {
+            PrintUsage(argv);
+            std::cerr << "Invalid float_size" << std::endl;
+            std::exit(EXIT_FAILURE);
+          }
+          run_parameters.float_size = float_size;
         }
       else
         {
@@ -152,7 +182,10 @@ int main(int argc, const char **argv)
 
   // read me2j file
   std::cout << "Input stream" << std::endl;
-  shell::ReadMe2jFile(two_body_jjjttz_space, two_body_jjjttz_sectors, two_body_jjjttz_matrices, run_parameters.input_filename);
+  shell::ReadMe2jFile(
+      two_body_jjjttz_space, two_body_jjjttz_sectors, two_body_jjjttz_matrices,
+      run_parameters.input_filename, run_parameters.float_size
+    );
   std::cout << std::endl;
 
   ////////////////////////////////////////////////////////////////
