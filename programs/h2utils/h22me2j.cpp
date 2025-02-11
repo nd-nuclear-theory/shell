@@ -8,7 +8,7 @@
 
   Syntax:
 
-    h22me2j input_filename output_filename
+    h22me2j [--precision single|double] input_filename output_filename
 
   Mark A. Caprio
   University of Notre Dame
@@ -58,7 +58,7 @@ struct RunParameters
 
 void PrintUsage(const char **argv) {
   std::cout << "Usage: " << argv[0]
-            << " [--float-size 4|8]"
+            << " [--precision single|double]"
             << " input_filename output_filename"
             << std::endl;
 }
@@ -78,24 +78,27 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
           PrintUsage(argv);
           std::exit(EXIT_SUCCESS);
         }
-      else if (parameter_stream.str() == "--float-size")
+      else if (parameter_stream.str() == "--precision")
         {
           if (argc-arg < 1)
             {
               PrintUsage(argv);
-              std::cerr << "Insufficient arguments for --float-size" << std::endl;
+              std::cerr << "Insufficient arguments for --precision" << std::endl;
               std::exit(EXIT_FAILURE);
             }
 
-          std::size_t float_size;
-          std::istringstream float_size_stream(argv[arg++]);
-          float_size_stream >> float_size;
-          if (!float_size_stream || ! ((float_size == 4) || (float_size == 8))) {
-            PrintUsage(argv);
-            std::cerr << "Invalid float_size" << std::endl;
-            std::exit(EXIT_FAILURE);
-          }
-          run_parameters.float_size = float_size;
+          std::string precision(argv[arg++]);
+          
+          if (precision=="single")
+            run_parameters.float_size = 4;
+          else if  (precision=="double")
+            run_parameters.float_size = 8;
+          else
+            {
+              PrintUsage(argv);
+              std::cerr << "Invalid precision" << std::endl;
+              std::exit(EXIT_FAILURE);
+            }
         }
       else
         {
