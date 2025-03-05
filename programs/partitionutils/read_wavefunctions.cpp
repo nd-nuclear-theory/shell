@@ -363,6 +363,23 @@ int MjStatesGen(const uint16_t numParticles, int num_sp_states,
                   std::vector<uint16_t> &tempVar, int num_states, 
                   std::vector<std::vector<uint16_t> > &mb_state_list,
                   int currentState){
+/****************************************************************
+  Functions just like the subroutine mfdn_transitions/src/module_MjStates/MjStatesGen
+
+  numParticles : Total number of particles
+  num_sp_states : number of single particle states (it is assumed that there are same number of
+                  sp states in both species)
+  mj2_sp : contains a list of 2*mj values for each single particle state
+  two_mj : the selected 2*mJ
+  next_bin : contains the index of the next partition a list of size 1 less than sizeof(mj2_sp)
+  tempVar : single GroupID from a list of GroupIDs, the state that marks the beginning of the 
+            group(the set of many body states in the partition). It is called ID but it is a 
+            vector (of size the numParticles) with sp state indices.
+  num_states : Total number of states 
+  mb_state_list : List to be updated with the states matching the criteria of having same 2*mj
+  currentState : count of number of states matching the criteria of having same 2*mj
+
+  *****************************************************************/
 
           std::vector<uint16_t> mbstate = tempVar;
           std::vector<uint16_t> mbgroup = mbstate;
@@ -412,7 +429,13 @@ int MjStatesGen(const uint16_t numParticles, int num_sp_states,
 
 
 std::vector<double> ReadCoefficients(int state, int num_states, std::string filename){
-
+  /****************************************************************
+  Reads the coefficients of a wavefunction
+  
+  state : 0 for ground state, 1 for next eigen state and so on.
+  num_states: number of many body basis states 
+  filename : mfdn_smwf***
+  *****************************************************************/
   mcutils::FileExistCheck(
       filename, /*exit_on_nonexist=*/true, /*warn_on_overwrite=*/false
     );
@@ -420,9 +443,7 @@ std::vector<double> ReadCoefficients(int state, int num_states, std::string file
   auto stream = std::ifstream(filename, std::ios_base::binary);
   float buffer;
   int count =0;
-  int stateCount = 0;
-  bool flag = false;
-  
+    
   // quite unlikely but here is a sanity check to ensure number of bytes in the file 
   // matches the expected number 
   int file_size = stream.tellg();
@@ -432,35 +453,51 @@ std::vector<double> ReadCoefficients(int state, int num_states, std::string file
     std::cout<< "Corrupted file : Unexpected size " << std::endl;
     std::exit(1); // Perhaps a different kind of error must be thrown
   }
-  stream.seekg(std::ios_base::beg); // reset position back to beginning of the stream
+
+  // TO DO (slv): Need to document this 
+  int offset = sizeof(float) * (2* state +1);
+  stream.seekg(std::ios_base::beg + num_states* sizeof(float) * state + offset); // set position back to beginning of the state in the stream
+  
   while(stream.read(reinterpret_cast<char*>(&buffer), sizeof(float))){
     if(count < num_states){
-      if(stateCount==state){
           coeffs.push_back(buffer);
-          flag = true;
         }
-      count++;
-    }else{
-      if (flag) break;
-      stream.read(reinterpret_cast<char*>(&buffer), sizeof(float));
-      count = 0; // reset counter
-      stateCount++;
-    }
+    else break;
+    count++;
   }
-
+  
   return coeffs;
 }
 
 int main(int argc, char* argv[])
 {
-  const uint16_t numParticles = 6;
+  // header
+  std::cout << std::endl;
+  std::cout << "read MFDn wavefunctions " << std::endl;
+  std::cout << std::endl;
+/*
+  // usage message
+  if (argc-1 < 1)
+    {
+      std::cout << "Syntax: read_wavefunctions output_filename" << std::endl;
+      std::exit(EXIT_SUCCESS);
+    }
+  */
+  
   MBGroupsMetadata metadata{};
   const auto smwf_info = ReadMFDnSMWFInfo("mfdn_smwf.info");
+  const uint16_t N = smwf_info.N;
+  const uint16_t Z = smwf_info.Z;
+  const uint16_t numParticles = N + Z;
+
   int num_sp_states = smwf_info.num_proton_states + smwf_info.num_neutron_states;
   int two_mj = smwf_info.twoM;
   std::size_t num_states = smwf_info.dimension;
   int state = 0; // 0 for lowest eigen wavefunction aka ground state in mfdn_smwf001
-  std::vector<double> coefficients = ReadCoefficients(state, num_states, "mfdn_smwf001");
+  std::vector<double> coefficients = ReadCoefficients(state, num_states, "mfdn_smwf001"); //(slv) This must multipled
+  
+  // for(std::vector<double>::iterator it = coefficients.begin(); it !=coefficients.end(); it++)
+  //   std::cout<< *it<<std::endl;
 
   fmt::print(
       "partitions_p: {:>4d}\n",
@@ -548,18 +585,31 @@ int main(int argc, char* argv[])
   }
   std::cout<< "Writing to output file .. " << num_states << " states" << std::endl;
 */
-  std::string out_filename_bin = "out5.MBO";
+  std::string out_filename_bin = "Z6N5_out2.MBO";
   auto stream2 = std::ofstream(out_filename_bin, std::ios_base::binary);
   std::vector<uint16_t> buffer(numParticles , 0);
   
   mcutils::WriteBinary(stream2, &numParticles, 1);
   mcutils::WriteBinary(stream2, &num_states, 1);
 
+  // Here I need to implement the change of indices
   for(int i = 0; i< num_states; i++){
     for(int j =0; j<numParticles; j++){
-      buffer[j] = (mb_state_list[i])[j];
+      
+      if(j < Z)
+        buffer[j+N] = (mb_state_list[i])[j] + smwf_info.num_proton_states; // change the indices of proton states and move them to positions after the neutron indices
+      else
+        buffer[j-Z] = (mb_state_list[i])[j] - smwf_info.num_neutron_states; // change the indices of neutron states and move them to positions before the proton indices
+      
+      //buffer[j] = (mb_state_list[i])[j];
     }
-
+/*
+     0 1 2 40 41 47               0 1 2 40 41 47
+      \_  \__                         __/   __/
+        \___ \___                  __/ ____/
+            \    \                /   /
+      0 1 7 40 41 42             0 1 7 40 41 42
+*/
     mcutils::WriteBinary(stream2, buffer.data(), numParticles);
     mcutils::WriteBinary(stream2, &(coefficients[i]), 1);
     //stream2.write(reinterpret_cast<const char*>(&(coefficients[i])),sizeof(double));
