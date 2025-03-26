@@ -30,6 +30,7 @@
 
 #include "basis/nlj_orbital.h"
 #include "mcutils/fortran_io.h"
+#include "mcutils/io.h"
 #include "mcutils/parsing.h"
 #include "mcutils/profiling.h"
 
@@ -38,6 +39,10 @@
 // {
 
 #define SYMMETRIC_PARTITIONS
+constexpr int kIntegerSize = 4;
+static_assert(sizeof(int)==kIntegerSize, "Integers are not 4 bytes.");
+constexpr int kFloatSize = 4;
+static_assert(sizeof(float)==kFloatSize, "Floats are not 4 bytes.");
 
 struct MBGroupsMetadata
 {
@@ -405,13 +410,14 @@ std::vector<int> MjTruncatedStatesGen(const uint16_t numParticles, int num_sp_st
                 std::vector<float> &weight_sp, int two_mj, 
                 std::vector<int> &next_bin, 
                 std::vector<uint16_t> &tempVar, int num_states, 
-                std::vector<std::vector<uint16_t> > &mb_state_list,
-                std::vector<int> &truncatedCoeffsIndex,
+                // std::vector<std::vector<uint16_t> > &mb_state_list,
+                std::map<std::vector<uint16_t> , int> &mb_state_list,
                 int currentCoeff,
                 float max_truncation_weight,
                 int currentState){
   /****************************************************************
-    Functions just like the subroutine mfdn_transitions/src/module_MjStates/MjStatesGen
+    Functions like the subroutine mfdn_transitions/src/module_MjStates/MjStatesGen
+    and also records the indices of the coefficients (in mfdn_smwf***) corresponding to the basis states.
 
     numParticles : Total number of particles
     num_sp_states : number of single particle states (it is assumed that there are same number of
@@ -424,9 +430,8 @@ std::vector<int> MjTruncatedStatesGen(const uint16_t numParticles, int num_sp_st
               group(the set of many body states in the partition). It is called ID but it is a 
               vector (of size the numParticles) with sp state indices.
     num_states : Total number of states 
-    mb_state_list : List to be updated with the states matching the criteria of having same 2*mj
-    truncatedCoeffsIndex : List of indices of the coefficients corresponding to the states in 
-              the mb_state_list
+    mb_state_list : Map to be updated with the states matching the criteria of having same 2*mj 
+              and the corresponding indices of the coefficients
     currentCoeff : Keeps track of indices of the coefficients that are skipped
     max_truncation_weight : This depends on the Nmax cutoff that 
               we want to truncate wavefunctions at.
@@ -455,10 +460,11 @@ std::vector<int> MjTruncatedStatesGen(const uint16_t numParticles, int num_sp_st
       total_wt += weight_sp[mbstate[i]];
     }
     if(total_wt <= max_truncation_weight){
-      mb_state_list[currentState] = mbstate;
+      // mb_state_list[currentState] = mbstate;
+      mb_state_list[mbstate] = currentCoeff;
       currentState += 1;
       //truncatedCoeffs.push_back(coeffs[currentCoeff]);  
-      truncatedCoeffsIndex.push_back(currentCoeff);  
+      //truncatedCoeffsIndex.push_back(currentCoeff);  
       currentCoeff += 1;
     }
     else{
@@ -489,10 +495,11 @@ std::vector<int> MjTruncatedStatesGen(const uint16_t numParticles, int num_sp_st
       total_wt += weight_sp[mbstate[i]];
     }
     if(total_wt <= max_truncation_weight){
-      mb_state_list[currentState] = mbstate;
+      // mb_state_list[currentState] = mbstate;
+      mb_state_list[mbstate] = currentCoeff;
       currentState += 1;
       //truncatedCoeffs.push_back(coeffs[currentCoeff]);  
-      truncatedCoeffsIndex.push_back(currentCoeff);  
+      //truncatedCoeffsIndex.push_back(currentCoeff);  
       currentCoeff += 1;
     }
     else{
@@ -505,7 +512,7 @@ std::vector<int> MjTruncatedStatesGen(const uint16_t numParticles, int num_sp_st
   return counts;
 }
 
-std::vector<double> ReadCoefficients(std::string filename_pattern,
+std::vector<float> ReadCoefficients(std::string filename_pattern,
                                     const MFDnSMWFInfo& smwf_info,
                                     int state, 
                                     std::vector<int>& numStatesPerFile,
@@ -519,7 +526,7 @@ std::vector<double> ReadCoefficients(std::string filename_pattern,
   num_statesPerFile: list of number of many body basis states in each file
   
   *****************************************************************/
-  std::vector<double> coeffs;
+  std::vector<float> coeffs;
 
   for (std::size_t i = 1; i <= smwf_info.num_diag; ++i)
   {
@@ -703,7 +710,7 @@ int main(int argc, char* argv[])
 
   }
 /*
-
+// Testing the list of MB basis states in the short wavefunction
 auto stream1 = std::ofstream("test.out", std::ios_base::out);
 
 stream1 << fmt::format("  {:>4d}   {:>4d}  \n", numParticles, num_states);
@@ -736,35 +743,32 @@ std::exit(0);
   mj2_sp.clear();
   weight_sp.clear();
   next_bin.clear();
-  std::vector<std::vector<uint16_t> > mb_state_list(num_states, std::vector<uint16_t>( numParticles,0));
+  // std::vector<std::vector<uint16_t> > mb_state_list(num_states, std::vector<uint16_t>( numParticles,0));
+  std::map<std::vector<uint16_t> , int> mb_state_list;
   generateSupportingLists("mfdn_MBgroups{:03d}",groupid_list, smwf_info, mj2_sp, weight_sp, next_bin, numStatesPerFile );
   fmt::print("generating list of MB states for the high Nmax wavefunction .. \n");
 
   int currentnumstates = 0;
   int currentCoeff = 0;
   std::vector<int> currentCounts {currentnumstates, currentCoeff };
-  //std::vector<double> truncatedCoeffs;
-  std::vector<int> truncatedCoeffsIndex;
+  //std::vector<float> truncatedCoeffs;
+  //std::vector<int> truncatedCoeffsIndex;
 
   for(std::vector<std::vector<uint16_t> >::iterator it = groupid_list.begin(); it != groupid_list.end(); it++ )
   {
     std::vector<uint16_t> groupID = *it;
     // Imitating Fortran subroutine MjStatesGen
     currentCounts = MjTruncatedStatesGen(numParticles, num_sp_states, mj2_sp, weight_sp, two_mj, next_bin, 
-                       groupID, num_states, mb_state_list, truncatedCoeffsIndex, currentCoeff, 
-                       max_truncation_weight, currentnumstates); 
+                      groupID, num_states, mb_state_list, currentCoeff, 
+                      max_truncation_weight, currentnumstates); 
     currentnumstates = currentCounts[0];
     currentCoeff = currentCounts[1];
   }  
 
 fmt::print("truncated number of states {:d}\n",currentnumstates);
-fmt::print("number of indices in truncatedCoeffsIndex {:d}\n",truncatedCoeffsIndex.size());
 
 // getting list of indices of coefficients that have the required twoMj has advantages that 
 // all the states in the mfdn_smwf*** can be truncated at a time if needed.
-// However, sometimes it can also happen that the order of the states in an Nmax04 run may be different from Nmax08 run
-// in which case an overlap test might not give proper result
-
 
 // At this point there are two lists apparantly of same size but the neutron indices off 
 // by smwf_info.num_proton_states - smwf_info_short.num_proton_states
@@ -776,52 +780,69 @@ for (int i = 0; i< currentnumstates_short; i++){
 
 if (mode=="test"){
   //if mode is set to "test", only one state is written in text needed for debugging
-  std::vector<double> coefficients = ReadCoefficients("mfdn_smwf{:03d}",smwf_info, state, numStatesPerFile ); 
+  std::vector<float> coefficients = ReadCoefficients("mfdn_smwf{:03d}",smwf_info, state, numStatesPerFile ); 
   fmt::print("number of states: {:d}\n", coefficients.size());
-  // for(std::vector<double>::iterator it = coefficients.begin(); it !=coefficients.end(); it++)
+  // for(std::vector<float>::iterator it = coefficients.begin(); it !=coefficients.end(); it++)
   //   std::cout<< *it<<std::endl;
 
-  int count = 0;
-  fmt::print("Writing to output file .. {:d} states \n", currentnumstates_short);
+  int count = 0; // Only for validation of the successful searches
+  fmt::print("Writing to output file .. {:d} states \n", currentnumstates);
   auto stream = std::ofstream(out_filename, std::ios_base::out);
 
   for (int i = 0; i< currentnumstates_short; i++){
-    auto it = std::find(mb_state_list.begin(), mb_state_list.end(), mb_state_list_short[i]);
+    // auto it = std::find(mb_state_list.begin(), mb_state_list.end(), mb_state_list_short[i]);
+    auto it = mb_state_list.find(mb_state_list_short[i]);
     if(it != mb_state_list.end()){
-      int index = std::distance(mb_state_list.begin(), it);
-      stream << fmt::format("{:+16.7e}  \n", coefficients[truncatedCoeffsIndex[index]]);
+      // int index = std::distance(mb_state_list.begin(), it);
+      //stream << fmt::format("{:+16.7e}  \n", coefficients[truncatedCoeffsIndex[index]]);
+      stream << fmt::format("{:+16.7e}  \n", coefficients[it -> second]);
       count++;
     }
+    else break;
   }
   // Sanity check for all states in mb_state_list_short have corresponding states 
   // in mb_state_list and coefficients in truncatedCoeffs
   if (count == currentnumstates_short)
     fmt::print("Validation of number of truncated states successful .. \n");
-
+  else
+    fmt::print("Number of truncated states {:d} does not match the count {:d} .. \n", currentnumstates_short, count);
 }
 else if(mode=="run"){
   
-  auto stream = std::ofstream(out_filename, std::ios_base::out);
-  std::vector<double> truncatedCoeffs;
+  auto stream = std::ofstream(out_filename, std::ios_base::binary);
+  std::vector<float> truncatedCoeffs;
   // write the coefficients in to a Fortran record that resembles mfdn_smwf***
   for(int st =0; st< state; st++){
-    int count = 0;
-    std::vector<double> coefficients = ReadCoefficients("mfdn_smwf{:03d}",smwf_info, st, numStatesPerFile ); 
-    
+    int count = 0; // Only for validation of the successful searches
+    std::vector<float> coefficients = ReadCoefficients("mfdn_smwf{:03d}",smwf_info, st, numStatesPerFile ); 
+    //int bytes = currentnumstates_short * kFloatSize;
+    //std::cout<<"Number of bytes " << bytes << std::endl;
+    //stream.write(reinterpret_cast<const char*>(&bytes),sizeof(bytes));
     for (int i = 0; i< currentnumstates_short; i++){
-      auto it = std::find(mb_state_list.begin(), mb_state_list.end(), mb_state_list_short[i]);
+      // auto it = std::find(mb_state_list.begin(), mb_state_list.end(), mb_state_list_short[i]);
+      auto it = mb_state_list.find(mb_state_list_short[i]);
       if(it != mb_state_list.end()){
-        int index = std::distance(mb_state_list.begin(), it);
-        truncatedCoeffs.push_back(coefficients[truncatedCoeffsIndex[index]]);
+        // int index = std::distance(mb_state_list.begin(), it);
+        // truncatedCoeffs.push_back(coefficients[truncatedCoeffsIndex[index]]);
+        truncatedCoeffs.push_back(coefficients[it -> second]);
+        //stream.write(reinterpret_cast<const char*>(&(coefficients[it -> second])), sizeof(float));
         count++;
       }
     }
     if (count == currentnumstates_short){
     fmt::print("Validation of number of truncated states successful for state {:d}.. \n", st);
     }
-    count = 0;
+
     fmt::print("Writing to output file .. state {:d} \n", st);
     mcutils::WriteFortranRecord(stream, truncatedCoeffs);
+
+
+    //mcutils::WriteBinary(stream,bytes);
+    //mcutils::WriteBinary(stream, &truncatedCoeffs, bytes);
+    //mcutils::WriteBinary(stream,bytes);
+
+    //stream.write(reinterpret_cast<const char*>(&bytes),sizeof(bytes));
+    count = 0;
 
     truncatedCoeffs.clear();
   }
