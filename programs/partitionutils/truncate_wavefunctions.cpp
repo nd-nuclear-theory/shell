@@ -340,6 +340,8 @@ int incrementMj(const uint16_t numParticles, int num_sp_states,
   return flag;
   }
 
+// There might be a best way to combine this and MjTruncatedStatesGen
+// but changing the datatype of mb_state_list of this to <map>, might mess up the order. (Not quite sure)
 int MjStatesGen(const uint16_t numParticles, int num_sp_states, 
                 std::vector<int> &mj2_sp, int two_mj, 
                 std::vector<int> &next_bin, 
@@ -465,11 +467,8 @@ std::vector<int> MjTruncatedStatesGen(const uint16_t numParticles, int num_sp_st
       total_wt += weight_sp[mbstate[i]];
     }
     if(total_wt <= max_truncation_weight){
-      // mb_state_list[currentState] = mbstate;
       mb_state_list[mbstate] = currentCoeff;
       currentState += 1;
-      //truncatedCoeffs.push_back(coeffs[currentCoeff]);  
-      //truncatedCoeffsIndex.push_back(currentCoeff);  
       currentCoeff += 1;
     }
     else{
@@ -500,11 +499,8 @@ std::vector<int> MjTruncatedStatesGen(const uint16_t numParticles, int num_sp_st
       total_wt += weight_sp[mbstate[i]];
     }
     if(total_wt <= max_truncation_weight){
-      // mb_state_list[currentState] = mbstate;
       mb_state_list[mbstate] = currentCoeff;
       currentState += 1;
-      //truncatedCoeffs.push_back(coeffs[currentCoeff]);  
-      //truncatedCoeffsIndex.push_back(currentCoeff);  
       currentCoeff += 1;
     }
     else{
@@ -648,6 +644,10 @@ void generateSupportingLists(std::string filename_pattern,
 
 }
 
+
+/*******************************************************************************************************
+VISUAL AID TO FIND MAIN()
+*******************************************************************************************************/
 int main(int argc, char* argv[])
 {
   // header
@@ -708,16 +708,18 @@ int main(int argc, char* argv[])
   fflush(stdout);
 
   std::vector<std::vector<uint16_t> > groupid_list; 
-  std::vector<int> numStatesPerFile;
+  std::vector<int> numStatesPerFile_short;
   std::vector<std::vector<uint16_t> > mb_state_list_short(num_states, std::vector<uint16_t>( numParticles,0)); 
   std::vector<int> mj2_sp;
   std::vector<float> weight_sp;
   std::vector<int> next_bin;
 
-  generateSupportingLists("mfdn_MBgroups_short{:03d}",groupid_list, smwf_info_short, mj2_sp, weight_sp, next_bin, numStatesPerFile );
+  generateSupportingLists("mfdn_MBgroups_short{:03d}",groupid_list, smwf_info_short, 
+                          mj2_sp, weight_sp, next_bin, numStatesPerFile_short );
   
   fmt::print("generating list of MB states for the low Nmax wavefunction ..\n");
   int currentnumstates_short = 0;
+
   for(std::vector<std::vector<uint16_t> >::iterator it = groupid_list.begin(); it != groupid_list.end(); it++ )
   {
     std::vector<uint16_t> groupID = *it;
@@ -727,6 +729,20 @@ int main(int argc, char* argv[])
 
   }
 
+  /*
+  // Testing order of MB states in various MBgroups files
+  auto stream1 = std::ofstream(out_filename, std::ios_base::out);
+  
+  stream1 << fmt::format("  {:>4d}   {:>4d}  \n", numParticles, num_states);
+  for (int i = 0; i< num_states; i++){
+    stream1 << fmt::format("  {:>4d}   \n", fmt::join(mb_state_list_short[i],"  "));
+  }
+  std::cout<< "Writing list of MB states to output file .. " << num_states << " states" << std::endl;
+
+  std::exit(0);
+*/
+
+  // Following code reads the large Nmax file
   const auto smwf_info = ReadMFDnSMWFInfo("mfdn_smwf.info");
   num_sp_states = smwf_info.num_proton_states + smwf_info.num_neutron_states;
   two_mj = smwf_info.twoM;
@@ -745,11 +761,10 @@ int main(int argc, char* argv[])
   fmt::print("dimension: {:d}\n", num_states);
   fflush(stdout);
   groupid_list.clear(); 
-  numStatesPerFile.clear();
+  std::vector<int> numStatesPerFile;
   mj2_sp.clear();
   weight_sp.clear();
   next_bin.clear();
-  // std::vector<std::vector<uint16_t> > mb_state_list(num_states, std::vector<uint16_t>( numParticles,0));
   std::map<std::vector<uint16_t> , int> mb_state_list;
   generateSupportingLists("mfdn_MBgroups{:03d}",groupid_list, smwf_info, mj2_sp, weight_sp, next_bin, numStatesPerFile );
   fmt::print("generating list of MB states for the high Nmax wavefunction .. \n");
@@ -833,6 +848,14 @@ else if(mode=="run"){
         truncatedCoeffs.push_back(coefficients[it -> second]);
         count++;
       }
+      /*      
+      // this is only for testing the code. Must be removed in production runs.
+      else{ 
+        truncatedCoeffs.push_back(0.0);
+        count++;
+      }
+      */
+
     }
     if (count == currentnumstates_short){
     fmt::print("Validation of number of truncated states successful for state {:d}.. \n", st);

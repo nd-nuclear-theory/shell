@@ -3,6 +3,9 @@
 
   adapted read functions from group_read.cpp by Patrick J. Fasano,  University of Notre Dame
 
+  Shwetha Vittal
+  University of Notre Dame
+
   + 01/07/25 (slv): First version of code to read many body states from mfdn_MBgroupsxxx
   + 01/22/25 (slv): Create ReadCoefficients function to read the amplitudes, of the 
     many body states, from mfdn_smwf001 file 
@@ -178,38 +181,6 @@ MFDnSMWFInfo ReadMFDnSMWFInfo(std::string filename)
   return info;
 }
 
-std::vector<uint16_t> GenerateSPBinPartitionTable(const MFDnSMWFInfo& info)
-{
-  std::vector<uint16_t> sp_bin_partition_table{};
-  sp_bin_partition_table.reserve(info.num_proton_states + info.num_neutron_states);
-
-  {
-    auto partition_it = info.partitioning.proton_partitions.cbegin();
-    auto partition_end = info.partitioning.proton_partitions.cend();
-    for (int i = 1; i <= info.num_proton_states; ++i)
-    {
-      if ((std::next(partition_it) != partition_end) && (i >= *std::next(partition_it)))
-        partition_it = std::next(partition_it);
-      sp_bin_partition_table.push_back(*partition_it);
-    }
-  }
-
-  {
-    auto partition_it = info.partitioning.neutron_partitions.cbegin();
-    auto partition_end = info.partitioning.neutron_partitions.cend();
-    for (int i = info.num_proton_states + 1;
-         i <= info.num_proton_states + info.num_neutron_states;
-         ++i)
-    {
-      if ((std::next(partition_it) != partition_end) && (i >= *std::next(partition_it)))
-        partition_it = std::next(partition_it);
-      sp_bin_partition_table.push_back(*partition_it);
-    }
-  }
-
-  return sp_bin_partition_table;
-}
-
 // Serial reading of Group IDs
 
 void ReadMBGroups(
@@ -223,8 +194,6 @@ void ReadMBGroups(
   static constexpr std::ios_base::openmode mode_argument =
       std::ios_base::in | std::ios_base::binary;
 
-  // get sp_bin
-  const auto spbin_partition_table = GenerateSPBinPartitionTable(smwf_info);
 
   // read metadata
   {
@@ -428,7 +397,10 @@ int MjStatesGen(const uint16_t numParticles, int num_sp_states,
         }
 
 
-std::vector<double> ReadCoefficients(int state, int num_states, std::string filename){
+std::vector<double> ReadCoefficients(std::string filename,
+                                    int state, 
+                                    int num_states,
+                                    bool verbose = false){
   /****************************************************************
   Reads the coefficients of a wavefunction
   
@@ -436,10 +408,14 @@ std::vector<double> ReadCoefficients(int state, int num_states, std::string file
   num_states: number of many body basis states 
   filename : mfdn_smwf***
   *****************************************************************/
-  mcutils::FileExistCheck(
-      filename, /*exit_on_nonexist=*/true, /*warn_on_overwrite=*/false
-    );
   std::vector<double> coeffs;
+  
+  if (verbose)
+    fmt::print("reading file {} \n", filename);
+  mcutils::FileExistCheck(
+    filename, /*exit_on_nonexist=*/true, /*warn_on_overwrite=*/false
+  );
+  
   auto stream = std::ifstream(filename, std::ios_base::binary);
   float buffer;
   int count =0;
@@ -449,7 +425,8 @@ std::vector<double> ReadCoefficients(int state, int num_states, std::string file
   int file_size = stream.tellg();
   stream.seekg(0, std::ios_base::end);
   file_size = int(stream.tellg()) - file_size;
-  if (file_size % ((num_states + 2) * sizeof(float)) != 0){ // 2 is the offset number of bytes after each wf
+  std::cout << "num_states " << num_states << " file_size " << file_size <<std::endl;
+  if (file_size % ((num_states + 2) * sizeof(float)) != 0){ // |1 byte|wf coeffs|1 byte|
     std::cout<< "Corrupted file : Unexpected size " << std::endl;
     std::exit(1); // Perhaps a different kind of error must be thrown
   }
@@ -465,7 +442,6 @@ std::vector<double> ReadCoefficients(int state, int num_states, std::string file
     else break;
     count++;
   }
-  
   return coeffs;
 }
 
@@ -475,14 +451,29 @@ int main(int argc, char* argv[])
   std::cout << std::endl;
   std::cout << "read MFDn wavefunctions " << std::endl;
   std::cout << std::endl;
-/*
+
   // usage message
-  if (argc-1 < 1)
+  if (argc-1 < 3)
     {
-      std::cout << "Syntax: read_wavefunctions output_filename" << std::endl;
+      std::cout << "Syntax: read_wavefunctions state runmode output_filename" << std::endl;
       std::exit(EXIT_SUCCESS);
     }
-  */
+  
+  int state; // 0 for lowest eigen wavefunction aka ground state in mfdn_smwf001
+  std::istringstream parameter_1(argv[1]);
+  parameter_1 >> state;
+  if (!parameter_1)
+    {
+      std::cerr << "Expecting numeric value for Nmax argument" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+  
+  int runmode;
+  std::istringstream parameter_2(argv[2]); // If runmode is 0 -> generate MBO file ; 1 -> generate MB states list for low Nmax
+  parameter_2 >> runmode;
+
+  // output filename
+  std::string out_filename = argv[3];
   
   MBGroupsMetadata metadata{};
   const auto smwf_info = ReadMFDnSMWFInfo("mfdn_smwf.info");
@@ -493,9 +484,8 @@ int main(int argc, char* argv[])
   int num_sp_states = smwf_info.num_proton_states + smwf_info.num_neutron_states;
   int two_mj = smwf_info.twoM;
   std::size_t num_states = smwf_info.dimension;
-  int state = 0; // 0 for lowest eigen wavefunction aka ground state in mfdn_smwf001
-  std::vector<double> coefficients = ReadCoefficients(state, num_states, "mfdn_smwf001"); //(slv) This must multipled
   
+    
   // for(std::vector<double>::iterator it = coefficients.begin(); it !=coefficients.end(); it++)
   //   std::cout<< *it<<std::endl;
 
@@ -520,8 +510,6 @@ int main(int argc, char* argv[])
   std::vector<std::vector<uint16_t> > mb_state_list(num_states, std::vector<uint16_t>( numParticles,0)); 
   // Create the mj2_sp vector that contains the 2M values of all the single particle states
   std::vector<int> mj2_sp;
-  
-  int count = 0;
 
   const auto& proton_subspace = smwf_info.orbital_space.GetSubspace(0);
   for (int index = 0; index < proton_subspace.size(); ++index)
@@ -558,6 +546,7 @@ int main(int argc, char* argv[])
   
   }
   // Check for proper creation of next_bin vector
+  //int count = 0;
   //for(std::vector<int>::iterator it = next_bin.begin(); it !=next_bin.end(); it++)
     //{std::cout<<count++ <<"  "<< *it << std::endl;
     //}
@@ -573,20 +562,24 @@ int main(int argc, char* argv[])
 
   }  
   
-/*
-  // write to a text file
-  std::string out_filename_txt = "out.txt";
-  auto stream1 = std::ofstream(out_filename_txt, std::ios_base::out);
-  //mcutils::WriteBinary<int>(stream(),bytes);
+
+  // write list of MB states to a text file
+if (runmode == 1)  {
+  auto stream1 = std::ofstream(out_filename, std::ios_base::out);
   
-  stream1 << fmt::format("  {:>4d}   {:>4d}  \n", numParticles, num_states) << std::endl;
-  for (uint16_t i = 0; i< num_states; i++){
-    stream1 << fmt::format("  {:>4d}   {:+16.7e}  \n", fmt::join(mb_state_list[i],"  "), coefficients[i]) <<std::endl;
+  stream1 << fmt::format("  {:>4d}   {:>4d}  \n", numParticles, num_states);
+  for (int i = 0; i< num_states; i++){
+    stream1 << fmt::format("  {:>4d}   \n", fmt::join(mb_state_list[i],"  "));
   }
-  std::cout<< "Writing to output file .. " << num_states << " states" << std::endl;
-*/
-  std::string out_filename_bin = "Z6N5_out2.MBO";
-  auto stream2 = std::ofstream(out_filename_bin, std::ios_base::binary);
+  std::cout<< "Writing list of MB states to output file .. " << num_states << " states" << std::endl;
+}
+
+
+if (runmode == 0){
+  std::vector<double> coefficients = ReadCoefficients("mfdn_smwf001", state, num_states); //(slv) This must multipled
+  fmt::print("number of states: {:d}\n", coefficients.size());
+
+  auto stream2 = std::ofstream(out_filename, std::ios_base::binary);
   std::vector<uint16_t> buffer(numParticles , 0);
   
   mcutils::WriteBinary(stream2, &numParticles, 1);
@@ -615,7 +608,7 @@ int main(int argc, char* argv[])
     //stream2.write(reinterpret_cast<const char*>(&(coefficients[i])),sizeof(double));
 
   }
-
+}
   return 0;
 }
 
