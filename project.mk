@@ -25,6 +25,7 @@ install_prefix := $(install_prefix)/shell
 modules += programs/radialutils programs/relutils programs/h2utils
 modules += programs/obutils
 modules += programs/noutils
+modules += programs/partitionutils
 
 # legacy programs -- DEPRECATED
 ##modules += programs/h2utils_legacy
@@ -45,6 +46,7 @@ modules += libraries/quadrature
 
 modules += libraries/basis  # ordering note: basis depends on am and mcutils
 modules += libraries/am libraries/mcutils libraries/spline libraries/fmt
+modules += libraries/parallel_hashmap
 
 ################################################################
 # extras -- list of extra files to be included
