@@ -91,7 +91,7 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
           
           if (precision=="single")
             run_parameters.float_size = 4;
-          else if  (precision=="double")
+          else if (precision=="double")
             run_parameters.float_size = 8;
           else
             {

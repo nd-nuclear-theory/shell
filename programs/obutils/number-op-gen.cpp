@@ -10,7 +10,7 @@
 
         n, l, 2*j (int): quantum numbers for the orbital of desired pair-counting operator
 
-        particle_species (int): particle species associated with desired pair-counting operator; 1 or 'p' if proton, 2, -1, or 'n' if neutron
+        particle_species (int or str): particle species associated with desired pair-counting operator; 1 or 'p' if proton, 2, -1, or 'n' if neutron
 
         N_max (int): N_max beyond which to truncate (one-body truncation)
         

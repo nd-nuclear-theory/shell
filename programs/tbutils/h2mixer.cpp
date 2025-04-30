@@ -70,7 +70,7 @@
         on the same single-particle space) of two existing one-body sources.
         This is accomplished via the Racah reduction formula for RMEs of a
         product of two operators acting on the same space [e.g., Suhonen "From
-        Nucleons to Nucleus" (2.62).
+        Nucleons to Nucleus" (2.62)].
 
       - define-ob-source xform <id> <ob_source_id> <xform_id>
 
