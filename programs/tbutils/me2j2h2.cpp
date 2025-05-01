@@ -1,6 +1,6 @@
 /******************************************************************************
 
-  me2j2h2.cpp -- ME2J to H2  TBME file conversion
+  me2j2h2.cpp -- convert Darmstadt ME2J to H2
 
   Syntax:
 
@@ -162,7 +162,7 @@ int main(int argc, const char **argv)
 
   // header
   std::cout << std::endl;
-  std::cout << "me2j2h2  -- ME2J to H2 TBME file conversion" << std::endl;
+  std::cout << "me2j2h2  -- convert Darmstadt ME2J to H2" << std::endl;
   std::cout << "version: " VCS_REVISION << std::endl;
   std::cout << std::endl;
 

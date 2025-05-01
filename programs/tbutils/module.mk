@@ -7,7 +7,7 @@ $(eval $(begin-module))
 module_units_h :=
 module_units_cpp-h :=
 # module_units_f :=
-module_programs_cpp := h2stat h2conv h2mixer me2jfilter me2j2h2 h22me2j xpn2h2 quasispin-gen
+module_programs_cpp := h2stat h2conv h2mixer me2jfilter me2j2h2 h22me2j xpn2h2 h22xpn quasispin-gen
 # module_programs_cpp_test += make-radial-dummy make-radial-permutation
 
 # module_programs_f :=

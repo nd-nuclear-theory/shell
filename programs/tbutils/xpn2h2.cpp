@@ -1,6 +1,6 @@
 /******************************************************************************
 
-  xpn2h2.cpp -- convert BIGSTICK xpn to h2
+  xpn2h2.cpp -- convert BIGSTICK XPN to H2
 
   An XPN file can only be interpreted if it is accompanied by the definitions
   for the single-particle space on which it is defined.  To use xpn2h2, it is
@@ -234,7 +234,7 @@ void ReadXPNFile(
   std::ifstream is(filename);
   if (!is)
     {
-      std::cout << "ERROR: Failure opening sps file" << std::endl;
+      std::cout << "ERROR: Failure opening XPN file" << std::endl;
       std::exit(EXIT_SUCCESS);
     }
 
@@ -411,7 +411,7 @@ void StoreOBMEs(
     const basis::OrbitalSectorsLJPN& one_body_sectors,
     basis::OperatorBlocks<double>& one_body_matrices
   )
-// Store raw XPN tbmes into standard JJJPN storage structures.
+// Store raw XPN OBMEs into standard OBME storage structures.
 //
 // Arguments:
 //   orbital_space (basis::OrbitalSpacePN, input): orbitals
@@ -468,7 +468,7 @@ void StoreTBMEs(
     const basis::TwoBodySectorsJJJPN& two_body_sectors,
     basis::OperatorBlocks<double>& two_body_matrices
   )
-// Store raw XPN tbmes into standard JJJPN storage structures.
+// Store raw XPN TBMEs into standard JJJPN storage structures.
 //
 // Arguments:
 //   orbital_space (basis::OrbitalSpacePN, input): orbitals
@@ -541,7 +541,7 @@ int main(int argc, const char *argv[])
 {
   // header
   std::cout << std::endl;
-  std::cout << "xpn2h2  -- xpn to h2 conversion" << std::endl;
+  std::cout << "xpn2h2  -- convert BIGSTICK XPN to H2" << std::endl;
   std::cout << "version: " VCS_REVISION << std::endl;
   std::cout << std::endl;
 

@@ -1,6 +1,6 @@
 /******************************************************************************
 
-  h22me2j.cpp -- H2 to ME2J TBME file conversion
+  h22me2j.cpp -- convert H2 to Darmstadt ME2J
 
   Restrictions:
 
@@ -13,7 +13,7 @@
   Mark A. Caprio
   University of Notre Dame
 
-  + 10/25/24 (mac): Created, based on h2stat/xpn2h2/h22me2j.
+  + 10/25/24 (mac): Created, based on h2stat/xpn2h2.
   + 02/07/25 (mac): Add support for double precision me2j output.
 
 ******************************************************************************/
@@ -195,7 +195,7 @@ int main(int argc, const char **argv)
 
   // header
   std::cout << std::endl;
-  std::cout << "h22me2j -- H2 to ME2J TBME file conversion" << std::endl;
+  std::cout << "h22me2j -- convert H2 to Darmstadt ME2J" << std::endl;
   std::cout << "version: " VCS_REVISION << std::endl;
   std::cout << std::endl;
 
