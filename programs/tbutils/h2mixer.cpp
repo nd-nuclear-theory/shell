@@ -7,31 +7,119 @@
 
   Input format:
 
-    set-target-indexing <orbital_filename> <wp> <wn> <wpp> <wnn> <wpn>
-    set-target-indexing-oscillator <rank> <cutoff>
+    + set-target-indexing <orbital_filename> <wp> <wn> <wpp> <wnn> <wpn>
+
+      Set up indexing for two-particle space, based on an arbitrary set of
+      orbitals (from an orbital file) and weight-based cutoffs for the single
+      particle space (wp, wn) and two-particle space (wpp, wnn, wpn).
+
+    + set-target-indexing-oscillator <rank> <cutoff>
       rank = ob|tb
-    set-target-multipolarity <J0> <g0> <Tz0>
-    set-mass <A>
-    set-output-format <version>
+
+      Set up indexing for two-particle space, based on standard oscillator
+      orbitals and a cutoff on the number of oscillator quanta either for the
+      single-particle space (rank=ob, cutoff=N1max) (a.k.a. "square" truncation)
+      or the two particle space (rank=tb, cutoff=N2max) (a.k.a. "triangular"
+      truncation).
+
+    + set-target-multipolarity <J0> <g0> <Tz0>
+
+      Set quantum numbers for target two-body operators: angular momentum J0,
+      parity (-)^g0, isospin projection Tz0.
+
+    + set-mass <A>
+
+      Set mass number to be used in construction of certain A-dependent operators.
+
+    + set-output-format <version>
       version = 0|15099|15200
-    define-xform <id> <xform_filename>
-    define-ob-source <mode> <id> ...
-      define-ob-source input <id> <obme_filename> <J0> <g0> <Tz0>
-      define-ob-source builtin <id> [orbital_filename]
+
+      Set file format for output h2 files.
+
+    + define-xform <id> <xform_filename>
+
+      Define a transformation on the single-particle space, i.e., to a new set
+      of (non-oscillator) orbitals.  Such a transformation is used in
+      constructing transformed operators with "define-ob-source xform" and
+      "define-tb-source xform".
+
+    + define-ob-source <mode> <id> ...
+
+      Define a one-body operator "source", which can be used in construction of
+      either of other one-body sources or a two-body source.
+
+      - define-ob-source input <id> <obme_filename> <J0> <g0> <Tz0>
+
+        Define one-body source from input OBME file.
+
+      - define-ob-source builtin <id> [orbital_filename]
         id = identity|l|l2|s|s2|j|j2|tz|t+|t-|c+|c
-      define-ob-source linear-combination <id>
+        
+        Calculate one-body source from various built-in analytic expressions for
+        angular momentum, isospin, or harmonic oscillator ladder operators.
+
+      - define-ob-source linear-combination <id>
         add-ob-source <id> <coefficient>
-      define-ob-source tensor-product <id> <ob_factor_a_id> <ob_factor_b_id> <J0> [scale_factor]
-      define-ob-source xform <id> <ob_source_id> <xform_id>
-    define-tb-source <mode> <id> ...
-      define-tb-source input <id> <tbme_filename>
-      define-tb-source builtin <id>
+
+        Generate new one-body source as a linear combination of existing
+        one-body sources.
+
+      - define-ob-source tensor-product <id> <ob_factor_a_id> <ob_factor_b_id> <J0> [scale_factor]
+
+        Generate new one-body source as angular momentum coupled product (acting
+        on the same single-particle space) of two existing one-body sources.
+        This is accomplished via the Racah reduction formula for RMEs of a
+        product of two operators acting on the same space [e.g., Suhonen "From
+        Nucleons to Nucleus" (2.62)].
+
+      - define-ob-source xform <id> <ob_source_id> <xform_id>
+
+        Generate new one-body source from an existing one-body source by a
+        change of basis transformation on the single-particle space.
+
+    + define-tb-source <mode> <id> ...
+
+      - define-tb-source input <id> <tbme_filename>
+
+        Define two-body source from input TBME file.
+
+      - define-tb-source builtin <id>
         id = identity|loop-test
-      define-tb-source operatorU <id> <ob_source_id>
-      define-tb-source operatorV <id> <ob_factor_a_id> <ob_factor_b_id> [scale_factor]
-      define-tb-source xform <id> <tbme_filename> <wp> <wn> <wpp> <wnn> <wpn> <xform_id>
-    define-target <filename>
-    add-source <id> <coefficient>
+
+        Calculate two-body source from various built-in analytic expressions or,
+        rather, as of now, just the identity operator (and some operator used in
+        timing tests).
+
+      - define-tb-source operatorU <id> <ob_source_id>
+
+        Generate two-body source as the A-dependent "upgrade" of a one-body
+        source [e.g., "intrinsic", JPG 47, 122001 (2020),
+        https://doi.org/10.1088/1361-6471/ab9d38, (9)].
+
+      - define-tb-source operatorV <id> <ob_factor_a_id> <ob_factor_b_id> [scale_factor]
+
+        Generate two-body source as the (symmetric) product of two one-body
+        operators.  This is accomplished via the Racah reduction formula for
+        RMEs of a product of two operators acting on different space [e.g.,
+        Suhonen "From Nucleons to Nucleus" (2.54).
+
+      - define-tb-source xform <id> <tbme_filename> <wp> <wn> <wpp> <wnn> <wpn> <xform_id>
+
+        Generate new two-body source from an existing two-body source by a
+        change of basis transformation on the single-particle space.
+
+    + define-target <filename>
+
+      Define new target two-body operator for output, as linear combination of
+      two-body sources.
+
+    + add-source <id> <coefficient>
+
+      Add a two-body body source to the "current working" target.
+
+  Caution: Parsing of standard input can be corrupted if standard input is
+  redircted from a file created in an editor which generates DOS/Windows
+  newlines.
 
   Language: C++11
 
@@ -84,6 +172,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <iomanip>
+#include <map>
 #include <set>
 #include <string>
 
@@ -99,7 +188,7 @@
 #include "obme/radial.h"
 #include "tbme/h2_io.h"
 #include "tbme/tbme_separable.h"
-#include "tbme/tbme_xform.h"
+#include "tbme/tbme_radial_xform.h"
 #include "tbme/tbme_mapping.h"
 
 ////////////////////////////////////////////////////////////////
@@ -1131,6 +1220,7 @@ void OneBodyBuiltinChannel::ConstructOneBodyOperatorData(
   else
     {
       std::ifstream orbital_file(orbital_filename);
+      mcutils::StreamCheck(bool(orbital_file), orbital_filename, "Failure opening orbital file for input");
       basis::OrbitalPNList orbital_info = basis::ParseOrbitalPNStream(orbital_file,true);
       operator_data.orbital_space = basis::OrbitalSpaceLJPN(orbital_info);
     }
@@ -1437,6 +1527,7 @@ void InitializeTargetIndexing(
     // generic indexing
     {
       std::ifstream orbital_file(run_parameters.orbital_filename);
+      mcutils::StreamCheck(bool(orbital_file), run_parameters.orbital_filename, "Failure opening orbital file for input");
       basis::OrbitalPNList orbital_info = basis::ParseOrbitalPNStream(orbital_file,true);
       orbital_info = basis::TruncateOrbitalList(run_parameters.weight_max, orbital_info);
       target_indexing.orbital_space = basis::OrbitalSpacePN(orbital_info);

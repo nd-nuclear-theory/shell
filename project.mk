@@ -22,7 +22,7 @@ install_prefix := $(install_prefix)/shell
 # programs
 ################
 
-modules += programs/radialutils programs/relutils programs/h2utils
+modules += programs/radialutils programs/relutils programs/tbutils
 modules += programs/obutils
 
 # legacy programs -- DEPRECATED
@@ -69,8 +69,10 @@ CPPFLAGS += -D'VCS_REVISION="$(vcs-git)"'
 
 # basis submodule
 #   map vs. hash for space lookup in basis library
-CPPFLAGS += -DBASIS_HASH
+CPPFLAGS += -DBASIS_HASH -DBASIS_BOOST_HASH
 
 # spline submodule
 #   disable integration routines requiring later versions of gsl
 CPPFLAGS += -DSPLINE_NO_FANCY_INTEGRATION
+
+DEBUG = 1

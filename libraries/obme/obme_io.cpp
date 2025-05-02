@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include "eigen3/Eigen/Core"
+#include <Eigen/Core>
 
 #include "mcutils/eigen.h"
 #include "mcutils/parsing.h"

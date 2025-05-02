@@ -229,7 +229,7 @@ int main(int argc, const char *argv[]) {
 
   RunParameters run_parameters;
   ProcessArguments(argc, argv, run_parameters);
-  std::vector<basis::OrbitalPNInfo> orbitals;
+  basis::OrbitalPNList orbitals;
 
   if (run_parameters.mode == TruncationMode::kConvert)
   {

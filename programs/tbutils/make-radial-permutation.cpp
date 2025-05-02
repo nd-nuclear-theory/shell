@@ -15,7 +15,7 @@
 #include <iostream>
 #include <string>
 
-#include "eigen3/Eigen/Dense"
+#include <Eigen/Dense>
 
 #include "basis/nlj_orbital.h"
 #include "radial/radial_io.h"

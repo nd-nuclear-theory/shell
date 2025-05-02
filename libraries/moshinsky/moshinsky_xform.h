@@ -6,6 +6,8 @@
 
   See notes "Moshinsky xform for operators" (2015) for derivation.
 
+  TODO 10/25/24 (mac): Refactor JJJT->JJJPN to tbme_scheme_xform.h.
+
   Language: C++11
 
   Mark A. Caprio
@@ -42,7 +44,7 @@
 #ifndef MOSHINSKY_XFORM_H_
 #define MOSHINSKY_XFORM_H_
 
-#include "eigen3/Eigen/Sparse"
+#include <Eigen/Sparse>
 
 #include "basis/lsjt_scheme.h"
 #include "basis/lsjt_operator.h"
@@ -95,20 +97,20 @@ namespace moshinsky {
   // each individual isospin component (T0) of the operator separately.
   //
   // Arguments:
-  //   relative_space (basis::RelativeSpaceLSJT) : relative space
+  //   relative_space (basis::RelativeSpaceLSJT): relative space
   //     on which relative operator is defined
-  //   relative_sectors (basis::RelativeSectorsLSJT) : source sectors
+  //   relative_sectors (basis::RelativeSectorsLSJT): source sectors
   //     on which relative operator is defined
-  //   relative_matrices (basis::OperatorBlocks<double>) : source matrix elements
+  //   relative_matrices (basis::OperatorBlocks<double>): source matrix elements
   //     defining relative operator
-  //   relative_cm_sector (basis::RelativeCMSectorsLSJTN::SectorType) : target sector
+  //   relative_cm_sector (basis::RelativeCMSectorsLSJTN::SectorType): target sector
   //     for relative-cm operator
-  //   J0, T0, g0 (int) : operator properties
-  //   symmetry_phase_mode (basis::SymmetryPhaseMode) : specification of
+  //   J0, T0, g0 (int): operator properties
+  //   symmetry_phase_mode (basis::SymmetryPhaseMode): specification of
   //     matrix element conjugation properties of the operator
   //
   // Returns:
-  //   (Eigen::MatrixXd) : the matrix representation of this sector
+  //   (Eigen::MatrixXd): the matrix representation of this sector
 
   void TransformOperatorRelativeLSJTToRelativeCMLSJTN(
       const basis::OperatorLabelsJT& operator_labels,
@@ -118,26 +120,26 @@ namespace moshinsky {
       const basis::RelativeCMSpaceLSJTN& relative_cm_lsjtn_space,
       std::array<basis::RelativeCMSectorsLSJTN,3>& relative_cm_lsjtn_component_sectors,
       std::array<basis::OperatorBlocks<double>,3>& relative_cm_lsjtn_component_matrices,
-      bool verbose
+      bool verbose = false
     );
   // Construct relative-cm representation of operator in LSJTN basis,
   // from relative representation.
   //
   // See notes on "internal representation of an operator in JT
-  // scheme" in lsjt_operator.h for the general principles of how the
+  // scheme" in jt_operator.h for the general principles of how the
   // operators are represented.
   //
   // The Nmax truncation on the source relative space should be at
   // least as high as that on the target relative-cm space.
   //
   // Arguments:
-  //   operator_labels (basis::OperatorLabelsJT) : tensorial properties of operator
-  //   relative_space (...) : source space
-  //   relative_component_sectors (...) : source sectors
-  //   relative_component_matrices (...) : source matrices
-  //   relative_cm_lsjtn_space (...) : target space
-  //   relative_cm_lsjtn_component_sectors (..., output) : target sectors
-  //   relative_cm_lsjtn_component_matrices (..., output) : target matrices
+  //   operator_labels (basis::OperatorLabelsJT): tensorial properties of operator
+  //   relative_space (...): source space
+  //   relative_component_sectors (...): source sectors
+  //   relative_component_matrices (...): source matrices
+  //   relative_cm_lsjtn_space (...): target space
+  //   relative_cm_lsjtn_component_sectors (..., output): target sectors
+  //   relative_cm_lsjtn_component_matrices (..., output): target matrices
 
 
   ////////////////////////////////////////////////////////////////
@@ -160,11 +162,11 @@ namespace moshinsky {
   // The spectator SJT labels for the subspaces are assumed to be identical.
   //
   // Arguments:
-  //   relative_cm_subspace (basis::RelativeCMSubspaceLSJTN) : the relative-cm subspace
-  //   two_body_subspace (basis::TwoBodySubspaceLSJTN) : the two-body subspace
+  //   relative_cm_subspace (basis::RelativeCMSubspaceLSJTN): the relative-cm subspace
+  //   two_body_subspace (basis::TwoBodySubspaceLSJTN): the two-body subspace
   //
   // Returns:
-  //   (matrix) : the transformation brackets
+  //   (matrix): the transformation brackets
 
   Eigen::MatrixXd
     TwoBodyMatrixLSJTN(
@@ -184,11 +186,11 @@ namespace moshinsky {
   // rather than normalized antisymmetrized (NAS) matrix elements.
   //
   // Arguments:
-  //   relative_cm_sector (basis::RelativeCMSectorsLSJTN::SectorType) :
+  //   relative_cm_sector (basis::RelativeCMSectorsLSJTN::SectorType):
   //     source sector information
-  //   two_body_sector (basis::TwoBodySectorsLSJTN::SectorType) :
+  //   two_body_sector (basis::TwoBodySectorsLSJTN::SectorType):
   //     target sector information
-  //   relative_cm_matrix (Eigen::MatrixXd) : source sector matrix
+  //   relative_cm_matrix (Eigen::MatrixXd): source sector matrix
 
   void TransformOperatorRelativeCMLSJTNToTwoBodyLSJTN(
       const basis::OperatorLabelsJT& operator_labels,
@@ -203,17 +205,17 @@ namespace moshinsky {
   // from relative-cm representation.
   //
   // See notes on "internal representation of an operator in JT
-  // scheme" in lsjt_operator.h for the general principles of how the
+  // scheme" in jt_operator.h for the general principles of how the
   // operators are represented.
   //
   // Arguments:
-  //   operator_labels (basis::OperatorLabelsJT) : tensorial properties of operator
-  //   relative_cm_lsjtn_space (...) : source space
-  //   relative_cm_lsjtn_component_sectors (...) : source sectors
-  //   relative_cm_lsjtn_component_matrices (...) : source matrices
-  //   two_body_lsjtn_space (...) : target space
-  //   two_body_lsjtn_component_sectors (..., output) : target sectors
-  //   two_body_lsjtn_component_matrices (..., output) : target matrices
+  //   operator_labels (basis::OperatorLabelsJT): tensorial properties of operator
+  //   relative_cm_lsjtn_space (...): source space
+  //   relative_cm_lsjtn_component_sectors (...): source sectors
+  //   relative_cm_lsjtn_component_matrices (...): source matrices
+  //   two_body_lsjtn_space (...): target space
+  //   two_body_lsjtn_component_sectors (..., output): target sectors
+  //   two_body_lsjtn_component_matrices (..., output): target matrices
 
 
 
@@ -255,11 +257,11 @@ namespace moshinsky {
   //     [ L  S  J  ]
   //
   // Arguments:
-  //   two_body_lsjtn_subspace (...) : the source subspace
-  //   two_body_jjjtn_subspace (...) : the target subspace
+  //   two_body_lsjtn_subspace (...): the source subspace
+  //   two_body_jjjtn_subspace (...): the target subspace
   //
   // Returns:
-  //   (sparse matrix) : the transformation brackets
+  //   (sparse matrix): the transformation brackets
 
   Eigen::MatrixXd
     TwoBodyMatrixJJJTN(
@@ -280,16 +282,16 @@ namespace moshinsky {
   // rather than normalized antisymmetrized (NAS) matrix elements.
   //
   // Arguments:
-  //   two_body_lsjtn_space (basis::TwoBodySpaceLSJTN) :
+  //   two_body_lsjtn_space (basis::TwoBodySpaceLSJTN):
   //     source space
-  //   two_body_lsjtn_sectors (basis::TwoBodySectorsLSJTN) :
+  //   two_body_lsjtn_sectors (basis::TwoBodySectorsLSJTN):
   //     all source sectors in given isospin component
-  //   two_body_lsjtn_matrices (basis::OperatorBlocks<double>) :
+  //   two_body_lsjtn_matrices (basis::OperatorBlocks<double>):
   //     all source matrices in given isospin component
-  //   two_body_jjjtn_sector (basis::TwoBodySectorJJJTN::SectorType) :
+  //   two_body_jjjtn_sector (basis::TwoBodySectorJJJTN::SectorType):
   //     target sector information
-  //   J0, T0, g0 (int) : operator properties
-  //   symmetry_phase_mode (basis::SymmetryPhaseMode) : specification of
+  //   J0, T0, g0 (int): operator properties
+  //   symmetry_phase_mode (basis::SymmetryPhaseMode): specification of
   //     matrix element conjugation properties of the operator
 
 
@@ -307,17 +309,17 @@ namespace moshinsky {
   // TwoBodyLSJTN basis).
   //
   // See notes on "internal representation of an operator in JT
-  // scheme" in lsjt_operator.h for the general principles of how the
+  // scheme" in jt_operator.h for the general principles of how the
   // operators are represented.
   //
   // Arguments:
-  //   operator_labels (basis::OperatorLabelsJT) : tensorial properties of operator
-  //   two_body_lsjtn_space (...) : source space
-  //   two_body_lsjtn_component_sectors (...) : source sectors
-  //   two_body_lsjtn_component_matrices (...) : source matrices
-  //   two_body_jjjtn_space (...) : target space
-  //   two_body_jjjtn_component_sectors (..., output) : target sectors
-  //   two_body_jjjtn_component_matrices (..., output) : target matrices
+  //   operator_labels (basis::OperatorLabelsJT): tensorial properties of operator
+  //   two_body_lsjtn_space (...): source space
+  //   two_body_lsjtn_component_sectors (...): source sectors
+  //   two_body_lsjtn_component_matrices (...): source matrices
+  //   two_body_jjjtn_space (...): target space
+  //   two_body_jjjtn_component_sectors (..., output): target sectors
+  //   two_body_jjjtn_component_matrices (..., output): target matrices
 
   ////////////////////////////////////////////////////////////////
   // branching to jjJpn scheme
@@ -374,13 +376,13 @@ namespace moshinsky {
   // elements (2) orbital indices are compared to test canonicality.
   //
   // Arguments:
-  //   operator_labels (basis::OperatorLabelsJT) : tensorial properties of operator
-  //   two_body_jjjt_space (...) : source space
-  //   two_body_jjjt_component_sectors (...) :
+  //   operator_labels (basis::OperatorLabelsJT): tensorial properties of operator
+  //   two_body_jjjt_space (...): source space
+  //   two_body_jjjt_component_sectors (...):
   //     all source sectors, for all isospin components
-  //   two_body_jjjt_component_matrices (...) :
+  //   two_body_jjjt_component_matrices (...):
   //     all source matrices, for all isospin components
-  //   two_body_jjjpn_sector (basis::TwoBodySectorJJJPN::SectorType) :
+  //   two_body_jjjpn_sector (basis::TwoBodySectorJJJPN::SectorType):
   //     target sector information
 
   void TransformOperatorTwoBodyJJJTToTwoBodyJJJPN(
@@ -402,17 +404,18 @@ namespace moshinsky {
   // between more closely matched source and target sectors.
   //
   // See notes on "internal representation of an operator in JT
-  // scheme" in lsjt_operator.h for the general principles of how the
+  // scheme" in jt_operator.h for the general principles of how the
   // operators are represented.
   //
   // Arguments:
-  //   operator_labels (basis::OperatorLabelsJT) : tensorial properties of operator
-  //   two_body_jjjt_space (...) : source space
-  //   two_body_jjjt_component_sectors (...) : source sectors
-  //   two_body_jjjt_component_matrices (...) : source matrices
-  //   two_body_jjjpn_space (...) : target space
-  //   two_body_jjjpn_sectors (..., output) : target sectors
-  //   two_body_jjjpn_matrices (..., output) : target matrices
+  //   operator_labels (basis::OperatorLabelsJT): tensorial properties of operator
+  //   two_body_jjjt_space (basis::TwoBodySpaceJJJT): source space
+  //   two_body_jjjt_component_sectors (std::array<basis::TwoBodySectorsJJJT,3>): source sectors
+  //   two_body_jjjt_component_matrices (std::array<basis::OperatorBlocks<double>,3>): source matrices
+  //   two_body_jjjpn_space (basis::TwoBodySpaceJJJPN): target space
+  //   two_body_jjjpn_sectors (basis::TwoBodySectorsJJJPN, output): target sectors
+  //   two_body_jjjpn_matrices (basis::OperatorBlocks<double>, output): target matrices
+  //   Tz0 (int): Tz of operator
 
 
   ////////////////////////////////////////////////////////////////

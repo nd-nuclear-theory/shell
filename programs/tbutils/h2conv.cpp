@@ -98,7 +98,7 @@ int main(int argc, char **argv)
   const basis::OrbitalSpacePN& orbital_space = input_stream.orbital_space();
   const basis::TwoBodySpaceJJJPN& input_space = input_stream.space();
   const basis::TwoBodySectorsJJJPN& input_sectors = input_stream.sectors();
-  basis::TwoBodySpaceJJJPNOrdering space_ordering =
+  const basis::TwoBodySpaceJJJPNOrdering space_ordering =
     shell::kH2SpaceOrdering.at(run_parameters.output_h2_format);
   const basis::TwoBodySpaceJJJPN space = basis::TwoBodySpaceJJJPN(
       orbital_space,

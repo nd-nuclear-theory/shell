@@ -11,7 +11,7 @@
 #include <iostream>
 #include <string>
 
-#include "eigen3/Eigen/Core"
+#include <Eigen/Core>
 
 #include "am/halfint.h"
 #include "am/rme.h"

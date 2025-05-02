@@ -43,7 +43,7 @@ int main(int argc, char **argv)
   std::string output_filename=argv[4];
 
   std::cout << std::endl;
-  std::cout << "np2rel -- PN to relative file conversion" << std::endl;
+  std::cout << "pn2rel -- PN to relative file conversion" << std::endl;
   std::cout << std::endl;
 
   // set up zero operator

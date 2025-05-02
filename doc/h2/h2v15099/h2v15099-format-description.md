@@ -9,7 +9,9 @@ Mark A. Caprio, Patrick J. Fasano
   + 04/07/19 (pjf): Typographical corrections.
   + 06/03/19 (pjf): Clarify that all labels are written for proton orbitals
     before labels for neutron orbitals.
-
+  + 07/12/23 (mac): Restore reference to csbasis for definition of NAS.
+  + 06/07/24 (mac): Fix notation in ME in discussion of Wigner-Eckart convention.
+  
 ----------------------------------------------------------------
 
 ## Text vs. binary ##
@@ -23,9 +25,11 @@ should be used for production purposes with large-scale runs.
 The I/O routines in the shell project and MFDn assume that a file with extension
 `.dat` is in text format, and that a file with extension `.bin` is in binary format.
 
-The data stored in binary format are essentially identical.  We thus first
-describe the text format in detail, then, for binary format, we need only
-describe the technicalities of binary representation.
+The data stored in binary format are essentially identical (except that the
+quantum number labels on the matrix elements are omitted in binary format, for
+conciseness, since they can be deduced from the known ordering of the matrix
+elements).  We thus first describe the text format in detail.  Then, for binary
+format, we need only describe the technicalities of binary representation.
 
 ## File formatting: text ##
 
@@ -170,16 +174,18 @@ Syntax:
     * This is the RME <i1 i2 J_bra || T || i3 i4 J_ket>_species.
 
     * The RME follows the group theory (=Rose) normalization and phase
-    convention for the Wigner-Eckart theorem.  Thus, for scalar operators, it is
-    simply the M-independent matrix element
+    convention for the Wigner-Eckart theorem.  Thus, for scalar operators (thus,
+    J_bra=J_ket=J), it is simply the M-independent matrix element
 
-        <i1 i2 J || T_0 || i2 i4 J> = <i1 i2 J M || T_0 || i3 i4 J M>
+          <i1 i2 J || T_0 || i3 i4 J> = <i1 i2 J M | T_00 | i3 i4 J M>
+               = <i1 i2 J | T_00 | i3 i4 J>
 
     This matrix element differs by a factor of J_bra-hat from the RME under the
     Edmonds (=Suhonen=Varshalovich) convention for the Wigner-Eckart theorem.
 
-    * The bra and ket in the RME are *normalized* antisymmetrized J-coupled
-      two-body states.
+    * The bra and ket in the RME are *normalized* antisymmetrized (NAS)
+      J-coupled two-body states (see Appendix C of csbasis [PRC 86, 034312
+      (2012), http://dx.doi.org/10.1103/PhysRevC.86.034312]).
 
 Example:
 
