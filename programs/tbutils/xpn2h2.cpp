@@ -13,6 +13,17 @@
     + xpn2h2 [--truncation w1max w2max] [--obme-filename output_obme_filename] 
           orbital_filename input_filename output_tbme_filename
 
+    You will generally need to specify the --truncation option, unless all
+    orbitals have weight 0, and an untruncated set of TBMEs for these orbitals
+    is being stored.
+
+  Example:
+
+    % xpn2h2 --truncation 6 6 ncci-tb-6_orbital.dat JISP16-tb-6-20.int JISP16-tb-6-20.dat
+
+  See tutorial xpn2h2.md for more details on converting an interaction
+  (including shell model single-particle energies) from SPS+XPN to H2.
+
   Assumed file format for XPN file:
 
     + comment lines beginning with hash ('#') or bang ('!')
@@ -53,6 +64,9 @@
       TBME line.  The solution would be to manually delete the extra numbers
       from the file before use with xpn2h2.
 
+    + The output h2 format can be either text or binary (based on the specified
+      extension) but is hard-coded as version 15099.
+
   References:
 
     + Sec 4.3.2 "Proton-neutron and other isospin-breaking formats" in
@@ -68,6 +82,7 @@
     - Provide --truncation option to specify output weight truncation.
     - Factor out canonicalization routines to basis/jjjpn_operator.
   + 05/03/24 (mac): Implement handling of SPEs.
+  + 05/03/25 (mac): Add diagnostic message when output truncation insufficient.
 
 ******************************************************************************/
 
@@ -466,7 +481,8 @@ void StoreTBMEs(
     const std::vector<XPNTBMEDatum>& tbme_data,
     const basis::TwoBodySpaceJJJPN& two_body_space,
     const basis::TwoBodySectorsJJJPN& two_body_sectors,
-    basis::OperatorBlocks<double>& two_body_matrices
+    basis::OperatorBlocks<double>& two_body_matrices,
+    bool verbose=false
   )
 // Store raw XPN TBMEs into standard JJJPN storage structures.
 //
@@ -482,12 +498,12 @@ void StoreTBMEs(
     {
       // retrieve XPN TMBE datum
       const auto& datum = tbme_data[datum_index];
-
-      // std::cout << fmt::format(
-      //     "{:6d} {:2d} {:2d} {:2d} {:2d} {:2d} {:2d} {:e}",
-      //     datum_index,
-      //     datum.a, datum.b, datum.c, datum.d, datum.J, datum.T, datum.me
-      //   ) << std::endl;
+      if (verbose)
+        std::cout << fmt::format(
+            "Storing XPN TBME: {:6d} {:2d} {:2d} {:2d} {:2d} {:2d} {:2d} {:e}",
+            datum_index,
+            datum.a, datum.b, datum.c, datum.d, datum.J, datum.T, datum.me
+          ) << std::endl;
 
       // look up bra and ket states
       std::size_t subspace_index_bra, subspace_index_ket;
@@ -497,8 +513,12 @@ void StoreTBMEs(
         = LookUpStateFromXPNLabels(orbital_space, two_body_space, datum.a, datum.b, datum.J);
       std::tie(subspace_index_ket, state_index_ket, canonicalization_factor_ket)
         = LookUpStateFromXPNLabels(orbital_space, two_body_space, datum.c, datum.d, datum.J);
-      // std::cout << fmt::format("before canonicalization: subspace indices {} {} state indices {} {}", subspace_index_bra, subspace_index_ket, state_index_bra, state_index_ket) << std::endl;
-
+      if (verbose)
+        std::cout << fmt::format(
+            "  before canonicalization: subspace indices {} {} state indices {} {}",
+            subspace_index_bra, subspace_index_ket, state_index_bra, state_index_ket
+          ) << std::endl;
+      
       // canonicalize matrix element labels
       int J0 = 0, g0 = 0;
       double canonicalization_factor;
@@ -512,21 +532,35 @@ void StoreTBMEs(
             subspace_index_bra, subspace_index_ket,
             state_index_bra, state_index_ket
           );
-      // std::cout << fmt::format("after canonicalization: subspace indices {} {} state indices {} {}", subspace_index_bra, subspace_index_ket, state_index_bra, state_index_ket) << std::endl;
+      if (verbose)
+        std::cout << fmt::format(
+            "  after canonicalization: subspace indices {} {} state indices {} {}",
+            subspace_index_bra, subspace_index_ket, state_index_bra, state_index_ket
+          ) << std::endl;
       
       // store ME
       double value = canonicalization_factor * canonicalization_factor_bra * canonicalization_factor_ket * datum.me;
       std::size_t sector_index = two_body_sectors.LookUpSectorIndex(subspace_index_bra, subspace_index_ket);
-      if (sector_index == basis::kNone)
+      if ((state_index_bra == basis::kNone) || (state_index_ket == basis::kNone) || (sector_index == basis::kNone))
         {
-          std::cout << fmt::format("ERROR: matrix element in nonexistent sector (subspace indices {} {} => sector index {}", subspace_index_bra, subspace_index_ket, sector_index) << std::endl;
+        std::cout << fmt::format(
+            "Storing XPN TBME: {:6d} {:2d} {:2d} {:2d} {:2d} {:2d} {:2d} {:e}",
+            datum_index,
+            datum.a, datum.b, datum.c, datum.d, datum.J, datum.T, datum.me
+          ) << std::endl;
+        std::cout << fmt::format(
+            "  subspace indices {} {} state indices {} {} sector index {}",
+            subspace_index_bra, subspace_index_ket, state_index_bra, state_index_ket, sector_index
+          ) << std::endl;
+        std::cerr << "ERROR: matrix element involves nonexistent states or nonexistent sector (check that specified target truncation matches input truncation)"
+                  << std::endl;
+        std::exit(EXIT_FAILURE);
         }
-      // std::cout
-      //   << fmt::format(
-      //       "subspace indices {} {} sector index {} state indices {} {} value {}",
-      //       subspace_index_bra, subspace_index_ket, sector_index, state_index_bra, state_index_ket, value
-      //     )
-      //   << std::endl;      
+      if (verbose)
+        std::cout << fmt::format(
+            "  subspace indices {} {} sector index {} state indices {} {} value {}",
+            subspace_index_bra, subspace_index_ket, sector_index, state_index_bra, state_index_ket, value
+          ) << std::endl;      
       two_body_matrices[sector_index](state_index_bra, state_index_ket) = value;
       
     }
@@ -599,7 +633,8 @@ int main(int argc, const char *argv[])
     tbme_data,
     two_body_space,
     two_body_sectors,
-    two_body_matrices
+    two_body_matrices,
+    false  // verbose
     );
 
   // write OBME file
