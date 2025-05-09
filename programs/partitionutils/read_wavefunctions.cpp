@@ -64,6 +64,10 @@ struct MFDnSMWFInfo
   float weight_max;
   std::size_t dimension;
   int num_diag;
+  int num_eigenvectors;
+  std::vector<float> energy;
+  std::vector<float> J;
+  std::vector<float> T;
 };
 
 MFDnSMWFInfo ReadMFDnSMWFInfo(std::string filename)
@@ -178,6 +182,23 @@ MFDnSMWFInfo ReadMFDnSMWFInfo(std::string filename)
     mcutils::ParsingCheck(line_stream, line_count, line);
   }
 
+  //Number of eigen vectors in the smwf file. Read eigen energies, J and T
+  {
+    mcutils::GetLine(stream, line, line_count);
+    std::istringstream line_stream(line);
+    line_stream >> info.num_eigenvectors;
+    mcutils::ParsingCheck(line_stream, line_count, line);
+
+    for (int i =0; i < info.num_eigenvectors ; i++){
+      float Eb, two_j, t, res; 
+      int index, nJ;
+      stream >> index >> two_j >> nJ >> t >> Eb >> res;
+      info.energy.push_back(Eb);
+      info.J.push_back(two_j/2);
+      info.T.push_back(t);
+    }
+    //mcutils::ParsingCheck(line_stream, line_count, line);
+  }
   return info;
 }
 
@@ -453,9 +474,9 @@ int main(int argc, char* argv[])
   std::cout << std::endl;
 
   // usage message
-  if (argc-1 < 3)
+  if (argc-1 < 4)
     {
-      std::cout << "Syntax: read_wavefunctions state runmode output_filename" << std::endl;
+      std::cout << "Syntax: read_wavefunctions state runmode phase output_filename" << std::endl;
       std::exit(EXIT_SUCCESS);
     }
   
@@ -469,11 +490,17 @@ int main(int argc, char* argv[])
     }
   
   int runmode;
-  std::istringstream parameter_2(argv[2]); // If runmode is 0 -> generate MBO file ; 1 -> generate MB states list for low Nmax
+  std::istringstream parameter_2(argv[2]); // If runmode is 0 -> generate MB states list for low Nmax ;
+  // 1 -> generate MBO file
+  // 2 -> generate trwfn (..WIP)
   parameter_2 >> runmode;
 
+  int phase;
+  std::istringstream parameter_3(argv[3]); // phase = 1 or -1 to account for the eigenvectors 
+  parameter_3 >> phase;
+
   // output filename
-  std::string out_filename = argv[3];
+  std::string out_filename = argv[4];
   
   MBGroupsMetadata metadata{};
   const auto smwf_info = ReadMFDnSMWFInfo("mfdn_smwf.info");
@@ -484,7 +511,6 @@ int main(int argc, char* argv[])
   int num_sp_states = smwf_info.num_proton_states + smwf_info.num_neutron_states;
   int two_mj = smwf_info.twoM;
   std::size_t num_states = smwf_info.dimension;
-  
     
   // for(std::vector<double>::iterator it = coefficients.begin(); it !=coefficients.end(); it++)
   //   std::cout<< *it<<std::endl;
@@ -510,20 +536,37 @@ int main(int argc, char* argv[])
   std::vector<std::vector<uint16_t> > mb_state_list(num_states, std::vector<uint16_t>( numParticles,0)); 
   // Create the mj2_sp vector that contains the 2M values of all the single particle states
   std::vector<int> mj2_sp;
-
+  // Create the n_sp, l_sp and twoJ_sp vectors which needs to be printed for runmode=2 i.e., smwf --> trwfn
+  std::vector<int> n_sp;
+  std::vector<int> l_sp;
+  std::vector<int> twoJ_sp;
   const auto& proton_subspace = smwf_info.orbital_space.GetSubspace(0);
   for (int index = 0; index < proton_subspace.size(); ++index)
   {
-    for(int j = -1 * TwiceValue(proton_subspace.GetState(index).j()) ; j <= TwiceValue(proton_subspace.GetState(index).j()); j+=2)
+    auto orb_2j = TwiceValue(proton_subspace.GetState(index).j());
+    auto orb_n = proton_subspace.GetState(index).n();
+    auto orb_l = proton_subspace.GetState(index).l();
+    for(int j = -1 * orb_2j ; j <= orb_2j; j+=2){
       mj2_sp.push_back(j);
+      n_sp.push_back(orb_n);
+      l_sp.push_back(orb_l);
+      twoJ_sp.push_back(orb_2j);
+    }
   }
   int num_proton_sp_states = mj2_sp.size();
   const auto& neutron_subspace = smwf_info.orbital_space.GetSubspace(0);
 
   for (int index = 0; index < neutron_subspace.size(); ++index)
   {
-    for(int j = -1 * TwiceValue(neutron_subspace.GetState(index).j()) ; j <= TwiceValue(neutron_subspace.GetState(index).j()); j+=2)
+    auto orb_2j = TwiceValue(neutron_subspace.GetState(index).j());
+    auto orb_n = neutron_subspace.GetState(index).n();
+    auto orb_l = neutron_subspace.GetState(index).l();    
+    for(int j = -1 * orb_2j ; j <= orb_2j; j+=2){
       mj2_sp.push_back(j);
+      n_sp.push_back(orb_n);
+      l_sp.push_back(orb_l);
+      twoJ_sp.push_back(orb_2j);
+    }
   }
 
   // Create the next_bin vector that contains the next partition bin corresponding to each single particle state
@@ -564,7 +607,7 @@ int main(int argc, char* argv[])
   
 
   // write list of MB states to a text file
-if (runmode == 1)  {
+if (runmode == 0)  {
   auto stream1 = std::ofstream(out_filename, std::ios_base::out);
   
   stream1 << fmt::format("  {:>4d}   {:>4d}  \n", numParticles, num_states);
@@ -575,8 +618,12 @@ if (runmode == 1)  {
 }
 
 
-if (runmode == 0){
+if (runmode == 1){
   std::vector<double> coefficients = ReadCoefficients("mfdn_smwf001", state, num_states); //(slv) This must multipled
+
+  for(std::vector<double>::iterator it = coefficients.begin(); it != coefficients.end(); it++)
+    *it = *it * phase;
+
   fmt::print("number of states: {:d}\n", coefficients.size());
 
   auto stream2 = std::ofstream(out_filename, std::ios_base::binary);
@@ -609,6 +656,42 @@ if (runmode == 0){
 
   }
 }
+
+if(runmode==2){
+  //This is WIP
+  auto stream3 = std::ofstream(out_filename, std::ios_base::out);
+  std::vector<std::vector<double> > Coeffs;
+  stream3<< fmt::format("  {:>4d} ! Z  \n", Z);
+  stream3<< fmt::format("  {:>4d} ! N  \n", N);
+  stream3<< fmt::format("  ! interaction file  \n");
+  stream3<< fmt::format("  ! hw  \n");
+  stream3<< fmt::format("  ! # of shell  \n");
+  stream3<< fmt::format("  {:>4d} ! total number of p,n s.p. states  \n", num_sp_states);
+  stream3<< fmt::format("  ! Nmax  \n");
+  stream3<< fmt::format("  ! # of many-body configurations  \n");
+  stream3<< fmt::format("  {:>4d} ! parity  \n", smwf_info.parity);
+  stream3<< fmt::format("  {:>4d} ! 2 x Jz  \n", smwf_info.twoM);
+  stream3<< fmt::format("  {:>4d} ! # of eigenstates  \n", smwf_info.num_eigenvectors); 
+
+  for(int i =0; i < smwf_info.num_eigenvectors; i++){
+    stream3 << fmt::format("  {:>4f}   {:>4f}  {:>4f}  \n", smwf_info.energy[i], smwf_info.J[i], smwf_info.T[i]);
+    Coeffs.push_back(ReadCoefficients("mfdn_smwf001", i, num_states));
+  }
+  // Print the state labels and n , l, 2J, Jz
+  for(int nsp = 0 ; nsp < num_sp_states; nsp++){
+    if (nsp < num_proton_sp_states)
+      stream3 << fmt::format(" {:>4d}   {:>4d}   {:>4d}   {:>4d}   {:>4d}    1 \n", nsp+1 , n_sp[nsp], l_sp[nsp], twoJ_sp[nsp], mj2_sp[nsp]);
+    else //neutron subspace
+      stream3 << fmt::format(" {:>4d}   {:>4d}   {:>4d}   {:>4d}   {:>4d}    -1 \n", nsp+1 , n_sp[nsp], l_sp[nsp], twoJ_sp[nsp], mj2_sp[nsp]);
+  }
+  for(int index =0; index< num_states; index++){
+    stream3 << fmt::format("  {:>4d}   \n", fmt::join(mb_state_list[index],"  "));
+    for(int i=0; i < smwf_info.num_eigenvectors; i++)
+      stream3 << fmt::format("{:>4e}   ", (Coeffs[i])[index]);
+    stream3 << "\n" ;
+  }
+}
+
   return 0;
 }
 
