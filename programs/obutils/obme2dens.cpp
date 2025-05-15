@@ -3,16 +3,21 @@
   obme2dens.cpp -- convert obme to simple density tabulation
 
   Densities follow conventions of equation (5.1) of C. W. Johnson, "BIGSTICK: A
-  flexible configuration-interaction shell-model code", arxiv:1801.08432, except
-  for a possible overall minus from the time-reversal ("tilde") convention on the
-  annilation operator and/or RME phase convention.
+  flexible configuration-interaction shell-model code", arxiv:1801.08432.  These
+  differ from the MFDn ROBDMEs by an angular momentum factor 1/sqrt(2*J0+1),
+  where J0 is the multipolarity.  The time-reversal ("tilde") convention on the
+  annilation operator in this convention is such that diagonal scalar densities,
+  proportional to orbital occupations, are positive.
+
+  An MFDn obdme file should first be converted to shell obme format (with
+  obdme-conv), to then be input to obme2dens.
 
     obme2dens input_filename output_filename
 
   Mark A. Caprio
   University of Notre Dame
 
-  + 05/14/25 (mac): Created, drawing on h22xpn for structure and obmixer for ob routine calls.
+  + 05/14/25 (mac): Created.
 
 ******************************************************************************/
 
@@ -140,6 +145,7 @@ void ReadOBMEFile(
         basis::AllocatedEntries(matrices)
       )
     << std::endl;
+  std::cout << std::endl;
   
   // close file
   operator_stream.Close();
@@ -174,18 +180,15 @@ void WriteDensitiesFile(
     }
 
   // write header comment
-  os << "# densities tabulation written by obme2dens" << std::endl;
-  os << "#" << std::endl;
-  os << "# Isospin convention: Tz=+1/2 (proton); Tz=-1/2 (neutron)" << std::endl;
-  os << "#" << std::endl;
-  os << "# Entries are of the form:" << std::endl;
-  os << "#  na   la 2*ja 2*Tza    nb   lb 2*jb 2*Tzb   J0   g0  Tz0   RME/sqrt(2*J0+1)" << std::endl;
-  // os << "# Orbitals:" << std::endl;
-  // basis::OrbitalPNList proton_orbitals = orbital_space.GetSubspace(0).OrbitalInfo();
-  // for (const basis::OrbitalPNInfo& orbital : proton_orbitals)
-  //   {
-  //     os << fmt::format("#   {} {} {} {}", orbital.n, orbital.l, float(orbital.j), orbital.weight) << std::endl;
-  //   }
+  os << "# density tabulation written by obme2dens" << std::endl
+     << "#" << std::endl
+     << "# Densities follow conventions of equation (5.1) of C. W. Johnson, \"BIGSTICK: A" << std::endl
+     << "# flexible configuration-interaction shell-model code\", arxiv:1801.08432." << std::endl
+     << "#" << std::endl
+     << "# Isospin convention: Tz=+1/2 (proton); Tz=-1/2 (neutron)" << std::endl
+     << "#" << std::endl
+     << "# Entries are of the form:" << std::endl
+     << "#  na   la 2*ja 2*Tza    nb   lb 2*jb 2*Tzb   J0   g0  Tz0              rho" << std::endl;
 
   for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
     {
@@ -206,14 +209,14 @@ void WriteDensitiesFile(
 
             // extract matrix element
             const double matrix_element = matrices[sector_index](bra_index, ket_index);
-            const double scaled_matrix_element = matrix_element / Hat(sectors.J0());
+
             // generate output line
             os << fmt::format(
                 " {:4d} {:4d} {:4d} {:+4d}   {:4d} {:4d} {:4d} {:+4d}   {:4d} {:4d} {:+4d}   {:+13.8f}",
                 bra.n(), bra.l(), bra.j().TwiceValue(), bra.Tz().TwiceValue(),
                 ket.n(), ket.l(), ket.j().TwiceValue(), ket.Tz().TwiceValue(),
                 sectors.J0(), sectors.g0(), sectors.Tz0(),
-                scaled_matrix_element
+                matrix_element
               )
                << std::endl;
 
