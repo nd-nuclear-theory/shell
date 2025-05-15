@@ -51,12 +51,9 @@ struct RunParameters
   std::string input_filename;
   std::string output_filename;
 
-  // file format
-  std::size_t float_size;
-
   // default constructor
   RunParameters()
-    : input_filename(""), output_filename(""), float_size(4)
+    : input_filename(""), output_filename("")
   {}
   
 };
@@ -104,10 +101,7 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
 
   // output filename
   run_parameters.output_filename = argv[arg++];
-  
-  // orbital filename
-  // run_parameters.orbital_filename = argv[arg++];
-  // mcutils::FileExistCheck(run_parameters.orbital_filename, true, false);
+  mcutils::FileExistCheck(run_parameters.output_filename, false, true);
 }
 
 
@@ -296,8 +290,8 @@ void WriteXPNFile(
                 continue;
 
             // retrieve states
-            const basis::TwoBodyStateJJJPN bra(bra_subspace,bra_index);
-            const basis::TwoBodyStateJJJPN ket(ket_subspace,ket_index);
+            const basis::TwoBodyStateJJJPN bra(bra_subspace, bra_index);
+            const basis::TwoBodyStateJJJPN ket(ket_subspace, ket_index);
 
             // extract state labels
             int a, b, Tz_bra, J_bra;
@@ -307,7 +301,7 @@ void WriteXPNFile(
             assert((Tz_bra==Tz_ket) && (J_bra==J_ket));
             
             // extract matrix element
-            const double matrix_element = two_body_matrices[sector_index](bra_index,ket_index);
+            const double matrix_element = two_body_matrices[sector_index](bra_index, ket_index);
 
             // generate output line
             int T = abs(Tz_bra);  // dummy pseudo-T value
@@ -319,7 +313,7 @@ void WriteXPNFile(
 
     }
 
-  // close stream
+  // close output file
   os.close();
 
 }
