@@ -28,30 +28,29 @@
 
       Identity operator.
 
-    ksqr
-
-      Relative k^2 operator (~intrinsic kinetic energy).
-      [DEPRECATED in favor of coordinate-sqr]
-
-    rsqr
-
-      Relative r^2 operator (~intrinsic r^2 operator).
-      [DEPRECATED in favor of coordinate-sqr]
-
     coordinate-sqr r|k T0
 
-      Relative r^2 or k^2 operator.
-      [TODO: implement isovector variant]
+      Relative r^2 or k^2 operator.  Both isoscalar (T0=0) and isovector (T0=1)
+      operators are defined.
+
+      Matrix elements are calculated for relative oscillator length b_rel =
+      2^(1/2), and thus single-particle oscillator length b=1.
 
     dipole r|k T0
 
       Relative electric dipole operator.
       [NOTE: only "r" version implemented; only T0=1 defined]
 
+      Matrix elements are calculated for relative oscillator length b_rel =
+      2^(1/2), and thus single-particle oscillator length b=1.
+
     quadrupole r|k T0
 
       Relative electric quadrupole operator.
       [NOTE: only "r" version implemented]
+
+      Matrix elements are calculated for relative oscillator length b_rel =
+      2^(1/2), and thus single-particle oscillator length b=1.
 
     orbital-am T0
 
@@ -74,6 +73,9 @@
     coulomb p|n|total steps
 
       Coulomb potential.
+
+      Matrix elements are calculated for relative oscillator length b_rel =
+      2^(1/2), and thus single-particle oscillator length b=1.
 
     symmunit T0 Np Lp Sp Jp Tp N L S J T
 
@@ -104,7 +106,9 @@
     coulomb p 500
     coulomb_Nmax6_rel.dat
 
-
+  See also docstrings for the functions used to generate the matrix elements for
+  several of these operators in libraries/obme/relative-gen.h.
+ 
   Language: C++11
 
   Mark A. Caprio
@@ -125,6 +129,7 @@
   + 10/31/20 (pjf): Remove Jmax option from interaction generation.
   + 06/02/22 (pjf): Add LENPIC N2LO Gamow-Teller operator.
   + 08/08/22 (pjf): Add LENPIC LO Gamow-Teller operator.
+  + 05/15/25 (mac): Remove deprecated rsqr and ksqr operator names.
 
 ****************************************************************/
 
@@ -363,24 +368,6 @@ void PopulateOperator(
       basis::ConstructIdentityOperatorRelativeLSJT(
           operator_parameters,
           relative_space,relative_component_sectors,relative_component_blocks
-        );
-    }
-  else if (parameters.operator_name == "rsqr")  // DEPRECATED
-    {
-      relative::ConstructCoordinateSqr(
-          operator_parameters,
-          relative_space,relative_component_sectors,relative_component_blocks,
-          relative::CoordinateType::kR,
-          0  // T0
-        );
-    }
-  else if (parameters.operator_name == "ksqr")  // DEPRECATED
-    {
-      relative::ConstructCoordinateSqr(
-          operator_parameters,
-          relative_space,relative_component_sectors,relative_component_blocks,
-          relative::CoordinateType::kK,
-          0  // T0
         );
     }
   else if (parameters.operator_name == "coordinate-sqr")
