@@ -1,6 +1,6 @@
 /******************************************************************************
 
-  obme2dens.cpp -- convert obme to simple density tabulation
+  obme2dens.cpp -- convert obme to density tabulation
 
   Densities follow conventions of equation (5.1) of C. W. Johnson, "BIGSTICK: A
   flexible configuration-interaction shell-model code", arxiv:1801.08432.  These
@@ -243,7 +243,7 @@ int main(int argc, const char **argv)
 
   // header
   std::cout << std::endl;
-  std::cout << "obme2dens -- convert H2 to BIGSTICK XPN" << std::endl;
+  std::cout << "obme2dens -- convert obme to density tabulation" << std::endl;
   std::cout << "version: " VCS_REVISION << std::endl;
   std::cout << std::endl;
 
