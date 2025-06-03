@@ -202,75 +202,76 @@ MFDnSMWFInfo ReadMFDnSMWFInfo(std::string filename)
   return info;
 }
 
-// Serial reading of Group IDs
-
-void ReadMBGroups(
+std::vector<int> ReadMBGroups(
     std::string filename_pattern,
     const MFDnSMWFInfo& smwf_info,
     std::vector<std::vector<uint16_t> >& groupid_list,
     bool verbose = false
   )
   {
-  // convenience mode variable
-  static constexpr std::ios_base::openmode mode_argument =
-      std::ios_base::in | std::ios_base::binary;
+    std::vector<int> numStatesPerFile;
+    // convenience mode variable
+    static constexpr std::ios_base::openmode mode_argument =
+        std::ios_base::in | std::ios_base::binary;
 
-  // read metadata
-  {
-    // open stream
-    std::string filename = fmt::format(filename_pattern, 1);
-    mcutils::FileExistCheck(
-        filename, /*exit_on_nonexist=*/true, /*warn_on_overwrite=*/false
-      );
-    auto stream = std::ifstream(filename, mode_argument);
-    mcutils::StreamCheck(
-        bool(stream), filename, "Failure opening groups file for input"
-      );
-
-    const auto metadata_vector =
-        mcutils::ReadFortranRecord<MBGroupsMetadata>(stream);
-    const auto metadata = metadata_vector[0];
-
-    assert(metadata.num_particles == smwf_info.Z + smwf_info.N);
-    assert(metadata.twoM == smwf_info.twoM);
- 
-  }
-
-  for (std::size_t i = 1; i <= smwf_info.num_diag; ++i)
-  {
-
-    const std::string filename = fmt::format(filename_pattern, i);
-    if (verbose)
-      fmt::print("reading file {} ({}/{})\n", filename, i, smwf_info.num_diag);
-    auto stream = std::ifstream(filename, mode_argument);
-    mcutils::StreamCheck(
-        bool(stream), filename, "Failure opening groups file for input"
-      );
-
-    const auto metadata_vector =
-        mcutils::ReadFortranRecord<MBGroupsMetadata>(stream);
-    const auto& metadata = metadata_vector[0];
-    if (verbose)
-      fmt::print("  num_groups: {}\n", metadata.num_groupids);
-    mcutils::SkipFortranRecord(stream);  // nblksNm
-    const auto Mstateptr = mcutils::ReadFortranRecord<int32_t>(stream);
-    const auto groupIDs = mcutils::ReadFortranRecord<int16_t>(stream);
-
-    assert(metadata.num_groupids * metadata.num_particles == groupIDs.size());
-    assert(Mstateptr.size() == metadata.num_groupids + 1);
-
-    for (std::size_t j = 0; j < metadata.num_groupids; ++j)
+    // read metadata
     {
-      std::vector<uint16_t> groupid(metadata.num_particles, 0);
+      // open stream
+      std::string filename = fmt::format(filename_pattern, 1);
+      mcutils::FileExistCheck(
+          filename, /*exit_on_nonexist=*/true, /*warn_on_overwrite=*/false
+        );
+      auto stream = std::ifstream(filename, mode_argument);
+      mcutils::StreamCheck(
+          bool(stream), filename, "Failure opening groups file for input"
+        );
 
-      for (int p = 0; p < metadata.num_particles; ++p)
-        groupid[p] = groupIDs[metadata.num_particles * j + p] - 1;
-      assert(Mstateptr[j + 1] - Mstateptr[j] > 0);
-      groupid_list.push_back(groupid);
+      const auto metadata_vector =
+          mcutils::ReadFortranRecord<MBGroupsMetadata>(stream);
+      const auto metadata = metadata_vector[0];
+
+      assert(metadata.num_particles == smwf_info.Z + smwf_info.N);
+      assert(metadata.twoM == smwf_info.twoM);
+  
     }
-  }
 
-}
+    for (std::size_t i = 1; i <= smwf_info.num_diag; ++i)
+    {
+
+      const std::string filename = fmt::format(filename_pattern, i);
+      if (verbose)
+        fmt::print("reading file {} ({}/{})\n", filename, i, smwf_info.num_diag);
+      auto stream = std::ifstream(filename, mode_argument);
+      mcutils::StreamCheck(
+          bool(stream), filename, "Failure opening groups file for input"
+        );
+
+      const auto metadata_vector =
+          mcutils::ReadFortranRecord<MBGroupsMetadata>(stream);
+      const auto& metadata = metadata_vector[0];
+      if (verbose)
+        fmt::print("  num_groups: {}\n", metadata.num_groupids);
+      numStatesPerFile.push_back(metadata.num_states);
+      //fmt::print("  num_states: {}\n", metadata.num_states);
+      mcutils::SkipFortranRecord(stream);  // nblksNm
+      const auto Mstateptr = mcutils::ReadFortranRecord<int32_t>(stream);
+      const auto groupIDs = mcutils::ReadFortranRecord<int16_t>(stream);
+
+      assert(metadata.num_groupids * metadata.num_particles == groupIDs.size());
+      assert(Mstateptr.size() == metadata.num_groupids + 1);
+
+      for (std::size_t j = 0; j < metadata.num_groupids; ++j)
+      {
+        std::vector<uint16_t> groupid(metadata.num_particles, 0);
+
+        for (int p = 0; p < metadata.num_particles; ++p)
+          groupid[p] = groupIDs[metadata.num_particles * j + p] - 1;
+        assert(Mstateptr[j + 1] - Mstateptr[j] > 0);
+        groupid_list.push_back(groupid);
+      }
+    }
+  return numStatesPerFile;
+  }
 
 int setLastMj(const uint16_t numParticles, int num_sp_states, 
               std::vector<int> &mj2_sp, int two_mj, 
@@ -416,52 +417,59 @@ int MjStatesGen(const uint16_t numParticles, int num_sp_states,
           return currentState;
         }
 
-
-std::vector<double> ReadCoefficients(std::string filename,
+std::vector<double> ReadCoefficients(std::string filename_pattern,
+                                    const MFDnSMWFInfo& smwf_info,
                                     int state, 
-                                    int num_states,
-                                    bool verbose = false){
+                                    std::vector<int>& numStatesPerFile,
+                                    bool verbose = true){
   /****************************************************************
   Reads the coefficients of a wavefunction
   
-  state : 0 for ground state, 1 for next eigen state and so on.
-  num_states: number of many body basis states 
-  filename : mfdn_smwf***
+  filename_pattern : "mfdn_smwf{:03d}"
+  smwf_info        : consists of wavefunction information from mfdn_smwf.info
+  state            : 0 for ground state, 1 for next eigen state and so on.
+  num_statesPerFile: list of number of many body basis states in each file
+  
   *****************************************************************/
   std::vector<double> coeffs;
-  
-  if (verbose)
-    fmt::print("reading file {} \n", filename);
-  mcutils::FileExistCheck(
-    filename, /*exit_on_nonexist=*/true, /*warn_on_overwrite=*/false
-  );
-  
-  auto stream = std::ifstream(filename, std::ios_base::binary);
-  float buffer;
-  int count =0;
-    
-  // quite unlikely but here is a sanity check to ensure number of bytes in the file 
-  // matches the expected number 
-  int file_size = stream.tellg();
-  stream.seekg(0, std::ios_base::end);
-  file_size = int(stream.tellg()) - file_size;
-  std::cout << "num_states " << num_states << " file_size " << file_size <<std::endl;
-  if (file_size % ((num_states + 2) * sizeof(float)) != 0){ // |1 byte|wf coeffs|1 byte|
-    std::cout<< "Corrupted file : Unexpected size " << std::endl;
-    std::exit(1); // Perhaps a different kind of error must be thrown
-  }
 
-  // TO DO (slv): Need to document this 
-  int offset = sizeof(float) * (2* state +1);
-  stream.seekg(std::ios_base::beg + num_states* sizeof(float) * state + offset); // set position back to beginning of the state in the stream
-  
-  while(stream.read(reinterpret_cast<char*>(&buffer), sizeof(float))){
-    if(count < num_states){
-          coeffs.push_back(buffer);
-        }
-    else break;
-    count++;
-  }
+  for (std::size_t i = 1; i <= smwf_info.num_diag; ++i)
+  {
+    const std::string filename = fmt::format(filename_pattern, i);
+    if (verbose)
+      fmt::print("reading file {} ({}/{})\n", filename, i, smwf_info.num_diag);
+      mcutils::FileExistCheck(
+        filename, /*exit_on_nonexist=*/true, /*warn_on_overwrite=*/false
+      );
+    
+    auto stream = std::ifstream(filename, std::ios_base::binary);
+    float buffer;
+    int count =0;
+      
+    // quite unlikely but here is a sanity check to ensure number of bytes in the file 
+    // matches the expected number 
+    int file_size = stream.tellg();
+    stream.seekg(0, std::ios_base::end);
+    file_size = int(stream.tellg()) - file_size;
+    fmt::print("file_size {:d}   numStates  {:d}    numBytes  {:d}\n", file_size, numStatesPerFile[i-1], (numStatesPerFile[i-1] + 2) * sizeof(float));
+    if (file_size % ((numStatesPerFile[i-1] + 2) * sizeof(float)) != 0){ // |1 byte|wf coeffs|1 byte|
+      fmt::print("Corrupted file : Unexpected size \n ");
+      std::exit(1); // Perhaps a different kind of error must be thrown
+    }
+
+    // TO DO (slv): Need to document this 
+    int offset = sizeof(float) * (2* state +1);
+    stream.seekg(std::ios_base::beg + numStatesPerFile[i-1] * sizeof(float) * state + offset); // set position back to beginning of the state in the stream
+    
+    while(stream.read(reinterpret_cast<char*>(&buffer), sizeof(float))){
+      if(count < numStatesPerFile[i-1]){
+            coeffs.push_back(buffer);
+          }
+      else break;
+      count++;
+    }
+    fmt::print("Count after reading {:d}th file   : {:d} \n", i, count );
+  }  
   return coeffs;
 }
 
@@ -764,7 +772,9 @@ int main(int argc, char* argv[])
 
   std::vector<std::vector<uint16_t> > groupid_list; 
   
-  ReadMBGroups("mfdn_MBgroups{:03d}", smwf_info, groupid_list, false);
+  //ReadMBGroups("mfdn_MBgroups{:03d}", smwf_info, groupid_list, false);
+  std::vector<int> numStatesPerFile = ReadMBGroups("mfdn_MBgroups{:03d}", smwf_info, groupid_list, false);
+
   fmt::print("number of groups: {:d}\n", groupid_list.size());
   fflush(stdout);
   
@@ -861,7 +871,7 @@ int main(int argc, char* argv[])
 
 
   if (runmode == 1){
-    std::vector<double> coefficients = ReadCoefficients("mfdn_smwf001", state, num_states); 
+    std::vector<double> coefficients = ReadCoefficients("mfdn_smwf{:03d}", smwf_info, state, numStatesPerFile); 
     // for(std::vector<double>::iterator it = coefficients.begin(); it !=coefficients.end(); it++)
     //   std::cout<< *it<<std::endl;
 
@@ -937,7 +947,7 @@ int main(int argc, char* argv[])
     std::vector<std::vector<double> > coefficients_list(state, std::vector<double>(1, 0)); // 1-> dimension
     if (state <= smwf_info.num_eigenvectors){
       for(int i =0; i < state; i++){
-        coefficients_list[i] = ReadCoefficients("mfdn_smwf001", i, num_states);
+        coefficients_list[i] = ReadCoefficients("mfdn_smwf{:03d}", smwf_info, i, numStatesPerFile);
       }
     }
     std::map<std::vector<uint16_t> , std::vector<double> > mb_states_B; // B for BIGSTICK
