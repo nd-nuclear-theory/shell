@@ -70,6 +70,15 @@ struct MFDnSMWFInfo
   std::vector<float> T;
 };
 
+struct TrwfnInfo{
+  int Z;
+  int N;
+  int num_shells;
+  int Nmax;
+  int parity;
+  int two_Jz;
+};
+
 MFDnSMWFInfo ReadMFDnSMWFInfo(std::string filename)
 {
   MFDnSMWFInfo info;
@@ -521,8 +530,9 @@ int generateSPStates(//const MFDnSMWFInfo& smwf_info,
 
 
 int readTrwfn(std::string filename,
-                std::vector<std::vector<int16_t> > &sp_state_list_temp,
-                std::vector<std::vector<uint16_t> > &mb_state_list_temp){
+              TrwfnInfo &trwfn_info,
+              std::vector<std::vector<int16_t> > &sp_state_list_temp,
+              std::vector<std::vector<uint16_t> > &mb_state_list_temp){
   /* Reads list of SP states  from a model trwfn file
     
     filename            : Trwfn filename including the path
@@ -540,33 +550,51 @@ int readTrwfn(std::string filename,
       filename, /*exit_on_nonexist=*/true, /*warn_on_overwrite=*/false
     );
   auto stream = std::ifstream(filename, std::ios_base::in);
-  int Z, N;
-  for(int i =0; i<5; i++)
+
+  for(int i =0; i<4; i++)
   {
     mcutils::GetLine(stream, line, line_count);
     if(i ==0){
       std::istringstream line_stream(line);
-      line_stream >> Z;
+      line_stream >> trwfn_info.Z;
     }
     if(i ==1){
       std::istringstream line_stream(line);
-      line_stream >> N;
+      line_stream >> trwfn_info.N;
     }
   }
-  //std::cout << "First 5 lines "<<line_count<< std::endl;
 
+  {
+    mcutils::GetLine(stream, line, line_count);
+    std::istringstream line_stream(line);
+    line_stream >> trwfn_info.num_shells;
+  }
+  
   std::size_t numSpstates;
   {  
     mcutils::GetLine(stream, line, line_count);
     std::istringstream line_stream(line);
     line_stream >> numSpstates;
   }
-  //std::cout <<"read numSPstates " <<line_count<< std::endl;
-  for(int i =0; i<4; i++)
-  {
+
+  {  
     mcutils::GetLine(stream, line, line_count);
-    }
-    //std::cout <<"Ignored 4 lines " <<line_count<< std::endl;
+    std::istringstream line_stream(line);
+    line_stream >> trwfn_info.Nmax;
+  }
+   mcutils::GetLine(stream, line, line_count); // ignored reading number of many-body configuration
+  {  
+    mcutils::GetLine(stream, line, line_count);
+    std::istringstream line_stream(line);
+    line_stream >> trwfn_info.parity;
+  }
+
+  {  
+    mcutils::GetLine(stream, line, line_count);
+    std::istringstream line_stream(line);
+    line_stream >> trwfn_info.two_Jz;
+  }
+
   std::size_t num_eigenvectors;
   {  
     mcutils::GetLine(stream, line, line_count);
@@ -616,8 +644,8 @@ int readTrwfn(std::string filename,
     while(mcutils::GetLine(stream, line, line_count)){
       // set up for parsing
       std::istringstream line_stream(line);
-      std::vector<uint16_t> spIndices(Z+N, 0);
-      for(int i = 0; i< Z+N; i++ ){
+      std::vector<uint16_t> spIndices(trwfn_info.Z + trwfn_info.N, 0);
+      for(int i = 0; i < trwfn_info.Z + trwfn_info.N; i++ ){
         line_stream>>spIndices[i];
       }
       mb_state_list_temp.push_back(spIndices);
@@ -922,9 +950,10 @@ int main(int argc, char* argv[])
     */
 
     //Reading a model trwfn file
+    TrwfnInfo trwfn_info;
     std::vector<std::vector<int16_t> > sp_state_list_temp; // temp for template 
     std::vector<std::vector<uint16_t> > mb_state_list_temp; // temp for template
-    int numSPStates = readTrwfn(template_filename, sp_state_list_temp, mb_state_list_temp);
+    int numSPStates = readTrwfn(template_filename, trwfn_info, sp_state_list_temp, mb_state_list_temp);
 
     /*
     //Test
@@ -973,13 +1002,13 @@ int main(int argc, char* argv[])
     stream3<< fmt::format("  {:>4d} ! Z  \n", Z);
     stream3<< fmt::format("  {:>4d} ! N  \n", N);
     stream3<< fmt::format("  ! interaction file  \n");
-    stream3<< fmt::format("  ! hw  \n");
-    stream3<< fmt::format("  ! # of shell  \n");
+    stream3<< fmt::format("  {:>4d} ! hw  \n", 0);
+    stream3<< fmt::format("  {:>4d} ! # of shell  \n", trwfn_info.num_shells);
     stream3<< fmt::format("  {:>4d} ! total number of p,n s.p. states  \n", num_sp_states);
-    stream3<< fmt::format("  ! Nmax  \n");
-    stream3<< fmt::format("  ! # of many-body configurations  \n");
-    stream3<< fmt::format("  {:>4d} ! parity  \n", smwf_info.parity);
-    stream3<< fmt::format("  {:>4d} ! 2 x Jz  \n", smwf_info.twoM);
+    stream3<< fmt::format("  {:>4d} ! Nmax  \n", trwfn_info.Nmax);
+    stream3<< fmt::format("  {:>4d} ! # of many-body configurations  \n", num_states);
+    stream3<< fmt::format("  {:>4d} ! parity  \n", trwfn_info.parity); // This should be same as smwf_info.parity
+    stream3<< fmt::format("  {:>4d} ! 2 x Jz  \n", trwfn_info.two_Jz); // This should be same as smwf_info.two_M
     stream3<< fmt::format("  {:>4d} ! # of eigenstates  \n", state); 
 
     for(int i =0; i < state; i++){
