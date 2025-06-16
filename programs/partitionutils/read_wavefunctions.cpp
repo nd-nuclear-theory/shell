@@ -749,9 +749,9 @@ int main(int argc, char* argv[])
   std::cout << std::endl;
 
   // usage message
-  if (argc-1 < 4)
+  if (argc-1 < 5)
     {
-      std::cout << "Syntax: read_wavefunctions state runmode template_filename output_filename" << std::endl;
+      std::cout << "Syntax: read_wavefunctions state runmode source_wf_dir template_filename output_filename" << std::endl;
       std::exit(EXIT_SUCCESS);
     }
   
@@ -770,14 +770,17 @@ int main(int argc, char* argv[])
   // 2 -> generate trwfn (..WIP)
   parameter_2 >> runmode;
 
+  // source wf directory
+  std::string source_wf_dir = argv[3];
+  
   // trwfn filename
-  std::string template_filename = argv[3];
+  std::string template_filename = argv[4];
 
   // output filename
-  std::string out_filename = argv[4];
+  std::string out_filename = argv[5];
   
   MBGroupsMetadata metadata{};
-  const auto smwf_info = ReadMFDnSMWFInfo("mfdn_smwf.info");
+  const auto smwf_info = ReadMFDnSMWFInfo(source_wf_dir + "/mfdn_smwf.info");
   const uint16_t N = smwf_info.N;
   const uint16_t Z = smwf_info.Z;
   const uint16_t numParticles = N + Z;
@@ -801,7 +804,7 @@ int main(int argc, char* argv[])
   std::vector<std::vector<uint16_t> > groupid_list; 
   
   //ReadMBGroups("mfdn_MBgroups{:03d}", smwf_info, groupid_list, false);
-  std::vector<int> numStatesPerFile = ReadMBGroups("mfdn_MBgroups{:03d}", smwf_info, groupid_list, false);
+  std::vector<int> numStatesPerFile = ReadMBGroups(source_wf_dir + "/mfdn_MBgroups{:03d}", smwf_info, groupid_list, false);
 
   fmt::print("number of groups: {:d}\n", groupid_list.size());
   fflush(stdout);
@@ -899,7 +902,7 @@ int main(int argc, char* argv[])
 
 
   if (runmode == 1){
-    std::vector<double> coefficients = ReadCoefficients("mfdn_smwf{:03d}", smwf_info, state, numStatesPerFile); 
+    std::vector<double> coefficients = ReadCoefficients(source_wf_dir + "/mfdn_smwf{:03d}", smwf_info, state, numStatesPerFile); 
     // for(std::vector<double>::iterator it = coefficients.begin(); it !=coefficients.end(); it++)
     //   std::cout<< *it<<std::endl;
 
@@ -976,7 +979,7 @@ int main(int argc, char* argv[])
     std::vector<std::vector<double> > coefficients_list(state, std::vector<double>(1, 0)); // 1-> dimension
     if (state <= smwf_info.num_eigenvectors){
       for(int i =0; i < state; i++){
-        coefficients_list[i] = ReadCoefficients("mfdn_smwf{:03d}", smwf_info, i, numStatesPerFile);
+        coefficients_list[i] = ReadCoefficients(source_wf_dir + "/mfdn_smwf{:03d}", smwf_info, i, numStatesPerFile);
       }
     }
     std::map<std::vector<uint16_t> , std::vector<double> > mb_states_B; // B for BIGSTICK
