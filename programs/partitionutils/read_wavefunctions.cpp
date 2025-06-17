@@ -767,7 +767,8 @@ int main(int argc, char* argv[])
   int runmode;
   std::istringstream parameter_2(argv[2]); // If runmode is 0 -> generate MB states list for low Nmax ;
   // 1 -> generate MBO file
-  // 2 -> generate trwfn (..WIP)
+  // 2 -> generate trwfn *state* number of states
+  // 3 -> generate trwfn for selected state 0-> ground state
   parameter_2 >> runmode;
 
   // source wf directory
@@ -1017,6 +1018,70 @@ int main(int argc, char* argv[])
     for(int i =0; i < state; i++){
           stream3 << fmt::format("  {:>4f}   {:>4f}  {:>4f}  \n", smwf_info.energy[i], smwf_info.J[i], smwf_info.T[i]);
     }
+    // Print the state labels and n , l, 2J, Jz
+    for(int nsp = 0 ; nsp < num_sp_states; nsp++){
+      stream3 << fmt::format("  {:>4d}  ", nsp + 1);
+      stream3 << fmt::format(" {:>4d}   \n", fmt::join(sp_state_list_temp[nsp] , "  "));
+    }
+    
+    int mbstateCount = 0;
+    for(int index =0; index< num_states; index++){
+      auto it = mb_states_B.find(mb_state_list_temp[index]);
+      if(it !=mb_states_B.end()){
+        stream3 << fmt::format("  {:>4d}   \n", fmt::join(it->first ,"  "));
+        stream3 << fmt::format("{:>4e}   \n", fmt::join(it->second, "   "));
+        mbstateCount++;
+      }
+    }
+      
+    if (mbstateCount == num_states)
+      std::cout<<"Validation successful .. " << std::endl;
+  
+  }
+
+  if(runmode==3){
+
+    //Reading a model trwfn file
+    TrwfnInfo trwfn_info;
+    std::vector<std::vector<int16_t> > sp_state_list_temp; // temp for template 
+    std::vector<std::vector<uint16_t> > mb_state_list_temp; // temp for template
+    int numSPStates = readTrwfn(template_filename, trwfn_info, sp_state_list_temp, mb_state_list_temp);
+    
+    //Sanity check
+    if (numSPStates != num_sp_states){
+      std::cout<< "numSPStates BIGSTICK : " << numSPStates << " num_sp_states : " << num_sp_states << std::endl;
+      fmt::print(" Incorrect template file . \n");
+      std::exit(1);}
+
+    //Choice of states
+    std::vector<std::vector<double> > coefficients_list(1, std::vector<double>(1, 0)); // 1-> dimension
+
+    if (state <= smwf_info.num_eigenvectors){
+        coefficients_list[0] = ReadCoefficients(source_wf_dir + "/mfdn_smwf{:03d}", smwf_info, state, numStatesPerFile);
+      }
+    
+    std::map<std::vector<uint16_t> , std::vector<double> > mb_states_B; // B for BIGSTICK
+    findAndReplaceSPIndices(sp_state_list, sp_state_list_temp, mb_state_list, num_sp_states);
+    std::vector<int16_t> phaseFactor;
+    sortMBBasisStates(mb_state_list, mb_states_B, coefficients_list, phaseFactor, Z, N, 1);
+
+    auto stream3 = std::ofstream(out_filename, std::ios_base::out);
+    std::vector<std::vector<double> > Coeffs;
+    stream3<< fmt::format("  {:>4d} ! Z  \n", Z);
+    stream3<< fmt::format("  {:>4d} ! N  \n", N);
+    stream3<< fmt::format("  ! interaction file  \n");
+    stream3<< fmt::format("  {:>4d} ! hw  \n", 0);
+    stream3<< fmt::format("  {:>4d} ! # of shell  \n", trwfn_info.num_shells);
+    stream3<< fmt::format("  {:>4d} ! total number of p,n s.p. states  \n", num_sp_states);
+    stream3<< fmt::format("  {:>4d} ! Nmax  \n", trwfn_info.Nmax);
+    stream3<< fmt::format("  {:>4d} ! # of many-body configurations  \n", num_states);
+    stream3<< fmt::format("  {:>4d} ! parity  \n", trwfn_info.parity); // This should be same as smwf_info.parity
+    stream3<< fmt::format("  {:>4d} ! 2 x Jz  \n", trwfn_info.two_Jz); // This should be same as smwf_info.two_M
+    stream3<< fmt::format("  {:>4d} ! # of eigenstates  \n", state); 
+
+    
+    stream3 << fmt::format("  {:>4f}   {:>4f}  {:>4f}  \n", smwf_info.energy[state], smwf_info.J[state], smwf_info.T[state]);
+    
     // Print the state labels and n , l, 2J, Jz
     for(int nsp = 0 ; nsp < num_sp_states; nsp++){
       stream3 << fmt::format("  {:>4d}  ", nsp + 1);
