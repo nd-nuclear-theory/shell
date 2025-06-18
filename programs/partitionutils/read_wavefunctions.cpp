@@ -79,6 +79,83 @@ struct TrwfnInfo{
   int two_Jz;
 };
 
+////////////////////////////////////////////////////////////////
+// process arguments
+/////////////////////////////////////////////////////////////////
+
+struct RunParameters
+// Stores simple parameters for run
+{
+  // filenames
+  int state;
+  int runmode;
+  std::string source_wf_dir;
+  std::string output_filename;
+  std::string template_filename;
+
+  // default constructor
+  RunParameters()
+    : state(0), runmode(1), source_wf_dir(""), output_filename(""), template_filename("")
+  {}
+  
+};
+
+void PrintUsage( char **argv) {
+  std::cout << "Usage: " << argv[0]
+            << "state runmode source_wf_dir output_filename [template_filename]"
+            << std::endl;
+  std::cout << "Valid Runmodes : 0 : print MB Basis states \n"  ;
+  std::cout << " 1 : generate MBO \n ";
+  std::cout << " 2 : generate trwfn a number of states \n ";
+  std::cout << " 3 : generate trwfn for selected state 0-> ground state " << std::endl;            
+}
+
+void ProcessArguments(int argc, char *argv[], RunParameters& run_parameters)
+{
+  
+  int arg = 1;
+  
+  // usage message
+  if (argc-1 < 4)
+    {
+      std::cout << "Syntax: read_wavefunctions state runmode source_wf_dir output_filename [template_filename] " << std::endl;
+      std::cout << "Valid Runmodes : 0 : print MB Basis states \n"  ;
+      std::cout << " 1 : generate MBO \n ";
+      std::cout << " 2 : generate trwfn a number of states \n ";
+      std::cout << " 3 : generate trwfn for selected state 0-> ground state " << std::endl;
+      std::exit(EXIT_SUCCESS);
+    }
+    
+  std::istringstream parameter_1(argv[1]);
+  parameter_1 >> run_parameters.state;  // 0 for lowest eigen wavefunction aka ground state in mfdn_smwf001
+  
+  if (!parameter_1)
+    {
+      std::cerr << "Expecting numeric value for state. 0 --> Ground state " << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+    
+  std::istringstream parameter_2(argv[2]); 
+  // If runmode is 0 -> generate MB states list for low Nmax ;
+  // 1 -> generate MBO file
+  // 2 -> generate trwfn a number of states
+  // 3 -> generate trwfn for selected state 0-> ground state
+  parameter_2 >> run_parameters.runmode;
+
+  // source wf directory
+  run_parameters.source_wf_dir = argv[3];
+  
+  // output filename
+  run_parameters.output_filename = argv[4];
+
+  if (run_parameters.runmode == 2 || run_parameters.runmode == 3){
+    // trwfn filename
+    run_parameters.template_filename = argv[5];
+   
+  }
+
+}
+
 MFDnSMWFInfo ReadMFDnSMWFInfo(std::string filename)
 {
   MFDnSMWFInfo info;
@@ -747,39 +824,15 @@ int main(int argc, char* argv[])
   std::cout << std::endl;
   std::cout << "read MFDn wavefunctions " << std::endl;
   std::cout << std::endl;
+  
+  // read parameters
+  RunParameters run_parameters;
+  ProcessArguments(argc, argv, run_parameters);
 
-  // usage message
-  if (argc-1 < 5)
-    {
-      std::cout << "Syntax: read_wavefunctions state runmode source_wf_dir template_filename output_filename" << std::endl;
-      std::exit(EXIT_SUCCESS);
-    }
+  int state = run_parameters.state;
+  std::string source_wf_dir = run_parameters.source_wf_dir;
   
-  int state; // 0 for lowest eigen wavefunction aka ground state in mfdn_smwf001
-  std::istringstream parameter_1(argv[1]);
-  parameter_1 >> state;
-  if (!parameter_1)
-    {
-      std::cerr << "Expecting numeric value for Nmax argument" << std::endl;
-      std::exit(EXIT_FAILURE);
-    }
-  
-  int runmode;
-  std::istringstream parameter_2(argv[2]); // If runmode is 0 -> generate MB states list for low Nmax ;
-  // 1 -> generate MBO file
-  // 2 -> generate trwfn *state* number of states
-  // 3 -> generate trwfn for selected state 0-> ground state
-  parameter_2 >> runmode;
 
-  // source wf directory
-  std::string source_wf_dir = argv[3];
-  
-  // trwfn filename
-  std::string template_filename = argv[4];
-
-  // output filename
-  std::string out_filename = argv[5];
-  
   MBGroupsMetadata metadata{};
   const auto smwf_info = ReadMFDnSMWFInfo(source_wf_dir + "/mfdn_smwf.info");
   const uint16_t N = smwf_info.N;
@@ -891,8 +944,8 @@ int main(int argc, char* argv[])
   
 
   // write list of MB states to a text file
-  if (runmode == 0)  {
-    auto stream1 = std::ofstream(out_filename, std::ios_base::out);
+  if (run_parameters.runmode == 0)  {
+    auto stream1 = std::ofstream(run_parameters.output_filename, std::ios_base::out);
     
     stream1 << fmt::format("  {:>4d}   {:>4d}  \n", numParticles, num_states);
     for (int i = 0; i< num_states; i++){
@@ -902,14 +955,14 @@ int main(int argc, char* argv[])
   }
 
 
-  if (runmode == 1){
+  if (run_parameters.runmode == 1){
     std::vector<double> coefficients = ReadCoefficients(source_wf_dir + "/mfdn_smwf{:03d}", smwf_info, state, numStatesPerFile); 
     // for(std::vector<double>::iterator it = coefficients.begin(); it !=coefficients.end(); it++)
     //   std::cout<< *it<<std::endl;
 
     fmt::print("number of states: {:d}\n", coefficients.size());
 
-    auto stream2 = std::ofstream(out_filename, std::ios_base::binary);
+    auto stream2 = std::ofstream(run_parameters.output_filename, std::ios_base::binary);
     std::vector<uint16_t> buffer(numParticles , 0);
     
     mcutils::WriteBinary(stream2, &numParticles, 1);
@@ -939,7 +992,7 @@ int main(int argc, char* argv[])
     }
   }
 
-  if(runmode==2){
+  if(run_parameters.runmode==2){
 
     /*
     //Generate SP states in Calvin's method
@@ -957,7 +1010,7 @@ int main(int argc, char* argv[])
     TrwfnInfo trwfn_info;
     std::vector<std::vector<int16_t> > sp_state_list_temp; // temp for template 
     std::vector<std::vector<uint16_t> > mb_state_list_temp; // temp for template
-    int numSPStates = readTrwfn(template_filename, trwfn_info, sp_state_list_temp, mb_state_list_temp);
+    int numSPStates = readTrwfn(run_parameters.template_filename, trwfn_info, sp_state_list_temp, mb_state_list_temp);
 
     /*
     //Test
@@ -990,7 +1043,7 @@ int main(int argc, char* argv[])
     
     /*
       //print mb_states
-      auto stream1 = std::ofstream(out_filename, std::ios_base::out);
+      auto stream1 = std::ofstream(run_parameters.output_filename, std::ios_base::out);
       
       stream1 << fmt::format("  {:>4d}   {:>4d}  \n", numParticles, num_states);
       for (int i = 0; i< num_states; i++){
@@ -1001,7 +1054,7 @@ int main(int argc, char* argv[])
 
     */
 
-    auto stream3 = std::ofstream(out_filename, std::ios_base::out);
+    auto stream3 = std::ofstream(run_parameters.output_filename, std::ios_base::out);
     std::vector<std::vector<double> > Coeffs;
     stream3<< fmt::format("  {:>4d} ! Z  \n", Z);
     stream3<< fmt::format("  {:>4d} ! N  \n", N);
@@ -1039,13 +1092,13 @@ int main(int argc, char* argv[])
   
   }
 
-  if(runmode==3){
+  if(run_parameters.runmode==3){
 
     //Reading a model trwfn file
     TrwfnInfo trwfn_info;
     std::vector<std::vector<int16_t> > sp_state_list_temp; // temp for template 
     std::vector<std::vector<uint16_t> > mb_state_list_temp; // temp for template
-    int numSPStates = readTrwfn(template_filename, trwfn_info, sp_state_list_temp, mb_state_list_temp);
+    int numSPStates = readTrwfn(run_parameters.template_filename, trwfn_info, sp_state_list_temp, mb_state_list_temp);
     
     //Sanity check
     if (numSPStates != num_sp_states){
@@ -1065,7 +1118,7 @@ int main(int argc, char* argv[])
     std::vector<int16_t> phaseFactor;
     sortMBBasisStates(mb_state_list, mb_states_B, coefficients_list, phaseFactor, Z, N, 1);
 
-    auto stream3 = std::ofstream(out_filename, std::ios_base::out);
+    auto stream3 = std::ofstream(run_parameters.output_filename, std::ios_base::out);
     std::vector<std::vector<double> > Coeffs;
     stream3<< fmt::format("  {:>4d} ! Z  \n", Z);
     stream3<< fmt::format("  {:>4d} ! N  \n", N);
