@@ -1077,7 +1077,7 @@ int main(int argc, char* argv[])
     stream3<< fmt::format("  {:>4d} ! # of many-body configurations  \n", num_states);
     stream3<< fmt::format("  {:>4d} ! parity  \n", trwfn_info.parity); // This should be same as smwf_info.parity
     stream3<< fmt::format("  {:>4d} ! 2 x Jz  \n", trwfn_info.two_Jz); // This should be same as smwf_info.two_M
-    stream3<< fmt::format("  {:>4d} ! # of eigenstates  \n", state); 
+    stream3<< fmt::format("  {:>4d} ! # of eigenstates  \n", 1); 
 
     
     stream3 << fmt::format("  {:>4f}   {:>4f}  {:>4f}  \n", smwf_info.energy[state], smwf_info.J[state], smwf_info.T[state]);
