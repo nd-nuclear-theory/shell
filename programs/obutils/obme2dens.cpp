@@ -10,14 +10,38 @@
   proportional to orbital occupations, are positive.
 
   An MFDn obdme file should first be converted to shell obme format (with
-  obdme-conv), to then be input to obme2dens.
+  obdme-conv).  It can then serve as input to obme2dens.
 
     obme2dens input_filename output_filename
+
+  Note on conversion process
+
+  The robdme file from (mfdn or mfdn-transitions) contains RMEs in
+  Edmonds convention.
+
+  Then, on input to obdme-conv, these are converted to "densities" (i.e.,
+  divided by J0-hat) but with various additional factors.  The multiplication by
+  ja-hat can be attributed to conversion of the OBME of the density operator to
+  Rose convention.  The division by Jbra, is noted as being to "convert to Rose
+  convention", which refers to converting the input many-body RME to Rose
+  convention.  This appears to be a matter of *defining* the normalization of
+  the spherical-coupled density operator on the one-body space.  See
+  shell::InOBDMEStreamSingle::ReadData1520() in densities/obdme_io.h as of shell
+  commit bd0a22f9 (2023-10-13):
+
+    // normalize coupled product of a^\dagger a
+    matrix_element *= Hat(std::get<3>(orbital_a))/Hat(J0);
+    // convert to Rose convention (divide by Hat(J_bra))
+    matrix_element /= Hat(J_bra());
+
+  We must therefore undo the ja-hat and Jbra-hat factors, that is, multiply by
+  Jbra-hat/ja-hat.
 
   Mark A. Caprio
   University of Notre Dame
 
   + 05/14/25 (mac): Created.
+  + 06/21/25 (mac): Compensate for normalization factors introduced by obdme_io input.
 
 ******************************************************************************/
 
@@ -47,6 +71,9 @@ struct RunParameters
   std::string input_filename;
   std::string output_filename;
 
+  // J_bra
+  HalfInt J_bra;
+  
   // default constructor
   RunParameters()
     : input_filename(""), output_filename("")
@@ -56,7 +83,7 @@ struct RunParameters
 
 void PrintUsage(const char **argv) {
   std::cout << "Usage: " << argv[0]
-            << " input_filename output_filename"
+            << " 2*Jbra input_filename output_filename"
             << std::endl;
 }
 
@@ -84,13 +111,25 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
     }
   
   // process fixed arguments
-  if (argc-arg < 2)
+  const int num_args = 3;
+  if (argc-arg < num_args)
     {
       PrintUsage(argv);
       std::cerr << "Insufficient arguments" << std::endl;
       std::exit(EXIT_FAILURE);
     }
 
+  // twice J_bra
+  std::istringstream parameter_stream(argv[arg++]);
+  int twice_J_bra;
+  parameter_stream >> twice_J_bra;
+  if (!parameter_stream)
+    {
+      std::cerr << "Expecting numeric value for 2*J_bra argument" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+  run_parameters.J_bra = HalfInt(twice_J_bra, 2);
+  
   // input filename
   run_parameters.input_filename = argv[arg++];
   mcutils::FileExistCheck(run_parameters.input_filename, true, false);
@@ -103,7 +142,7 @@ void ProcessArguments(int argc, const char *argv[], RunParameters& run_parameter
 
 
 ////////////////////////////////////////////////////////////////
-// h2 input
+// obme input
 /////////////////////////////////////////////////////////////////
 
 void ReadOBMEFile(
@@ -111,7 +150,7 @@ void ReadOBMEFile(
     basis::OrbitalSpaceLJPN& orbital_space,
     basis::OrbitalSectorsLJPN& sectors, basis::OperatorBlocks<double>& matrices
   )
-// Read all data from h2 file.
+// Read all data from obme file.
 //
 // Arguments:
 //   filename (std::string): filename
@@ -160,7 +199,8 @@ void ReadOBMEFile(
 void WriteDensitiesFile(
     const std::string& filename,
     const basis::OrbitalSpaceLJPN& orbital_space,
-    const basis::OrbitalSectorsLJPN& sectors, const basis::OperatorBlocks<double>& matrices
+    const basis::OrbitalSectorsLJPN& sectors, const basis::OperatorBlocks<double>& matrices,
+    HalfInt J_bra
   )
 // Write all data to densities table file.
 //
@@ -210,13 +250,15 @@ void WriteDensitiesFile(
             // extract matrix element
             const double matrix_element = matrices[sector_index](bra_index, ket_index);
 
+            const double density = matrix_element*Hat(J_bra)/Hat(bra.j());
+
             // generate output line
             os << fmt::format(
                 " {:4d} {:4d} {:4d} {:+4d}   {:4d} {:4d} {:4d} {:+4d}   {:4d} {:4d} {:+4d}   {:+13.8f}",
                 bra.n(), bra.l(), bra.j().TwiceValue(), bra.Tz().TwiceValue(),
                 ket.n(), ket.l(), ket.j().TwiceValue(), ket.Tz().TwiceValue(),
                 sectors.J0(), sectors.g0(), sectors.Tz0(),
-                matrix_element
+                density
               )
                << std::endl;
 
@@ -274,7 +316,8 @@ int main(int argc, const char **argv)
   std::cout << fmt::format("  File: {}", run_parameters.output_filename) << std::endl;
   WriteDensitiesFile(
       run_parameters.output_filename,
-      orbital_space, sectors, matrices
+      orbital_space, sectors, matrices,
+      run_parameters.J_bra
     );
   std::cout << std::endl;
   
