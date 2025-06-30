@@ -105,7 +105,7 @@ void ProcessArguments(int argc, char *argv[], RunParameters& run_parameters)
   std::string filename = run_parameters.input_dir + ("/mfdn_smwf.info");
   mcutils::FileExistCheck(filename, true, false);
 
-  filename = run_parameters.input_dir + ("/mfdn_MBgroups001"); // Check if there is atleast 1 file
+  filename = run_parameters.input_dir + ("/mfdn_MBgroups001"); // Check if there is at least 1 file
   mcutils::FileExistCheck(filename, true, false);
   
   // model files
@@ -113,7 +113,7 @@ void ProcessArguments(int argc, char *argv[], RunParameters& run_parameters)
   filename = run_parameters.model_dir + ("/mfdn_smwf.info");
   mcutils::FileExistCheck(filename, true, false);
 
-  filename = run_parameters.model_dir + ("/mfdn_MBgroups001"); // Check if there is atleast 1 file
+  filename = run_parameters.model_dir + ("/mfdn_MBgroups001"); // Check if there is at least 1 file
   mcutils::FileExistCheck(filename, true, false);
 
   //std::string st = argv[arg++];

@@ -8,11 +8,11 @@
 
   + 01/07/25 (slv): First version of code to read many body states from mfdn_MBgroupsxxx
   + 01/22/25 (slv): Create ReadCoefficients function to read the amplitudes, of the 
-    many body states, from mfdn_smwf001 file 
+    many body states, from mfdn_smwf001 file
+  + 06/30/35 (mac):
+    + Support mismatched sp bases sizes between smwf and trwfn.
+    + Update argument processing.
 ****************************************************************/
-
-#ifndef PARTITIONUTILS_GROUP_READ_H_
-#define PARTITIONUTILS_GROUP_READ_H_
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
@@ -36,8 +36,6 @@
 
 // namespace
 // {
-
-#define SYMMETRIC_PARTITIONS
 
 struct MBGroupsMetadata
 {
@@ -74,6 +72,7 @@ struct TrwfnInfo{
   int Z;
   int N;
   int num_shells;
+  int num_sp_states;
   int Nmax;
   int parity;
   int two_Jz;
@@ -87,27 +86,28 @@ struct RunParameters
 // Stores simple parameters for run
 {
   // filenames
-  int state;
-  int runmode;
+  std::string mode;
+  int state_index;
   std::string source_wf_dir;
   std::string output_filename;
   std::string template_filename;
 
   // default constructor
   RunParameters()
-    : state(0), runmode(1), source_wf_dir(""), output_filename(""), template_filename("")
+    : state_index(0), mode(""), source_wf_dir(""), output_filename(""), template_filename("")
   {}
   
 };
 
-void PrintUsage( char **argv) {
+void PrintUsage(char **argv) {
   std::cout << "Usage: " << argv[0]
-            << "state runmode source_wf_dir output_filename [template_filename]"
-            << std::endl;
-  std::cout << "Valid Runmodes : 0 : print MB Basis states \n"  ;
-  std::cout << " 1 : generate MBO \n ";
-  std::cout << " 2 : generate trwfn a number of states \n ";
-  std::cout << " 3 : generate trwfn for selected state 0-> ground state " << std::endl;            
+            << " mode seq source_wf_dir [template_filename] output_filename"
+            << std::endl
+            << std::endl
+            << "Valid modes:" << std::endl
+            << " mbstates: print MB basis states" << std::endl
+            << " mbo: generate MBO" << std::endl
+            << " trwfn: generate trwfn for selected state index (1-based sequence number)" << std::endl;            
 }
 
 void ProcessArguments(int argc, char *argv[], RunParameters& run_parameters)
@@ -115,44 +115,60 @@ void ProcessArguments(int argc, char *argv[], RunParameters& run_parameters)
   
   int arg = 1;
   
-  // usage message
-  if (argc-1 < 4)
+  // process options
+  while (arg < argc && argv[arg][0] == '-')
     {
-      std::cout << "Syntax: read_wavefunctions state runmode source_wf_dir output_filename [template_filename] " << std::endl;
-      std::cout << "Valid Runmodes : 0 : print MB Basis states \n"  ;
-      std::cout << " 1 : generate MBO \n ";
-      std::cout << " 2 : generate trwfn a number of states \n ";
-      std::cout << " 3 : generate trwfn for selected state 0-> ground state " << std::endl;
-      std::exit(EXIT_SUCCESS);
+      std::istringstream parameter_stream(argv[arg++]);
+
+      if (parameter_stream.str() == "--help" || parameter_stream.str() == "-h")
+        {
+          PrintUsage(argv);
+          std::exit(EXIT_SUCCESS);
+        }
+      else
+        {
+          PrintUsage(argv);
+          std::cerr << "Unrecognized option '" << parameter_stream.str() << "'" << std::endl;
+          std::exit(EXIT_FAILURE);
+        }
     }
-    
-  std::istringstream parameter_1(argv[1]);
-  parameter_1 >> run_parameters.state;  // 0 for lowest eigen wavefunction aka ground state in mfdn_smwf001
   
-  if (!parameter_1)
+  // process fixed arguments
+  if (argc-arg < 4)
     {
-      std::cerr << "Expecting numeric value for state. 0 --> Ground state " << std::endl;
+      PrintUsage(argv);
+      std::cerr << "Insufficient arguments" << std::endl;
       std::exit(EXIT_FAILURE);
     }
-    
-  std::istringstream parameter_2(argv[2]); 
-  // If runmode is 0 -> generate MB states list for low Nmax ;
-  // 1 -> generate MBO file
-  // 2 -> generate trwfn a number of states
-  // 3 -> generate trwfn for selected state 0-> ground state
-  parameter_2 >> run_parameters.runmode;
+
+  // mode
+  run_parameters.mode = argv[arg++]; 
+  if(run_parameters.mode != "mbstates" && run_parameters.mode != "mbo" && run_parameters.mode != "trwfn"){
+    std::cerr << "ERROR: Unrecognized value for mode" << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+  
+  // state
+  std::istringstream state_stream(argv[arg++]);
+  std::size_t seq;
+  state_stream >> seq;
+  if (!state_stream || seq==0)
+    {
+      std::cerr << "ERROR: Expecting positive numerical value for state index." << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+  run_parameters.state_index = seq-1;
 
   // source wf directory
-  run_parameters.source_wf_dir = argv[3];
+  run_parameters.source_wf_dir = argv[arg++];
   
-  // output filename
-  run_parameters.output_filename = argv[4];
-
-  if (run_parameters.runmode == 2 || run_parameters.runmode == 3){
-    // trwfn filename
-    run_parameters.template_filename = argv[5];
-   
+  // template filename (optional)
+  if (run_parameters.mode == "trwfn"){
+    run_parameters.template_filename = argv[arg++];
   }
+
+  // output filename
+  run_parameters.output_filename = argv[arg++];
 
 }
 
@@ -505,7 +521,7 @@ int MjStatesGen(const uint16_t numParticles, int num_sp_states,
 
 std::vector<double> ReadCoefficients(std::string filename_pattern,
                                     const MFDnSMWFInfo& smwf_info,
-                                    int state, 
+                                    int state_index, 
                                     std::vector<int>& numStatesPerFile,
                                     bool verbose = true){
   /****************************************************************
@@ -513,7 +529,7 @@ std::vector<double> ReadCoefficients(std::string filename_pattern,
   
   filename_pattern : "mfdn_smwf{:03d}"
   smwf_info        : consists of wavefunction information from mfdn_smwf.info
-  state            : 0 for ground state, 1 for next eigen state and so on.
+  state_index            : 0 for ground state, 1 for next eigen state and so on.
   num_statesPerFile: list of number of many body basis states in each file
   
   *****************************************************************/
@@ -540,12 +556,12 @@ std::vector<double> ReadCoefficients(std::string filename_pattern,
     fmt::print("file_size {:d}   numStates  {:d}    numBytes  {:d}\n", file_size, numStatesPerFile[i-1], (numStatesPerFile[i-1] + 2) * sizeof(float));
     if (file_size % ((numStatesPerFile[i-1] + 2) * sizeof(float)) != 0){ // |1 byte|wf coeffs|1 byte|
       fmt::print("Corrupted file : Unexpected size \n ");
-      std::exit(1); // Perhaps a different kind of error must be thrown
+      std::exit(EXIT_FAILURE);
     }
 
     // TO DO (slv): Need to document this 
-    int offset = sizeof(float) * (2* state +1);
-    stream.seekg(std::ios_base::beg + numStatesPerFile[i-1] * sizeof(float) * state + offset); // set position back to beginning of the state in the stream
+    int offset = sizeof(float) * (2* state_index +1);
+    stream.seekg(std::ios_base::beg + numStatesPerFile[i-1] * sizeof(float) * state_index + offset); // set position back to beginning of the state in the stream
     
     while(stream.read(reinterpret_cast<char*>(&buffer), sizeof(float))){
       if(count < numStatesPerFile[i-1]){
@@ -606,18 +622,21 @@ int generateSPStates(//const MFDnSMWFInfo& smwf_info,
 }
 
 
-int readTrwfn(std::string filename,
-              TrwfnInfo &trwfn_info,
-              std::vector<std::vector<int16_t> > &sp_state_list_temp,
-              std::vector<std::vector<uint16_t> > &mb_state_list_temp){
+void ReadTrwfn(
+    std::string filename,
+    TrwfnInfo &trwfn_info,
+    std::vector<std::vector<int16_t> > &sp_state_list_template,
+    std::vector<std::vector<uint16_t> > &mb_state_list_template
+  ){
   /* Reads list of SP states  from a model trwfn file
     
     filename            : Trwfn filename including the path
-    sp_state_list_temp  : List of single particle states in trwfn file with columns {n, l, twice_j, twice_mj, species_code}
-    mb_state_list_temp  : List of many body states in trwfn file with proton and neutron SP indices in ascending order
+    sp_state_list_template  : List of single particle states in trwfn file with columns {n, l, twice_j, twice_mj, species_code}
+    mb_state_list_template  : List of many body states in trwfn file with proton and neutron SP indices in ascending order
 
   */
 
+  // open trwfn file
   fmt::print(" Reading trwfn file .. \n");
   int count =0;
 
@@ -647,11 +666,11 @@ int readTrwfn(std::string filename,
     line_stream >> trwfn_info.num_shells;
   }
   
-  std::size_t numSpstates;
+  std::size_t num_sp_states;
   {  
     mcutils::GetLine(stream, line, line_count);
     std::istringstream line_stream(line);
-    line_stream >> numSpstates;
+    line_stream >> trwfn_info.num_sp_states;
   }
 
   {  
@@ -687,7 +706,7 @@ int readTrwfn(std::string filename,
 
   {
     std::string sps_info_str;
-    for (std::size_t sps_line_count = 0; sps_line_count < numSpstates;
+    for (std::size_t sps_line_count = 0; sps_line_count < trwfn_info.num_sp_states;
          ++sps_line_count)
     {
       mcutils::GetLine(stream, line, line_count);
@@ -712,7 +731,7 @@ int readTrwfn(std::string filename,
     
         mcutils::ParsingCheck(line_stream, sp_line_count, line);
         std::vector<int16_t> state({n, l, twice_j, twice_mj, species_code});
-        sp_state_list_temp.push_back(state);
+        sp_state_list_template.push_back(state);
         //spstate_list[count][1]= index;
         count++;
       }
@@ -725,24 +744,29 @@ int readTrwfn(std::string filename,
       for(int i = 0; i < trwfn_info.Z + trwfn_info.N; i++ ){
         line_stream>>spIndices[i];
       }
-      mb_state_list_temp.push_back(spIndices);
+      mb_state_list_template.push_back(spIndices);
       mcutils::GetLine(stream, line, line_count); // Ignore next line
     }
   }
-  return count;
+
+  if(count != trwfn_info.num_sp_states){
+    std::cerr << "ERROR: Missing sp states in trwfn file" << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+  
 }
 
 void findAndReplaceSPIndices(std::vector<std::vector<int16_t> > &sp_state_list, 
-                            std::vector<std::vector<int16_t> > &sp_state_list_temp,
+                            std::vector<std::vector<int16_t> > &sp_state_list_template,
                             std::vector<std::vector<uint16_t> > &mb_state_list,
                             int num_sp_states){
   /*
-  Looks up indices of states in sp_states_list from sp_state_list_temp (temp for template)
+  Looks up indices of states in sp_states_list from sp_state_list_template (temp for template)
   Replace sp states in mb_state_list with indices found by lookup.
   
   sp_state_list       : List of single particle states in the order that MFDn operates.
                         (n, l, j ,mj, t) 5 columns in the same order as in trwfn
-  sp_state_list_temp  : List of single particle states in the order of trwfn (Look at docstring for readTrwfn)
+  sp_state_list_template  : List of single particle states in the order of trwfn (Look at docstring for ReadTrwfn)
   mb_state_list       : List of many body states from MFDn
   num_sp_states       : Number of single particle states
 
@@ -750,9 +774,9 @@ void findAndReplaceSPIndices(std::vector<std::vector<int16_t> > &sp_state_list,
   fmt::print(" Replacing SP indices .. \n ");
   std::vector<int> index_list(num_sp_states, 0);
   for(int i =0; i < num_sp_states; i++){
-    auto it =  std::find(sp_state_list_temp.begin(), sp_state_list_temp.end(), sp_state_list[i]);
-    if(it != sp_state_list_temp.end()){
-      index_list[i] = it - sp_state_list_temp.begin() + 1; // finding index of the element
+    auto it =  std::find(sp_state_list_template.begin(), sp_state_list_template.end(), sp_state_list[i]);
+    if(it != sp_state_list_template.end()){
+      index_list[i] = it - sp_state_list_template.begin() + 1; // finding index of the element
     } 
   }
   /*
@@ -768,7 +792,7 @@ void findAndReplaceSPIndices(std::vector<std::vector<int16_t> > &sp_state_list,
 }
 
 void sortMBBasisStates(std::vector<std::vector<uint16_t> > &mb_state_list,
-                      std::map<std::vector<uint16_t> , std::vector<double> > &mb_states_B,
+                      std::map<std::vector<uint16_t> , std::vector<double> > &mb_states_bigstick,
                       std::vector<std::vector<double> > &coefficients_list,
                       std::vector<int16_t> &phaseFactor,// Not needed anymore
                       uint16_t Z, uint16_t N,
@@ -777,7 +801,7 @@ void sortMBBasisStates(std::vector<std::vector<uint16_t> > &mb_state_list,
   Sorts the single particle state(SPS) indices in the mbstates 
   
   mb_state_list     : List of many body states with SPS indices of trwfn
-  mb_states_B       : Map with sorted SPS indices as *key* and coefficients of 
+  mb_states_bigstick       : Map with sorted SPS indices as *key* and coefficients of 
                       the corresponding basis state multiplied by the phase factor as *value*
   coefficients_list : Array of coefficients with row -> eigenvector and column -> basis state
   phaseFactor       : phase factor generated to preserve antisymmetry after swapping of states for sorting
@@ -814,7 +838,7 @@ void sortMBBasisStates(std::vector<std::vector<uint16_t> > &mb_state_list,
     }
     
     phaseFactor.push_back(phase);
-    mb_states_B[mbstate] = Coeffs;
+    mb_states_bigstick[mbstate] = Coeffs;
   }
 }
 
@@ -829,7 +853,7 @@ int main(int argc, char* argv[])
   RunParameters run_parameters;
   ProcessArguments(argc, argv, run_parameters);
 
-  int state = run_parameters.state;
+  int state_index = run_parameters.state_index;
   std::string source_wf_dir = run_parameters.source_wf_dir;
   
 
@@ -867,7 +891,7 @@ int main(int argc, char* argv[])
   std::vector<std::vector<int16_t> > sp_state_list; 
   // Create the mj2_sp vector that contains the 2M values of all the single particle states
   std::vector<int> mj2_sp;
-  // Create the n_sp, l_sp and twoJ_sp vectors which needs to be printed for runmode=2 i.e., smwf --> trwfn
+  // Create the n_sp, l_sp and twoJ_sp vectors which needs to be printed for mode=2 i.e., smwf --> trwfn
   std::vector<int> n_sp;
   std::vector<int> l_sp;
   std::vector<int> twoJ_sp;
@@ -882,6 +906,7 @@ int main(int argc, char* argv[])
       n_sp.push_back(orb_n);
       l_sp.push_back(orb_l);
       twoJ_sp.push_back(orb_2j);
+      // WARNING 06/30/25 (mac): This variable "state" overloads identically named variable at function scope above.
       std::vector<int16_t> state({(int16_t)orb_n, (int16_t)orb_l, (int16_t)orb_2j, (int16_t)mj, 1});
       // (n, l, j ,mj, t) 5 columns in the same order
       sp_state_list.push_back(state);
@@ -900,6 +925,7 @@ int main(int argc, char* argv[])
       n_sp.push_back(orb_n);
       l_sp.push_back(orb_l);
       twoJ_sp.push_back(orb_2j);
+      // WARNING 06/30/25 (mac): This variable "state" overloads identically named variable at function scope above.
       std::vector<int16_t> state({(int16_t)orb_n, (int16_t)orb_l, (int16_t)orb_2j, (int16_t)mj, -1});
        // (n, l, j ,mj, t) 5 columns in the same order
       sp_state_list.push_back(state);
@@ -944,29 +970,29 @@ int main(int argc, char* argv[])
   
 
   // write list of MB states to a text file
-  if (run_parameters.runmode == 0)  {
-    auto stream1 = std::ofstream(run_parameters.output_filename, std::ios_base::out);
+  if (run_parameters.mode == "mbstates")  {
+    auto output_stream = std::ofstream(run_parameters.output_filename, std::ios_base::out);
     
-    stream1 << fmt::format("  {:>4d}   {:>4d}  \n", numParticles, num_states);
+    output_stream << fmt::format("  {:>4d}   {:>4d}  \n", numParticles, num_states);
     for (int i = 0; i< num_states; i++){
-      stream1 << fmt::format("  {:>4d}   \n ", fmt::join(mb_state_list[i],"  "));
+      output_stream << fmt::format("  {:>4d}   \n ", fmt::join(mb_state_list[i],"  "));
     }
     std::cout<< "Writing list of MB states to output file .. " << num_states << " states" << std::endl;
   }
 
 
-  if (run_parameters.runmode == 1){
-    std::vector<double> coefficients = ReadCoefficients(source_wf_dir + "/mfdn_smwf{:03d}", smwf_info, state, numStatesPerFile); 
+  if (run_parameters.mode == "mbo"){
+    std::vector<double> coefficients = ReadCoefficients(source_wf_dir + "/mfdn_smwf{:03d}", smwf_info, state_index, numStatesPerFile); 
     // for(std::vector<double>::iterator it = coefficients.begin(); it !=coefficients.end(); it++)
     //   std::cout<< *it<<std::endl;
 
     fmt::print("number of states: {:d}\n", coefficients.size());
 
-    auto stream2 = std::ofstream(run_parameters.output_filename, std::ios_base::binary);
+    auto output_stream = std::ofstream(run_parameters.output_filename, std::ios_base::binary);
     std::vector<uint16_t> buffer(numParticles , 0);
     
-    mcutils::WriteBinary(stream2, &numParticles, 1);
-    mcutils::WriteBinary(stream2, &num_states, 1);
+    mcutils::WriteBinary(output_stream, &numParticles, 1);
+    mcutils::WriteBinary(output_stream, &num_states, 1);
 
     // Here I need to implement the change of indices
     for(int i = 0; i< num_states; i++){
@@ -985,178 +1011,77 @@ int main(int argc, char* argv[])
               \    \                /   /
         0 1 7 40 41 42             0 1 7 40 41 42
   */
-      mcutils::WriteBinary(stream2, buffer.data(), numParticles);
-      mcutils::WriteBinary(stream2, &(coefficients[i]), 1);
-      //stream2.write(reinterpret_cast<const char*>(&(coefficients[i])),sizeof(double));
+      mcutils::WriteBinary(output_stream, buffer.data(), numParticles);
+      mcutils::WriteBinary(output_stream, &(coefficients[i]), 1);
+      //output_stream.write(reinterpret_cast<const char*>(&(coefficients[i])),sizeof(double));
 
     }
   }
 
-  if(run_parameters.runmode==2){
+  if(run_parameters.mode == "trwfn"){
 
-    /*
-    //Generate SP states in Calvin's method
-    int numShells = 2;
-    std::vector<std::vector<int16_t> > spstates_list;
-    //int numSPStates = generateSPStates(smwf_info, numShells,spstates_list);
-    int numSPStates = generateSPStates(numShells,spstates_list);
-    
-    for(int i =0; i<numSPStates; i++)
-      fmt::print(" {:>4d} \n",fmt::join(spstates_list[i],"  "));
-    std::exit(0);
-    */
-
-    //Reading a model trwfn file
+    // read model trwfn file
     TrwfnInfo trwfn_info;
-    std::vector<std::vector<int16_t> > sp_state_list_temp; // temp for template 
-    std::vector<std::vector<uint16_t> > mb_state_list_temp; // temp for template
-    int numSPStates = readTrwfn(run_parameters.template_filename, trwfn_info, sp_state_list_temp, mb_state_list_temp);
-
-    /*
-    //Test
-    for(std::map<std::vector<int16_t> , int>::iterator it = sp_state_list_temp.begin(); it!=sp_state_list_temp.end(); it++){
-      fmt::print(" {:>4d}  ",fmt::join(it->first,"  "));
-      std::cout << it->second << std::endl;}
+    std::vector<std::vector<int16_t> > sp_state_list_template;
+    std::vector<std::vector<uint16_t> > mb_state_list_template;
+    ReadTrwfn(run_parameters.template_filename, trwfn_info, sp_state_list_template, mb_state_list_template);
     
-    for(std::vector<std::vector<uint16_t> >::iterator it = mb_state_list_temp.begin(); it != mb_state_list_temp.end(); it++ )
-      fmt::print(" {:>4d}  \n",fmt::join(*it,"  "));
-    std::exit(0);
-    */
-    
-    //Sanity check
-    if (numSPStates != num_sp_states){
-      std::cout<< "numSPStates BIGSTICK : " << numSPStates << " num_sp_states : " << num_sp_states << std::endl;
-      fmt::print(" Incorrect template file . \n");
-      std::exit(1);}
-
-
-    std::vector<std::vector<double> > coefficients_list(state, std::vector<double>(1, 0)); // 1-> dimension
-    if (state <= smwf_info.num_eigenvectors){
-      for(int i =0; i < state; i++){
-        coefficients_list[i] = ReadCoefficients(source_wf_dir + "/mfdn_smwf{:03d}", smwf_info, i, numStatesPerFile);
-      }
+    // check dimensions of single particle bases
+    if (trwfn_info.num_sp_states != num_sp_states){
+      std::cout << fmt::format("WARNING: Mismatched number of sp states: trwfn template {}, smwf {}", trwfn_info.num_sp_states, num_sp_states) << std::endl;
     }
-    std::map<std::vector<uint16_t> , std::vector<double> > mb_states_B; // B for BIGSTICK
-    findAndReplaceSPIndices(sp_state_list, sp_state_list_temp, mb_state_list, num_sp_states);
-    std::vector<int16_t> phaseFactor;
-    sortMBBasisStates(mb_state_list, mb_states_B, coefficients_list, phaseFactor, Z, N, state);
-    
-    /*
-      //print mb_states
-      auto stream1 = std::ofstream(run_parameters.output_filename, std::ios_base::out);
-      
-      stream1 << fmt::format("  {:>4d}   {:>4d}  \n", numParticles, num_states);
-      for (int i = 0; i< num_states; i++){
-        stream1 << fmt::format("  {:>4d}   || ", fmt::join(mb_state_list[i],"  "));
-        stream1 << fmt::format("  {:>4d}   \n", fmt::join(mb_state_list_B[i],"  "));
-      }
-      std::cout<< "Writing list of MB states to output file .. " << num_states << " states" << std::endl;
 
-    */
-
-    auto stream3 = std::ofstream(run_parameters.output_filename, std::ios_base::out);
-    std::vector<std::vector<double> > Coeffs;
-    stream3<< fmt::format("  {:>4d} ! Z  \n", Z);
-    stream3<< fmt::format("  {:>4d} ! N  \n", N);
-    stream3<< fmt::format("  ! interaction file  \n");
-    stream3<< fmt::format("  {:>4d} ! hw  \n", 0);
-    stream3<< fmt::format("  {:>4d} ! # of shell  \n", trwfn_info.num_shells);
-    stream3<< fmt::format("  {:>4d} ! total number of p,n s.p. states  \n", num_sp_states);
-    stream3<< fmt::format("  {:>4d} ! Nmax  \n", trwfn_info.Nmax);
-    stream3<< fmt::format("  {:>4d} ! # of many-body configurations  \n", num_states);
-    stream3<< fmt::format("  {:>4d} ! parity  \n", trwfn_info.parity); // This should be same as smwf_info.parity
-    stream3<< fmt::format("  {:>4d} ! 2 x Jz  \n", trwfn_info.two_Jz); // This should be same as smwf_info.two_M
-    stream3<< fmt::format("  {:>4d} ! # of eigenstates  \n", state); 
-
-    for(int i =0; i < state; i++){
-          stream3 << fmt::format("  {:>4f}   {:>4f}  {:>4f}  \n", smwf_info.energy[i], smwf_info.J[i], smwf_info.T[i]);
-    }
-    // Print the state labels and n , l, 2J, Jz
-    for(int nsp = 0 ; nsp < num_sp_states; nsp++){
-      stream3 << fmt::format("  {:>4d}  ", nsp + 1);
-      stream3 << fmt::format(" {:>4d}   \n", fmt::join(sp_state_list_temp[nsp] , "  "));
-    }
-    
-    int mbstateCount = 0;
-    for(int index =0; index< num_states; index++){
-      auto it = mb_states_B.find(mb_state_list_temp[index]);
-      if(it !=mb_states_B.end()){
-        stream3 << fmt::format("  {:>4d}   \n", fmt::join(it->first ,"  "));
-        stream3 << fmt::format("{:>4e}   \n", fmt::join(it->second, "   "));
-        mbstateCount++;
-      }
-    }
-      
-    if (mbstateCount == num_states)
-      std::cout<<"Validation successful .. " << std::endl;
-  
-  }
-
-  if(run_parameters.runmode==3){
-
-    //Reading a model trwfn file
-    TrwfnInfo trwfn_info;
-    std::vector<std::vector<int16_t> > sp_state_list_temp; // temp for template 
-    std::vector<std::vector<uint16_t> > mb_state_list_temp; // temp for template
-    int numSPStates = readTrwfn(run_parameters.template_filename, trwfn_info, sp_state_list_temp, mb_state_list_temp);
-    
-    //Sanity check
-    if (numSPStates != num_sp_states){
-      std::cout<< "numSPStates BIGSTICK : " << numSPStates << " num_sp_states : " << num_sp_states << std::endl;
-      fmt::print(" Incorrect template file . \n");
-      std::exit(1);}
-
-    //Choice of states
+    // choose state
     std::vector<std::vector<double> > coefficients_list(1, std::vector<double>(1, 0)); // 1-> dimension
-
-    if (state <= smwf_info.num_eigenvectors){
-        coefficients_list[0] = ReadCoefficients(source_wf_dir + "/mfdn_smwf{:03d}", smwf_info, state, numStatesPerFile);
-      }
-    
-    std::map<std::vector<uint16_t> , std::vector<double> > mb_states_B; // B for BIGSTICK
-    findAndReplaceSPIndices(sp_state_list, sp_state_list_temp, mb_state_list, num_sp_states);
-    std::vector<int16_t> phaseFactor;
-    sortMBBasisStates(mb_state_list, mb_states_B, coefficients_list, phaseFactor, Z, N, 1);
-
-    auto stream3 = std::ofstream(run_parameters.output_filename, std::ios_base::out);
-    std::vector<std::vector<double> > Coeffs;
-    stream3<< fmt::format("  {:>4d} ! Z  \n", Z);
-    stream3<< fmt::format("  {:>4d} ! N  \n", N);
-    stream3<< fmt::format("  ! interaction file  \n");
-    stream3<< fmt::format("  {:>4d} ! hw  \n", 0);
-    stream3<< fmt::format("  {:>4d} ! # of shell  \n", trwfn_info.num_shells);
-    stream3<< fmt::format("  {:>4d} ! total number of p,n s.p. states  \n", num_sp_states);
-    stream3<< fmt::format("  {:>4d} ! Nmax  \n", trwfn_info.Nmax);
-    stream3<< fmt::format("  {:>4d} ! # of many-body configurations  \n", num_states);
-    stream3<< fmt::format("  {:>4d} ! parity  \n", trwfn_info.parity); // This should be same as smwf_info.parity
-    stream3<< fmt::format("  {:>4d} ! 2 x Jz  \n", trwfn_info.two_Jz); // This should be same as smwf_info.two_M
-    stream3<< fmt::format("  {:>4d} ! # of eigenstates  \n", 1); 
-
-    
-    stream3 << fmt::format("  {:>4f}   {:>4f}  {:>4f}  \n", smwf_info.energy[state], smwf_info.J[state], smwf_info.T[state]);
-    
-    // Print the state labels and n , l, 2J, Jz
-    for(int nsp = 0 ; nsp < num_sp_states; nsp++){
-      stream3 << fmt::format("  {:>4d}  ", nsp + 1);
-      stream3 << fmt::format(" {:>4d}   \n", fmt::join(sp_state_list_temp[nsp] , "  "));
+    if (state_index <= smwf_info.num_eigenvectors){
+      coefficients_list[0] = ReadCoefficients(source_wf_dir + "/mfdn_smwf{:03d}", smwf_info, state_index, numStatesPerFile);
     }
     
+    // remap sp basis
+    std::map<std::vector<uint16_t> , std::vector<double> > mb_states_bigstick;
+    findAndReplaceSPIndices(sp_state_list, sp_state_list_template, mb_state_list, num_sp_states);
+    std::vector<int16_t> phaseFactor;
+    sortMBBasisStates(mb_state_list, mb_states_bigstick, coefficients_list, phaseFactor, Z, N, 1);
+
+    // write trwfn header
+    auto output_stream = std::ofstream(run_parameters.output_filename, std::ios_base::out);
+    std::vector<std::vector<double> > Coeffs;
+    output_stream << fmt::format("  {:>4d} ! Z", Z) << std::endl;
+    output_stream << fmt::format("  {:>4d} ! N", N) << std::endl;
+    output_stream << fmt::format("  ! interaction file") << std::endl;
+    output_stream << fmt::format("  {:>4d} ! hw", 0) << std::endl;
+    output_stream << fmt::format("  {:>4d} ! # of shell", trwfn_info.num_shells) << std::endl;
+    output_stream << fmt::format("  {:>4d} ! total number of p,n s.p. states", trwfn_info.num_sp_states) << std::endl;
+    output_stream << fmt::format("  {:>4d} ! Nmax", trwfn_info.Nmax) << std::endl;
+    output_stream << fmt::format("  {:>4d} ! # of many-body configurations", num_states) << std::endl;
+    output_stream << fmt::format("  {:>4d} ! parity", trwfn_info.parity) << std::endl; // This should be same as smwf_info.parity
+    output_stream << fmt::format("  {:>4d} ! 2 x Jz", trwfn_info.two_Jz) << std::endl; // This should be same as smwf_info.two_M
+    output_stream << fmt::format("  {:>4d} ! # of eigenstates", 1) << std::endl; 
+    output_stream << fmt::format("  {:>4f}   {:>4f}  {:>4f}", smwf_info.energy[state_index], smwf_info.J[state_index], smwf_info.T[state_index]) << std::endl;
+
+    // print sp state listing
+    for(int nsp = 0 ; nsp < trwfn_info.num_sp_states; nsp++){
+      output_stream << fmt::format("  {:>4d}  ", nsp + 1);
+      output_stream << fmt::format(" {:>4d}  ", fmt::join(sp_state_list_template[nsp] , "  ")) << std::endl;
+    }
+
+    // print mb states and amplitudes
     int mbstateCount = 0;
-    for(int index =0; index< num_states; index++){
-      auto it = mb_states_B.find(mb_state_list_temp[index]);
-      if(it !=mb_states_B.end()){
-        stream3 << fmt::format("  {:>4d}   \n", fmt::join(it->first ,"  "));
-        stream3 << fmt::format("{:>4e}   \n", fmt::join(it->second, "   "));
+    for(int index = 0; index < num_states; index++){
+      auto it = mb_states_bigstick.find(mb_state_list_template[index]);
+      if(it !=mb_states_bigstick.end()){
+        output_stream << fmt::format("  {:>4d}", fmt::join(it->first ,"  ")) << std::endl;
+        output_stream << fmt::format("{:>4e}", fmt::join(it->second, "   ")) << std::endl;
         mbstateCount++;
       }
     }
       
-    if (mbstateCount == num_states)
-      std::cout<<"Validation successful .. " << std::endl;
-  
+    if (mbstateCount != num_states) {
+      std::cout  << "Mismatched number of states" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+    
   }
 
   return 0;
 }
-
-#endif  // PARTITIONUTILS_GROUP_READ_H_
