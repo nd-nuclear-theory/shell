@@ -1,5 +1,5 @@
 /****************************************************************
-  read_wavefunctions.cpp
+  smwf-convert.cpp
 
   adapted read functions from group_read.cpp by Patrick J. Fasano,  University of Notre Dame
 
@@ -841,6 +841,10 @@ void sortMBBasisStates(std::vector<std::vector<uint16_t> > &mb_state_list,
     mb_states_bigstick[mbstate] = Coeffs;
   }
 }
+
+////////////////////////////////////////////////////////////////
+// main program
+////////////////////////////////////////////////////////////////
 
 int main(int argc, char* argv[])
 {
