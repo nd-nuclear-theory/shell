@@ -44,6 +44,33 @@ static_assert(sizeof(int)==kIntegerSize, "Integers are not 4 bytes.");
 constexpr int kFloatSize = 4;
 static_assert(sizeof(float)==kFloatSize, "Floats are not 4 bytes.");
 
+struct MBGroupsMetadata
+{
+  int32_t version_number, num_classes, num_particles, reserved3;
+  int32_t parity, twoM, max_Nmax, num_diag;
+  int32_t num_groupids, num_states, reserved10, num_blocks;
+  int32_t reserved12, reserved13, reserved14, reserved15;
+};
+
+struct MFDnPartitioning
+{
+  std::vector<int> proton_partitions, neutron_partitions;
+};
+
+struct MFDnSMWFInfo
+{
+  int version;
+  int Z, N, twoM;
+  std::string uniqueID;
+  basis::OrbitalSpacePN orbital_space;
+  int num_proton_states, num_neutron_states;
+  MFDnPartitioning partitioning;
+  int parity;
+  float weight_max;
+  std::size_t dimension;
+  int num_diag;
+};
+
 ////////////////////////////////////////////////////////////////
 // process arguments
 /////////////////////////////////////////////////////////////////
@@ -63,9 +90,17 @@ struct RunParameters
   
 };
 
-void PrintUsage( char **argv) {
+void PrintUsage(char **argv) {
   std::cout << "Usage: " << argv[0]
             << " input_directory model_directory state mode"
+            << std::endl
+            << std::endl
+            << "Valid modes:" << std::endl
+            << " test: generates truncated list of coefficients" << std::endl
+            << " number: truncates *state* number of wavefunctions" << std::endl
+            << " choice: truncates wavefunction of choice (entered *state*); 1 -> ground state " << std::endl
+            << " serialSmwfTest : temporary test mode for sequential search " << std::endl;            
+  std::cout << "Usage: " << argv[0]
             << std::endl;
 }
 
@@ -116,46 +151,26 @@ void ProcessArguments(int argc, char *argv[], RunParameters& run_parameters)
   filename = run_parameters.model_dir + ("/mfdn_MBgroups001"); // Check if there is at least 1 file
   mcutils::FileExistCheck(filename, true, false);
 
-  //std::string st = argv[arg++];
-  run_parameters.state = std::stoi(argv[arg++]);
-  
+  // state
+  std::istringstream state_stream(argv[arg++]);
+  std::size_t seq;
+  state_stream >> seq;
+  if (!state_stream || seq==0)
+    {
+      std::cerr << "ERROR: Expecting positive numerical value for state index." << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+  run_parameters.state = seq-1;  
   // mode
   // if mode is "test" the code prints out a text file with the coefficients with the state given
   // if mode is "run" the code prints out a fortran record with coefficients of all the number of states given in argument 1
   run_parameters.mode = argv[arg++];
-  if(run_parameters.mode != "test" && run_parameters.mode != "number" && run_parameters.mode != "choice"){
-    std::cerr << "mode can be either *test*, *number*, *choice*  " << std::endl;
+  if(run_parameters.mode != "test" && run_parameters.mode != "number" && run_parameters.mode != "choice" && run_parameters.mode != "serialSmwfTest"){
+    std::cerr << "mode can be either *test*, *number*, *choice* , *serialSmwfTest* " << std::endl;
     std::exit(EXIT_FAILURE);
   }
 
 }
-
-struct MBGroupsMetadata
-{
-  int32_t version_number, num_classes, num_particles, reserved3;
-  int32_t parity, twoM, max_Nmax, num_diag;
-  int32_t num_groupids, num_states, reserved10, num_blocks;
-  int32_t reserved12, reserved13, reserved14, reserved15;
-};
-
-struct MFDnPartitioning
-{
-  std::vector<int> proton_partitions, neutron_partitions;
-};
-
-struct MFDnSMWFInfo
-{
-  int version;
-  int Z, N, twoM;
-  std::string uniqueID;
-  basis::OrbitalSpacePN orbital_space;
-  int num_proton_states, num_neutron_states;
-  MFDnPartitioning partitioning;
-  int parity;
-  float weight_max;
-  std::size_t dimension;
-  int num_diag;
-};
 
 MFDnSMWFInfo ReadMFDnSMWFInfo(std::string filename)
 {
@@ -281,7 +296,7 @@ std::vector<int> ReadMBGroups(
     bool verbose = false
   )
   {
-    std::vector<int> numStatesPerFile;
+    std::vector<int> num_states_per_file;
     // convenience mode variable
     static constexpr std::ios_base::openmode mode_argument =
         std::ios_base::in | std::ios_base::binary;
@@ -323,13 +338,13 @@ std::vector<int> ReadMBGroups(
       const auto& metadata = metadata_vector[0];
       if (verbose)
         fmt::print("  num_groups: {}\n", metadata.num_groupids);
-      numStatesPerFile.push_back(metadata.num_states);
+      num_states_per_file.push_back(metadata.num_states);
       //fmt::print("  num_states: {}\n", metadata.num_states);
       mcutils::SkipFortranRecord(stream);  // nblksNm
       const auto Mstateptr = mcutils::ReadFortranRecord<int32_t>(stream);
-      const auto groupIDs = mcutils::ReadFortranRecord<int16_t>(stream);
+      const auto group_ids = mcutils::ReadFortranRecord<int16_t>(stream);
 
-      assert(metadata.num_groupids * metadata.num_particles == groupIDs.size());
+      assert(metadata.num_groupids * metadata.num_particles == group_ids.size());
       assert(Mstateptr.size() == metadata.num_groupids + 1);
 
       for (std::size_t j = 0; j < metadata.num_groupids; ++j)
@@ -337,15 +352,15 @@ std::vector<int> ReadMBGroups(
         std::vector<uint16_t> groupid(metadata.num_particles, 0);
 
         for (int p = 0; p < metadata.num_particles; ++p)
-          groupid[p] = groupIDs[metadata.num_particles * j + p] - 1;
+          groupid[p] = group_ids[metadata.num_particles * j + p] - 1;
         assert(Mstateptr[j + 1] - Mstateptr[j] > 0);
         groupid_list.push_back(groupid);
       }
     }
-  return numStatesPerFile;
+  return num_states_per_file;
   }
 
-int setLastMj(const uint16_t numParticles, int num_sp_states, 
+int SetLastMj(const uint16_t num_particles, int num_sp_states, 
               std::vector<int> &mj2_sp, int two_mj, 
               std::vector<int> &next_bin, 
               std::vector<uint16_t> &tempState, int flag){
@@ -356,56 +371,56 @@ int setLastMj(const uint16_t numParticles, int num_sp_states,
   flag = -1 if tempState belongs to the next bin
   ******************************************************************/
     int delta_mj = two_mj;
-    for (uint16_t i = 0; i < numParticles; i++)
+    for (uint16_t i = 0; i < num_particles; i++)
       { //std::cout << mj2_sp[tempState[i] ] << std::endl; 
         delta_mj -= mj2_sp[tempState[i] ]; // because mj2 indices begin from 0 in c++ whereas they begin from 1 in Fortran
         }
     
     if (delta_mj< 0) {
-      //std::cout<< "Flag from setLastMj : " << flag << std::endl;
+      //std::cout<< "Flag from SetLastMj : " << flag << std::endl;
       flag = 1;
       return flag;}
     
-    int iLast = tempState[numParticles-1] + delta_mj/2;
+    int iLast = tempState[num_particles-1] + delta_mj/2;
       //std::cout << "iLast = " << iLast << std::endl;
     
-    if (iLast< next_bin[tempState[numParticles -1]]){
-      //std::cout << "next_bin[tempState[numParticles -1] ] " << next_bin[tempState[numParticles -1] ] << std::endl;
-      tempState[numParticles-1]= iLast;
+    if (iLast< next_bin[tempState[num_particles -1]]){
+      //std::cout << "next_bin[tempState[num_particles -1] ] " << next_bin[tempState[num_particles -1] ] << std::endl;
+      tempState[num_particles-1]= iLast;
       //fmt::print("New tempState  {:>4d}\n", fmt::join(tempState," "));
       flag = 0;
     }
     else flag = -1; 
-    //std::cout<< "Flag from setLastMj : " << flag << std::endl;
+    //std::cout<< "Flag from SetLastMj : " << flag << std::endl;
     return flag;
   }
 
-int incrementMj(const uint16_t numParticles, int num_sp_states, 
+int IncrementMj(const uint16_t num_particles, int num_sp_states, 
                 std::vector<int> &mj2_sp, int two_mj, 
                 std::vector<int> &next_bin, 
-                std::vector<uint16_t> &mbGroup,
-                std::vector<uint16_t> &mbState, int flag){
+                std::vector<uint16_t> &mbgroup,
+                std::vector<uint16_t> &mbstate, int flag){
   /************************************************************************
   Navigates(??) through all the states in a bin
   ************************************************************************/                
-  for(int i = numParticles-2; i >= 0; i--){ // index i goes from 4 -> 0 when there are 6 particles
-    if (mbState[i] < (next_bin[mbGroup[i]] -1)){
-      mbState[i] += 1;
-      for(int j = i+1; j < numParticles; j++){
-        //std::cout<< "mbGroup[j] " << mbGroup[j] << std::endl;
-        //std::cout<< "mbState[j-1] " << mbState[j-1] << " i "<< i << " j "<< j <<std::endl;
+  for(int i = num_particles-2; i >= 0; i--){ // index i goes from 4 -> 0 when there are 6 particles
+    if (mbstate[i] < (next_bin[mbgroup[i]] -1)){
+      mbstate[i] += 1;
+      for(int j = i+1; j < num_particles; j++){
+        //std::cout<< "mbgroup[j] " << mbgroup[j] << std::endl;
+        //std::cout<< "mbstate[j-1] " << mbstate[j-1] << " i "<< i << " j "<< j <<std::endl;
 
-        if ((mbState[j-1] + 1) >= (next_bin[mbGroup[j]])){
+        if ((mbstate[j-1] + 1) >= (next_bin[mbgroup[j]])){
         
           //std::cout<< "Flag is 2 "<<std::endl;
-          //fmt::print(" mbGroup {:>4d}\n", fmt::join(mbGroup," "));
-          //fmt::print(" mbState {:>4d}\n", fmt::join(mbState," "));
+          //fmt::print(" mbgroup {:>4d}\n", fmt::join(mbgroup," "));
+          //fmt::print(" mbstate {:>4d}\n", fmt::join(mbstate," "));
           flag = 2;
           break; 
         }
         else{
-          mbState[j] = mbState[j-1] +1;
-          mbState[j] = std::max(mbState[j], mbGroup[j]);
+          mbstate[j] = mbstate[j-1] +1;
+          mbstate[j] = std::max(mbstate[j], mbgroup[j]);
         }
       }
       if (flag==2){
@@ -413,152 +428,152 @@ int incrementMj(const uint16_t numParticles, int num_sp_states,
         //std::cout<< "flag is 2 here----------------------------" << " i " << i << std::endl;
         continue;
       }
-      flag = setLastMj(numParticles, num_sp_states, mj2_sp, two_mj, next_bin, mbState, flag);
+      flag = SetLastMj(num_particles, num_sp_states, mj2_sp, two_mj, next_bin, mbstate, flag);
 
       if (flag ==1) continue;
         else {
-          //std::cout<< "Flag from incrementMj : " << flag << std::endl;
+          //std::cout<< "Flag from IncrementMj : " << flag << std::endl;
           return flag;}
     }
   }
   flag = 1;
-  //std::cout<< "Flag from incrementMj : " << flag << std::endl;
+  //std::cout<< "Flag from IncrementMj : " << flag << std::endl;
   return flag;
   }
 
   // There might be a best way to combine this and MjTruncatedStatesGen
   // but changing the datatype of mb_state_list of this to <map>, might mess up the order. (Not quite sure)
-int MjStatesGen(const uint16_t numParticles, int num_sp_states, 
+int MjStatesGen(const uint16_t num_particles, int num_sp_states, 
                 std::vector<int> &mj2_sp, int two_mj, 
                 std::vector<int> &next_bin, 
-                std::vector<uint16_t> &tempVar, int num_states, 
+                std::vector<uint16_t> &temp_var, int num_states, 
                 std::vector<std::vector<uint16_t> > &mb_state_list,
-                int currentState){
+                int current_state){
   /****************************************************************
     Functions just like the subroutine mfdn_transitions/src/module_MjStates/MjStatesGen
 
-    numParticles  : Total number of particles
+    num_particles  : Total number of particles
     num_sp_states : number of single particle states (it is assumed that there are same number of
                     sp states in both species)
-    mj2_sp        : Check descriptions in docstring of generateSupportingLists()
+    mj2_sp        : Check descriptions in docstring of GenerateSupportingLists()
     two_mj        : the selected 2*mJ
-    next_bin      : Check descriptions in docstring of generateSupportingLists()
-    tempVar       : single GroupID from a list of GroupIDs, the state that marks the beginning of the 
+    next_bin      : Check descriptions in docstring of GenerateSupportingLists()
+    temp_var       : single GroupID from a list of GroupIDs, the state that marks the beginning of the 
                     group(the set of many body states in the partition). It is called ID but it is a 
-                    vector (of size the numParticles) with sp state indices.
+                    vector (of size the num_particles) with sp state indices.
     num_states    : Total number of states 
     mb_state_list : List to be updated with the states matching the criteria of having same 2*mj
-    currentState  : count of number of states matching the criteria of having same 2*mj
+    current_state  : count of number of states matching the criteria of having same 2*mj
 
     *****************************************************************/
 
-  std::vector<uint16_t> mbstate = tempVar;
+  std::vector<uint16_t> mbstate = temp_var;
   std::vector<uint16_t> mbgroup = mbstate;
   //std::cout<< "MjStatesGen is running .. " << std::endl;
   int flag = 0; 
-  flag = setLastMj(numParticles, num_sp_states, mj2_sp, two_mj, next_bin, mbstate, flag);
+  flag = SetLastMj(num_particles, num_sp_states, mj2_sp, two_mj, next_bin, mbstate, flag);
 
   if (flag==0){
-    //std::cout<< "Adding a state to mb_state_list---------------------------" << currentState <<std::endl;
+    //std::cout<< "Adding a state to mb_state_list---------------------------" << current_state <<std::endl;
 
     // Sanity check
     int total2mj =0;
-    for(int i =0; i< numParticles; i++){
+    for(int i =0; i< num_particles; i++){
       total2mj +=mj2_sp[mbstate[i]];
     }
     if (total2mj != two_mj) fmt::print(" Wrong MJ {:>4d}------------------------- {:d}\n", fmt::join(mbstate," "), total2mj);
     
-    //fmt::print(" mbState {:>4d}------------------------- {:d}\n", fmt::join(mbstate," "), total2mj);
-    mb_state_list[currentState] = mbstate;
-    currentState += 1;
+    //fmt::print(" mbstate {:>4d}------------------------- {:d}\n", fmt::join(mbstate," "), total2mj);
+    mb_state_list[current_state] = mbstate;
+    current_state += 1;
     }
   flag = 0;
   while(flag==0){
     flag = -1;
     while(flag == -1){
       //std::cout << "flag is -1" << std::endl;
-      flag = incrementMj(numParticles, num_sp_states, mj2_sp, two_mj, next_bin, mbgroup, mbstate, flag); // flag = 1 is the end of loop condition
+      flag = IncrementMj(num_particles, num_sp_states, mj2_sp, two_mj, next_bin, mbgroup, mbstate, flag); // flag = 1 is the end of loop condition
       //std::cout << "flag is " << flag << std::endl;
     }
     if(flag ==0){
-      //std::cout<< "Adding a state to mb_state_list---------------------------" << currentState <<std::endl;
+      //std::cout<< "Adding a state to mb_state_list---------------------------" << current_state <<std::endl;
       //std::cout << "flag is 0" << std::endl;
       // Sanity check
     int total2mj =0;
-    for(int i =0; i< numParticles; i++){
+    for(int i =0; i< num_particles; i++){
       total2mj +=mj2_sp[mbstate[i]];
     }
     if (total2mj != two_mj) fmt::print(" Wrong MJ {:>4d}------------------------- {:d}\n", fmt::join(mbstate," "), total2mj);
     
-    //fmt::print(" mbState {:>4d}------------------------- {:d}\n", fmt::join(mbstate," "), total2mj);
-    mb_state_list[currentState] = mbstate;
-    currentState += 1;
+    //fmt::print(" mbstate {:>4d}------------------------- {:d}\n", fmt::join(mbstate," "), total2mj);
+    mb_state_list[current_state] = mbstate;
+    current_state += 1;
     }
   }
-  return currentState;
+  return current_state;
   }
 
 
-std::vector<int> MjTruncatedStatesGen(const uint16_t numParticles, int num_sp_states, 
+std::vector<int> MjTruncatedStatesGen(const uint16_t num_particles, int num_sp_states, 
                 std::vector<int> &mj2_sp,
                 std::vector<float> &weight_sp, int two_mj, 
                 std::vector<int> &next_bin, 
-                std::vector<uint16_t> &tempVar, int num_states, 
+                std::vector<uint16_t> &temp_var, int num_states, 
                 std::map<std::vector<uint16_t> , int> &mb_state_list,
-                int currentCoeff,
+                int current_coeff,
                 float max_truncation_weight,
-                int currentState){
+                int current_state){
   /****************************************************************
     Functions like the subroutine mfdn_transitions/src/module_MjStates/MjStatesGen
     and also records the indices of the coefficients (in mfdn_smwf***) corresponding to the basis states.
 
-    numParticles          : Total number of particles
+    num_particles          : Total number of particles
     num_sp_states         : number of single particle states (it is assumed that there are same number of
                             sp states in both species)
-    mj2_sp                : Check descriptions in docstring of generateSupportingLists()
-    weight_sp             : Check descriptions in docstring of generateSupportingLists()
-    next_bin              : Check descriptions in docstring of generateSupportingLists()
+    mj2_sp                : Check descriptions in docstring of GenerateSupportingLists()
+    weight_sp             : Check descriptions in docstring of GenerateSupportingLists()
+    next_bin              : Check descriptions in docstring of GenerateSupportingLists()
     two_mj                : the selected 2*mJ
-    tempVar               : single GroupID from a list of GroupIDs, the state that marks the beginning of the 
+    temp_var               : single GroupID from a list of GroupIDs, the state that marks the beginning of the 
                             group(the set of many body states in the partition). It is called ID but it is a 
-                            vector (of size the numParticles) with sp state indices.
+                            vector (of size the num_particles) with sp state indices.
     num_states            : Total number of states 
     mb_state_list         : Map to be updated with the states matching the criteria of having same 2*mj 
                             and the corresponding indices of the coefficients
-    currentCoeff          : Keeps track of indices of the coefficients that are skipped
+    current_coeff          : Keeps track of indices of the coefficients that are skipped
     max_truncation_weight : This depends on the Nmax cutoff that 
                             we want to truncate wavefunctions at.
-    currentState          : count of number of states matching the criteria of having same 2*mj
+    current_state          : count of number of states matching the criteria of having same 2*mj
 
     *****************************************************************/
-  std::vector<int> counts {currentState, currentCoeff};
-  std::vector<uint16_t> mbstate = tempVar;
+  std::vector<int> counts {current_state, current_coeff};
+  std::vector<uint16_t> mbstate = temp_var;
   std::vector<uint16_t> mbgroup = mbstate;
 
   int flag = 0; 
-  flag = setLastMj(numParticles, num_sp_states, mj2_sp, two_mj, next_bin, mbstate, flag);
-  // The following is to check if the groupID itself is the many body state of selected two_mj
+  flag = SetLastMj(num_particles, num_sp_states, mj2_sp, two_mj, next_bin, mbstate, flag);
+  // The following is to check if the group_id itself is the many body state of selected two_mj
   if (flag==0){
     /*
     // Sanity check
     int total2mj =0;
-    for(int i =0; i< numParticles; i++){
+    for(int i =0; i< num_particles; i++){
       total2mj +=mj2_sp[mbstate[i]];
     }
     if (total2mj != two_mj) fmt::print(" Wrong MJ {:>4d}------------------------- {:d}\n", fmt::join(mbstate," "), total2mj);
     */
     float total_wt = 0;
 
-    for(int i =0; i< numParticles; i++){
+    for(int i =0; i< num_particles; i++){
       total_wt += weight_sp[mbstate[i]];
     }
     if(total_wt <= max_truncation_weight){
-      mb_state_list[mbstate] = currentCoeff;
-      currentState += 1;
-      currentCoeff += 1;
+      mb_state_list[mbstate] = current_coeff;
+      current_state += 1;
+      current_coeff += 1;
     }
     else{
-      currentCoeff +=1;
+      current_coeff +=1;
     }
 
     }
@@ -566,13 +581,13 @@ std::vector<int> MjTruncatedStatesGen(const uint16_t numParticles, int num_sp_st
   while(flag==0){
     flag = -1;
     while(flag == -1){
-      flag = incrementMj(numParticles, num_sp_states, mj2_sp, two_mj, next_bin, mbgroup, mbstate, flag); 
+      flag = IncrementMj(num_particles, num_sp_states, mj2_sp, two_mj, next_bin, mbgroup, mbstate, flag); 
     }
     if(flag ==0){
     /*
     // Sanity check
     int total2mj =0;
-    for(int i =0; i< numParticles; i++){
+    for(int i =0; i< num_particles; i++){
       total2mj +=mj2_sp[mbstate[i]];
     }
     if (total2mj != two_mj) fmt::print(" Wrong MJ {:>4d}------------------------- {:d}\n", fmt::join(mbstate," "), total2mj);
@@ -581,35 +596,35 @@ std::vector<int> MjTruncatedStatesGen(const uint16_t numParticles, int num_sp_st
 
     float total_wt = 0;
 
-    for(int i =0; i< numParticles; i++){
+    for(int i =0; i< num_particles; i++){
       total_wt += weight_sp[mbstate[i]];
     }
     if(total_wt <= max_truncation_weight){
-      mb_state_list[mbstate] = currentCoeff;
-      currentState += 1;
-      currentCoeff += 1;
+      mb_state_list[mbstate] = current_coeff;
+      current_state += 1;
+      current_coeff += 1;
     }
     else{
-      currentCoeff += 1;
+      current_coeff += 1;
     }
   }
   }
-  counts[0] = currentState;
-  counts[1] = currentCoeff;
+  counts[0] = current_state;
+  counts[1] = current_coeff;
   return counts;
  }
 
 std::vector<float> ReadCoefficients(std::string filename_pattern,
                                     const MFDnSMWFInfo& smwf_info,
-                                    int state, 
-                                    std::vector<int>& numStatesPerFile,
+                                    int state_index, 
+                                    std::vector<int>& num_states_per_file,
                                     bool verbose = true){
   /****************************************************************
   Reads the coefficients of a wavefunction
   
   filename_pattern : "mfdn_smwf{:03d}"
   smwf_info        : consists of wavefunction information from mfdn_smwf.info
-  state            : 0 for ground state, 1 for next eigen state and so on.
+  state_index            : 0 for ground state, 1 for next eigen state and so on.
   num_statesPerFile: list of number of many body basis states in each file
   
   *****************************************************************/
@@ -633,18 +648,18 @@ std::vector<float> ReadCoefficients(std::string filename_pattern,
     int file_size = stream.tellg();
     stream.seekg(0, std::ios_base::end);
     file_size = int(stream.tellg()) - file_size;
-    fmt::print("file_size {:d}   numStates  {:d}    numBytes  {:d}\n", file_size, numStatesPerFile[i-1], (numStatesPerFile[i-1] + 2) * sizeof(float));
-    if (file_size % ((numStatesPerFile[i-1] + 2) * sizeof(float)) != 0){ // |1 byte|wf coeffs|1 byte|
+    fmt::print("file_size {:d}   numStates  {:d}    numBytes  {:d}\n", file_size, num_states_per_file[i-1], (num_states_per_file[i-1] + 2) * kFloatSize);
+    if (file_size % ((num_states_per_file[i-1] + 2) * kFloatSize) != 0){ // |1 byte|wf coeffs|1 byte|
       fmt::print("Corrupted file : Unexpected size \n ");
       std::exit(1); // Perhaps a different kind of error must be thrown
     }
 
     // TO DO (slv): Need to document this 
-    int offset = sizeof(float) * (2* state +1);
-    stream.seekg(std::ios_base::beg + numStatesPerFile[i-1] * sizeof(float) * state + offset); // set position back to beginning of the state in the stream
+    int offset = kFloatSize * (2* state_index +1);
+    stream.seekg(std::ios_base::beg + num_states_per_file[i-1] * kFloatSize * state_index + offset); // set position back to beginning of the state in the stream
     
-    while(stream.read(reinterpret_cast<char*>(&buffer), sizeof(float))){
-      if(count < numStatesPerFile[i-1]){
+    while(stream.read(reinterpret_cast<char*>(&buffer), kFloatSize)){
+      if(count < num_states_per_file[i-1]){
             coeffs.push_back(buffer);
           }
       else break;
@@ -655,13 +670,58 @@ std::vector<float> ReadCoefficients(std::string filename_pattern,
   return coeffs;
   }
 
-void generateSupportingLists(std::string filename_pattern,
+std::vector<float> ReadCoefficientsSingle(std::string filename,
+                                    int state_index,
+                                    int num_states_per_file,
+                                    bool verbose = true){
+  /****************************************************************
+  Reads the coefficients of a wavefunction from a single file
+  
+  filename         : mfdn_smwfxxx
+  state_index            : 0 for ground state, 1 for next eigen state and so on.
+  num_statesPerFile: number of many body basis states in the file
+  
+  *****************************************************************/
+  std::vector<float> coeffs;
+    
+    auto stream = std::ifstream(filename, std::ios_base::binary);
+    float buffer;
+    int count =0;
+      
+    // quite unlikely but here is a sanity check to ensure number of bytes in the file 
+    // matches the expected number 
+    int file_size = stream.tellg();
+    stream.seekg(0, std::ios_base::end);
+    file_size = int(stream.tellg()) - file_size;
+    fmt::print("file_size {:d}   numStates  {:d}    numBytes  {:d}\n", file_size, num_states_per_file, (num_states_per_file + 2) * kFloatSize);
+    if (file_size % ((num_states_per_file + 2) * kFloatSize) != 0){ // |1 byte|wf coeffs|1 byte|
+      fmt::print("Corrupted file : Unexpected size \n ");
+      std::exit(1); // Perhaps a different kind of error must be thrown
+    }
+
+    // TO DO (slv): Need to document this 
+    int offset = kFloatSize * (2* state_index +1);
+    stream.seekg(std::ios_base::beg + num_states_per_file * kFloatSize * state_index + offset); // set position back to beginning of the state in the stream
+    
+    while(stream.read(reinterpret_cast<char*>(&buffer), kFloatSize)){
+      if(count < num_states_per_file){
+            coeffs.push_back(buffer);
+          }
+      else break;
+      count++;
+    }
+    fmt::print("Count after reading {:s}   : {:d} \n", filename, count );
+  
+  return coeffs;
+  }
+
+void GenerateSupportingLists(std::string filename_pattern,
                             std::vector<std::vector<uint16_t> > &groupid_list, 
                             const MFDnSMWFInfo& smwf_info,
                             std::vector<int> &mj2_sp,
                             std::vector<float> &weight_sp, 
                             std::vector<int> &next_bin,
-                            std::vector<int> &numStatesPerFile ){
+                            std::vector<int> &num_states_per_file ){
   /****************************************************************
   Generates the lists, groupid_list, mj2_sp, weight_sp and next_bin, required 
   for the functions MBStatesGen and MjTruncatedStatesGen.
@@ -676,11 +736,11 @@ void generateSupportingLists(std::string filename_pattern,
   
   *****************************************************************/
 
-  numStatesPerFile = ReadMBGroups(filename_pattern, smwf_info, groupid_list, false);
+  num_states_per_file = ReadMBGroups(filename_pattern, smwf_info, groupid_list, false);
   fmt::print("number of groups: {:d}\n", groupid_list.size());
   fflush(stdout);
   
-  // for(std::vector<int>::iterator it = numStatesPerFile.begin(); it != numStatesPerFile.end(); it++)
+  // for(std::vector<int>::iterator it = num_states_per_file.begin(); it != num_states_per_file.end(); it++)
   //   std::cout<< *it <<std::endl;
   // Create the mj2_sp vector that contains the 2M values of all the single particle states
   const auto& proton_subspace = smwf_info.orbital_space.GetSubspace(0);
@@ -749,7 +809,7 @@ int main(int argc, char **argv){
   const auto smwf_info_short = ReadMFDnSMWFInfo(run_parameters.model_dir + "mfdn_smwf.info");
   const uint16_t N = smwf_info_short.N;
   const uint16_t Z = smwf_info_short.Z;
-  const uint16_t numParticles = N + Z;
+  const uint16_t num_particles = N + Z;
 
   int num_sp_states = smwf_info_short.num_proton_states + smwf_info_short.num_neutron_states;
   int two_mj = smwf_info_short.twoM;
@@ -768,34 +828,34 @@ int main(int argc, char **argv){
   fflush(stdout);
 
   std::vector<std::vector<uint16_t> > groupid_list; 
-  std::vector<int> numStatesPerFile_short;
-  std::vector<std::vector<uint16_t> > mb_state_list_short(num_states, std::vector<uint16_t>( numParticles,0)); 
+  std::vector<int> num_states_per_file_short;
+  std::vector<std::vector<uint16_t> > mb_state_list_short(num_states, std::vector<uint16_t>( num_particles,0)); 
   std::vector<int> mj2_sp;
   std::vector<float> weight_sp;
   std::vector<int> next_bin;
   std::string filename_pattern = run_parameters.model_dir + "mfdn_MBgroups{:03d}";
 
-  generateSupportingLists(filename_pattern, groupid_list, smwf_info_short, 
-                          mj2_sp, weight_sp, next_bin, numStatesPerFile_short );
+  GenerateSupportingLists(filename_pattern, groupid_list, smwf_info_short, 
+                          mj2_sp, weight_sp, next_bin, num_states_per_file_short );
   
   fmt::print("generating list of MB states for the low Nmax wavefunction ..\n");
   float max_truncation_weight = smwf_info_short.weight_max;
-  int currentnumstates_short = 0;
+  int current_num_states_short = 0;
   std::cout << "size of groupid list "<< groupid_list.size() << std::endl;
 
   for(std::vector<std::vector<uint16_t> >::iterator it = groupid_list.begin(); it != groupid_list.end(); it++ )
   {
-    std::vector<uint16_t> groupID = *it;
+    std::vector<uint16_t> group_id = *it;
     // Imitating Fortran subroutine MjStatesGen
-    currentnumstates_short = MjStatesGen(numParticles, num_sp_states, mj2_sp, two_mj, next_bin, 
-                       groupID, num_states, mb_state_list_short, currentnumstates_short); 
+    current_num_states_short = MjStatesGen(num_particles, num_sp_states, mj2_sp, two_mj, next_bin, 
+                       group_id, num_states, mb_state_list_short, current_num_states_short); 
 
   }
   
   /*
   // Testing order of MB states in various MBgroups files
   auto test_stream = std::ofstream(run_parameters.model_dir + "/testMBStates.dat", std::ios_base::out);
-  test_stream << fmt::format("  {:>4d}   {:>4d}  \n", numParticles, num_states);
+  test_stream << fmt::format("  {:>4d}   {:>4d}  \n", num_particles, num_states);
 
   for (int i = 0; i< num_states; i++){
     test_stream << fmt::format("  {:>4d}   \n", fmt::join(mb_state_list_short[i],"  ")) << std::flush;
@@ -825,42 +885,42 @@ int main(int argc, char **argv){
   fmt::print("dimension: {:d}\n", num_states);
   fflush(stdout);
   groupid_list.clear(); 
-  std::vector<int> numStatesPerFile;
+  std::vector<int> num_states_per_file;
   mj2_sp.clear();
   weight_sp.clear();
   next_bin.clear();
   std::map<std::vector<uint16_t> , int> mb_state_list;
   filename_pattern = run_parameters.input_dir + "mfdn_MBgroups{:03d}";
-  generateSupportingLists(filename_pattern, groupid_list, smwf_info, 
-                          mj2_sp, weight_sp, next_bin, numStatesPerFile );
+  GenerateSupportingLists(filename_pattern, groupid_list, smwf_info, 
+                          mj2_sp, weight_sp, next_bin, num_states_per_file );
   fmt::print("generating list of MB states for the high Nmax wavefunction .. \n");
 
-  int currentnumstates = 0;
-  int currentCoeff = 0;
-  std::vector<int> currentCounts {currentnumstates, currentCoeff };
-  //std::vector<float> truncatedCoeffs;
-  //std::vector<int> truncatedCoeffsIndex;
+  int current_num_states = 0;
+  int current_coeff = 0;
+  std::vector<int> currentCounts {current_num_states, current_coeff };
+  //std::vector<float> truncated_coeffs;
+  //std::vector<int> truncated_coeffs_index;
 
   for(std::vector<std::vector<uint16_t> >::iterator it = groupid_list.begin(); it != groupid_list.end(); it++ )
   {
-    std::vector<uint16_t> groupID = *it;
+    std::vector<uint16_t> group_id = *it;
     // Imitating Fortran subroutine MjStatesGen
-    currentCounts = MjTruncatedStatesGen(numParticles, num_sp_states, mj2_sp, weight_sp, two_mj, next_bin, 
-                      groupID, num_states, mb_state_list, currentCoeff, 
-                      max_truncation_weight, currentnumstates); 
-    currentnumstates = currentCounts[0];
-    currentCoeff = currentCounts[1];
+    currentCounts = MjTruncatedStatesGen(num_particles, num_sp_states, mj2_sp, weight_sp, two_mj, next_bin, 
+                      group_id, num_states, mb_state_list, current_coeff, 
+                      max_truncation_weight, current_num_states); 
+    current_num_states = currentCounts[0];
+    current_coeff = currentCounts[1];
   }  
 
-  fmt::print("truncated number of states {:d}\n",currentnumstates);
+  fmt::print("truncated number of states {:d}\n",current_num_states);
 
   // getting list of indices of coefficients that have the required twoMj has advantages that 
   // all the states in the mfdn_smwf*** can be truncated at a time if needed.
 
   // At this point there are two lists apparantly of same size but the neutron indices off 
   // by smwf_info.num_proton_states - smwf_info_short.num_proton_states
-  for (int i = 0; i< currentnumstates_short; i++){
-    for(int j= Z; j<numParticles; j++){
+  for (int i = 0; i< current_num_states_short; i++){
+    for(int j= Z; j<num_particles; j++){
       (mb_state_list_short[i])[j] +=  smwf_info.num_proton_states - smwf_info_short.num_proton_states;
     }
   }
@@ -868,95 +928,141 @@ int main(int argc, char **argv){
   if (run_parameters.mode=="test"){
     //if mode is set to "test", only one state is written in text needed for debugging
     std::vector<float> coefficients = ReadCoefficients(run_parameters.input_dir + "mfdn_smwf{:03d}",
-                                                       smwf_info, run_parameters.state, numStatesPerFile ); 
+                                                       smwf_info, run_parameters.state, num_states_per_file ); 
     fmt::print("number of states: {:d}\n", coefficients.size());
     // for(std::vector<float>::iterator it = coefficients.begin(); it !=coefficients.end(); it++)
     //   std::cout<< *it<<std::endl;
 
     int count = 0; // Only for validation of the successful searches
-    fmt::print("Writing to output file .. {:d} states \n", currentnumstates);
+    fmt::print("Writing to output file .. {:d} states \n", current_num_states);
     auto stream = std::ofstream("mfdn_smwf001_truncated.dat", std::ios_base::out);
 
-    for (int i = 0; i< currentnumstates_short; i++){
+    for (int i = 0; i< current_num_states_short; i++){
       // auto it = std::find(mb_state_list.begin(), mb_state_list.end(), mb_state_list_short[i]);
       auto it = mb_state_list.find(mb_state_list_short[i]);
       if(it != mb_state_list.end()){
         // int index = std::distance(mb_state_list.begin(), it);
-        //stream << fmt::format("{:+16.7e}  \n", coefficients[truncatedCoeffsIndex[index]]);
+        //stream << fmt::format("{:+16.7e}  \n", coefficients[truncated_coeffs_index[index]]);
         stream << fmt::format("{:+16.7e}  \n", coefficients[it -> second]) << std::flush;
         count++;
       }
       else break;
     }
     // Sanity check for all states in mb_state_list_short have corresponding states 
-    // in mb_state_list and coefficients in truncatedCoeffs
-    if (count == currentnumstates_short)
+    // in mb_state_list and coefficients in truncated_coeffs
+    if (count == current_num_states_short)
       fmt::print("Validation of number of truncated states successful .. \n");
     else
-      fmt::print("Number of truncated states {:d} does not match the count {:d} .. \n", currentnumstates_short, count);
+      fmt::print("Number of truncated states {:d} does not match the count {:d} .. \n", current_num_states_short, count);
   }
   else if(run_parameters.mode=="number"){
     
     auto stream = std::ofstream("mfdn_smwf001_truncated", std::ios_base::binary);
-    std::vector<float> truncatedCoeffs;
+    std::vector<float> truncated_coeffs;
     // write the coefficients in to a Fortran record that resembles mfdn_smwf***
     for(int st =0; st< run_parameters.state; st++){
       int count = 0; // Only for validation of the successful searches
-      std::vector<float> coefficients = ReadCoefficients(run_parameters.input_dir + "mfdn_smwf{:03d}",smwf_info, st, numStatesPerFile ); 
-      //int bytes = currentnumstates_short * kFloatSize;
+      std::vector<float> coefficients = ReadCoefficients(run_parameters.input_dir + "mfdn_smwf{:03d}",smwf_info, st, num_states_per_file ); 
+      //int bytes = current_num_states_short * kFloatSize;
       //std::cout<<"Number of bytes " << bytes << std::endl;
 
-      for (int i = 0; i< currentnumstates_short; i++){
+      for (int i = 0; i< current_num_states_short; i++){
         // auto it = std::find(mb_state_list.begin(), mb_state_list.end(), mb_state_list_short[i]);
         auto it = mb_state_list.find(mb_state_list_short[i]);
         if(it != mb_state_list.end()){
           // int index = std::distance(mb_state_list.begin(), it);
-          // truncatedCoeffs.push_back(coefficients[truncatedCoeffsIndex[index]]);
-          truncatedCoeffs.push_back(coefficients[it -> second]);
+          // truncated_coeffs.push_back(coefficients[truncated_coeffs_index[index]]);
+          truncated_coeffs.push_back(coefficients[it -> second]);
           count++;
         }
-        /*      
-        // this is only for testing the code. Must be removed in production runs.
-        else{ 
-          truncatedCoeffs.push_back(0.0);
-          count++;
-        }
-        */
 
     }
-    if (count == currentnumstates_short){
+    if (count == current_num_states_short){
     fmt::print("Validation of number of truncated states successful for state {:d}.. \n", st);
     }
 
     fmt::print("Writing to output file .. state {:d} \n", st);
-    mcutils::WriteFortranRecord(stream, truncatedCoeffs);
+    mcutils::WriteFortranRecord(stream, truncated_coeffs);
 
     count = 0;
 
-    truncatedCoeffs.clear();
+    truncated_coeffs.clear();
   }
   }
   else if(run_parameters.mode=="choice"){
     std::vector<float> coefficients = ReadCoefficients(run_parameters.input_dir + "mfdn_smwf{:03d}", 
-                                                       smwf_info, run_parameters.state, numStatesPerFile ); 
+                                                       smwf_info, run_parameters.state, num_states_per_file ); 
     fmt::print("number of states: {:d}\n", coefficients.size());
-    std::vector<float> truncatedCoeffs;
+    std::vector<float> truncated_coeffs;
     int count = 0; // Only for validation of the successful searches
-    fmt::print("Writing to binary output file .. {:d} state \n", currentnumstates);
+    fmt::print("Writing to binary output file .. {:d} state \n", current_num_states);
     auto stream = std::ofstream("mfdn_smwf001_truncated", std::ios_base::binary);
   
-    for (int i = 0; i< currentnumstates_short; i++){
+    for (int i = 0; i< current_num_states_short; i++){
       auto it = mb_state_list.find(mb_state_list_short[i]);
       if(it != mb_state_list.end()){
-        truncatedCoeffs.push_back(coefficients[it -> second]);
+        truncated_coeffs.push_back(coefficients[it -> second]);
         count++;
       }
     }
-    if (count == currentnumstates_short){
+    if (count == current_num_states_short){
       fmt::print("Validation of number of truncated states successful for state {:d}.. \n", run_parameters.state);
       }
       fmt::print("Writing to output file .. state {:d} \n", run_parameters.state);
-      mcutils::WriteFortranRecord(stream, truncatedCoeffs);
+      mcutils::WriteFortranRecord(stream, truncated_coeffs);
+  }
+
+  if(run_parameters.mode == "serialSmwfTest"){
+    std::vector<int> truncated_coeffs_index;
+    int count = 0; // Only for validation of the successful searches
+    fmt::print("Writing to binary output file .. {:d} state \n", current_num_states);
+    int cumulative_num_states = 0; // cumulative number of states 
+    
+    for (int i = 0; i < current_num_states_short; i++){
+        
+      auto it = mb_state_list.find(mb_state_list_short[i]);
+      truncated_coeffs_index.push_back(it->second);
+    }
+    std::vector<float> truncated_coeffs(truncated_coeffs_index.size(), 0.0);
+    fmt::print("size of truncateCoeffsIndex  :  {:d}  \n", truncated_coeffs_index.size());
+
+    for (std::size_t i = 1; i <= smwf_info.num_diag; ++i)
+    {
+      const std::string filename = fmt::format("mfdn_smwf{:03d}", i);
+      fmt::print("reading file {} ({}/{})\n", filename, i, smwf_info.num_diag);
+      mcutils::FileExistCheck(
+        run_parameters.input_dir + filename, /*exit_on_nonexist=*/true, /*warn_on_overwrite=*/false
+      );
+      std::vector<float> coefficients = ReadCoefficientsSingle(run_parameters.input_dir + filename , 
+                                                               run_parameters.state, num_states_per_file[i-1] );   
+      fmt::print("number of states: {:d}\n", coefficients.size());
+      
+      for(std::size_t j = 0; j < truncated_coeffs_index.size(); j++){
+        if (truncated_coeffs_index[j]>= cumulative_num_states && 
+          truncated_coeffs_index[j]< (num_states_per_file[i-1]+ cumulative_num_states)){
+            truncated_coeffs[j]=coefficients[truncated_coeffs_index[j] - cumulative_num_states ];
+            count++;
+        }
+      }
+      cumulative_num_states += num_states_per_file[i-1];
+      fmt::print("count after {:d}th file : {:d}   \n", i, count);
+    }
+    if (count == current_num_states_short){
+      fmt::print("Validation of number of truncated states successful for state {:d}.. \n", run_parameters.state);
+      }
+    int marker = 0;
+    //for(std::vector<float>::iterator it = truncated_coeffs.begin(); it != truncated_coeffs.end(); it+= num_states_per_file_short[filenum]){
+    for(int i =0; i< smwf_info_short.num_diag; i++){  
+      auto stream = std::ofstream(fmt::format("mfdn_smwf{:03d}", i + 1), std::ios_base::binary);
+      std::vector<float> coeffs;
+      for (int j = marker; j < num_states_per_file_short[i]; j++)
+         coeffs.push_back(truncated_coeffs[j]);
+      mcutils::WriteFortranRecord(stream, coeffs);
+      fmt::print("Writing to output file .. mfdn_smwf{:3d} \n", i);
+      marker += num_states_per_file_short[i];
+
+    }
+    
   }
   return 0;
   }

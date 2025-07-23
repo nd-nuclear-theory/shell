@@ -96,7 +96,7 @@ struct RunParameters
   RunParameters()
     : state_index(0), mode(""), source_wf_dir(""), output_filename(""), template_filename("")
   {}
-  
+
 };
 
 void PrintUsage(char **argv) {
@@ -375,60 +375,60 @@ std::vector<int> ReadMBGroups(
   return numStatesPerFile;
   }
 
-int setLastMj(const uint16_t numParticles, int num_sp_states, 
+int SetLastMj(const uint16_t num_particles, int num_sp_states, 
               std::vector<int> &mj2_sp, int two_mj, 
               std::vector<int> &next_bin, 
-              std::vector<uint16_t> &tempState, int flag){
+              std::vector<uint16_t> &temp_state, int flag){
                 //int flag = 1;
                 int delta_mj = two_mj;
-                for (uint16_t i = 0; i < numParticles; i++)
-                  { //std::cout << mj2_sp[tempState[i] ] << std::endl; 
-                    delta_mj -= mj2_sp[tempState[i] ]; // because mj2 indices begin from 0 in c++ whereas they begin from 1 in Fortran
+                for (uint16_t i = 0; i < num_particles; i++)
+                  { //std::cout << mj2_sp[temp_state[i] ] << std::endl; 
+                    delta_mj -= mj2_sp[temp_state[i] ]; // because mj2 indices begin from 0 in c++ whereas they begin from 1 in Fortran
                     }
                 
                 if (delta_mj< 0) {
-                  //std::cout<< "Flag from setLastMj : " << flag << std::endl;
+                  //std::cout<< "Flag from SetLastMj : " << flag << std::endl;
                   flag = 1;
                   return flag;}
                 
-                int iLast = tempState[numParticles-1] + delta_mj/2;
+                int iLast = temp_state[num_particles-1] + delta_mj/2;
                   //std::cout << "iLast = " << iLast << std::endl;
                 
-                if (iLast< next_bin[tempState[numParticles -1]]){
-                  //std::cout << "next_bin[tempState[numParticles -1] ] " << next_bin[tempState[numParticles -1] ] << std::endl;
-                  tempState[numParticles-1]= iLast;
-                  //fmt::print("New tempState  {:>4d}\n", fmt::join(tempState," "));
+                if (iLast< next_bin[temp_state[num_particles -1]]){
+                  //std::cout << "next_bin[temp_state[num_particles -1] ] " << next_bin[temp_state[num_particles -1] ] << std::endl;
+                  temp_state[num_particles-1]= iLast;
+                  //fmt::print("New temp_state  {:>4d}\n", fmt::join(temp_state," "));
                   flag = 0;
                 }
                 else flag = -1; 
-                //std::cout<< "Flag from setLastMj : " << flag << std::endl;
+                //std::cout<< "Flag from SetLastMj : " << flag << std::endl;
                 return flag;
               }
 
-int incrementMj(const uint16_t numParticles, int num_sp_states, 
+int IncrementMj(const uint16_t num_particles, int num_sp_states, 
                   std::vector<int> &mj2_sp, int two_mj, 
                   std::vector<int> &next_bin, 
-                  std::vector<uint16_t> &mbGroup,
-                  std::vector<uint16_t> &mbState, int flag){
+                  std::vector<uint16_t> &mbgroup,
+                  std::vector<uint16_t> &mbstate, int flag){
                   
-                  for(int i = numParticles-2; i >= 0; i--){ // index i goes from 4 -> 0 when there are 6 particles
-                    if (mbState[i] < (next_bin[mbGroup[i]] -1)){
-                      mbState[i] += 1;
-                      for(int j = i+1; j < numParticles; j++){
-                        //std::cout<< "mbGroup[j] " << mbGroup[j] << std::endl;
-                        //std::cout<< "mbState[j-1] " << mbState[j-1] << " i "<< i << " j "<< j <<std::endl;
+                  for(int i = num_particles-2; i >= 0; i--){ // index i goes from 4 -> 0 when there are 6 particles
+                    if (mbstate[i] < (next_bin[mbgroup[i]] -1)){
+                      mbstate[i] += 1;
+                      for(int j = i+1; j < num_particles; j++){
+                        //std::cout<< "mbgroup[j] " << mbgroup[j] << std::endl;
+                        //std::cout<< "mbstate[j-1] " << mbstate[j-1] << " i "<< i << " j "<< j <<std::endl;
 
-                        if ((mbState[j-1] + 1) >= (next_bin[mbGroup[j]])){
+                        if ((mbstate[j-1] + 1) >= (next_bin[mbgroup[j]])){
                         
                           //std::cout<< "Flag is 2 "<<std::endl;
-                          //fmt::print(" mbGroup {:>4d}\n", fmt::join(mbGroup," "));
-                          //fmt::print(" mbState {:>4d}\n", fmt::join(mbState," "));
+                          //fmt::print(" mbgroup {:>4d}\n", fmt::join(mbgroup," "));
+                          //fmt::print(" mbstate {:>4d}\n", fmt::join(mbstate," "));
                           flag = 2;
                           break; 
                         }
                         else{
-                          mbState[j] = mbState[j-1] +1;
-                          mbState[j] = std::max(mbState[j], mbGroup[j]);
+                          mbstate[j] = mbstate[j-1] +1;
+                          mbstate[j] = std::max(mbstate[j], mbgroup[j]);
                         }
                       }
                       if (flag==2){
@@ -436,20 +436,20 @@ int incrementMj(const uint16_t numParticles, int num_sp_states,
                         //std::cout<< "flag is 2 here----------------------------" << " i " << i << std::endl;
                         continue;
                       }
-                      flag = setLastMj(numParticles, num_sp_states, mj2_sp, two_mj, next_bin, mbState, flag);
+                      flag = SetLastMj(num_particles, num_sp_states, mj2_sp, two_mj, next_bin, mbstate, flag);
 
                       if (flag ==1) continue;
                         else {
-                          //std::cout<< "Flag from incrementMj : " << flag << std::endl;
+                          //std::cout<< "Flag from IncrementMj : " << flag << std::endl;
                           return flag;}
                     }
                   }
                   flag = 1;
-                  //std::cout<< "Flag from incrementMj : " << flag << std::endl;
+                  //std::cout<< "Flag from IncrementMj : " << flag << std::endl;
                   return flag;
                 }
 
-int MjStatesGen(const uint16_t numParticles, int num_sp_states, 
+int MjStatesGen(const uint16_t num_particles, int num_sp_states, 
                   std::vector<int> &mj2_sp, int two_mj, 
                   std::vector<int> &next_bin, 
                   std::vector<uint16_t> &tempVar, int num_states, 
@@ -458,7 +458,7 @@ int MjStatesGen(const uint16_t numParticles, int num_sp_states,
   /****************************************************************
     Functions just like the subroutine mfdn_transitions/src/module_MjStates/MjStatesGen
 
-    numParticles : Total number of particles
+    num_particles : Total number of particles
     num_sp_states : number of single particle states (it is assumed that there are same number of
                     sp states in both species)
     mj2_sp : contains a list of 2*mj values for each single particle state
@@ -466,7 +466,7 @@ int MjStatesGen(const uint16_t numParticles, int num_sp_states,
     next_bin : contains the index of the next partition a list of size 1 less than sizeof(mj2_sp)
     tempVar : single GroupID from a list of GroupIDs, the state that marks the beginning of the 
               group(the set of many body states in the partition). It is called ID but it is a 
-              vector (of size the numParticles) with sp state indices.
+              vector (of size the num_particles) with sp state indices.
     num_states : Total number of states 
     mb_state_list : List to be updated with the states matching the criteria of having same 2*mj
     currentState : count of number of states matching the criteria of having same 2*mj
@@ -477,19 +477,19 @@ int MjStatesGen(const uint16_t numParticles, int num_sp_states,
           std::vector<uint16_t> mbgroup = mbstate;
           //std::cout<< "MjStatesGen is running .. " << std::endl;
           int flag = 0; 
-          flag = setLastMj(numParticles, num_sp_states, mj2_sp, two_mj, next_bin, mbstate, flag);
+          flag = SetLastMj(num_particles, num_sp_states, mj2_sp, two_mj, next_bin, mbstate, flag);
 
           if (flag==0){
             //std::cout<< "Adding a state to mb_state_list---------------------------" << currentState <<std::endl;
 
             // Sanity check
             int total2mj =0;
-            for(int i =0; i< numParticles; i++){
+            for(int i =0; i< num_particles; i++){
               total2mj +=mj2_sp[mbstate[i]];
             }
             if (total2mj != two_mj) fmt::print(" Wrong MJ {:>4d}------------------------- {:d}\n", fmt::join(mbstate," "), total2mj);
             
-            //fmt::print(" mbState {:>4d}------------------------- {:d}\n", fmt::join(mbstate," "), total2mj);
+            //fmt::print(" mbstate {:>4d}------------------------- {:d}\n", fmt::join(mbstate," "), total2mj);
             mb_state_list[currentState] = mbstate;
             currentState += 1;
             }
@@ -498,7 +498,7 @@ int MjStatesGen(const uint16_t numParticles, int num_sp_states,
             flag = -1;
             while(flag == -1){
               //std::cout << "flag is -1" << std::endl;
-              flag = incrementMj(numParticles, num_sp_states, mj2_sp, two_mj, next_bin, mbgroup, mbstate, flag); // flag = 1 is the end of loop condition
+              flag = IncrementMj(num_particles, num_sp_states, mj2_sp, two_mj, next_bin, mbgroup, mbstate, flag); // flag = 1 is the end of loop condition
               //std::cout << "flag is " << flag << std::endl;
             }
             if(flag ==0){
@@ -506,12 +506,12 @@ int MjStatesGen(const uint16_t numParticles, int num_sp_states,
               //std::cout << "flag is 0" << std::endl;
               // Sanity check
             int total2mj =0;
-            for(int i =0; i< numParticles; i++){
+            for(int i =0; i< num_particles; i++){
               total2mj +=mj2_sp[mbstate[i]];
             }
             if (total2mj != two_mj) fmt::print(" Wrong MJ {:>4d}------------------------- {:d}\n", fmt::join(mbstate," "), total2mj);
             
-            //fmt::print(" mbState {:>4d}------------------------- {:d}\n", fmt::join(mbstate," "), total2mj);
+            //fmt::print(" mbstate {:>4d}------------------------- {:d}\n", fmt::join(mbstate," "), total2mj);
             mb_state_list[currentState] = mbstate;
             currentState += 1;
             }
@@ -861,7 +861,7 @@ int main(int argc, char* argv[])
   const auto smwf_info = ReadMFDnSMWFInfo(source_wf_dir + "/mfdn_smwf.info");
   const uint16_t N = smwf_info.N;
   const uint16_t Z = smwf_info.Z;
-  const uint16_t numParticles = N + Z;
+  const uint16_t num_particles = N + Z;
 
   int num_sp_states = smwf_info.num_proton_states + smwf_info.num_neutron_states;
   int two_mj = smwf_info.twoM;
@@ -887,7 +887,7 @@ int main(int argc, char* argv[])
   fmt::print("number of groups: {:d}\n", groupid_list.size());
   fflush(stdout);
   
-  std::vector<std::vector<uint16_t> > mb_state_list(num_states, std::vector<uint16_t>( numParticles,0)); 
+  std::vector<std::vector<uint16_t> > mb_state_list(num_states, std::vector<uint16_t>( num_particles,0)); 
   std::vector<std::vector<int16_t> > sp_state_list; 
   // Create the mj2_sp vector that contains the 2M values of all the single particle states
   std::vector<int> mj2_sp;
@@ -957,14 +957,14 @@ int main(int argc, char* argv[])
     //{std::cout<<count++ <<"  "<< *it << std::endl;
     //}
 
-  int currentnumstates = 0;
+  int current_num_states = 0;
   for(std::vector<std::vector<uint16_t> >::iterator it = groupid_list.begin(); it != groupid_list.end(); it++ )
   {
     std::vector<uint16_t> groupID = *it;
     // Imitating Fortran subroutine MjStatesGen
     //tempVar = {0, 1, 4, 40, 44, 54}; // test case
-    currentnumstates = MjStatesGen(numParticles, num_sp_states, mj2_sp, two_mj, next_bin, 
-                       groupID, num_states, mb_state_list, currentnumstates); 
+    current_num_states = MjStatesGen(num_particles, num_sp_states, mj2_sp, two_mj, next_bin, 
+                       groupID, num_states, mb_state_list, current_num_states); 
 
   }  
   
@@ -973,7 +973,7 @@ int main(int argc, char* argv[])
   if (run_parameters.mode == "mbstates")  {
     auto output_stream = std::ofstream(run_parameters.output_filename, std::ios_base::out);
     
-    output_stream << fmt::format("  {:>4d}   {:>4d}  \n", numParticles, num_states);
+    output_stream << fmt::format("  {:>4d}   {:>4d}  \n", num_particles, num_states);
     for (int i = 0; i< num_states; i++){
       output_stream << fmt::format("  {:>4d}   \n ", fmt::join(mb_state_list[i],"  "));
     }
@@ -989,14 +989,14 @@ int main(int argc, char* argv[])
     fmt::print("number of states: {:d}\n", coefficients.size());
 
     auto output_stream = std::ofstream(run_parameters.output_filename, std::ios_base::binary);
-    std::vector<uint16_t> buffer(numParticles , 0);
+    std::vector<uint16_t> buffer(num_particles , 0);
     
-    mcutils::WriteBinary(output_stream, &numParticles, 1);
+    mcutils::WriteBinary(output_stream, &num_particles, 1);
     mcutils::WriteBinary(output_stream, &num_states, 1);
 
     // Here I need to implement the change of indices
     for(int i = 0; i< num_states; i++){
-      for(int j =0; j<numParticles; j++){
+      for(int j =0; j<num_particles; j++){
         
         if(j < Z)
           buffer[j+N] = (mb_state_list[i])[j] + smwf_info.num_proton_states; // change the indices of proton states and move them to positions after the neutron indices
@@ -1011,7 +1011,7 @@ int main(int argc, char* argv[])
               \    \                /   /
         0 1 7 40 41 42             0 1 7 40 41 42
   */
-      mcutils::WriteBinary(output_stream, buffer.data(), numParticles);
+      mcutils::WriteBinary(output_stream, buffer.data(), num_particles);
       mcutils::WriteBinary(output_stream, &(coefficients[i]), 1);
       //output_stream.write(reinterpret_cast<const char*>(&(coefficients[i])),sizeof(double));
 
