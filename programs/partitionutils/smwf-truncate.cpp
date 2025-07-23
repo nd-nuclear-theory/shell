@@ -1,5 +1,5 @@
 /****************************************************************
-  truncate_wavefunctions.cpp
+  smwf-truncate.cpp
 
   adapted from read_wavefunctions.cpp
 
@@ -10,9 +10,6 @@
   + 01/22/25 (slv): Create ReadCoefficients function to read the amplitudes, of the 
     many body states, from mfdn_smwf001 file 
 ****************************************************************/
-
-#ifndef PARTITIONUTILS_GROUP_READ_H_
-#define PARTITIONUTILS_GROUP_READ_H_
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
@@ -730,10 +727,10 @@ void generateSupportingLists(std::string filename_pattern,
 
   }
 
+////////////////////////////////////////////////////////////////
+// main program
+////////////////////////////////////////////////////////////////
 
-/*******************************************************************************************************
-VISUAL AID TO FIND MAIN()
-*******************************************************************************************************/
 int main(int argc, char **argv){
   // header
   std::cout << std::endl;
@@ -960,6 +957,3 @@ int main(int argc, char **argv){
   }
   return 0;
   }
-
-  // }  // namespace
-#endif  // PARTITIONUTILS_GROUP_READ_H_
