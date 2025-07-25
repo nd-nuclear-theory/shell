@@ -756,7 +756,7 @@ void ReadTrwfn(
   
 }
 
-void findAndReplaceSPIndices(std::vector<std::vector<int16_t> > &sp_state_list, 
+void FindAndReplaceSPIndices(std::vector<std::vector<int16_t> > &sp_state_list, 
                             std::vector<std::vector<int16_t> > &sp_state_list_template,
                             std::vector<std::vector<uint16_t> > &mb_state_list,
                             int num_sp_states){
@@ -791,7 +791,7 @@ void findAndReplaceSPIndices(std::vector<std::vector<int16_t> > &sp_state_list,
   }
 }
 
-void sortMBBasisStates(std::vector<std::vector<uint16_t> > &mb_state_list,
+void SortMBBasisStates(std::vector<std::vector<uint16_t> > &mb_state_list,
                       std::map<std::vector<uint16_t> , std::vector<double> > &mb_states_bigstick,
                       std::vector<std::vector<double> > &coefficients_list,
                       std::vector<int16_t> &phaseFactor,// Not needed anymore
@@ -1043,9 +1043,9 @@ int main(int argc, char* argv[])
     
     // remap sp basis
     std::map<std::vector<uint16_t> , std::vector<double> > mb_states_bigstick;
-    findAndReplaceSPIndices(sp_state_list, sp_state_list_template, mb_state_list, num_sp_states);
+    FindAndReplaceSPIndices(sp_state_list, sp_state_list_template, mb_state_list, num_sp_states);
     std::vector<int16_t> phaseFactor;
-    sortMBBasisStates(mb_state_list, mb_states_bigstick, coefficients_list, phaseFactor, Z, N, 1);
+    SortMBBasisStates(mb_state_list, mb_states_bigstick, coefficients_list, phaseFactor, Z, N, 1);
 
     // write trwfn header
     auto output_stream = std::ofstream(run_parameters.output_filename, std::ios_base::out);
