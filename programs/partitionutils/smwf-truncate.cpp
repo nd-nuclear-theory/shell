@@ -95,8 +95,7 @@ void PrintUsage(char **argv) {
             << "Valid modes:" << std::endl
             << " test: generates truncated list of coefficients" << std::endl
             << " number: truncates *state* number of wavefunctions" << std::endl
-            << " choice: truncates wavefunction of choice (entered *state*); 1 -> ground state " << std::endl
-            << " serialSmwfTest : temporary test mode for sequential search " << std::endl;            
+            << " choice: truncates wavefunction of choice (entered *state*); 1 -> ground state " << std::endl;
   std::cout << "Usage: " << argv[0]
             << std::endl;
 }
@@ -162,8 +161,8 @@ void ProcessArguments(int argc, char *argv[], RunParameters& run_parameters)
   // if mode is "test" the code prints out a text file with the coefficients with the state given
   // if mode is "run" the code prints out a fortran record with coefficients of all the number of states given in argument 1
   run_parameters.mode = argv[arg++];
-  if(run_parameters.mode != "test" && run_parameters.mode != "number" && run_parameters.mode != "choice" && run_parameters.mode != "serialSmwfTest"){
-    std::cerr << "mode can be either *test*, *number*, *choice* , *serialSmwfTest* " << std::endl;
+  if(run_parameters.mode != "test" && run_parameters.mode != "number" && run_parameters.mode != "choice"){
+    std::cerr << "mode can be either *test*, *number*, *choice*  " << std::endl;
     std::exit(EXIT_FAILURE);
   }
 
@@ -646,7 +645,7 @@ std::vector<float> ReadCoefficients(std::string filename_pattern,
     stream.seekg(0, std::ios_base::end);
     file_size = int(stream.tellg()) - file_size;
     fmt::print("file_size {:d}   numStates  {:d}    numBytes  {:d}\n", file_size, num_states_per_file[i-1], (num_states_per_file[i-1] + 2) * kFloatSize);
-    if (file_size % ((num_states_per_file[i-1] + 2) * kFloatSize) != 0){ // |1 byte|wf coeffs|1 byte|
+    if (file_size % ((num_states_per_file[i-1] + 2) * kFloatSize) != 0){ // the Fortran sandwich |1 byte|wf coeffs|1 byte|
       fmt::print("Corrupted file : Unexpected size \n ");
       std::exit(1); // Perhaps a different kind of error must be thrown
     }
@@ -803,7 +802,7 @@ int main(int argc, char **argv){
 
   MBGroupsMetadata metadata{};
   //const auto smwf_info_short = ReadMFDnSMWFInfo("mfdn_smwf_short.info");
-  const auto smwf_info_short = ReadMFDnSMWFInfo(run_parameters.model_dir + "mfdn_smwf.info");
+  const auto smwf_info_short = ReadMFDnSMWFInfo(run_parameters.model_dir + "/mfdn_smwf.info");
   const uint16_t N = smwf_info_short.N;
   const uint16_t Z = smwf_info_short.Z;
   const uint16_t num_particles = N + Z;
@@ -830,7 +829,7 @@ int main(int argc, char **argv){
   std::vector<int> mj2_sp;
   std::vector<float> weight_sp;
   std::vector<int> next_bin;
-  std::string filename_pattern = run_parameters.model_dir + "mfdn_MBgroups{:03d}";
+  std::string filename_pattern = run_parameters.model_dir + "/mfdn_MBgroups{:03d}";
 
   GenerateSupportingLists(filename_pattern, groupid_list, smwf_info_short, 
                           mj2_sp, weight_sp, next_bin, num_states_per_file_short );
@@ -864,7 +863,7 @@ int main(int argc, char **argv){
   */
 
   // Following code reads the large Nmax file
-  const auto smwf_info = ReadMFDnSMWFInfo(run_parameters.input_dir + "mfdn_smwf.info");
+  const auto smwf_info = ReadMFDnSMWFInfo(run_parameters.input_dir + "/mfdn_smwf.info");
   num_sp_states = smwf_info.num_proton_states + smwf_info.num_neutron_states;
   two_mj = smwf_info.twoM;
   num_states = smwf_info.dimension;
@@ -887,7 +886,7 @@ int main(int argc, char **argv){
   weight_sp.clear();
   next_bin.clear();
   std::map<std::vector<uint16_t> , int> mb_state_list;
-  filename_pattern = run_parameters.input_dir + "mfdn_MBgroups{:03d}";
+  filename_pattern = run_parameters.input_dir + "/mfdn_MBgroups{:03d}";
   GenerateSupportingLists(filename_pattern, groupid_list, smwf_info, 
                           mj2_sp, weight_sp, next_bin, num_states_per_file );
   fmt::print("generating list of MB states for the high Nmax wavefunction .. \n");
@@ -922,98 +921,11 @@ int main(int argc, char **argv){
     }
   }
 
-  if (run_parameters.mode=="test"){
-    //if mode is set to "test", only one state is written in text needed for debugging
-    std::vector<float> coefficients = ReadCoefficients(run_parameters.input_dir + "mfdn_smwf{:03d}",
-                                                       smwf_info, run_parameters.state, num_states_per_file ); 
-    fmt::print("number of states: {:d}\n", coefficients.size());
-    // for(std::vector<float>::iterator it = coefficients.begin(); it !=coefficients.end(); it++)
-    //   std::cout<< *it<<std::endl;
-
-    int count = 0; // Only for validation of the successful searches
-    fmt::print("Writing to output file .. {:d} states \n", current_num_states);
-    auto stream = std::ofstream("mfdn_smwf001_truncated.dat", std::ios_base::out);
-
-    for (int i = 0; i< current_num_states_short; i++){
-      // auto it = std::find(mb_state_list.begin(), mb_state_list.end(), mb_state_list_short[i]);
-      auto it = mb_state_list.find(mb_state_list_short[i]);
-      if(it != mb_state_list.end()){
-        // int index = std::distance(mb_state_list.begin(), it);
-        //stream << fmt::format("{:+16.7e}  \n", coefficients[truncated_coeffs_index[index]]);
-        stream << fmt::format("{:+16.7e}  \n", coefficients[it -> second]) << std::flush;
-        count++;
-      }
-      else break;
-    }
-    // Sanity check for all states in mb_state_list_short have corresponding states 
-    // in mb_state_list and coefficients in truncated_coeffs
-    if (count == current_num_states_short)
-      fmt::print("Validation of number of truncated states successful .. \n");
-    else
-      fmt::print("Number of truncated states {:d} does not match the count {:d} .. \n", current_num_states_short, count);
-  }
-  else if(run_parameters.mode=="number"){
-    
-    auto stream = std::ofstream("mfdn_smwf001_truncated", std::ios_base::binary);
-    std::vector<float> truncated_coeffs;
-    // write the coefficients in to a Fortran record that resembles mfdn_smwf***
-    for(int st =0; st< run_parameters.state; st++){
-      int count = 0; // Only for validation of the successful searches
-      std::vector<float> coefficients = ReadCoefficients(run_parameters.input_dir + "mfdn_smwf{:03d}",smwf_info, st, num_states_per_file ); 
-      //int bytes = current_num_states_short * kFloatSize;
-      //std::cout<<"Number of bytes " << bytes << std::endl;
-
-      for (int i = 0; i< current_num_states_short; i++){
-        // auto it = std::find(mb_state_list.begin(), mb_state_list.end(), mb_state_list_short[i]);
-        auto it = mb_state_list.find(mb_state_list_short[i]);
-        if(it != mb_state_list.end()){
-          // int index = std::distance(mb_state_list.begin(), it);
-          // truncated_coeffs.push_back(coefficients[truncated_coeffs_index[index]]);
-          truncated_coeffs.push_back(coefficients[it -> second]);
-          count++;
-        }
-
-    }
-    if (count == current_num_states_short){
-    fmt::print("Validation of number of truncated states successful for state {:d}.. \n", st);
-    }
-
-    fmt::print("Writing to output file .. state {:d} \n", st);
-    mcutils::WriteFortranRecord(stream, truncated_coeffs);
-
-    count = 0;
-
-    truncated_coeffs.clear();
-  }
-  }
-  else if(run_parameters.mode=="choice"){
-    std::vector<float> coefficients = ReadCoefficients(run_parameters.input_dir + "mfdn_smwf{:03d}", 
-                                                       smwf_info, run_parameters.state, num_states_per_file ); 
-    fmt::print("number of states: {:d}\n", coefficients.size());
-    std::vector<float> truncated_coeffs;
-    int count = 0; // Only for validation of the successful searches
-    fmt::print("Writing to binary output file .. {:d} state \n", current_num_states);
-    auto stream = std::ofstream("mfdn_smwf001_truncated", std::ios_base::binary);
-  
-    for (int i = 0; i< current_num_states_short; i++){
-      auto it = mb_state_list.find(mb_state_list_short[i]);
-      if(it != mb_state_list.end()){
-        truncated_coeffs.push_back(coefficients[it -> second]);
-        count++;
-      }
-    }
-    if (count == current_num_states_short){
-      fmt::print("Validation of number of truncated states successful for state {:d}.. \n", run_parameters.state);
-      }
-      fmt::print("Writing to output file .. state {:d} \n", run_parameters.state);
-      mcutils::WriteFortranRecord(stream, truncated_coeffs);
-  }
-
-  if(run_parameters.mode == "serialSmwfTest"){
+  if(run_parameters.mode == "test"){
     std::vector<int> truncated_coeffs_index;
     int count = 0; // Only for validation of the successful searches
     fmt::print("Writing to binary output file .. {:d} state \n", current_num_states);
-    int cumulative_num_states = 0; // cumulative number of states 
+    int cumulative_num_states = 0; 
     
     for (int i = 0; i < current_num_states_short; i++){
         
@@ -1023,9 +935,8 @@ int main(int argc, char **argv){
     std::vector<float> truncated_coeffs(truncated_coeffs_index.size(), 0.0);
     fmt::print("size of truncateCoeffsIndex  :  {:d}  \n", truncated_coeffs_index.size());
 
-    for (std::size_t i = 1; i <= smwf_info.num_diag; ++i)
-    {
-      const std::string filename = fmt::format("mfdn_smwf{:03d}", i);
+    for (std::size_t i = 1; i <= smwf_info.num_diag; ++i){
+      const std::string filename = fmt::format("/mfdn_smwf{:03d}", i);
       fmt::print("reading file {} ({}/{})\n", filename, i, smwf_info.num_diag);
       mcutils::FileExistCheck(
         run_parameters.input_dir + filename, /*exit_on_nonexist=*/true, /*warn_on_overwrite=*/false
@@ -1045,21 +956,111 @@ int main(int argc, char **argv){
       fmt::print("count after {:d}th file : {:d}   \n", i, count);
     }
     if (count == current_num_states_short){
-      fmt::print("Validation of number of truncated states successful for state {:d}.. \n", run_parameters.state);
-      }
-    int marker = 0;
-    //for(std::vector<float>::iterator it = truncated_coeffs.begin(); it != truncated_coeffs.end(); it+= num_states_per_file_short[filenum]){
-    for(int i =0; i< smwf_info_short.num_diag; i++){  
-      auto stream = std::ofstream(fmt::format("mfdn_smwf{:03d}", i + 1), std::ios_base::binary);
-      std::vector<float> coeffs;
-      for (int j = marker; j < num_states_per_file_short[i]; j++)
-         coeffs.push_back(truncated_coeffs[j]);
-      mcutils::WriteFortranRecord(stream, coeffs);
-      fmt::print("Writing to output file .. mfdn_smwf{:3d} \n", i);
-      marker += num_states_per_file_short[i];
-
+      fmt::print("Validation of number of truncated states successful for state {:d}.. \n", run_parameters.state + 1);
     }
+
+    std::vector<float>::iterator it = truncated_coeffs.begin();
+    for(int i = 0; i < smwf_info_short.num_diag; i++){
+      auto stream = std::ofstream(fmt::format("mfdn_smwf{:03d}", i + 1), std::ios_base::binary);
+      std::vector<float> coeffs(num_states_per_file_short[i], 0);
+      std::copy(it, it + num_states_per_file_short[i], coeffs.begin());
+      it += num_states_per_file_short[i];
+
+      fmt::print("Writing to output file .. mfdn_smwf{:03d} \n", i+1);
+      mcutils::WriteFortranRecord(stream, coeffs);
+    }
+  }
+  
+  //---------------------------------------------------------------------------------------------------------------
+
+  // if (run_parameters.mode=="test"){
+  //   //if mode is set to "test", only one state is written in text needed for debugging
+  //   std::vector<float> coefficients = ReadCoefficients(run_parameters.input_dir + "/mfdn_smwf{:03d}",
+  //                                                      smwf_info, run_parameters.state, num_states_per_file ); 
+  //   fmt::print("number of states: {:d}\n", coefficients.size());
+  //   // for(std::vector<float>::iterator it = coefficients.begin(); it !=coefficients.end(); it++)
+  //   //   std::cout<< *it<<std::endl;
+
+  //   int count = 0; // Only for validation of the successful searches
+  //   fmt::print("Writing to output file .. {:d} states \n", current_num_states);
+  //   auto stream = std::ofstream("mfdn_smwf001_truncated.dat", std::ios_base::out);
+
+  //   for (int i = 0; i< current_num_states_short; i++){
+  //     // auto it = std::find(mb_state_list.begin(), mb_state_list.end(), mb_state_list_short[i]);
+  //     auto it = mb_state_list.find(mb_state_list_short[i]);
+  //     if(it != mb_state_list.end()){
+  //       // int index = std::distance(mb_state_list.begin(), it);
+  //       //stream << fmt::format("{:+16.7e}  \n", coefficients[truncated_coeffs_index[index]]);
+  //       stream << fmt::format("{:+16.7e}  \n", coefficients[it -> second]) << std::flush;
+  //       count++;
+  //     }
+  //     else break;
+  //   }
+  //   // Sanity check for all states in mb_state_list_short have corresponding states 
+  //   // in mb_state_list and coefficients in truncated_coeffs
+  //   if (count == current_num_states_short)
+  //     fmt::print("Validation of number of truncated states successful .. \n");
+  //   else
+  //     fmt::print("Number of truncated states {:d} does not match the count {:d} .. \n", current_num_states_short, count);
+  // }
+
+  //---------------------------------------------------------------------------------------------------------------
+
+  else if(run_parameters.mode=="number"){
     
+    auto stream = std::ofstream("mfdn_smwf001_truncated", std::ios_base::binary);
+    std::vector<float> truncated_coeffs;
+    // write the coefficients in to a Fortran record that resembles mfdn_smwf***
+    for(int st =0; st< run_parameters.state; st++){
+      int count = 0; // Only for validation of the successful searches
+      std::vector<float> coefficients = ReadCoefficients(run_parameters.input_dir + "/mfdn_smwf{:03d}",smwf_info, st, num_states_per_file ); 
+      //int bytes = current_num_states_short * kFloatSize;
+      //std::cout<<"Number of bytes " << bytes << std::endl;
+
+      for (int i = 0; i< current_num_states_short; i++){
+        // auto it = std::find(mb_state_list.begin(), mb_state_list.end(), mb_state_list_short[i]);
+        auto it = mb_state_list.find(mb_state_list_short[i]);
+        if(it != mb_state_list.end()){
+          // int index = std::distance(mb_state_list.begin(), it);
+          // truncated_coeffs.push_back(coefficients[truncated_coeffs_index[index]]);
+          truncated_coeffs.push_back(coefficients[it -> second]);
+          count++;
+        }
+      }
+      if (count == current_num_states_short){
+        fmt::print("Validation of number of truncated states successful for state {:d}.. \n", st+1);
+      }
+
+      fmt::print("Writing to output file .. state {:d} \n", st);
+      mcutils::WriteFortranRecord(stream, truncated_coeffs);
+      count = 0;
+      truncated_coeffs.clear();
+    }
   }
+  
+  else if(run_parameters.mode=="choice"){
+    std::vector<float> coefficients = ReadCoefficients(run_parameters.input_dir + "/mfdn_smwf{:03d}", 
+                                                       smwf_info, run_parameters.state, num_states_per_file ); 
+    fmt::print("number of states: {:d}\n", coefficients.size());
+    std::vector<float> truncated_coeffs;
+    int count = 0; // Only for validation of the successful searches
+    fmt::print("Writing to binary output file .. {:d} state \n", current_num_states);
+    auto stream = std::ofstream("mfdn_smwf001_truncated", std::ios_base::binary);
+  
+    for (int i = 0; i< current_num_states_short; i++){
+      auto it = mb_state_list.find(mb_state_list_short[i]);
+      if(it != mb_state_list.end()){
+        truncated_coeffs.push_back(coefficients[it -> second]);
+        count++;
+      }
+    }
+    if (count == current_num_states_short){
+      fmt::print("Validation of number of truncated states successful for state {:d}.. \n", run_parameters.state + 1);
+    }
+    fmt::print("Writing to output file .. state {:d} \n", run_parameters.state + 1);
+    mcutils::WriteFortranRecord(stream, truncated_coeffs);
+  }
+
+  
   return 0;
-  }
+}
