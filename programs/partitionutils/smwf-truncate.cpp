@@ -76,20 +76,21 @@ struct RunParameters
 // Stores simple parameters for run
 {
   // filenames
-  std::string input_dir;
+  std::string source_dir;
   std::string model_dir;
+  std::string target_dir;
   int state;
   std::string mode;
   // default constructor
   RunParameters()
-    : input_dir(""), model_dir(""), state(0), mode("test")
+    : source_dir(""), model_dir(""), target_dir(""), state(0), mode("test")
   {}
   
 };
 
 void PrintUsage(char **argv) {
   std::cout << "Usage: " << argv[0]
-            << " input_directory model_directory state mode"
+            << " source_directory model_directory target_directory state mode"
             << std::endl
             << std::endl
             << "Valid modes:" << std::endl
@@ -131,12 +132,12 @@ void ProcessArguments(int argc, char *argv[], RunParameters& run_parameters)
       std::exit(EXIT_FAILURE);
     }
 
-  // input files
-  run_parameters.input_dir = argv[arg++];
-  std::string filename = run_parameters.input_dir + ("/mfdn_smwf.info");
+  // source files
+  run_parameters.source_dir = argv[arg++];
+  std::string filename = run_parameters.source_dir + ("/mfdn_smwf.info");
   mcutils::FileExistCheck(filename, true, false);
 
-  filename = run_parameters.input_dir + ("/mfdn_MBgroups001"); // Check if there is at least 1 file
+  filename = run_parameters.source_dir + ("/mfdn_MBgroups001"); // Check if there is at least 1 file
   mcutils::FileExistCheck(filename, true, false);
   
   // model files
@@ -146,7 +147,10 @@ void ProcessArguments(int argc, char *argv[], RunParameters& run_parameters)
 
   filename = run_parameters.model_dir + ("/mfdn_MBgroups001"); // Check if there is at least 1 file
   mcutils::FileExistCheck(filename, true, false);
-
+  
+  // model files
+  run_parameters.target_dir = argv[arg++];
+  
   // state
   std::istringstream state_stream(argv[arg++]);
   std::size_t seq;
@@ -219,7 +223,7 @@ MFDnSMWFInfo ReadMFDnSMWFInfo(std::string filename)
     {
       mcutils::GetLine(stream, line, line_count);
       orbital_info_str.append(line);
-      orbital_info_str.append("\n");  // need to restore newline to input line
+      orbital_info_str.append("\n");  // need to restore newline to source line
     }
     std::istringstream orbital_info_stream(orbital_info_str);
     auto orbital_list = basis::ParseOrbitalPNStream(
@@ -306,7 +310,7 @@ std::vector<int> ReadMBGroups(
         );
       auto stream = std::ifstream(filename, mode_argument);
       mcutils::StreamCheck(
-          bool(stream), filename, "Failure opening groups file for input"
+          bool(stream), filename, "Failure opening groups file for source"
         );
 
       const auto metadata_vector =
@@ -326,7 +330,7 @@ std::vector<int> ReadMBGroups(
         fmt::print("reading file {} ({}/{})\n", filename, i, smwf_info.num_diag);
       auto stream = std::ifstream(filename, mode_argument);
       mcutils::StreamCheck(
-          bool(stream), filename, "Failure opening groups file for input"
+          bool(stream), filename, "Failure opening groups file for source"
         );
 
       const auto metadata_vector =
@@ -863,7 +867,7 @@ int main(int argc, char **argv){
   */
 
   // Following code reads the large Nmax file
-  const auto smwf_info = ReadMFDnSMWFInfo(run_parameters.input_dir + "/mfdn_smwf.info");
+  const auto smwf_info = ReadMFDnSMWFInfo(run_parameters.source_dir + "/mfdn_smwf.info");
   num_sp_states = smwf_info.num_proton_states + smwf_info.num_neutron_states;
   two_mj = smwf_info.twoM;
   num_states = smwf_info.dimension;
@@ -886,7 +890,7 @@ int main(int argc, char **argv){
   weight_sp.clear();
   next_bin.clear();
   std::map<std::vector<uint16_t> , int> mb_state_list;
-  filename_pattern = run_parameters.input_dir + "/mfdn_MBgroups{:03d}";
+  filename_pattern = run_parameters.source_dir + "/mfdn_MBgroups{:03d}";
   GenerateSupportingLists(filename_pattern, groupid_list, smwf_info, 
                           mj2_sp, weight_sp, next_bin, num_states_per_file );
   fmt::print("generating list of MB states for the high Nmax wavefunction .. \n");
@@ -939,9 +943,9 @@ int main(int argc, char **argv){
       const std::string filename = fmt::format("/mfdn_smwf{:03d}", i);
       fmt::print("reading file {} ({}/{})\n", filename, i, smwf_info.num_diag);
       mcutils::FileExistCheck(
-        run_parameters.input_dir + filename, /*exit_on_nonexist=*/true, /*warn_on_overwrite=*/false
+        run_parameters.source_dir + filename, /*exit_on_nonexist=*/true, /*warn_on_overwrite=*/false
       );
-      std::vector<float> coefficients = ReadCoefficientsSingle(run_parameters.input_dir + filename , 
+      std::vector<float> coefficients = ReadCoefficientsSingle(run_parameters.source_dir + filename , 
                                                                run_parameters.state, num_states_per_file[i-1] );   
       fmt::print("number of states: {:d}\n", coefficients.size());
       
@@ -961,7 +965,7 @@ int main(int argc, char **argv){
 
     std::vector<float>::iterator it = truncated_coeffs.begin();
     for(int i = 0; i < smwf_info_short.num_diag; i++){
-      auto stream = std::ofstream(fmt::format("mfdn_smwf{:03d}", i + 1), std::ios_base::binary);
+      auto stream = std::ofstream(run_parameters.target_dir + "/" +fmt::format("mfdn_smwf{:03d}", i + 1), std::ios_base::binary);
       std::vector<float> coeffs(num_states_per_file_short[i], 0);
       std::copy(it, it + num_states_per_file_short[i], coeffs.begin());
       it += num_states_per_file_short[i];
@@ -975,7 +979,7 @@ int main(int argc, char **argv){
 
   // if (run_parameters.mode=="test"){
   //   //if mode is set to "test", only one state is written in text needed for debugging
-  //   std::vector<float> coefficients = ReadCoefficients(run_parameters.input_dir + "/mfdn_smwf{:03d}",
+  //   std::vector<float> coefficients = ReadCoefficients(run_parameters.source_dir + "/mfdn_smwf{:03d}",
   //                                                      smwf_info, run_parameters.state, num_states_per_file ); 
   //   fmt::print("number of states: {:d}\n", coefficients.size());
   //   // for(std::vector<float>::iterator it = coefficients.begin(); it !=coefficients.end(); it++)
@@ -983,7 +987,7 @@ int main(int argc, char **argv){
 
   //   int count = 0; // Only for validation of the successful searches
   //   fmt::print("Writing to output file .. {:d} states \n", current_num_states);
-  //   auto stream = std::ofstream("mfdn_smwf001_truncated.dat", std::ios_base::out);
+  //   auto stream = std::ofstream(run_parameters.target_dir + "/mfdn_smwf001_truncated.dat", std::ios_base::out);
 
   //   for (int i = 0; i< current_num_states_short; i++){
   //     // auto it = std::find(mb_state_list.begin(), mb_state_list.end(), mb_state_list_short[i]);
@@ -1008,12 +1012,12 @@ int main(int argc, char **argv){
 
   else if(run_parameters.mode=="number"){
     
-    auto stream = std::ofstream("mfdn_smwf001_truncated", std::ios_base::binary);
+    auto stream = std::ofstream(run_parameters.target_dir + "/mfdn_smwf001", std::ios_base::binary);
     std::vector<float> truncated_coeffs;
     // write the coefficients in to a Fortran record that resembles mfdn_smwf***
     for(int st =0; st< run_parameters.state; st++){
       int count = 0; // Only for validation of the successful searches
-      std::vector<float> coefficients = ReadCoefficients(run_parameters.input_dir + "/mfdn_smwf{:03d}",smwf_info, st, num_states_per_file ); 
+      std::vector<float> coefficients = ReadCoefficients(run_parameters.source_dir + "/mfdn_smwf{:03d}",smwf_info, st, num_states_per_file ); 
       //int bytes = current_num_states_short * kFloatSize;
       //std::cout<<"Number of bytes " << bytes << std::endl;
 
@@ -1039,13 +1043,13 @@ int main(int argc, char **argv){
   }
   
   else if(run_parameters.mode=="choice"){
-    std::vector<float> coefficients = ReadCoefficients(run_parameters.input_dir + "/mfdn_smwf{:03d}", 
+    std::vector<float> coefficients = ReadCoefficients(run_parameters.source_dir + "/mfdn_smwf{:03d}", 
                                                        smwf_info, run_parameters.state, num_states_per_file ); 
     fmt::print("number of states: {:d}\n", coefficients.size());
     std::vector<float> truncated_coeffs;
     int count = 0; // Only for validation of the successful searches
     fmt::print("Writing to binary output file .. {:d} state \n", current_num_states);
-    auto stream = std::ofstream("mfdn_smwf001_truncated", std::ios_base::binary);
+    auto stream = std::ofstream(run_parameters.target_dir + "/mfdn_smwf001", std::ios_base::binary);
   
     for (int i = 0; i< current_num_states_short; i++){
       auto it = mb_state_list.find(mb_state_list_short[i]);
