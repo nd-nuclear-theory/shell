@@ -797,7 +797,7 @@ void GenerateSupportingLists(std::string filename_pattern,
 int main(int argc, char **argv){
   // header
   std::cout << std::endl;
-  std::cout << "truncate_wavefunctions -- truncates MFDn wavefunctions " << std::endl;
+  std::cout << "smwf-truncate -- truncate MFDn wavefunctions" << std::endl;
   std::cout << std::endl;
 
   // read parameters

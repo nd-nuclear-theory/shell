@@ -850,7 +850,7 @@ int main(int argc, char* argv[])
 {
   // header
   std::cout << std::endl;
-  std::cout << "read MFDn wavefunctions " << std::endl;
+  std::cout << "smwf-convert -- convert MFDn wavefunctions " << std::endl;
   std::cout << std::endl;
   
   // read parameters
