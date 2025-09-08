@@ -717,8 +717,7 @@ void ReadParameters(
 
   std::string line;
   int line_count = 0;
-  auto buffer = std::ifstream("h2mixer.in", std::ios_base::in); // (slv) Modified for generating Identity matrices
-  while (mcutils::GetLine(buffer, line, line_count))
+  while (mcutils::GetLine(std::cin, line, line_count))
     {
       // set up for line parsing
       std::istringstream line_stream(line);
