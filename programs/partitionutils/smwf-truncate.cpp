@@ -624,7 +624,7 @@ std::vector<float> ReadCoefficients(std::string filename_pattern,
   
   filename_pattern : "mfdn_smwf{:03d}"
   smwf_info        : consists of wavefunction information from mfdn_smwf.info
-  state_index            : 0 for ground state, 1 for next eigen state and so on.
+  state_index      : 0 for ground state, 1 for next eigen state and so on.
   num_statesPerFile: list of number of many body basis states in each file
   
   *****************************************************************/
@@ -678,7 +678,7 @@ std::vector<float> ReadCoefficientsSingle(std::string filename,
   Reads the coefficients of a wavefunction from a single file
   
   filename         : mfdn_smwfxxx
-  state_index            : 0 for ground state, 1 for next eigen state and so on.
+  state_index      : 0 for ground state, 1 for next eigen state and so on.
   num_statesPerFile: number of many body basis states in the file
   
   *****************************************************************/
@@ -690,19 +690,21 @@ std::vector<float> ReadCoefficientsSingle(std::string filename,
       
     // quite unlikely but here is a sanity check to ensure number of bytes in the file 
     // matches the expected number 
-    int file_size = stream.tellg();
-    stream.seekg(0, std::ios_base::end);
-    file_size = int(stream.tellg()) - file_size;
-    fmt::print("file_size {:d}   numStates  {:d}    numBytes  {:d}\n", file_size, num_states_per_file, (num_states_per_file + 2) * kFloatSize);
-    if (file_size % ((num_states_per_file + 2) * kFloatSize) != 0){ // |1 byte|wf coeffs|1 byte|
-      fmt::print("Corrupted file : Unexpected size \n ");
-      std::exit(1); // Perhaps a different kind of error must be thrown
-    }
-
-    // TO DO (slv): Need to document this 
-    int offset = kFloatSize * (2* state_index +1);
-    stream.seekg(std::ios_base::beg + num_states_per_file * kFloatSize * state_index + offset); // set position back to beginning of the state in the stream
+    stream.seekg(std::ios_base::beg);
+    int num_bytes;
+    stream.read(reinterpret_cast<char*>(&num_bytes), kIntegerSize);
     
+    if(num_bytes != num_states_per_file * kFloatSize){
+      fmt::print("Corrupted file : Unexpected size \n ");
+      std::exit(1); // Perhaps a different kind of error must be thrown      
+    }
+    fmt::print("number of bytes  {:d} \n", num_bytes);
+    // TO DO (slv): Need to document this 
+    stream.seekg(std::ios_base::beg + kIntegerSize); //get to the beginning of the first state in the record
+    for(int i=0; i<state_index; i++){
+      stream.seekg(num_bytes + 2*kIntegerSize, std::ios_base::cur ); //Do incremental scrolling to the position of the required state
+      // fmt::print(" State : {:d} \n", i);
+    }
     while(stream.read(reinterpret_cast<char*>(&buffer), kFloatSize)){
       if(count < num_states_per_file){
             coeffs.push_back(buffer);
@@ -711,7 +713,6 @@ std::vector<float> ReadCoefficientsSingle(std::string filename,
       count++;
     }
     fmt::print("Count after reading {:s}   : {:d} \n", filename, count );
-  
   return coeffs;
   }
 
