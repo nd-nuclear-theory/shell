@@ -113,6 +113,10 @@ RunParameters ReadParameters() {
         run_parameters.input_info_filename = std::move(robdme_info_filename);
       }
     }
+    else
+      {
+        mcutils::ParsingError(line_count,line,"Unrecognized keyword");
+      }
   }
 
   return run_parameters;
@@ -129,6 +133,8 @@ int main(int argc, const char* argv[])
   auto run_parameters = ReadParameters();
 
   // initialize orbitals
+  std::cout << "Reading orbitals..." << std::endl;
+  mcutils::FileExistCheck(run_parameters.orbital_filename, true, false);
   std::ifstream orbital_stream(run_parameters.orbital_filename);
   auto orbital_space = basis::OrbitalSpaceLJPN(
       basis::ParseOrbitalPNStream(orbital_stream, true)
@@ -136,6 +142,7 @@ int main(int argc, const char* argv[])
   orbital_stream.close();
 
   // initialize density I/O
+  std::cout << "Reading densities..." << std::endl;
   std::unique_ptr<shell::InOBDMEStream> density_stream_ptr;
   if (run_parameters.input_info_filename)
   {
@@ -159,6 +166,7 @@ int main(int argc, const char* argv[])
   // loop over multipoles and write out
   for (auto&& [output_filename, J0] : run_parameters.multipole_filenames)
   {
+    std::cout << fmt::format("Writing J0={} densities to {}...", J0, output_filename) << std::endl;
     basis::OrbitalSectorsLJPN density_sectors;
     basis::OperatorBlocks<double> density_matrices;
     density_stream_ptr->GetMultipole(

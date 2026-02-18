@@ -92,23 +92,27 @@ namespace relative {
       int T0
     );
   // Construct simple "kinematic" (r^2 and k^2) operators in relative
-  // LSJT basis.
+  // LSJT basis, as well as the corresponding isovector operators.
   //
   // These matrix elements are for the relative (r_rel)^2 or (k_rel)^2 operators
   // on the two-body system.  The intrinsic r^2_intr or k^2_intr operators on the
   // A-body system are obtained as the two-body operators
   //
-  //   r^2_intr = (1/A) V[(r_rel)^2]
-  //   k^2_intr = (4/A) V[(k_rel)^2]
+  //   r^2_intr = (2/A) V[(1/2) (r_rel)^2]
+  //   k^2_intr = (2/A) V[(2) (k_rel)^2]
   //
   // and T_intr is obtained as
   //
-  //   T_intr = (2/A) (hbar^2/(4m)) V[(k_rel)^2]
+  //   T_intr = (2/A) (hbar^2/(2m)) (2) V[(k_rel)^2]
   //
   // or, in terms of the two-body relative kinetic energy, as
   //
   //   T_intr = (2/A) V[T_rel]
-  //   T_rel = (hbar^2/(4m)) (k_rel)^2
+  //   T_rel = (hbar^2/m) (k_rel)^2
+  //
+  // See Table 1, (A6), and (A13) of "intrinsic" [Caprio, McCoy, Fasano,
+  // "Intrinsic operators for the translationally-invariant many-body problem",
+  // JPG 47, 122001 (2020), doi:10.1088/1361-6471/ab9d38].
   //
   // These matrix elements are calculated for oscillator length
   // parameter b_rel = 2^(1/2) in the relative coordinate.  (See "Note
@@ -144,10 +148,17 @@ namespace relative {
   // two-body system.  The intrinsic quadrupole operator Qintr on the A-body
   // system is obtained as the two-body operator
   //
-  //   Qintr = ... V[Qrel]  [TODO fill in coefficient]
+  //   Qintr = ... V[Qrel]
   //
-  // See "intrinsic transition operators" pencilwork 5/4/18 for derivations and
-  // discussion of isoscalar and isovector RMEs.
+  // TODO 05/15/25 (mac): Check normalization, to confirm if this operator has
+  // the same normalizaiton as that defined in Table 1 of intrinsic.
+  //
+  // See Table 1 of "intrinsic" [Caprio, McCoy, Fasano, "Intrinsic operators for
+  // the translationally-invariant many-body problem", JPG 47, 122001 (2020),
+  // doi:10.1088/1361-6471/ab9d38].
+  //
+  // Original note: See "intrinsic transition operators" pencilwork 5/4/18 for
+  // derivations and discussion of isoscalar and isovector RMEs.
   //
   // These matrix elements are calculated for oscillator length
   // parameter b_rel = 2^(1/2) in the relative coordinate.  (See "Note
@@ -214,15 +225,19 @@ namespace relative {
   //
   //   Dintr = (1/A) V[Drel]
   //
-  // These matrix elements are independent of oscillator length.  (See "Note on
-  // oscillator length" at start of this header file.)
+  // TODO 05/15/25 (mac): Check normalization.  It would appear this operator
+  // may be twice the D_{IV,rel} operator defined in (35) of intrinsic.
+  //  
+  // These matrix elements are calculated for oscillator length
+  // parameter b_rel = 2^(1/2) in the relative coordinate.  (See "Note
+  // on oscillator length" at start of this header file.)
   //
   // Note that the isoscalar dipole operator (T0=0) is identically zero, and an
   // attempt to generate it will result in an assertion failure.  However, the
   // T0 parameter is still provided for uniformity of syntax.
   //
-  // See "intrinsic transition operators" pencilwork 5/4/18 for derivations and
-  // discussion of isoscalar and isovector RMEs.
+  // Original note: See "intrinsic transition operators" pencilwork 5/4/18 for
+  // derivations and discussion of isoscalar and isovector RMEs.
   //
   // Arguments:
   //   operator_labels (input) : tensorial properties of operator

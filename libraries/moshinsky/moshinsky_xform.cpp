@@ -806,7 +806,7 @@ namespace moshinsky {
     // elements
     //
     // Note: These are the isospin Clebsch-Gordan coefficients for the
-    // Wigner-Eckhart branching of the isospin reduced matrix elements
+    // Wigner-Eckart branching of the isospin reduced matrix elements
     // to Tz, not for the expansion of the pn state in terms of T
     // states.
 

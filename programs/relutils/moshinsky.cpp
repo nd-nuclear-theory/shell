@@ -3,8 +3,8 @@
 
   Perform Moshinsky transformation of general relative operator.
 
-  See lsjt_operator.h for documentation of operator storage and the
-  relative operator file format.
+  See lsjt_operator.h and jt_operator.h for documentation of operator storage
+  and the relative operator file format.
 
   Standard input:
     ob|tb truncation_cutoff
@@ -21,7 +21,7 @@
           h2_format -- h2 version number
           Tz0 -- operator branch from T->Tz
 
-  Note: Currently supported source couplings are "rel" and "relcm".
+    Note: Currently supported source couplings are "rel" and "relcm".
 
   Language: C++11
 
@@ -59,6 +59,7 @@
 #include "tbme/h2_io.h"
 
 #include "moshinsky/moshinsky_xform.h"
+#include "tbme/tbme_scheme_xform.h"
 
 
 ////////////////////////////////////////////////////////////////
@@ -713,5 +714,5 @@ int main(int argc, char **argv)
   total_run_timer.Stop();
   std::cout << "Total run time: " << total_run_timer.ElapsedTime() << std::endl;
 
-  std::exit(EXIT_SUCCESS);
+  return EXIT_SUCCESS;
 }
