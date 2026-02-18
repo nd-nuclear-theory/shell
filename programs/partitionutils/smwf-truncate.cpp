@@ -6,9 +6,10 @@
   Shwetha Vittal
   University of Notre Dame
   
-  + 01/07/25 (slv): First version of code to read many body states from mfdn_MBgroupsxxx
+  + 01/07/25 (slv): First version of code to read many body states from mfdn_MBgroupsxxx.
   + 01/22/25 (slv): Create ReadCoefficients function to read the amplitudes, of the 
-    many body states, from mfdn_smwf001 file 
+    many body states, from mfdn_smwf001 file.
+  + 02/18/26 (mac): Update mode names.
 ****************************************************************/
 
 #include <fmt/format.h>
@@ -94,11 +95,11 @@ void PrintUsage(char **argv) {
             << std::endl
             << std::endl
             << "Valid modes:" << std::endl
-            << " test: generates truncated list of coefficients" << std::endl
-            << " number: truncates *state* number of wavefunctions" << std::endl
-            << " choice: truncates wavefunction of choice (entered *state*); 1 -> ground state " << std::endl;
-  std::cout << "Usage: " << argv[0]
-            << std::endl;
+            << "  single-diag: extract and truncate single wave function (presently restricted to single-diag output)" << std::endl
+            << "  single-diag-multi-wf: extract and truncate multiple wave functions (presently restricted to single-diag output)" << std::endl
+            << "  multi-diag-test: extract and truncate single wave function (multi-diag output) -- VALIDATION IN PROGRESS" << std::endl
+            << std::endl
+            << "state: index of state (1-based) or number of states (depending on mode)" << std::endl;
 }
 
 void ProcessArguments(int argc, char *argv[], RunParameters& run_parameters)
@@ -926,7 +927,7 @@ int main(int argc, char **argv){
     }
   }
 
-  if(run_parameters.mode == "test"){
+  if(run_parameters.mode == "multi-diag-test"){
     std::vector<int> truncated_coeffs_index;
     int count = 0; // Only for validation of the successful searches
     fmt::print("Writing to binary output file .. {:d} state \n", current_num_states);
@@ -1011,7 +1012,7 @@ int main(int argc, char **argv){
 
   //---------------------------------------------------------------------------------------------------------------
 
-  else if(run_parameters.mode=="number"){
+  else if(run_parameters.mode=="single-diag-multi-wf"){
     
     auto stream = std::ofstream(run_parameters.target_dir + "/mfdn_smwf001", std::ios_base::binary);
     std::vector<float> truncated_coeffs;
@@ -1043,7 +1044,7 @@ int main(int argc, char **argv){
     }
   }
   
-  else if(run_parameters.mode=="choice"){
+  else if(run_parameters.mode=="single-diag"){
     std::vector<float> coefficients = ReadCoefficients(run_parameters.source_dir + "/mfdn_smwf{:03d}", 
                                                        smwf_info, run_parameters.state, num_states_per_file ); 
     fmt::print("number of states: {:d}\n", coefficients.size());
