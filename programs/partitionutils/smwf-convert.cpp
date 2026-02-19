@@ -104,10 +104,12 @@ void PrintUsage(char **argv) {
             << " mode seq source_wf_dir [template_filename] output_filename"
             << std::endl
             << std::endl
-            << "Valid modes:" << std::endl
-            << " mbstates: print MB basis states" << std::endl
-            << " mbo: generate MBO" << std::endl
-            << " trwfn: generate trwfn for selected state index (1-based sequence number)" << std::endl;            
+            << "Modes:" << std::endl
+            << "  mbstates: print MB basis states" << std::endl
+            << "  mbo: generate MBO" << std::endl
+            << "  trwfn: generate trwfn for selected state index (1-based sequence number)" << std::endl
+            << std::endl
+            << "  A template file defining indexing is required for trwfn conversion." << std::endl;
 }
 
 void ProcessArguments(int argc, char *argv[], RunParameters& run_parameters)

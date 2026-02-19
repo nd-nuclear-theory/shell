@@ -84,7 +84,7 @@ struct RunParameters
   std::string mode;
   // default constructor
   RunParameters()
-    : source_dir(""), model_dir(""), target_dir(""), state(0), mode("test")
+    : source_dir(""), model_dir(""), target_dir(""), state(0), mode("")
   {}
   
 };
@@ -94,7 +94,7 @@ void PrintUsage(char **argv) {
             << " source_directory model_directory target_directory state mode"
             << std::endl
             << std::endl
-            << "Valid modes:" << std::endl
+            << "Modes:" << std::endl
             << "  single-diag: extract and truncate single wave function (presently restricted to single-diag output)" << std::endl
             << "  single-diag-multi-wf: extract and truncate multiple wave functions (presently restricted to single-diag output)" << std::endl
             << "  multi-diag-test: extract and truncate single wave function (multi-diag output) -- VALIDATION IN PROGRESS" << std::endl
@@ -161,13 +161,12 @@ void ProcessArguments(int argc, char *argv[], RunParameters& run_parameters)
       std::cerr << "ERROR: Expecting positive numerical value for state index." << std::endl;
       std::exit(EXIT_FAILURE);
     }
-  run_parameters.state = seq-1;  
+  run_parameters.state = seq-1;
+  
   // mode
-  // if mode is "test" the code prints out a text file with the coefficients with the state given
-  // if mode is "run" the code prints out a fortran record with coefficients of all the number of states given in argument 1
   run_parameters.mode = argv[arg++];
-  if(run_parameters.mode != "test" && run_parameters.mode != "number" && run_parameters.mode != "choice"){
-    std::cerr << "mode can be either *test*, *number*, *choice*  " << std::endl;
+  if(run_parameters.mode != "single-diag" && run_parameters.mode != "single-diag-multi-wf" && run_parameters.mode != "multi-diag-test"){
+    std::cerr << "unrecognized mode" << std::endl;
     std::exit(EXIT_FAILURE);
   }
 
