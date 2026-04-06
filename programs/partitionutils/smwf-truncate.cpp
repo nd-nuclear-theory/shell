@@ -448,7 +448,7 @@ int MjStatesGen(const uint16_t num_particles, int num_sp_states,
                 std::vector<int> &next_bin, 
                 std::vector<uint16_t> &temp_var, int num_states, 
                 std::vector<std::vector<uint16_t> > &mb_state_list,
-                int current_state){
+                std::size_t current_state){
   /****************************************************************
     Functions just like the subroutine mfdn_transitions/src/module_MjStates/MjStatesGen
 
@@ -514,15 +514,15 @@ int MjStatesGen(const uint16_t num_particles, int num_sp_states,
   }
 
 
-std::vector<int> MjTruncatedStatesGen(const uint16_t num_particles, int num_sp_states, 
+std::vector<std::size_t> MjTruncatedStatesGen(const uint16_t num_particles, int num_sp_states, 
                 std::vector<int> &mj2_sp,
                 std::vector<float> &weight_sp, int two_mj, 
                 std::vector<int> &next_bin, 
                 std::vector<uint16_t> &temp_var, int num_states, 
-                std::map<std::vector<uint16_t> , int> &mb_state_list,
-                int current_coeff,
+                std::map<std::vector<uint16_t> , std::size_t> &mb_state_list,
+                std::size_t current_coeff,
                 float max_truncation_weight,
-                int current_state){
+                std::size_t current_state){
   /****************************************************************
     Functions like the subroutine mfdn_transitions/src/module_MjStates/MjStatesGen
     and also records the indices of the coefficients (in mfdn_smwf***) corresponding to the basis states.
@@ -546,7 +546,7 @@ std::vector<int> MjTruncatedStatesGen(const uint16_t num_particles, int num_sp_s
     current_state          : count of number of states matching the criteria of having same 2*mj
 
     *****************************************************************/
-  std::vector<int> counts {current_state, current_coeff};
+  std::vector<std::size_t> counts {current_state, current_coeff};
   std::vector<uint16_t> mbstate = temp_var;
   std::vector<uint16_t> mbgroup = mbstate;
 
@@ -624,7 +624,7 @@ std::vector<float> ReadCoefficients(std::string filename_pattern,
   
   filename_pattern : "mfdn_smwf{:03d}"
   smwf_info        : consists of wavefunction information from mfdn_smwf.info
-  state_index      : 0 for ground state, 1 for next eigen state and so on.
+  state_index      : 1 for ground state, 2 for next eigen state and so on.
   num_statesPerFile: list of number of many body basis states in each file
   
   *****************************************************************/
@@ -645,19 +645,20 @@ std::vector<float> ReadCoefficients(std::string filename_pattern,
       
     // quite unlikely but here is a sanity check to ensure number of bytes in the file 
     // matches the expected number 
-    int file_size = stream.tellg();
-    stream.seekg(0, std::ios_base::end);
-    file_size = int(stream.tellg()) - file_size;
-    fmt::print("file_size {:d}   numStates  {:d}    numBytes  {:d}\n", file_size, num_states_per_file[i-1], (num_states_per_file[i-1] + 2) * kFloatSize);
-    if (file_size % ((num_states_per_file[i-1] + 2) * kFloatSize) != 0){ // the Fortran sandwich |1 byte|wf coeffs|1 byte|
-      fmt::print("Corrupted file : Unexpected size \n ");
-      std::exit(1); // Perhaps a different kind of error must be thrown
-    }
-
-    // TO DO (slv): Need to document this 
-    int offset = kFloatSize * (2* state_index +1);
-    stream.seekg(std::ios_base::beg + num_states_per_file[i-1] * kFloatSize * state_index + offset); // set position back to beginning of the state in the stream
+    stream.seekg(std::ios_base::beg);
+    int num_bytes;
+    stream.read(reinterpret_cast<char*>(&num_bytes), kIntegerSize);
     
+    if(num_bytes != num_states_per_file[i-1] * kFloatSize){
+      fmt::print("Corrupted file : Unexpected size \n ");
+      std::exit(1); // Perhaps a different kind of error must be thrown      
+    }
+    fmt::print("number of bytes  {:d} \n", num_bytes);
+    // TO DO (slv): Need to document this 
+    stream.seekg(std::ios_base::beg + kIntegerSize); //get to the beginning of the first state in the record
+    for(int i=0; i<state_index; i++){ // if state_index is zero, then no scrolling needed
+      stream.seekg(num_bytes + 2*kIntegerSize, std::ios_base::cur ); //Do incremental scrolling to the position of the required state
+    }
     while(stream.read(reinterpret_cast<char*>(&buffer), kFloatSize)){
       if(count < num_states_per_file[i-1]){
             coeffs.push_back(buffer);
@@ -684,37 +685,37 @@ std::vector<float> ReadCoefficientsSingle(std::string filename,
   *****************************************************************/
   std::vector<float> coeffs;
     
-    auto stream = std::ifstream(filename, std::ios_base::binary);
-    float buffer;
-    int count =0;
-      
-    // quite unlikely but here is a sanity check to ensure number of bytes in the file 
-    // matches the expected number 
-    stream.seekg(std::ios_base::beg);
-    int num_bytes;
-    stream.read(reinterpret_cast<char*>(&num_bytes), kIntegerSize);
+  auto stream = std::ifstream(filename, std::ios_base::binary);
+  float buffer;
+  int count =0;
     
-    if(num_bytes != num_states_per_file * kFloatSize){
-      fmt::print("Corrupted file : Unexpected size \n ");
-      std::exit(1); // Perhaps a different kind of error must be thrown      
-    }
-    fmt::print("number of bytes  {:d} \n", num_bytes);
-    // TO DO (slv): Need to document this 
-    stream.seekg(std::ios_base::beg + kIntegerSize); //get to the beginning of the first state in the record
-    for(int i=0; i<state_index; i++){
-      stream.seekg(num_bytes + 2*kIntegerSize, std::ios_base::cur ); //Do incremental scrolling to the position of the required state
-      // fmt::print(" State : {:d} \n", i);
-    }
-    while(stream.read(reinterpret_cast<char*>(&buffer), kFloatSize)){
-      if(count < num_states_per_file){
-            coeffs.push_back(buffer);
-          }
-      else break;
-      count++;
-    }
-    fmt::print("Count after reading {:s}   : {:d} \n", filename, count );
-  return coeffs;
+  // quite unlikely but here is a sanity check to ensure number of bytes in the file 
+  // matches the expected number 
+  stream.seekg(std::ios_base::beg);
+  int num_bytes;
+  stream.read(reinterpret_cast<char*>(&num_bytes), kIntegerSize);
+  
+  if(num_bytes != num_states_per_file * kFloatSize){
+    fmt::print("Corrupted file : Unexpected size \n ");
+    std::exit(1); // Perhaps a different kind of error must be thrown      
   }
+  fmt::print("number of bytes  {:d} \n", num_bytes);
+  // TO DO (slv): Need to document this 
+  stream.seekg(std::ios_base::beg + kIntegerSize); //get to the beginning of the first state in the record
+  for(int i=0; i<state_index; i++){
+    stream.seekg(num_bytes + 2*kIntegerSize, std::ios_base::cur ); //Do incremental scrolling to the position of the required state
+    // fmt::print(" State : {:d} \n", i);
+  }
+  while(stream.read(reinterpret_cast<char*>(&buffer), kFloatSize)){
+    if(count < num_states_per_file){
+          coeffs.push_back(buffer);
+        }
+    else break;
+    count++;
+  }
+  fmt::print("Count after reading {:s}   : {:d} \n", filename, count );
+return coeffs;
+}
 
 void GenerateSupportingLists(std::string filename_pattern,
                             std::vector<std::vector<uint16_t> > &groupid_list, 
@@ -806,7 +807,7 @@ int main(int argc, char **argv){
   ProcessArguments(argc, argv, run_parameters);
 
   MBGroupsMetadata metadata{};
-  //const auto smwf_info_short = ReadMFDnSMWFInfo("mfdn_smwf_short.info");
+
   const auto smwf_info_short = ReadMFDnSMWFInfo(run_parameters.model_dir + "/mfdn_smwf.info");
   const uint16_t N = smwf_info_short.N;
   const uint16_t Z = smwf_info_short.Z;
@@ -890,17 +891,15 @@ int main(int argc, char **argv){
   mj2_sp.clear();
   weight_sp.clear();
   next_bin.clear();
-  std::map<std::vector<uint16_t> , int> mb_state_list;
+  std::map<std::vector<uint16_t> , std::size_t> mb_state_list;
   filename_pattern = run_parameters.source_dir + "/mfdn_MBgroups{:03d}";
   GenerateSupportingLists(filename_pattern, groupid_list, smwf_info, 
                           mj2_sp, weight_sp, next_bin, num_states_per_file );
   fmt::print("generating list of MB states for the high Nmax wavefunction .. \n");
 
-  int current_num_states = 0;
-  int current_coeff = 0;
-  std::vector<int> currentCounts {current_num_states, current_coeff };
-  //std::vector<float> truncated_coeffs;
-  //std::vector<int> truncated_coeffs_index;
+  std::size_t current_num_states = 0;
+  std::size_t current_coeff = 0;
+  std::vector<std::size_t> currentCounts {current_num_states, current_coeff };
 
   for(std::vector<std::vector<uint16_t> >::iterator it = groupid_list.begin(); it != groupid_list.end(); it++ )
   {
@@ -913,7 +912,7 @@ int main(int argc, char **argv){
     current_coeff = currentCounts[1];
   }  
 
-  fmt::print("truncated number of states {:d}\n",current_num_states);
+  fmt::print("truncated number of states {}\n",current_num_states);
 
   // getting list of indices of coefficients that have the required twoMj has advantages that 
   // all the states in the mfdn_smwf*** can be truncated at a time if needed.
@@ -927,10 +926,10 @@ int main(int argc, char **argv){
   }
 
   if(run_parameters.mode == "multi-diag-test"){
-    std::vector<int> truncated_coeffs_index;
-    int count = 0; // Only for validation of the successful searches
+    std::vector<std::size_t> truncated_coeffs_index;
+    std::size_t count = 0; // Only for validation of the successful searches
     fmt::print("Writing to binary output file .. {:d} state \n", current_num_states);
-    int cumulative_num_states = 0; 
+    std::size_t cumulative_num_states = 0; 
     
     for (int i = 0; i < current_num_states_short; i++){
         
@@ -958,8 +957,20 @@ int main(int argc, char **argv){
         }
       }
       cumulative_num_states += num_states_per_file[i-1];
-      fmt::print("count after {:d}th file : {:d}   \n", i, count);
+      fmt::print("count after {:d}th file : {} \n", i, count);
+
+      try{
+        std::cout<< "cumulative_num_states : " << cumulative_num_states << std::endl;
+        std::cout<< "count after "<< i << "th file :  "<< count << std::endl;
+      }
+      catch(const std::runtime_error& e){
+        continue; // ignore if printing fails and move on
+      }
     }
+//    auto stream = std::ofstream(run_parameters.target_dir + "/coeffs_indices_list.dat", std::ios_base::out);
+//    for (int i = truncated_coeffs_index.size() - 100; i< truncated_coeffs_index.size(); i++){
+//      stream << fmt::format("{} : {:+16.7e}  \n", truncated_coeffs[i],truncated_coeffs_index[i]) << std::flush;
+    //}
     if (count == current_num_states_short){
       fmt::print("Validation of number of truncated states successful for state {:d}.. \n", run_parameters.state + 1);
     }
@@ -1016,18 +1027,17 @@ int main(int argc, char **argv){
     auto stream = std::ofstream(run_parameters.target_dir + "/mfdn_smwf001", std::ios_base::binary);
     std::vector<float> truncated_coeffs;
     // write the coefficients in to a Fortran record that resembles mfdn_smwf***
-    for(int st =0; st< run_parameters.state; st++){
+    
+    for(int st =0; st<= run_parameters.state; st++){
       int count = 0; // Only for validation of the successful searches
+
       std::vector<float> coefficients = ReadCoefficients(run_parameters.source_dir + "/mfdn_smwf{:03d}",smwf_info, st, num_states_per_file ); 
       //int bytes = current_num_states_short * kFloatSize;
       //std::cout<<"Number of bytes " << bytes << std::endl;
 
       for (int i = 0; i< current_num_states_short; i++){
-        // auto it = std::find(mb_state_list.begin(), mb_state_list.end(), mb_state_list_short[i]);
         auto it = mb_state_list.find(mb_state_list_short[i]);
         if(it != mb_state_list.end()){
-          // int index = std::distance(mb_state_list.begin(), it);
-          // truncated_coeffs.push_back(coefficients[truncated_coeffs_index[index]]);
           truncated_coeffs.push_back(coefficients[it -> second]);
           count++;
         }
@@ -1046,7 +1056,7 @@ int main(int argc, char **argv){
   else if(run_parameters.mode=="single-diag"){
     std::vector<float> coefficients = ReadCoefficients(run_parameters.source_dir + "/mfdn_smwf{:03d}", 
                                                        smwf_info, run_parameters.state, num_states_per_file ); 
-    fmt::print("number of states: {:d}\n", coefficients.size());
+    fmt::print("number of states: {}\n", coefficients.size());
     std::vector<float> truncated_coeffs;
     int count = 0; // Only for validation of the successful searches
     fmt::print("Writing to binary output file .. {:d} state \n", current_num_states);
