@@ -1,0 +1,30 @@
+set-basis oscillator oscillator-ob-4_orbital.dat
+
+# sanity check: r0Y0 should give 1/sqrt(4*pi) = 0.28209...
+## define-source kinematic identity
+## define-source solid-harmonic r0Y0 r 0 0
+## define-target identity obme-identity-ob-4.dat
+## define-target r0Y0 obme-r0Y0-ob-4.dat
+
+# get the predefined ingredients (built-in sources)
+define-source kinematic r.r
+define-source solid-harmonic Y2 r 0 2
+define-source solid-harmonic r2Y2 r 2 2
+
+# take product of r.r and Y2
+define-source tensor-product r2xY2 r.r Y2 2
+define-source tensor-product Y2xr2 r.r Y2 2
+
+# Spot check:
+#
+# <0s_1/2 || Q_2 || 0d_5/2>_Edmonds = 1.338 by Suhonen Table 6.4
+#
+# <0s_1/2 || Q_2 || 0d_5/2>_Rose = 1/sqrt(2)*<0s_1/2 || Q_2 || 0d_5/2>_Edmonds
+#   = 0.9461
+
+# generate outputs
+define-target Y2 obme-Y2-ob-4.dat
+
+define-target r2Y2 obme-quadrupole-ob-4.dat
+define-target r2xY2 obme-quadrupole-r2xY2-ob-4.dat
+define-target Y2xr2 obme-quadrupole-Y2xr2-ob-4.dat
