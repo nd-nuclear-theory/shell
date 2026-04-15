@@ -25,7 +25,8 @@
         id = tz|t+|t-
       define-source ladder <id> [orbital_filename]
         id = c+|c
-      define-source solid-harmonic <id> <coordinate> <order> [orbital_filename]
+      define-source solid-harmonic <id> <coordinate> <order> <J0> [orbital_filename]
+        Yields r^n * Y_L, with n=order and L=J0.
         coordinate = r|ik
       define-source input <id> <filename> <J0> <g0> <Tz0>
       define-source linear-combination <id>

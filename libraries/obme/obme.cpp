@@ -285,6 +285,10 @@ void OneBodyOperatorTensorProduct(
     for (std::size_t inner_subspace_index = 0; inner_subspace_index < space.size();
          ++inner_subspace_index)
     {
+      // 04/15/26 (mac): This summation looks incomplete since the lookup
+      // ignores that only upper-triangular (canonical) sectors are actually
+      // stored.
+      
       if (sectors_a.ContainsSector(bra_subspace_index, inner_subspace_index)
           && sectors_b.ContainsSector(inner_subspace_index, ket_subspace_index))
       {

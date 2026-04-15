@@ -150,7 +150,12 @@ void OneBodyOperatorTensorProduct(
 //
 // Arguments:
 //   space (basis::OrbitalSpaceLJPN): one-body space
-//   sectors_a (basis::OrbitalSectors)
+//   sectors_a (OrbitalSectorsLJPN): one-body sectors for A
+//   matrices_a (OperatorBlocks): operator matrices for A
+//   sectors_b (OrbitalSectorsLJPN): one-body sectors for B
+//   matrices_b (OperatorBlocks): operator matrices for B
+//   sectors (OrbitalSectorsLJPN): one-body sectors
+//   matrices (OperatorBlocks): operator matrices
 
 };      // namespace shell
 #endif  // OBME_OBME_H_
