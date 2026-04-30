@@ -34,7 +34,7 @@ basis::OperatorBlocks<double> TestRadial(const std::string& filename, int J0, in
   std::cout << "Sectors" << std::endl;
   basis::OrbitalSectorsLJPN sectors(space, space, J0, g0, 0);
   std::cout << "J0: "   << sectors.J0()
-            << "g0: "   << sectors.g0()
+            << " g0: "   << sectors.g0()
             << " Tz0: " << sectors.Tz0()
             << std::endl;
   std::cout << sectors.DebugStr();

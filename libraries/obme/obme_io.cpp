@@ -270,7 +270,7 @@ void OutOBMEStream::WriteHeader()
   std::vector<basis::OrbitalPNInfo> ket_orbitals = ket_orbital_space_.OrbitalInfo();
 
   // include some header comments
-  stream() << "# shell radial matrix elements file" << std::endl;
+  stream() << "# shell radial or one-body operator matrix elements file" << std::endl;
   stream() << "# version number 2" << std::endl;
   stream() << "# header lines:" << std::endl;
   stream() << "#   type J0 g0 Tz0" << std::endl;
