@@ -1,0 +1,359 @@
+# shell radial or one-body operator matrix elements file
+# version number 2
+# header lines:
+#   type J0 g0 Tz0
+#   bra_basis_size ket_basis_size
+2
+ S 2 0 0
+30 30
+
+# bra space orbitals
+   1   0   0   1   1   0.00000000
+   2   1   0   1   1   2.00000000
+   3   2   0   1   1   4.00000000
+   4   0   1   1   1   1.00000000
+   5   1   1   1   1   3.00000000
+   6   0   1   3   1   1.00000000
+   7   1   1   3   1   3.00000000
+   8   0   2   3   1   2.00000000
+   9   1   2   3   1   4.00000000
+  10   0   2   5   1   2.00000000
+  11   1   2   5   1   4.00000000
+  12   0   3   5   1   3.00000000
+  13   0   3   7   1   3.00000000
+  14   0   4   7   1   4.00000000
+  15   0   4   9   1   4.00000000
+  16   0   0   1  -1   0.00000000
+  17   1   0   1  -1   2.00000000
+  18   2   0   1  -1   4.00000000
+  19   0   1   1  -1   1.00000000
+  20   1   1   1  -1   3.00000000
+  21   0   1   3  -1   1.00000000
+  22   1   1   3  -1   3.00000000
+  23   0   2   3  -1   2.00000000
+  24   1   2   3  -1   4.00000000
+  25   0   2   5  -1   2.00000000
+  26   1   2   5  -1   4.00000000
+  27   0   3   5  -1   3.00000000
+  28   0   3   7  -1   3.00000000
+  29   0   4   7  -1   4.00000000
+  30   0   4   9  -1   4.00000000
+
+# ket space orbitals
+   1   0   0   1   1   0.00000000
+   2   1   0   1   1   2.00000000
+   3   2   0   1   1   4.00000000
+   4   0   1   1   1   1.00000000
+   5   1   1   1   1   3.00000000
+   6   0   1   3   1   1.00000000
+   7   1   1   3   1   3.00000000
+   8   0   2   3   1   2.00000000
+   9   1   2   3   1   4.00000000
+  10   0   2   5   1   2.00000000
+  11   1   2   5   1   4.00000000
+  12   0   3   5   1   3.00000000
+  13   0   3   7   1   3.00000000
+  14   0   4   7   1   4.00000000
+  15   0   4   9   1   4.00000000
+  16   0   0   1  -1   0.00000000
+  17   1   0   1  -1   2.00000000
+  18   2   0   1  -1   4.00000000
+  19   0   1   1  -1   1.00000000
+  20   1   1   1  -1   3.00000000
+  21   0   1   3  -1   1.00000000
+  22   1   1   3  -1   3.00000000
+  23   0   2   3  -1   2.00000000
+  24   1   2   3  -1   4.00000000
+  25   0   2   5  -1   2.00000000
+  26   1   2   5  -1   4.00000000
+  27   0   3   5  -1   3.00000000
+  28   0   3   7  -1   3.00000000
+  29   0   4   7  -1   4.00000000
+  30   0   4   9  -1   4.00000000
+
+# bra subspace labels: l = 0 2j = 1 2Tz = 1
+# ket subspace labels: l = 2 2j = 3 2Tz = 1
+  7.72548404e-01   0.00000000e+00
+ -1.26156626e+00   1.18008718e+00
+  5.64189584e-01  -2.11100412e+00
+
+# bra subspace labels: l = 0 2j = 1 2Tz = 1
+# ket subspace labels: l = 2 2j = 5 2Tz = 1
+  9.46174696e-01   0.00000000e+00
+ -1.54509681e+00   1.44530572e+00
+  6.90988299e-01  -2.58544147e+00
+
+# bra subspace labels: l = 1 2j = 1 2Tz = 1
+# ket subspace labels: l = 1 2j = 3 2Tz = 1
+  9.97355701e-01  -6.30783131e-01
+ -6.30783131e-01   1.79524026e+00
+
+# bra subspace labels: l = 1 2j = 1 2Tz = 1
+# ket subspace labels: l = 3 2j = 5 2Tz = 1
+  1.44530572e+00
+ -1.82818320e+00
+
+# bra subspace labels: l = 1 2j = 3 2Tz = 1
+# ket subspace labels: l = 1 2j = 1 2Tz = 1
+ -7.05236979e-01   4.46031029e-01
+  4.46031029e-01  -1.26942656e+00
+
+# bra subspace labels: l = 1 2j = 3 2Tz = 1
+# ket subspace labels: l = 1 2j = 3 2Tz = 1
+ -7.05236979e-01   4.46031029e-01
+  4.46031029e-01  -1.26942656e+00
+
+# bra subspace labels: l = 1 2j = 3 2Tz = 1
+# ket subspace labels: l = 3 2j = 5 2Tz = 1
+  5.46274215e-01
+ -6.90988299e-01
+
+# bra subspace labels: l = 1 2j = 3 2Tz = 1
+# ket subspace labels: l = 3 2j = 7 2Tz = 1
+  1.33809309e+00
+ -1.69256875e+00
+
+# bra subspace labels: l = 2 2j = 3 2Tz = 1
+# ket subspace labels: l = 0 2j = 1 2Tz = 1
+ -5.46274215e-01   8.92062058e-01  -3.98942280e-01
+ -2.33596680e-01  -1.12054398e+00   1.17283990e+00
+
+# bra subspace labels: l = 2 2j = 3 2Tz = 1
+# ket subspace labels: l = 2 2j = 3 2Tz = 1
+ -9.87331771e-01   5.27751031e-01
+  5.27751031e-01  -1.55152135e+00
+
+# bra subspace labels: l = 2 2j = 3 2Tz = 1
+# ket subspace labels: l = 2 2j = 5 2Tz = 1
+  6.46360368e-01  -3.45494149e-01
+ -3.45494149e-01   1.01570915e+00
+
+# bra subspace labels: l = 2 2j = 3 2Tz = 1
+# ket subspace labels: l = 4 2j = 7 2Tz = 1
+  1.79524026e+00
+ -1.91919257e+00
+
+# bra subspace labels: l = 2 2j = 5 2Tz = 1
+# ket subspace labels: l = 0 2j = 1 2Tz = 1
+  5.46274215e-01  -8.92062058e-01   3.98942280e-01
+  2.33596680e-01   1.12054398e+00  -1.17283990e+00
+
+# bra subspace labels: l = 2 2j = 5 2Tz = 1
+# ket subspace labels: l = 2 2j = 3 2Tz = 1
+ -5.27751031e-01   2.82094792e-01
+  2.82094792e-01  -8.29323048e-01
+
+# bra subspace labels: l = 2 2j = 5 2Tz = 1
+# ket subspace labels: l = 2 2j = 5 2Tz = 1
+ -1.05550206e+00   5.64189584e-01
+  5.64189584e-01  -1.65864610e+00
+
+# bra subspace labels: l = 2 2j = 5 2Tz = 1
+# ket subspace labels: l = 4 2j = 7 2Tz = 1
+  4.88602512e-01
+ -5.22338057e-01
+
+# bra subspace labels: l = 2 2j = 5 2Tz = 1
+# ket subspace labels: l = 4 2j = 9 2Tz = 1
+  1.72747075e+00
+ -1.84674391e+00
+
+# bra subspace labels: l = 3 2j = 5 2Tz = 1
+# ket subspace labels: l = 1 2j = 1 2Tz = 1
+  1.07286126e+00  -6.78537039e-01
+
+# bra subspace labels: l = 3 2j = 5 2Tz = 1
+# ket subspace labels: l = 1 2j = 3 2Tz = 1
+ -5.73468466e-01   3.62693304e-01
+
+# bra subspace labels: l = 3 2j = 5 2Tz = 1
+# ket subspace labels: l = 3 2j = 5 2Tz = 1
+ -1.35707408e+00
+
+# bra subspace labels: l = 3 2j = 5 2Tz = 1
+# ket subspace labels: l = 3 2j = 7 2Tz = 1
+  5.54023173e-01
+
+# bra subspace labels: l = 3 2j = 7 2Tz = 1
+# ket subspace labels: l = 1 2j = 3 2Tz = 1
+  1.21651032e+00  -7.69388684e-01
+
+# bra subspace labels: l = 3 2j = 7 2Tz = 1
+# ket subspace labels: l = 3 2j = 5 2Tz = 1
+ -4.79798142e-01
+
+# bra subspace labels: l = 3 2j = 7 2Tz = 1
+# ket subspace labels: l = 3 2j = 7 2Tz = 1
+ -1.38505793e+00
+
+# bra subspace labels: l = 4 2j = 7 2Tz = 1
+# ket subspace labels: l = 2 2j = 3 2Tz = 1
+  1.55152135e+00  -8.29323048e-01
+
+# bra subspace labels: l = 4 2j = 7 2Tz = 1
+# ket subspace labels: l = 2 2j = 5 2Tz = 1
+ -5.17173785e-01   2.76441016e-01
+
+# bra subspace labels: l = 4 2j = 7 2Tz = 1
+# ket subspace labels: l = 4 2j = 7 2Tz = 1
+ -1.69284858e+00
+
+# bra subspace labels: l = 4 2j = 7 2Tz = 1
+# ket subspace labels: l = 4 2j = 9 2Tz = 1
+  5.10413053e-01
+
+# bra subspace labels: l = 4 2j = 9 2Tz = 1
+# ket subspace labels: l = 2 2j = 5 2Tz = 1
+  1.63544711e+00  -8.74183250e-01
+
+# bra subspace labels: l = 4 2j = 9 2Tz = 1
+# ket subspace labels: l = 4 2j = 7 2Tz = 1
+ -4.56527313e-01
+
+# bra subspace labels: l = 4 2j = 9 2Tz = 1
+# ket subspace labels: l = 4 2j = 9 2Tz = 1
+ -1.70816879e+00
+
+# bra subspace labels: l = 0 2j = 1 2Tz = -1
+# ket subspace labels: l = 2 2j = 3 2Tz = -1
+  7.72548404e-01   0.00000000e+00
+ -1.26156626e+00   1.18008718e+00
+  5.64189584e-01  -2.11100412e+00
+
+# bra subspace labels: l = 0 2j = 1 2Tz = -1
+# ket subspace labels: l = 2 2j = 5 2Tz = -1
+  9.46174696e-01   0.00000000e+00
+ -1.54509681e+00   1.44530572e+00
+  6.90988299e-01  -2.58544147e+00
+
+# bra subspace labels: l = 1 2j = 1 2Tz = -1
+# ket subspace labels: l = 1 2j = 3 2Tz = -1
+  9.97355701e-01  -6.30783131e-01
+ -6.30783131e-01   1.79524026e+00
+
+# bra subspace labels: l = 1 2j = 1 2Tz = -1
+# ket subspace labels: l = 3 2j = 5 2Tz = -1
+  1.44530572e+00
+ -1.82818320e+00
+
+# bra subspace labels: l = 1 2j = 3 2Tz = -1
+# ket subspace labels: l = 1 2j = 1 2Tz = -1
+ -7.05236979e-01   4.46031029e-01
+  4.46031029e-01  -1.26942656e+00
+
+# bra subspace labels: l = 1 2j = 3 2Tz = -1
+# ket subspace labels: l = 1 2j = 3 2Tz = -1
+ -7.05236979e-01   4.46031029e-01
+  4.46031029e-01  -1.26942656e+00
+
+# bra subspace labels: l = 1 2j = 3 2Tz = -1
+# ket subspace labels: l = 3 2j = 5 2Tz = -1
+  5.46274215e-01
+ -6.90988299e-01
+
+# bra subspace labels: l = 1 2j = 3 2Tz = -1
+# ket subspace labels: l = 3 2j = 7 2Tz = -1
+  1.33809309e+00
+ -1.69256875e+00
+
+# bra subspace labels: l = 2 2j = 3 2Tz = -1
+# ket subspace labels: l = 0 2j = 1 2Tz = -1
+ -5.46274215e-01   8.92062058e-01  -3.98942280e-01
+ -2.33596680e-01  -1.12054398e+00   1.17283990e+00
+
+# bra subspace labels: l = 2 2j = 3 2Tz = -1
+# ket subspace labels: l = 2 2j = 3 2Tz = -1
+ -9.87331771e-01   5.27751031e-01
+  5.27751031e-01  -1.55152135e+00
+
+# bra subspace labels: l = 2 2j = 3 2Tz = -1
+# ket subspace labels: l = 2 2j = 5 2Tz = -1
+  6.46360368e-01  -3.45494149e-01
+ -3.45494149e-01   1.01570915e+00
+
+# bra subspace labels: l = 2 2j = 3 2Tz = -1
+# ket subspace labels: l = 4 2j = 7 2Tz = -1
+  1.79524026e+00
+ -1.91919257e+00
+
+# bra subspace labels: l = 2 2j = 5 2Tz = -1
+# ket subspace labels: l = 0 2j = 1 2Tz = -1
+  5.46274215e-01  -8.92062058e-01   3.98942280e-01
+  2.33596680e-01   1.12054398e+00  -1.17283990e+00
+
+# bra subspace labels: l = 2 2j = 5 2Tz = -1
+# ket subspace labels: l = 2 2j = 3 2Tz = -1
+ -5.27751031e-01   2.82094792e-01
+  2.82094792e-01  -8.29323048e-01
+
+# bra subspace labels: l = 2 2j = 5 2Tz = -1
+# ket subspace labels: l = 2 2j = 5 2Tz = -1
+ -1.05550206e+00   5.64189584e-01
+  5.64189584e-01  -1.65864610e+00
+
+# bra subspace labels: l = 2 2j = 5 2Tz = -1
+# ket subspace labels: l = 4 2j = 7 2Tz = -1
+  4.88602512e-01
+ -5.22338057e-01
+
+# bra subspace labels: l = 2 2j = 5 2Tz = -1
+# ket subspace labels: l = 4 2j = 9 2Tz = -1
+  1.72747075e+00
+ -1.84674391e+00
+
+# bra subspace labels: l = 3 2j = 5 2Tz = -1
+# ket subspace labels: l = 1 2j = 1 2Tz = -1
+  1.07286126e+00  -6.78537039e-01
+
+# bra subspace labels: l = 3 2j = 5 2Tz = -1
+# ket subspace labels: l = 1 2j = 3 2Tz = -1
+ -5.73468466e-01   3.62693304e-01
+
+# bra subspace labels: l = 3 2j = 5 2Tz = -1
+# ket subspace labels: l = 3 2j = 5 2Tz = -1
+ -1.35707408e+00
+
+# bra subspace labels: l = 3 2j = 5 2Tz = -1
+# ket subspace labels: l = 3 2j = 7 2Tz = -1
+  5.54023173e-01
+
+# bra subspace labels: l = 3 2j = 7 2Tz = -1
+# ket subspace labels: l = 1 2j = 3 2Tz = -1
+  1.21651032e+00  -7.69388684e-01
+
+# bra subspace labels: l = 3 2j = 7 2Tz = -1
+# ket subspace labels: l = 3 2j = 5 2Tz = -1
+ -4.79798142e-01
+
+# bra subspace labels: l = 3 2j = 7 2Tz = -1
+# ket subspace labels: l = 3 2j = 7 2Tz = -1
+ -1.38505793e+00
+
+# bra subspace labels: l = 4 2j = 7 2Tz = -1
+# ket subspace labels: l = 2 2j = 3 2Tz = -1
+  1.55152135e+00  -8.29323048e-01
+
+# bra subspace labels: l = 4 2j = 7 2Tz = -1
+# ket subspace labels: l = 2 2j = 5 2Tz = -1
+ -5.17173785e-01   2.76441016e-01
+
+# bra subspace labels: l = 4 2j = 7 2Tz = -1
+# ket subspace labels: l = 4 2j = 7 2Tz = -1
+ -1.69284858e+00
+
+# bra subspace labels: l = 4 2j = 7 2Tz = -1
+# ket subspace labels: l = 4 2j = 9 2Tz = -1
+  5.10413053e-01
+
+# bra subspace labels: l = 4 2j = 9 2Tz = -1
+# ket subspace labels: l = 2 2j = 5 2Tz = -1
+  1.63544711e+00  -8.74183250e-01
+
+# bra subspace labels: l = 4 2j = 9 2Tz = -1
+# ket subspace labels: l = 4 2j = 7 2Tz = -1
+ -4.56527313e-01
+
+# bra subspace labels: l = 4 2j = 9 2Tz = -1
+# ket subspace labels: l = 4 2j = 9 2Tz = -1
+ -1.70816879e+00
+

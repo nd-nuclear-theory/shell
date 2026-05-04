@@ -22,9 +22,10 @@ define-source tensor-product Y2xr2 r.r Y2 2
 # <0s_1/2 || Q_2 || 0d_5/2>_Rose = 1/sqrt(2)*<0s_1/2 || Q_2 || 0d_5/2>_Edmonds
 #   = 0.9461
 
-# generate outputs
-define-target Y2 obme-Y2-ob-4.dat
+# check: Y2 matrix elements
+## define-target Y2 obme-Y2-ob-4.dat
 
+# generate outputs
 define-target r2Y2 obme-quadrupole-ob-4.dat
-define-target r2xY2 obme-quadrupole-r2xY2-ob-4.dat
-define-target Y2xr2 obme-quadrupole-Y2xr2-ob-4.dat
+define-target r2xY2 obme-quadrupole-as-product-r2xY2-ob-4.dat
+define-target Y2xr2 obme-quadrupole-as-product-Y2xr2-ob-4.dat
