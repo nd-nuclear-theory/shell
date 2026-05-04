@@ -38,6 +38,10 @@ void SolidHarmonicOneBodyOperator(
   );
 // Generate reduced matrix elements of r^n C_J0 and (ik)^n C_J0.
 //
+// Note that the resulting functions are more general than the "solid harmonics"
+// per se.  The "regular solid harmonics" are obtained as the case r^l C_l, and
+// the "irregular solid harmonics" as r^-(l+1) C_l.
+//
 // Spherical harmonic is in Racah's normalization [G. Racah, Phys. Rev. 62,
 // 438 (1942), eqn. (46); Brink & Satchler (1993), eqn. (2.9)].
 //

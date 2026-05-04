@@ -44,6 +44,7 @@
   + 09/10/20 (pjf): Add length parameter option.
   + 09/13/20 (pjf): Fix xform source.
   + 10/09/20 (pjf): Fix output header line.
+  + 05/04/26 (mac): Fix scaling on solid harmonic when order and multipolarity do not match.
 
 ******************************************************************************/
 
@@ -823,10 +824,10 @@ void OneBodyGeneratedChannel::ConstructOneBodyOperatorData(
     else if (radial_operator_type == shell::RadialOperatorType::kK)
       scale_factor *= std::pow(run_parameters.length_parameter, -operator_order);
 
-    // convert between C and Y if not using a special kinematic operator
+    // convert from C to Y unless we are generating a special kinematic operator
     if (!kKinematicOneBodyOperatorDefinitions.count(id))
-      scale_factor *= Hat(operator_order) * am::kInvSqrt4Pi;
-
+      scale_factor *= Hat(J0) * am::kInvSqrt4Pi;
+    
     // apply scale factor
     basis::ScalarMultiplyOperator(
         operator_data.sectors, operator_data.matrices, scale_factor
