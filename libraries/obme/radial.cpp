@@ -62,9 +62,10 @@ void GenerateRadialOperator(
 
         double matrix_element = 0.;
         // if applicable, use analytic formulae
-        if (order == 0)
+        if ((order == 0) && (bra_l == ket_l))
+        // Radial functions within a given l space are orthonormal.
         {
-          if ((bra_n == ket_n) && (bra_l == ket_l))
+          if (bra_n == ket_n)
           {
             matrix_element = 1.;
           }
@@ -79,11 +80,13 @@ void GenerateRadialOperator(
           const int ket_N = 2 * ket_n + ket_l;
           const int operator_sign = (operator_type == shell::RadialOperatorType::kK) ? -1 : +1;
           if ((order == 1) && (J0 == 1) && (g0 == 1))
+          // Analytic formula is for delta_l = +1, -1.
           {
             matrix_element = analytic::CoordinateOscillatorMatrixElement(
                 bra_N, bra_l, ket_N, ket_l, operator_sign);
           }
           else if (order == 2 && ((J0 == 0) || (J0 == 2)) && (g0 == 0))
+          // Analytic formula is for delta_l = +2, 0, -2.
           {
             matrix_element = analytic::CoordinateSqrOscillatorMatrixElement(
                 bra_N, bra_l, ket_N, ket_l, operator_sign);

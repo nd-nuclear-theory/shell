@@ -14,6 +14,9 @@
   + 09/04/19 (pjf):
     - Fix operator_sign in GenerateRadialOperator.
     - Remove diagonal sector constraint from GenerateRadialOverlaps.
+  + 05/04/26 (mac): Fix erroneous assumption that radial overlaps are Kronecker delta
+     in GenerateRadialOperator when bra and ket l differ.
+
 ****************************************************************/
 
 #ifndef OBME_RADIAL_H_

@@ -45,6 +45,8 @@ inline double CDaggerOscillatorMatrixElement(int bra_N, int bra_l, int ket_N, in
   // cast to double to ensure floating-point arithmetic
   const double N = ket_N;
   const double l = ket_l;
+  assert((delta_l == -1) || (delta_l == +1));
+  
   double matrix_element = 0.;
   if (delta_N == +1) {
     if (delta_l == +1) {
@@ -72,6 +74,8 @@ inline double COscillatorMatrixElement(int bra_N, int bra_l, int ket_N, int ket_
   // cast to double to ensure floating-point arithmetic
   const double N = ket_N;
   const double l = ket_l;
+  assert((delta_l == -1) || (delta_l == +1));
+  
   double matrix_element = 0.;
   if (delta_N == -1) {
     if (delta_l == +1) {
@@ -161,6 +165,7 @@ inline double CoordinateSqrOscillatorMatrixElement(
 {
   const int delta_l = bra_l - ket_l;
   const int delta_N = bra_N - ket_N;
+  assert((delta_l == -2) || (delta_l == 0) || (delta_l == +2));
 
   // cast to double to ensure floating-point arithmetic
   const double N = ket_N;
