@@ -755,6 +755,7 @@ int main(int argc, char **argv)
   // MJ Matrix Element
   //Test_MJ_MatrixElement(0, 0, 1.0, 0.5, 0, 0, 1.0, 0.5, 0, 1.0);
 
+  /*
   // MJ Seven Operator
   Test_MJ_SevenOperator(0, 0, 1.0, 0.5, 0, 0, 1.0, 0.5, 0, 1.0);
   Test_MJ_SevenOperator(0, 0, 1.0, 0.5, 0, 1, 1.0, 0.5, 1, 1.0);
@@ -786,6 +787,66 @@ int main(int argc, char **argv)
   // OmegaJP Seven Operator
   Test_OmegaJP_SevenOperator(0, 1, 1.0, 0.5, 0, 1, 1.0, 0.5, 1, 1.0);
   Test_OmegaJP_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 1.5, 2, 1.0);
+  */
+
+  std::cout << "Example p111 Donnelly & Haxton, 1979" << std::endl;
+  double y = 0.25 ;
+  Test_DeltaJ_SevenOperator(0, 2, 1.0, 2.5, 0, 2, 1.0, 2.5, 1, 1.0);
+  std::cout << "Expected value : " << 1.0/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-1.0)/2.0) * std::exp(-y) * 2.0/5.0 * std::sqrt(35) * (-1.0 + 2.0/5.0*y) << "\n" << std::endl;
+
+  Test_SigmaJP_SevenOperator(0, 2, 1.0, 2.5, 0, 2, 1.0, 2.5, 1, 1.0);
+  std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-1.0)/2.0) * std::exp(-y) * 2.0/5.0 * std::sqrt(35) * (1.0 - 8.0/5.0*y + 12.0/35.0*std::pow(y, 2)) << "\n" << std::endl;
+
+
+  std::cout << "Example Table III" << std::endl;
+  Test_MJ_SevenOperator(0, 0, 1.0, 0.5, 0, 1, 1.0, 0.5, 1, 1.0);
+  std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-2.0)/2.0) * std::exp(-y) * std::sqrt(3.0) * 2.0/3.0 * (0.0 - 1.0*y) << "\n" << std::endl;
+  
+  Test_DeltaJP_SevenOperator(0, 0, 1.0, 0.5, 0, 1, 1.0, 0.5, 1, 1.0);
+  std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-2.0)/2.0) * std::exp(-y) * 1.0/6.0 * std::sqrt(6.0) * (1.0 + 0.0*y) << "\n" << std::endl;
+  
+  Test_SigmaJ_SevenOperator(0, 0, 1.0, 0.5, 0, 1, 1.0, 0.5, 1, 1.0);
+  std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-2.0)/2.0) * std::exp(-y) * 2.0/3.0 * std::sqrt(6.0) * (0.0 + 1.0*y) << "\n" << std::endl;
+
+  
+  std::cout << "Example Table VI" << std::endl;
+  Test_DeltaJ_SevenOperator(0, 1, 1.0, 0.5, 0, 1, 1.0, 1.5, 1, 1.0);
+  std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-1.0)/2.0) * std::exp(-y) * 1.0/3.0 * std::sqrt(2.0) * (-1.0 + 0.0*y) << "\n" << std::endl;
+  
+  Test_SigmaJP_SevenOperator(0, 1, 1.0, 0.5, 0, 1, 1.0, 1.5, 1, 1.0);
+  std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-1.0)/2.0) * std::exp(-y) * 4.0/3.0 * std::sqrt(2.0) * (-1.0 + 0.5*y) << "\n" << std::endl;
+  
+  Test_SigmaJPP_SevenOperator(0, 1, 1.0, 0.5, 0, 1, 1.0, 1.5, 1, 1.0);
+  std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-1.0)/2.0) * std::exp(-y) * 4.0/3.0 * std::sqrt(1.0) * (-1.0 + 1.0*y) << "\n" << std::endl;
+
+  Test_OmegaJP_SevenOperator(0, 1, 1.0, 0.5, 0, 1, 1.0, 1.5, 1, 1.0);
+  std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-1.0)/2.0) * std::exp(-y) * 1.0 * std::sqrt(1.0) * (-1.0 + 0.0*y) << "\n" << std::endl;
+
+  
+  std::cout << "Example Table IX" << std::endl;
+  Test_MJ_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 2.5, 3, 1.0);
+  std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (3.0-2.0)/2.0) * std::exp(-y) * std::sqrt(15.0) * 4.0/15.0 * (0.0 - 1.0*y) << "\n" << std::endl;
+  
+  Test_DeltaJP_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 2.5, 3, 1.0);
+  std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (3.0-2.0)/2.0) * std::exp(-y) * 2.0/15.0 * std::sqrt(5.0) * (1.0 + 0.0*y) << "\n" << std::endl;
+
+  Test_SigmaJ_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 2.5, 3, 1.0);
+  std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (3.0-2.0)/2.0) * std::exp(-y) * 8.0/15.0 * std::sqrt(5.0) * (0 - 1.0*y) << "\n" << std::endl;
+
+  
+  std::cout << "Example Table X" << std::endl;
+  Test_DeltaJ_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 2.5, 2, 1.0);
+  std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (2.0-1.0)/2.0) * std::exp(-y) * 2.0/15.0 * std::sqrt(10.0) * (-1.0 + 0.0*y) << "\n" << std::endl;
+
+  Test_SigmaJP_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 2.5, 2, 1.0);
+  std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (2.0-1.0)/2.0) * std::exp(-y) * 4.0/5.0 * std::sqrt(10.0) * (-1.0 + 1.0/3.0*y) << "\n" << std::endl;
+
+  Test_SigmaJPP_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 2.5, 2, 1.0);
+  std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (2.0-1.0)/2.0) * std::exp(-y) * 8.0/15.0 * std::sqrt(15.0) * (-1.0 + 0.5*y) << "\n" << std::endl;
+
+  Test_OmegaJP_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 2.5, 2, 1.0);
+  std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (2.0-1.0)/2.0) * std::exp(-y) * 1.0/5.0 * std::sqrt(15.0) * (-1.0 + 0.0*y) << "\n" << std::endl;
+    
   
   // termination
   return 0;
