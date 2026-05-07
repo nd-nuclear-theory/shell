@@ -2,12 +2,12 @@
   seven-op-gen.cpp
 
   Generate one-body operator matrix files for the seven electroweak
-  nuclear multipole operators (ref. Donnelly & Haxton 1979).
+  nuclear multipole operators (ref. Donnelly & Haxton, 1979).
 
   These matrix files can then be used with obscalc-ob to evaluate
   the many-body matrix element
 
-     <J_f | T_J | J_I> = sum_{alpha,beta} psi_J(alpha,beta) <alpha||T_J||beta>
+     <J_f || T_J || J_I> = sum_{alpha,beta} psi_J(alpha,beta) <alpha||T_J||beta>
 
   where psi_J(alpha,beta) are the one-body density matrix elements (OBDMEs)
   from a many-body calculation (e.g. MFDn), and <alpha||T_J||beta> are the
@@ -47,20 +47,6 @@
     set-momentum-transfer  1.0
     set-oscillator-length  1.0
 
-  Typical workflow:
-    1. Generate orbital file:
-         orbital-gen  Nmax=6 > orbitals.dat
-    2. Generate operator file (this program):
-         seven-op-gen < input.dat
-    3. Compute many-body matrix element:
-         echo "set-output-file result.dat
-               set-indexing orbitals.dat
-               define-operator MJ MJ_J1_q05.obme
-               define-densities 2.5 1 1 0.5 1 1 mfdn.robdme" | obscalc-ob
-
-  References:
-    [1] Donnelly & Haxton, ADNDT 23 (1979) 103.
-    [2] Haxton & Lunardini, CPC 179 (2008) 345.
 
   Victor Duménil
   University of Notre Dame & LPC Caen
