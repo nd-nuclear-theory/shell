@@ -1,0 +1,771 @@
+/****************************************************************
+  seven_operators.cpp
+
+  Implementation of single-particle reduced matrix elements for
+  the seven electroweak nuclear multipole operators.
+
+  See seven_operators.h for full documentation and references.
+
+  Victor Duménil
+  University of Notre Dame & LPC Caen
+
+****************************************************************/
+
+#include "obme/seven_operators.h"
+
+#include <cassert>
+#include <cmath>
+
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_sf_bessel.h>
+
+#include "am/halfint.h"
+#include "am/wigner_gsl_twice.h"
+#include "basis/operator.h"
+#include "spline/spline.h"
+#include "spline/spline_me.h"
+
+namespace shell {
+
+
+// Spherical Bessel function j_L(x)
+struct SphericalBesselParams
+// Parameters for a spherical Bessel function j_L(q*r).
+//
+// Fields:
+//   order (int): angular momentum order L of j_L
+//   q (double): impulsion q (units inverse of the length parameter b)
+{
+  int order;
+  double q;
+};
+
+
+double SphericalBesselFunctionEval(double r, void * p)
+// Arguments :
+//   order : 
+//   q : 
+//   r : radius
+// Return :
+//   spherical Bessel function : j_order(q*r)
+{
+    SphericalBesselParams* params = static_cast< SphericalBesselParams*>(p);
+    int order = (params->order);
+    double q = (params->q);
+
+    return gsl_sf_bessel_jl(order, q*r);
+};
+
+
+// y variable
+double y_var(double q, double b)
+// Arguments :
+//   q : impulsion
+//   b : harmonic oscillator parameter
+// Return :
+//   (q*b/2)^2
+{
+	return std::pow(q * b / 2.0, 2);
+};
+
+
+// Nodal quantum number N 
+// NOT use here
+// Inverse notation with ref [1] & [2] !!
+// Be careful with these numbers (n & N), 
+// the principal quantum number (N) in ref [1] & [2], doesn't seem to be the 'principal' quantum number
+// here n is the true 'principal' quantum number (n=0, 1, 2 by convention, different convention use in ref [1] & [2]) 
+// where n=0 correponds to --> 0s, 0p, ... 
+int NodalQuantumNumber(int n, int l)
+// Arguments :
+//   n : principal quantum number (>=0)
+//   l : angular momentum
+// Return :
+//   N = (n - l)/2 /1 > 0
+{
+	return (n - l)/2 + 1;
+};
+
+
+// Parity & Physical Condition
+// Normal parity : (-1)^li x (-1)^lf x (-1)^J == 1
+// Abnormal parity : (-1)^li x (-1)^lf x (-1)^(J+1) == 1
+
+bool NormalParity(int li, int lf, int J)
+//
+{
+	return std::pow(-1, li + lf + J) == 1;
+};
+
+
+bool AbnormalParity(int li, int lf, int J)
+//
+{
+	return std::pow(-1, li + lf + J + 1) == 1;
+};
+
+
+bool TriangularCondition(double ji, double jf, int J)
+//
+{
+	return (std::abs(ji-jf) <= J) && (J <= (ji+jf)) ;
+};
+
+
+// NormalPhysicalCondition
+bool NormalPhysicalCondition(int li, double ji, int lf, double jf, int J)
+// Arguments :
+//   li, lf : initial/final angular momentum 
+//   ji, jf : initial/final total angular momentum
+//   J : rank
+// Return :
+//   true / false if the normal physical condition is respected
+{
+	bool parity_ok = NormalParity(li, lf, J);
+
+	return (parity_ok && TriangularCondition(ji, jf, J));
+};
+
+
+// AbnormalPhysicalCondition
+bool AbnormalPhysicalCondition(int li, double ji, int lf, double jf, int J)
+// Arguments :
+//   li, lf : initial/final angular momentum 
+//   ji, jf : initial/final total angular momentum
+//   J : rank
+// Return :
+//   true / false if the abnormal physical condition is respected
+{
+	bool parity_ok = AbnormalParity(li, lf, J);
+
+	return (parity_ok && TriangularCondition(ji, jf, J));
+};
+
+
+// We give the relation to calculate the 3 'Bessel' matrix elements which appear in eq.3 in ref [1]
+// <n' l' j' | j_L(rho) | n l j> ; <n' l' j' | j_L(rho)(d_rho - l/rho) | n l j> ; <n' l' j' | j_L(rho)(d_rho + (l+1)/rho) | n l j> 
+// BesselMatrixElement
+double BesselMatrixElement(int ni, int li, int bi, int nf, int lf, int bf, int L, double q) 
+// Arguments :
+//   ni, nf : initial/final principal quantum number 
+//   li, lf : initial/final angular momentum 
+//   bi, bf : initial/final harmonic oscillator parameter
+//   L : rank
+//   q : impulsion
+// Return the matrix element :
+//   <n' l' | j_L(qr) | n l>
+{
+	double me_tot ;
+	double me1 ; 
+
+	gsl_function f;
+	struct SphericalBesselParams params = {L, q};
+	f.function = &SphericalBesselFunctionEval;
+	f.params = &params;
+
+	me1 = spline::RadialMatrixElementOfFunction(
+	    ni, li, bi, spline::BasisType::kOscillator,
+	    nf, lf, bf, spline::BasisType::kOscillator,
+	    spline::OperatorType::kR, &f
+	  );
+
+	me_tot = me1 ;
+
+	return me_tot;
+};
+
+
+// BesselMatrixElement_Minus
+double BesselMatrixElement_Minus(int ni, int li, int bi, int nf, int lf, int bf, int L, double q)
+// Return the matrix element :
+//   <n' l' | j_L(qr)(d_r - l/r) | n l>
+{
+	double me_tot ;
+	int Ni = NodalQuantumNumber(ni, li); // the reccurence relations are deduced in function of the Nodal quantum number
+	if (ni==0) {
+		double me1 ;
+
+		double y = y_var(q, bi);
+		double prefactor = -std::pow(8*y, -0.5);
+		double prefactor_me1 = am::Hat2(2*(li+1)); 
+
+		gsl_function f;
+		struct SphericalBesselParams params = {L, q};
+		f.function = &SphericalBesselFunctionEval;
+		f.params = &params;
+
+		me1 = spline::RadialMatrixElementOfFunction(
+			    ni, li+1, bi, spline::BasisType::kOscillator,
+			    nf, lf, bf, spline::BasisType::kOscillator,
+			    spline::OperatorType::kR, &f
+			  );
+
+		me_tot = prefactor * prefactor_me1 * me1;
+		
+	} 
+	else if (ni==1) {
+		double me1, me2 ;
+
+		double y = y_var(q, bi);
+		double prefactor = -std::pow(8*y, -0.5) / std::sqrt(2);
+		double prefactor_me1 = am::Hat2(2*(li+1)) * am::Hat2(2*(li+1)) ;
+		double prefactor_me2 = am::Hat2(2*(li+2)) * am::Hat2(2*(li+3));
+
+		gsl_function f;
+		struct SphericalBesselParams params = {L, q};
+		f.function = &SphericalBesselFunctionEval;
+		f.params = &params;
+
+		me1 = spline::RadialMatrixElementOfFunction(
+					    ni, li+1, bi, spline::BasisType::kOscillator,
+					    nf, lf, bf, spline::BasisType::kOscillator,
+					    spline::OperatorType::kR, &f
+					  );
+
+		me2 = spline::RadialMatrixElementOfFunction(
+							    ni, li+3, bi, spline::BasisType::kOscillator,
+							    nf, lf, bf, spline::BasisType::kOscillator,
+							    spline::OperatorType::kR, &f
+							  );
+
+		me_tot = prefactor * (
+							  prefactor_me1 * me1 
+							  - prefactor_me2 * me2
+							  );
+	}
+	else if (ni==2) {
+		double me1, me2, me3 ;
+
+		double y = y_var(q, bi);
+		double prefactor = -std::pow(8*y, -0.5) / std::sqrt(8);
+		double prefactor_me1 = am::Hat2(2*(li+1)) * am::Hat2(2*(li+2)) * am::Hat2(2*(li+1));
+		double prefactor_me2 = 2 * am::Hat2(2*(li+2)) * am::Hat2(2*(li+2)) * am::Hat2(2*(li+3));
+		double prefactor_me3 = am::Hat2(2*(li+3)) * am::Hat2(2*(li+4)) * am::Hat2(2*(li+5));
+
+		gsl_function f;
+		struct SphericalBesselParams params = {L, q};
+		f.function = &SphericalBesselFunctionEval;
+		f.params = &params;
+
+		me1 = spline::RadialMatrixElementOfFunction(
+					    ni, li+1, bi, spline::BasisType::kOscillator,
+					    nf, lf, bf, spline::BasisType::kOscillator,
+					    spline::OperatorType::kR, &f
+					  );
+
+		me2 = spline::RadialMatrixElementOfFunction(
+					    ni, li+3, bi, spline::BasisType::kOscillator,
+					    nf, lf, bf, spline::BasisType::kOscillator,
+					    spline::OperatorType::kR, &f
+					  );
+
+		me3 = spline::RadialMatrixElementOfFunction(
+					    ni, li+5, bi, spline::BasisType::kOscillator,
+					    nf, lf, bf, spline::BasisType::kOscillator,
+					    spline::OperatorType::kR, &f
+					  );	
+
+		me_tot = prefactor * (
+							  prefactor_me1 * me1 
+							  - prefactor_me2 * me2
+							  + prefactor_me3 * me3
+							 );
+	}
+
+	return me_tot;
+};
+
+
+// BesselMatrixElement_Plus
+double BesselMatrixElement_Plus(int ni, int li, int bi, int nf, int lf, int bf, int L, double q)
+// Return the matrix element :
+//   <n' l' | j_L(qr)(d_r + (l+1)/r) | n l>
+{
+	double me_tot ;
+	int Ni = NodalQuantumNumber(ni, li); // the reccurence relations are deduced in function of the Nodal quantum number
+	if (ni==0) {
+		double me1, me2 ;
+
+		double y = y_var(q, bi);
+		double prefactor = std::pow(8*y, -0.5);
+		double prefactor_me1 = 2 * am::Hat2(2*li); 
+		double prefactor_me2 = am::Hat2(2*(li+1));
+
+		gsl_function f;
+		struct SphericalBesselParams params = {L, q};
+		f.function = &SphericalBesselFunctionEval;
+		f.params = &params;
+
+		me1 = spline::RadialMatrixElementOfFunction(
+			    ni, li-1, bi, spline::BasisType::kOscillator,
+			    nf, lf, bf, spline::BasisType::kOscillator,
+			    spline::OperatorType::kR, &f
+			  );
+
+		me2 = spline::RadialMatrixElementOfFunction(
+			    ni, li+1, bi, spline::BasisType::kOscillator,
+			    nf, lf, bf, spline::BasisType::kOscillator,
+			    spline::OperatorType::kR, &f
+			  );
+
+		me_tot = prefactor * (
+							  prefactor_me1 * me1
+							  - prefactor_me2 * me2
+							 );
+		
+	} 
+	else if (ni==1) {
+		double me1, me2, me3, me4 ;
+
+		double y = y_var(q, bi);
+		double prefactor = std::pow(8*y, -0.5) / std::sqrt(2);
+		double prefactor_me1 = am::Hat2(2*(li+1)) * 2*am::Hat2(2*li) ;
+		double prefactor_me2 = am::Hat2(2*(li+1)) * am::Hat2(2*(li+1)) ;
+		double prefactor_me3 = am::Hat2(2*(li+2)) * 2*am::Hat2(2*(li+2));
+		double prefactor_me4 = am::Hat2(2*(li+2)) * am::Hat2(2*(li+3));
+
+		gsl_function f;
+		struct SphericalBesselParams params = {L, q};
+		f.function = &SphericalBesselFunctionEval;
+		f.params = &params;
+
+		me1 = spline::RadialMatrixElementOfFunction(
+					    ni, li-1, bi, spline::BasisType::kOscillator,
+					    nf, lf, bf, spline::BasisType::kOscillator,
+					    spline::OperatorType::kR, &f
+					  );
+
+		me2 = spline::RadialMatrixElementOfFunction(
+					    ni, li+1, bi, spline::BasisType::kOscillator,
+					    nf, lf, bf, spline::BasisType::kOscillator,
+					    spline::OperatorType::kR, &f
+					  );
+
+		me3 = spline::RadialMatrixElementOfFunction(
+					    ni, li+1, bi, spline::BasisType::kOscillator,
+					    nf, lf, bf, spline::BasisType::kOscillator,
+					    spline::OperatorType::kR, &f
+					  );
+
+		me4 = spline::RadialMatrixElementOfFunction(
+					    ni, li+3, bi, spline::BasisType::kOscillator,
+					    nf, lf, bf, spline::BasisType::kOscillator,
+					    spline::OperatorType::kR, &f
+					  );
+
+		me_tot = prefactor * (
+			prefactor_me1 * me1
+			- prefactor_me2 * me2
+			- prefactor_me3 * me3
+			+ prefactor_me4 * me4
+		);
+	}
+	else if (ni==2) {
+		double me1, me2, me3, me4, me5, me6 ;
+
+		double y = y_var(q, bi);
+		double prefactor = std::pow(8*y, -0.5) / std::sqrt(8);
+		double prefactor_me1 = am::Hat2(2*(li+1)) * am::Hat2(2*(li+2)) * 2*am::Hat2(2*li);
+		double prefactor_me2 = am::Hat2(2*(li+1)) * am::Hat2(2*(li+2)) * am::Hat2(2*(li+1));
+		double prefactor_me3 = 2*am::Hat2(2*(li+2)) * am::Hat2(2*(li+2)) * 2*am::Hat2(2*(li+2));
+		double prefactor_me4 = 2*am::Hat2(2*(li+2)) * am::Hat2(2*(li+2)) * am::Hat2(2*(li+3));
+		double prefactor_me5 = am::Hat2(2*(li+3)) * am::Hat2(2*(li+4)) * 2*am::Hat2(2*(li+4));
+		double prefactor_me6 = am::Hat2(2*(li+3)) * am::Hat2(2*(li+4)) * am::Hat2(2*(li+5));
+
+		gsl_function f;
+		struct SphericalBesselParams params = {L, q};
+		f.function = &SphericalBesselFunctionEval;
+		f.params = &params;
+
+		me1 = spline::RadialMatrixElementOfFunction(
+					    ni, li-1, bi, spline::BasisType::kOscillator,
+					    nf, lf, bf, spline::BasisType::kOscillator,
+					    spline::OperatorType::kR, &f
+					  );
+
+		me2 = spline::RadialMatrixElementOfFunction(
+					    ni, li+1, bi, spline::BasisType::kOscillator,
+					    nf, lf, bf, spline::BasisType::kOscillator,
+					    spline::OperatorType::kR, &f
+					  );
+
+		me3 = spline::RadialMatrixElementOfFunction(
+					    ni, li+1, bi, spline::BasisType::kOscillator,
+					    nf, lf, bf, spline::BasisType::kOscillator,
+					    spline::OperatorType::kR, &f
+					  );
+
+		me4 = spline::RadialMatrixElementOfFunction(
+					    ni, li+3, bi, spline::BasisType::kOscillator,
+					    nf, lf, bf, spline::BasisType::kOscillator,
+					    spline::OperatorType::kR, &f
+					  );
+
+		me5 = spline::RadialMatrixElementOfFunction(
+					    ni, li+3, bi, spline::BasisType::kOscillator,
+					    nf, lf, bf, spline::BasisType::kOscillator,
+					    spline::OperatorType::kR, &f
+					  );
+
+		me6 = spline::RadialMatrixElementOfFunction(
+					    ni, li+5, bi, spline::BasisType::kOscillator,
+					    nf, lf, bf, spline::BasisType::kOscillator,
+					    spline::OperatorType::kR, &f
+					  );
+
+		me_tot = prefactor * (
+			prefactor_me1 * me1
+			- prefactor_me2 * me2
+			- prefactor_me3 * me3
+			+ prefactor_me4 * me4
+			+ prefactor_me5 * me5
+			- prefactor_me6 * me6
+		);
+	}
+
+	return me_tot ;
+};
+
+
+// We give the 4 reduced matrix elements (eq.3 in ref [1])
+// <n' l' j' || MJ(qr) || n l j> ; <n' l' j' || MJL(qr) sigma || n l j>
+// <n' l' j' || MJL(qr) nabla/q || n l j> ; <n' l' j' || MJ(qr) sigma nabla/q || n l j>
+// MJ_MatrixElement
+double MJ_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element :
+//    <n' l' j' || MJ(qr) || n l j>
+{
+	double MJ = 0.0 ;
+	if (J>=0) { 
+		double j6_symbol = am::Wigner6J2(2*lf, 2*jf, 2*0.5, 2*ji, 2*li, 2*J) ;
+		double j3_symbol = am::Wigner3J2(2*lf, 2*J, 2*li, 0, 0, 0) ;
+		double prefactor = (1/std::sqrt(4 * M_PI) * std::pow(-1, J+ji+0.5) 
+						   * am::Hat2(2*lf) * am::Hat2(2*li) * am::Hat2(2*jf) * am::Hat2(2*ji) * am::Hat2(2*J)
+						   * j6_symbol * j3_symbol) ;
+
+		// MJ matrix element calculation
+		MJ = prefactor * BesselMatrixElement(ni, li, bi, nf, lf, bf, J, q);
+	}
+	return MJ;
+};
+
+
+// MJLSigma_MatrixElement
+double MJLSigma_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, int L, double q)
+// Calculate the (reduced) matrix element :
+//    <n' l' j' || MJL(qr) \sigma || n l j>
+{
+	double MJLSigma = 0.0 ;
+	if (J>=0 && L>=0) {
+		double j9_symbol = am::Wigner9J2(2*lf, 2*li, 2*L, 2*0.5, 2*0.5, 2*1, 2*jf, 2*ji, 2*J) ;
+		double j3_symbol = am::Wigner3J2(2*lf, 2*L, 2*li, 0, 0, 0) ;
+		double prefactor = (1/std::sqrt(4 * M_PI) * std::pow(-1, lf) * std::sqrt(6)
+						   * am::Hat2(2*lf) * am::Hat2(2*li) * am::Hat2(2*jf) * am::Hat2(2*ji) * am::Hat2(2*L) * am::Hat2(2*J)
+						   * j9_symbol * j3_symbol) ; 
+		
+		// MJLSigma matrix element Calculation
+		MJLSigma = prefactor * BesselMatrixElement(ni, li, bi, nf, lf, bf, L, q);
+	}
+	return MJLSigma;
+};
+
+
+// MJLNabla_MatrixElement
+double MJLNabla_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, int L, double q)
+// Calculate the (reduced) matrix element :
+//    <n' l' j' || MJL(qr) \nabla / q || n l j>
+{
+	double MJLNabla = 0.0 ;
+	if (J>=0 && L>=0) {
+		double j6_symbol = am::Wigner6J2(2*lf, 2*jf, 2*0.5, 2*ji, 2*li, 2*J) ;
+		double prefactor = (1/std::sqrt(4 * M_PI) * std::pow(-1, L+ji+0.5)
+						   * am::Hat2(2*lf) * am::Hat2(2*jf) * am::Hat2(2*ji) * am::Hat2(2*L) * am::Hat2(2*J)
+						   * j6_symbol) ;
+
+		// Calculation of 1st term
+		double j6_symbol_term1 = am::Wigner6J2(2*L, 2*1, 2*J, 2*li, 2*lf, 2*(li+1)) ;
+		double j3_symbol_term1 = am::Wigner3J2(2*lf, 2*L, 2*(li+1), 0, 0, 0) ;
+		double prefactor_term1 = std::sqrt(li + 1) * am::Hat2(2*(li+1)) * j6_symbol_term1 * j3_symbol_term1 ; 
+		double term1 = BesselMatrixElement_Minus(ni, li, bi, nf, lf, bf, L, q);
+
+		// Calculation of 2nd term
+		// li > 0 
+		double prefactor_term2 = 0.0 ;
+		double term2 = 0.0 ;
+		if (li>0) {		 
+			double j6_symbol_term2 = am::Wigner6J2(2*L, 2*1, 2*J, 2*li, 2*lf, 2*(li-1)) ;
+			double j3_symbol_term2 = am::Wigner3J2(2*lf, 2*L, 2*(li-1), 0, 0, 0) ;
+			prefactor_term2 = std::sqrt(li) * am::Hat2(2*(li-1)) * j6_symbol_term2 * j3_symbol_term2 ; 
+			term2 = BesselMatrixElement_Plus(ni, li, bi, nf, lf, bf, L, q);
+		}
+
+		// MJLNabla matrix element calculation
+		MJLNabla = prefactor * (
+							   - prefactor_term1 * term1
+							   + prefactor_term2 * term2
+							   );
+	}
+	return MJLNabla;
+};
+
+
+// MJSigmaNabla_MatrixElement
+double MJSigmaNabla_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element :
+//    <n' l' j' || MJ(qr) \sigma \nabla / q|| n l j>
+{
+	double MJSigmaNabla = 0.0 ;
+	if (J>=0) {
+		double j6_symbol = am::Wigner6J2(2*lf, 2*jf, 2*0.5, 2*ji, 2*(2*ji-li), 2*J) ;
+		double j3_symbol = am::Wigner3J2(2*lf, 2*J, 2*(2*ji-li), 0, 0, 0) ;
+		double prefactor = (1/std::sqrt(4 * M_PI) * std::pow(-1, lf)
+						   * am::Hat2(2*lf) * am::Hat2(2*jf) * am::Hat2(2*ji) * am::Hat2(2*(2*ji-li)) * am::Hat2(2*J)
+						   * j6_symbol * j3_symbol) ;
+
+		double term1 = 0.0 ;
+		double term2 = 0.0 ;
+
+		// Calculation of 1st term
+		if (ji==(li+0.5)) {
+			term1 = BesselMatrixElement_Minus(ni, li, bi, nf, lf, bf, J, q);
+		}
+		
+		// Calculation of 2nd term
+		if (ji==(li-0.5)) {
+			term2 = BesselMatrixElement_Plus(ni, li, bi, nf, lf, bf, J, q);
+		}
+
+		// MJSigmaNabla matrix element calculation
+		MJSigmaNabla = prefactor * (-term1 + term2);
+	}
+	return MJSigmaNabla;
+};
+
+
+// Seven basis single-particle operators
+// Here we calculate <n' l' j' || \hat{O}_J(qr) || n l j>
+// where the operator \hat{O}_J(qr) corresponds to eq.(1) in ref [1] :
+// MUST satisfy the Normal parity : M_J(qr) ; Δ'_J(qr) ; Σ_J(qr)
+// MUST satisfy the Abnormal parity : Δ_J(qr) ; Σ'_J(qr) ; Σ''_J(qr) ; Ω_J(qr) ; Ω'_J(qr)
+
+// MJ_SevenOprator
+double MJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || M_J(qr) || n l j>
+{
+    double MJ = MJ_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, q) ;
+
+	return MJ ;
+};
+
+
+// DeltaJ_SevenOperator
+double DeltaJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Δ_J(qr) || n l j>
+{
+	double DeltaJ = MJLNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J, q) ;
+	
+	return DeltaJ ;
+};
+
+
+// DeltaJP_SevenOperator
+double DeltaJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Δ'_J(qr) || n l j>
+{
+	double DeltaJP = 1/am::Hat2(2*J) * (- std::sqrt(J) * MJLNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
+									    + std::sqrt(J + 1) * MJLNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
+	
+	return DeltaJP ;
+};
+
+
+// SigmaJ_SevenOperator
+double SigmaJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Σ_J(qr) || n l j>
+{
+	double SigmaJ = MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J, q) ;
+	
+	return SigmaJ ;
+};
+
+
+// SigmaJP_SevenOperator
+double SigmaJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Σ'_J(qr) || n l j>
+{
+	double SigmaJP = 1/am::Hat2(2*J) * (- std::sqrt(J) * MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
+										+ std::sqrt(J + 1) * MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
+	
+	return SigmaJP ;
+};
+
+
+// SigmaJPP_SevenOperator
+double SigmaJPP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Σ''_J(qr) || n l j>
+{
+	double SigmaJPP = 1/am::Hat2(2*J) * (std::sqrt(J + 1) * MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
+										 + std::sqrt(J) * MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
+	
+	return SigmaJPP ;
+};
+
+
+// OmegaJ_SevenOperator
+double OmegaJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Ω_J(qr) || n l j>
+{
+	double OmegaJ = MJSigmaNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, q) ;
+		
+	return OmegaJ ;
+};
+
+
+// OmegaJP_SevenOperator
+double OmegaJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Ω'_J(qr) || n l j>
+{
+	double OmegaJP = (OmegaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q) 
+					  + 0.5 * SigmaJPP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q)) ;
+	
+	return OmegaJP ;
+};
+
+
+////////////////////////////////////////////////////////////////
+
+int SevenOperatorParityChange(SevenOperatorType operator_type, int J)
+{
+  // Normal parity operators: (-1)^{l_i + l_f + J} = 1  =>  g0 = J%2
+  // Abnormal parity operators: (-1)^{l_i + l_f + J + 1} = 1 => g0 = (J+1)%2
+  switch (operator_type) {
+    case SevenOperatorType::kMJ:
+    case SevenOperatorType::kDeltaJP:
+    case SevenOperatorType::kSigmaJ:
+      return J % 2;        // normal parity
+    case SevenOperatorType::kDeltaJ:
+    case SevenOperatorType::kSigmaJP:
+    case SevenOperatorType::kSigmaJPP:
+    case SevenOperatorType::kOmegaJ:
+    case SevenOperatorType::kOmegaJP:
+      return (J + 1) % 2;  // abnormal parity
+  }
+  return 0;
+};
+
+
+double SevenOperator(
+	SevenOperatorType operator_type,
+    int ni, int li, double ji, double bi,
+    int nf, int lf, double jf, double bf,
+    int J, double q)
+{
+  // Parity selection rule
+  bool allowed = false;
+  switch (operator_type) {
+    case SevenOperatorType::kMJ:
+    case SevenOperatorType::kDeltaJP:
+    case SevenOperatorType::kSigmaJ:
+      allowed = NormalParity(li, lf, J);   break;
+    case SevenOperatorType::kDeltaJ:
+    case SevenOperatorType::kSigmaJP:
+    case SevenOperatorType::kSigmaJPP:
+    case SevenOperatorType::kOmegaJ:
+    case SevenOperatorType::kOmegaJP:
+      allowed = AbnormalParity(li, lf, J); break;
+  }
+  if (!allowed)            			   return 0.;
+  if (!TriangularCondition(ji, jf, J)) return 0.;
+  if (J < 0)               			   return 0.;
+
+  // Dispatch to the appropriate single-particle function
+   switch (operator_type) {
+     case SevenOperatorType::kMJ:
+       return MJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q);
+     case SevenOperatorType::kDeltaJ:
+       return DeltaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q);
+     case SevenOperatorType::kDeltaJP:
+       return DeltaJP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q);
+     case SevenOperatorType::kSigmaJ:
+       return SigmaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q);
+     case SevenOperatorType::kSigmaJP:
+       return SigmaJP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q);
+     case SevenOperatorType::kSigmaJPP:
+       return SigmaJPP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q);
+     case SevenOperatorType::kOmegaJ:
+       return OmegaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q);
+     case SevenOperatorType::kOmegaJP:
+       return OmegaJP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q);
+   }
+   return 0.;
+};
+
+
+void SevenOperatorsOneBodyOperator(
+    SevenOperatorType operator_type,
+    int J,
+    double q,
+    double b,
+    const basis::OrbitalSpaceLJPN& space,
+    const basis::OrbitalSectorsLJPN& sectors,
+    basis::OperatorBlocks<double>& matrices)
+{
+  // Validate that sectors have the correct quantum numbers
+  assert(sectors.J0()  == J);
+  assert(sectors.g0()  == SevenOperatorParityChange(operator_type, J));
+  assert(sectors.Tz0() == 0);
+
+  // Initialise all blocks to zero
+  basis::SetOperatorToZero(sectors, matrices);
+  
+  // Loop over sectors
+  for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
+  {
+    const auto& sector = sectors.GetSector(sector_index);
+    auto& sector_matrix = matrices[sector_index];
+
+    const auto& bra_subspace = sector.bra_subspace();
+    const auto& ket_subspace = sector.ket_subspace();
+
+    // Angular-momentum labels of this sector
+    const int    lf = bra_subspace.l();
+    const double jf = double(bra_subspace.j());
+    const int    li = ket_subspace.l();
+    const double ji = double(ket_subspace.j());
+
+    const std::size_t bra_size = bra_subspace.size();
+    const std::size_t ket_size = ket_subspace.size();
+
+    // Fill matrix elements  <nf lf jf || T_J || ni li ji>
+    // row = bra orbital index (nf), col = ket orbital index (ni)
+    #pragma omp parallel for collapse(2)
+    for (std::size_t row = 0; row < bra_size; ++row)
+    {
+      for (std::size_t col = 0; col < ket_size; ++col)
+      {
+        const basis::OrbitalStateLJPN bra_state(bra_subspace, row);
+        const basis::OrbitalStateLJPN ket_state(ket_subspace, col);
+
+        const int nf = bra_state.n();
+        const int ni = ket_state.n();
+
+        sector_matrix(row, col) = SevenOperator(
+            operator_type,
+            ni, li, ji, b,
+            nf, lf, jf, b,
+            J, q
+          );
+      }
+    }
+  }
+};
+
+} // end namespace shell
