@@ -485,7 +485,7 @@ double Test_BesselMatrixElement_Plus(int ni, int li, int bi, int nf, int lf, int
 // <n' l' j' || MJ(qr) || n l j> ; <n' l' j' || MJL(qr) sigma || n l j>
 // <n' l' j' || MJL(qr) nabla/q || n l j> ; <n' l' j' || MJ(qr) sigma nabla/q || n l j>
 // Test MJ_MatrixElement
-double Test_MJ_MatrixElement(int ni, int li, int bi, double ji, int nf, int lf, int bf, double jf, int J, double q)
+double Test_MJ_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
 // Calculate the (reduced) matrix element :
 //    <n' l' j' || MJ(qr) || n l j>
 {
@@ -514,7 +514,7 @@ double Test_MJ_MatrixElement(int ni, int li, int bi, double ji, int nf, int lf, 
 
 
 // Test MJLSigma_MatrixElement
-double Test_MJLSigma_MatrixElement(int ni, int li, int bi, double ji, int nf, int lf, int bf, double jf, int J, int L, double q)
+double Test_MJLSigma_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, int L, double q)
 // Calculate the (reduced) matrix element :
 //    <n' l' j' || MJL(qr) \sigma || n l j>
 {
@@ -535,7 +535,7 @@ double Test_MJLSigma_MatrixElement(int ni, int li, int bi, double ji, int nf, in
 
 
 // Test MJLNabla_MatrixElement
-double Test_MJLNabla_MatrixElement(int ni, int li, int bi, double ji, int nf, int lf, int bf, double jf, int J, int L, double q)
+double Test_MJLNabla_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, int L, double q)
 // Calculate the (reduced) matrix element :
 //    <n' l' j' || MJL(qr) \nabla / q || n l j>
 {
@@ -576,7 +576,7 @@ double Test_MJLNabla_MatrixElement(int ni, int li, int bi, double ji, int nf, in
 
 
 // Test MJSigmaNabla_MatrixElement
-double Test_MJSigmaNabla_MatrixElement(int ni, int li, int bi, double ji, int nf, int lf, int bf, double jf, int J, double q)
+double Test_MJSigmaNabla_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
 // Calculate the (reduced) matrix element :
 //    <n' l' j' || MJ(qr) \sigma \nabla / q|| n l j>
 {
@@ -617,14 +617,14 @@ double Test_MJSigmaNabla_MatrixElement(int ni, int li, int bi, double ji, int nf
 // MUST satisfy the Abnormal parity : Δ_J(qr) ; Σ'_J(qr) ; Σ''_J(qr) ; Ω_J(qr) ; Ω'_J(qr)
 
 // Test MJ_SevenOprator
-double Test_MJ_SevenOperator(int ni, int li, int bi, double ji, int nf, int lf, int bf, double jf, int J, double q)
+double Test_MJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
 // Calculate the (reduced) matrix element : 
 //    <n' l' j' || M_J(qr) || n l j>
 {
     std::cout << "MJ Seven Operator" << std::endl ;
     double MJ = 0.0;
 	if (NormalPhysicalCondition(ni, li, ji, nf, lf, jf, J)) {
-		MJ = Test_MJ_MatrixElement(ni, li, bi, ji, nf, lf, bf, jf, J, q) ;
+		MJ = Test_MJ_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, q) ;
 	}
 	std::cout << "MJ : " << MJ << "\n" << std::endl;
 
@@ -633,14 +633,14 @@ double Test_MJ_SevenOperator(int ni, int li, int bi, double ji, int nf, int lf, 
 
 
 // Test DeltaJ_SevenOperator
-double Test_DeltaJ_SevenOperator(int ni, int li, int bi, double ji, int nf, int lf, int bf, double jf, int J, double q)
+double Test_DeltaJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
 // Calculate the (reduced) matrix element : 
 //    <n' l' j' || Δ_J(qr) || n l j>
 {
 	std::cout << "DeltaJ Seven Operator" << std::endl ;
 	double DeltaJ = 0.0 ;
 	if (AbnormalPhysicalCondition(ni, li, ji, nf, lf, jf, J)) {
-		DeltaJ = Test_MJLNabla_MatrixElement(ni, li, bi, ji, nf, lf, bf, jf, J, J, q) ;
+		DeltaJ = Test_MJLNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J, q) ;
 	}
 	std::cout << "DeltaJ : " << DeltaJ << "\n" << std::endl;
 	
@@ -649,15 +649,15 @@ double Test_DeltaJ_SevenOperator(int ni, int li, int bi, double ji, int nf, int 
 
 
 // Test DeltaJP_SevenOperator
-double Test_DeltaJP_SevenOperator(int ni, int li, int bi, double ji, int nf, int lf, int bf, double jf, int J, double q)
+double Test_DeltaJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
 // Calculate the (reduced) matrix element : 
 //    <n' l' j' || Δ'_J(qr) || n l j>
 {
 	std::cout << "DeltaJP Seven Operator" << std::endl ;
 	double DeltaJP = 0.0 ;
 	if (NormalPhysicalCondition(ni, li, ji, nf, lf, jf, J)) {
-		DeltaJP = 1/am::Hat2(2*J) * (- std::sqrt(J) * Test_MJLNabla_MatrixElement(ni, li, bi, ji, nf, lf, bf, jf, J, J+1, q) 
-									 + std::sqrt(J + 1) * Test_MJLNabla_MatrixElement(ni, li, bi, ji, nf, lf, bf, jf, J, J-1, q));
+		DeltaJP = 1/am::Hat2(2*J) * (- std::sqrt(J) * Test_MJLNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
+									 + std::sqrt(J + 1) * Test_MJLNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
 	}
 	std::cout << "DeltaJP : " << DeltaJP << "\n" << std::endl;
 	
@@ -666,14 +666,14 @@ double Test_DeltaJP_SevenOperator(int ni, int li, int bi, double ji, int nf, int
 
 
 // Test SigmaJ_SevenOperator
-double Test_SigmaJ_SevenOperator(int ni, int li, int bi, double ji, int nf, int lf, int bf, double jf, int J, double q)
+double Test_SigmaJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
 // Calculate the (reduced) matrix element : 
 //    <n' l' j' || Σ_J(qr) || n l j>
 {
 	std::cout << "SigmaJ Seven Operator" << std::endl ;
 	double SigmaJ = 0.0 ;
 	if (NormalPhysicalCondition(ni, li, ji, nf, lf, jf, J)) {
-		SigmaJ = Test_MJLSigma_MatrixElement(ni, li, bi, ji, nf, lf, bf, jf, J, J, q) ;
+		SigmaJ = Test_MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J, q) ;
 	}
 	std::cout << "SigmaJ : " << SigmaJ << "\n" << std::endl;
 	
@@ -682,15 +682,15 @@ double Test_SigmaJ_SevenOperator(int ni, int li, int bi, double ji, int nf, int 
 
 
 // Test SigmaJP_SevenOperator
-double Test_SigmaJP_SevenOperator(int ni, int li, int bi, double ji, int nf, int lf, int bf, double jf, int J, double q)
+double Test_SigmaJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
 // Calculate the (reduced) matrix element : 
 //    <n' l' j' || Σ'_J(qr) || n l j>
 {
 	std::cout << "SigmaJP Seven Operator" << std::endl ;
 	double SigmaJP = 0.0 ;
 	if (AbnormalPhysicalCondition(ni, li, ji, nf, lf, jf, J)) {
-		SigmaJP = 1/am::Hat2(2*J) * (- std::sqrt(J) * Test_MJLSigma_MatrixElement(ni, li, bi, ji, nf, lf, bf, jf, J, J+1, q) 
-										+ std::sqrt(J + 1) * Test_MJLSigma_MatrixElement(ni, li, bi, ji, nf, lf, bf, jf, J, J-1, q));
+		SigmaJP = 1/am::Hat2(2*J) * (- std::sqrt(J) * Test_MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
+										+ std::sqrt(J + 1) * Test_MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
 	}
 	std::cout << "SigmaJP : " << SigmaJP << "\n" << std::endl;
 	
@@ -699,15 +699,15 @@ double Test_SigmaJP_SevenOperator(int ni, int li, int bi, double ji, int nf, int
 
 
 // Test SigmaJPP_SevenOperator
-double Test_SigmaJPP_SevenOperator(int ni, int li, int bi, double ji, int nf, int lf, int bf, double jf, int J, double q)
+double Test_SigmaJPP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
 // Calculate the (reduced) matrix element : 
 //    <n' l' j' || Σ''_J(qr) || n l j>
 {
 	std::cout << "SigmaJPP Seven Operator" << std::endl ;
 	double SigmaJPP = 0.0 ;
 	if (AbnormalPhysicalCondition(ni, li, ji, nf, lf, jf, J)) {
-		SigmaJPP = 1/am::Hat2(2*J) * (std::sqrt(J + 1) * Test_MJLSigma_MatrixElement(ni, li, bi, ji, nf, lf, bf, jf, J, J+1, q) 
-										+ std::sqrt(J) * Test_MJLSigma_MatrixElement(ni, li, bi, ji, nf, lf, bf, jf, J, J-1, q));
+		SigmaJPP = 1/am::Hat2(2*J) * (std::sqrt(J + 1) * Test_MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
+										+ std::sqrt(J) * Test_MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
 	}
 	std::cout << "SigmaJPP : " << SigmaJPP << "\n" << std::endl;
 	
@@ -716,14 +716,14 @@ double Test_SigmaJPP_SevenOperator(int ni, int li, int bi, double ji, int nf, in
 
 
 // Test OmegaJ_SevenOperator
-double Test_OmegaJ_SevenOperator(int ni, int li, int bi, double ji, int nf, int lf, int bf, double jf, int J, double q)
+double Test_OmegaJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
 // Calculate the (reduced) matrix element : 
 //    <n' l' j' || Ω_J(qr) || n l j>
 {
 	std::cout << "OmegaJ Seven Operator" << std::endl ;
 	double OmegaJ = 0.0 ;
 	if (AbnormalPhysicalCondition(ni, li, ji, nf, lf, jf, J)) {
-		OmegaJ = Test_MJSigmaNabla_MatrixElement(ni, li, bi, ji, nf, lf, bf, jf, J, q) ;
+		OmegaJ = Test_MJSigmaNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf,  J, q) ;
 	}
 	std::cout << "OmegaJ : " << OmegaJ << "\n" << std::endl;
 	
@@ -732,15 +732,15 @@ double Test_OmegaJ_SevenOperator(int ni, int li, int bi, double ji, int nf, int 
 
 
 // Test OmegaJP_SevenOperator
-double Test_OmegaJP_SevenOperator(int ni, int li, int bi, double ji, int nf, int lf, int bf, double jf, int J, double q)
+double Test_OmegaJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
 // Calculate the (reduced) matrix element : 
 //    <n' l' j' || Ω'_J(qr) || n l j>
 {
 	std::cout << "OmegaJP Seven Operator" << std::endl ;
 	double OmegaJP = 0.0 ;
 	if (AbnormalPhysicalCondition(ni, li, ji, nf, lf, jf, J)) {
-		OmegaJP = (Test_OmegaJ_SevenOperator(ni, li, bi, ji, nf, lf, bf, jf, J, q) 
-					  + 0.5 * Test_SigmaJPP_SevenOperator(ni, li, bi, ji, nf, lf, bf, jf, J, q)) ;
+		OmegaJP = (Test_OmegaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q) 
+					  + 0.5 * Test_SigmaJPP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q)) ;
 	}
 	std::cout << "OmegaJP : " << OmegaJP << "\n" << std::endl;
 	
@@ -754,112 +754,113 @@ double Test_OmegaJP_SevenOperator(int ni, int li, int bi, double ji, int nf, int
 
 int main(int argc, char **argv)
 {
-
+  double y = 0.25 ;
+  double b = 1.0 ;
+  double q = 1.0 ;
   // Bessel Matrix Element
-  //Test_BesselMatrixElement(0, 0, 1.0, 0, 0, 1.0, 0, 1.0);
-  //Test_BesselMatrixElement(0, 0, 1.0, 0, 0, 1.0, 1, 1.0);
-  //Test_BesselMatrixElement(0, 0, 1.0, 0, 0, 1.0, 2, 1.0);
+  //Test_BesselMatrixElement(0, 0, 1.0, 0, 0, 1.0, 0, q);
+  //Test_BesselMatrixElement(0, 0, 1.0, 0, 0, 1.0, 1, q);
+  //Test_BesselMatrixElement(0, 0, 1.0, 0, 0, 1.0, 2, q);
 
   // Bessel Matrix Element Minus
-  //Test_BesselMatrixElement_Minus(0, 0, 1.0, 0, 0, 1.0, 0, 1.0);
-  //Test_BesselMatrixElement_Minus(0, 0, 1.0, 0, 0, 1.0, 1, 1.0);
-  //Test_BesselMatrixElement_Minus(0, 0, 1.0, 0, 0, 1.0, 2, 1.0);
+  //Test_BesselMatrixElement_Minus(0, 0, 1.0, 0, 0, 1.0, 0, q);
+  //Test_BesselMatrixElement_Minus(0, 0, 1.0, 0, 0, 1.0, 1, q);
+  //Test_BesselMatrixElement_Minus(0, 0, 1.0, 0, 0, 1.0, 2, q);
   
-  //Test_BesselMatrixElement_Minus(1, 0, 1.0, 0, 0, 1.0, 0, 1.0);
+  //Test_BesselMatrixElement_Minus(1, 0, 1.0, 0, 0, 1.0, 0, q);
 
   // MJ Matrix Element
-  //Test_MJ_MatrixElement(0, 0, 1.0, 0.5, 0, 0, 1.0, 0.5, 0, 1.0);
+  //Test_MJ_MatrixElement(0, 0, 0.5, b, 0, 0, 0.5, b, 0, q);
 
   /*
   // MJ Seven Operator
-  Test_MJ_SevenOperator(0, 0, 1.0, 0.5, 0, 0, 1.0, 0.5, 0, 1.0);
-  Test_MJ_SevenOperator(0, 0, 1.0, 0.5, 0, 1, 1.0, 0.5, 1, 1.0);
+  Test_MJ_SevenOperator(0, 0, 0.5, b, 0, 0, 0.5, b, 0, q);
+  Test_MJ_SevenOperator(0, 0, 0.5, b, 0, 1, 0.5, b, 1, q);
 
   // DeltaJ Seven Operator
-  Test_DeltaJ_SevenOperator(0, 1, 1.0, 0.5, 0, 1, 1.0, 0.5, 1, 1.0);
-  Test_DeltaJ_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 1.5, 2, 1.0);
+  Test_DeltaJ_SevenOperator(0, 1, 0.5, b, 0, 1, 0.5, b, 1, q);
+  Test_DeltaJ_SevenOperator(0, 1, 0.5, b, 0, 2, 1.5, b, 2, q);
 
   // DeltaJP Seven Operator
-  Test_DeltaJP_SevenOperator(0, 0, 1.0, 0.5, 0, 2, 1.0, 1.5, 2, 1.0);
-  Test_DeltaJP_SevenOperator(0, 0, 1.0, 0.5, 0, 1, 1.0, 0.5, 1, 1.0);
+  Test_DeltaJP_SevenOperator(0, 0, 0.5, b, 0, 2, 1.5, b, 2, q);
+  Test_DeltaJP_SevenOperator(0, 0, 0.5, b, 0, 1, 0.5, b, 1, q);
 
   // SigmaJ Seven Operator
-  Test_SigmaJ_SevenOperator(0, 0, 1.0, 0.5, 0, 2, 1.0, 1.5, 2, 1.0);
-  Test_SigmaJ_SevenOperator(0, 0, 1.0, 0.5, 0, 1, 1.0, 0.5, 1, 1.0);
+  Test_SigmaJ_SevenOperator(0, 0, 0.5, b, 0, 2, 1.5, b, 2, q);
+  Test_SigmaJ_SevenOperator(0, 0, 0.5, b, 0, 1, 0.5, b, 1, q);
 
   // SigmaJP Seven Operator
-  Test_SigmaJP_SevenOperator(0, 1, 1.0, 0.5, 0, 1, 1.0, 0.5, 1, 1.0);
-  Test_SigmaJP_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 1.5, 2, 1.0);
+  Test_SigmaJP_SevenOperator(0, 1, 0.5, b, 0, 1, 0.5, b, 1, q);
+  Test_SigmaJP_SevenOperator(0, 1, 0.5, b, 0, 2, 1.5, b, 2, q);
 
   // SigmaJPP Seven Operator
-  Test_SigmaJPP_SevenOperator(0, 1, 1.0, 0.5, 0, 1, 1.0, 0.5, 1, 1.0);
-  Test_SigmaJPP_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 1.5, 2, 1.0);
+  Test_SigmaJPP_SevenOperator(0, 1, 0.5, b, 0, 1, 0.5, b, 1, q);
+  Test_SigmaJPP_SevenOperator(0, 1, 0.5, b, 0, 2, 1.5, b, 2, q);
 
   // OmegaJ Seven Operator
-  Test_OmegaJ_SevenOperator(0, 1, 1.0, 0.5, 0, 1, 1.0, 0.5, 1, 1.0);
-  Test_OmegaJ_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 1.5, 2, 1.0);
+  Test_OmegaJ_SevenOperator(0, 1, 0.5, b, 0, 1, 0.5, b, 1, q);
+  Test_OmegaJ_SevenOperator(0, 1, 0.5, b, 0, 2, 1.5, b, 2, q);
 
   // OmegaJP Seven Operator
-  Test_OmegaJP_SevenOperator(0, 1, 1.0, 0.5, 0, 1, 1.0, 0.5, 1, 1.0);
-  Test_OmegaJP_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 1.5, 2, 1.0);
+  Test_OmegaJP_SevenOperator(0, 1, 0.5, b, 0, 1, 0.5, b, 1, q);
+  Test_OmegaJP_SevenOperator(0, 1, 0.5, b, 0, 2, 1.5, b, 2, q);
   */
 
   std::cout << "Example p111 Donnelly & Haxton, 1979" << std::endl;
-  double y = 0.25 ;
-  Test_DeltaJ_SevenOperator(0, 2, 1.0, 2.5, 0, 2, 1.0, 2.5, 1, 1.0);
+  Test_DeltaJ_SevenOperator(0, 2, 2.5, b, 0, 2, 2.5, b, 1, q);
   std::cout << "Expected value : " << 1.0/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-1.0)/2.0) * std::exp(-y) * 2.0/5.0 * std::sqrt(35) * (-1.0 + 2.0/5.0*y) << "\n" << std::endl;
 
-  Test_SigmaJP_SevenOperator(0, 2, 1.0, 2.5, 0, 2, 1.0, 2.5, 1, 1.0);
+  Test_SigmaJP_SevenOperator(0, 2, 2.5, b, 0, 2, 2.5, b, 1, q);
   std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-1.0)/2.0) * std::exp(-y) * 2.0/5.0 * std::sqrt(35) * (1.0 - 8.0/5.0*y + 12.0/35.0*std::pow(y, 2)) << "\n" << std::endl;
 
 
   std::cout << "Example Table III" << std::endl;
-  Test_MJ_SevenOperator(0, 0, 1.0, 0.5, 0, 1, 1.0, 0.5, 1, 1.0);
+  Test_MJ_SevenOperator(0, 0, 0.5, b, 0, 1, 0.5, b, 1, q);
   std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-2.0)/2.0) * std::exp(-y) * std::sqrt(3.0) * 2.0/3.0 * (0.0 - 1.0*y) << "\n" << std::endl;
   
-  Test_DeltaJP_SevenOperator(0, 0, 1.0, 0.5, 0, 1, 1.0, 0.5, 1, 1.0);
+  Test_DeltaJP_SevenOperator(0, 0, 0.5, b, 0, 1, 0.5, b, 1, q);
   std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-2.0)/2.0) * std::exp(-y) * 1.0/6.0 * std::sqrt(6.0) * (1.0 + 0.0*y) << "\n" << std::endl;
   
-  Test_SigmaJ_SevenOperator(0, 0, 1.0, 0.5, 0, 1, 1.0, 0.5, 1, 1.0);
+  Test_SigmaJ_SevenOperator(0, 0, 0.5, b, 0, 1, 0.5, b, 1, q);
   std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-2.0)/2.0) * std::exp(-y) * 2.0/3.0 * std::sqrt(6.0) * (0.0 + 1.0*y) << "\n" << std::endl;
 
   
   std::cout << "Example Table VI" << std::endl;
-  Test_DeltaJ_SevenOperator(0, 1, 1.0, 0.5, 0, 1, 1.0, 1.5, 1, 1.0);
+  Test_DeltaJ_SevenOperator(0, 1, 0.5, b, 0, 1, 1.5, b, 1, q);
   std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-1.0)/2.0) * std::exp(-y) * 1.0/3.0 * std::sqrt(2.0) * (-1.0 + 0.0*y) << "\n" << std::endl;
   
-  Test_SigmaJP_SevenOperator(0, 1, 1.0, 0.5, 0, 1, 1.0, 1.5, 1, 1.0);
+  Test_SigmaJP_SevenOperator(0, 1, 0.5, b, 0, 1, 1.5, b, 1, q);
   std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-1.0)/2.0) * std::exp(-y) * 4.0/3.0 * std::sqrt(2.0) * (-1.0 + 0.5*y) << "\n" << std::endl;
   
-  Test_SigmaJPP_SevenOperator(0, 1, 1.0, 0.5, 0, 1, 1.0, 1.5, 1, 1.0);
+  Test_SigmaJPP_SevenOperator(0, 1, 0.5, b, 0, 1, 1.5, b, 1, q);
   std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-1.0)/2.0) * std::exp(-y) * 4.0/3.0 * std::sqrt(1.0) * (-1.0 + 1.0*y) << "\n" << std::endl;
 
-  Test_OmegaJP_SevenOperator(0, 1, 1.0, 0.5, 0, 1, 1.0, 1.5, 1, 1.0);
+  Test_OmegaJP_SevenOperator(0, 1, 0.5, b, 0, 1, 1.5, b, 1, q);
   std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (1.0-1.0)/2.0) * std::exp(-y) * 1.0 * std::sqrt(1.0) * (-1.0 + 0.0*y) << "\n" << std::endl;
 
   
   std::cout << "Example Table IX" << std::endl;
-  Test_MJ_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 2.5, 3, 1.0);
+  Test_MJ_SevenOperator(0, 1, 0.5, b, 0, 2, 2.5, b, 3, q);
   std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (3.0-2.0)/2.0) * std::exp(-y) * std::sqrt(15.0) * 4.0/15.0 * (0.0 - 1.0*y) << "\n" << std::endl;
   
-  Test_DeltaJP_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 2.5, 3, 1.0);
+  Test_DeltaJP_SevenOperator(0, 1, 0.5, b, 0, 2, 2.5, b, 3, q);
   std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (3.0-2.0)/2.0) * std::exp(-y) * 2.0/15.0 * std::sqrt(5.0) * (1.0 + 0.0*y) << "\n" << std::endl;
 
-  Test_SigmaJ_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 2.5, 3, 1.0);
+  Test_SigmaJ_SevenOperator(0, 1, 0.5, b, 0, 2, 2.5, b, 3, q);
   std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (3.0-2.0)/2.0) * std::exp(-y) * 8.0/15.0 * std::sqrt(5.0) * (0 - 1.0*y) << "\n" << std::endl;
 
   
   std::cout << "Example Table X" << std::endl;
-  Test_DeltaJ_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 2.5, 2, 1.0);
+  Test_DeltaJ_SevenOperator(0, 1, 0.5, b, 0, 2, 2.5, b, 2, q);
   std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (2.0-1.0)/2.0) * std::exp(-y) * 2.0/15.0 * std::sqrt(10.0) * (-1.0 + 0.0*y) << "\n" << std::endl;
 
-  Test_SigmaJP_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 2.5, 2, 1.0);
+  Test_SigmaJP_SevenOperator(0, 1, 0.5, b, 0, 2, 2.5, b, 2, q);
   std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (2.0-1.0)/2.0) * std::exp(-y) * 4.0/5.0 * std::sqrt(10.0) * (-1.0 + 1.0/3.0*y) << "\n" << std::endl;
 
-  Test_SigmaJPP_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 2.5, 2, 1.0);
+  Test_SigmaJPP_SevenOperator(0, 1, 0.5, b, 0, 2, 2.5, b, 2, q);
   std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (2.0-1.0)/2.0) * std::exp(-y) * 8.0/15.0 * std::sqrt(15.0) * (-1.0 + 0.5*y) << "\n" << std::endl;
 
-  Test_OmegaJP_SevenOperator(0, 1, 1.0, 0.5, 0, 2, 1.0, 2.5, 2, 1.0);
+  Test_OmegaJP_SevenOperator(0, 1, 0.5, b, 0, 2, 2.5, b, 2, q);
   std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (2.0-1.0)/2.0) * std::exp(-y) * 1.0/5.0 * std::sqrt(15.0) * (-1.0 + 0.0*y) << "\n" << std::endl;
     
   
