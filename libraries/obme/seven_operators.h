@@ -86,9 +86,9 @@ double SevenOperator(
 //   operator_type : which of the eight SevenOperators to evaluate
 //   ni, li, ji    : ket quantum numbers (n, l, j)
 //   nf, lf, jf    : bra quantum numbers (n', l', j')
+//   bi, bf        : harmonic oscillator length parameter
 //   J             : operator rank
 //   q             : momentum transfer (units: 1/b if b given explicitly)
-//   b             : harmonic oscillator length parameter (default 1.0)
 //
 // Returns 0 if the parity / triangle selection rules are not satisfied.
 
