@@ -102,6 +102,27 @@ int NodalQuantumNumber(int n, int l)
 // Normal parity : (-1)^li x (-1)^lf x (-1)^J == 1
 // Abnormal parity : (-1)^li x (-1)^lf x (-1)^(J+1) == 1
 
+bool NormalParity(int ni, int li, int nf, int lf, int J)
+//
+{
+	return std::pow(-1, li + lf + J) == 1;
+};
+
+
+bool AbnormalParity(int ni, int li, int nf, int lf, int J)
+//
+{
+	return std::pow(-1, li + lf + J + 1) == 1;
+};
+
+
+bool TriangularCondition(double ji, double jf, int J)
+//
+{
+	return (std::abs(ji-jf) <= J) && (J <= (ji+jf)) ;
+};
+
+
 // NormalPhysicalCondition
 bool NormalPhysicalCondition(int ni, int li, double ji, int nf, int lf, double jf, int J)
 // Arguments :
@@ -112,12 +133,9 @@ bool NormalPhysicalCondition(int ni, int li, double ji, int nf, int lf, double j
 // Return :
 //   true / false if the normal physical condition is respected
 {
-	bool parity_ok = std::pow(-1, li + lf + J) == 1;
+	bool parity_ok = NormalParity(ni, li, nf, lf, J);
 
-	int Ni = NodalQuantumNumber(ni, li);
-	int Nf = NodalQuantumNumber(nf, lf);
-
-	return (parity_ok && (std::abs(ji-jf) <= J) && (J <= (ji+jf))); //&& (Ni>0) && (Nf>0) 
+	return (parity_ok && TriangularCondition(ji, jf, J)); //&& (Ni>0) && (Nf>0) 
 }
 
 
@@ -131,12 +149,9 @@ bool AbnormalPhysicalCondition(int ni, int li, double ji, int nf, int lf, double
 // Return :
 //   true / false if the abnormal physical condition is respected
 {
-	bool parity_ok = std::pow(-1, li + lf + J + 1) == 1; 
+	bool parity_ok = AbnormalParity(ni, li, nf, lf, J);
 
-	int Ni = NodalQuantumNumber(ni, li);
-	int Nf = NodalQuantumNumber(nf, lf);
-
-	return (parity_ok && (std::abs(ji-jf) <= J) && (J <= (ji+jf))); //&& (Ni>0) && (Nf>0) 
+	return (parity_ok && TriangularCondition(ji, jf, J)); //&& (Ni>0) && (Nf>0) 
 }
 
 
