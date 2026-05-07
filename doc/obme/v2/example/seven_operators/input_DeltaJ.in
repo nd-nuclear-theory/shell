@@ -1,0 +1,6 @@
+set-indexing            orbitals-Nmax04.dat
+set-output-file         obme-DeltaJ-J1-q1.dat
+set-operator            DeltaJ
+set-rank                1
+set-momentum-transfer   1.0
+set-oscillator-length   1.0
