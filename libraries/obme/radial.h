@@ -43,6 +43,8 @@ void GenerateRadialOperator(
   );
 // Generate radial matrix elements of r^n and (ik)^n.
 //
+// Matrix elements are evaluated for oscillator length b=1.
+//
 // Arguments:
 //   basis_type (shell::RadialBasisType): radial basis type
 //   operator_type (shell::RadialOperatorType): radial operator type

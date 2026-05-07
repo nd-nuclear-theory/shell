@@ -38,6 +38,8 @@ void SolidHarmonicOneBodyOperator(
   );
 // Generate reduced matrix elements of r^n C_J0 and (ik)^n C_J0.
 //
+// Matrix elements are evaluated for oscillator length b=1.
+//
 // Note that the resulting functions are more general than the "solid harmonics"
 // per se.  The "regular solid harmonics" are obtained as the case r^l C_l, and
 // the "irregular solid harmonics" as r^-(l+1) C_l.
