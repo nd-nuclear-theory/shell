@@ -85,6 +85,7 @@ struct RunParameters {
   int    J = 1;
   double q = 1.0;
   double b = 1.0;
+  int    Tz0 = 0;   // 0 = isoscalar (same species); ±1 = isovector (beta decay)
 };
 
 const std::unordered_map<std::string, shell::SevenOperatorType> kOperatorNameMap = {
@@ -140,6 +141,12 @@ RunParameters ReadParameters()
       mcutils::ParsingCheck(ss, line_count, line);
       assert(p.J >= 0);
     }
+    else if (keyword == "set-tz0") {
+      ss >> p.Tz0;
+      mcutils::ParsingCheck(ss, line_count, line);
+      if (p.Tz0 < -1 || p.Tz0 > 1)
+        mcutils::ParsingError(line_count, line, "set-tz0: value must be -1, 0, or +1");
+    }
     else if (keyword == "set-momentum-transfer") {
       ss >> p.q;
       mcutils::ParsingCheck(ss, line_count, line);
@@ -181,7 +188,7 @@ int main(int argc, char** argv)
   // Compute parity change g0 for this operator and rank
   const int J0  = p.J;
   const int g0  = shell::SevenOperatorParityChange(p.operator_type, p.J);
-  const int Tz0 = 0;   // same-species: proton–proton or neutron–neutron
+  const int Tz0 = p.Tz0;   
 
   std::cout << "Operator : " << p.operator_name << "\n"
             << "Rank J   : " << J0  << "\n"

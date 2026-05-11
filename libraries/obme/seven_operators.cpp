@@ -427,9 +427,59 @@ double BesselMatrixElement_Plus(int ni, int li, int bi, int nf, int lf, int bf, 
 };
 
 
+// We give the 4 'Bessel' matrix elements which appear in [3]
+// BesselMatrixElement_Minus_Minus = <n' l' j' | j_L(rho)(d_rho - (l+1)/rho)(d_rho - l/rho) | n l j> ; 
+// BesselMatrixElement_Minus_Plus = <n' l' j' | j_L(rho)(d_rho + (l+2)/rho)(d_rho - l/rho) | n l j> ;
+// BesselMatrixElement_Plus_Plus = <n' l' j' | j_L(rho)(d_rho + (l)/rho)(d_rho + (l+1)/rho) | n l j> ;
+// BesselMatrixElement_Plus_Minus = <n' l' j' | j_L(rho)(d_rho - (l-1)/rho)(d_rho + (l+1)/rho) | n l j> ;
+
+// BesselMatrixElement_Minus_Minus
+double BesselMatrixElement_Minus_Minus(int ni, int li, int bi, int nf, int lf, int bf, int L, double q)
+// Return the matrix element :
+//   <n' l' | j_L(qr)(d_r - (l+1)/r)(d_r - l/r) | n l>
+{
+	double me_tot ;
+
+	return me_tot ;
+};
+
+
+// BesselMatrixElement_Minus_Plus
+double BesselMatrixElement_Minus_Plus(int ni, int li, int bi, int nf, int lf, int bf, int L, double q)
+// Return the matrix element :
+//   <n' l' | j_L(qr)(d_r + (l+2)/r)(d_r - l/r) | n l>
+{
+	double me_tot ;
+
+	return me_tot ;
+};
+
+
+// BesselMatrixElement_Plus_Plus
+double BesselMatrixElement_Plus_Plus(int ni, int li, int bi, int nf, int lf, int bf, int L, double q)
+// Return the matrix element :
+//   <n' l' | j_L(qr)(d_r + (l)/r)(d_r + (l+1)/r) | n l>
+{
+	double me_tot ;
+
+	return me_tot ;
+};
+
+
+// BesselMatrixElement_Plus_Minus
+double BesselMatrixElement_Plus_Minus(int ni, int li, int bi, int nf, int lf, int bf, int L, double q)
+// Return the matrix element :
+//   <n' l' | j_L(qr)(d_r - (l-1)/r)(d_r + (l+1)/r) | n l>
+{
+	double me_tot ;
+
+	return me_tot ;
+};
+
+
 // We give the 4 reduced matrix elements (eq.3 in ref [1])
-// <n' l' j' || MJ(qr) || n l j> ; <n' l' j' || MJL(qr) sigma || n l j>
-// <n' l' j' || MJL(qr) nabla/q || n l j> ; <n' l' j' || MJ(qr) sigma nabla/q || n l j>
+// <n' l' j' || MJ(qr) || n l j> ; <n' l' j' || MJL(qr) σ || n l j>
+// <n' l' j' || MJL(qr) ∇/q || n l j> ; <n' l' j' || MJ(qr) σ ∇/q || n l j>
 // MJ_MatrixElement
 double MJ_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
 // Calculate the (reduced) matrix element :
@@ -542,6 +592,117 @@ double MJSigmaNabla_MatrixElement(int ni, int li, double ji, double bi, int nf, 
 };
 
 
+// We give the 6 others (reduced) matrix elements which appear in ref [3]
+// for calculate the other 'seven' operators in ref [3]
+// <n' l' j' || MJ(qr) (∇/q)^2 || n l j>  ; <n' l' j' || (MJL(qr) σ) (∇/q)^2 || n l j>
+// <n' l' j' || (MJL(qr) ∇/q) (σ ∇/q) || n l j>  ; <n' l' j' || i MJL(qr) (σ x ∇/q) || n l j>
+// <n' l' j' || [MK(qr) σ)_L ∇/q]_J || n l j>  ; <n' l' j' || [MK(qr) ∇/q)_L σ]_J || n l j>
+
+// MJNablaSquare_MatrixElement
+double MJNablaSquare_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element :
+//    <n' l' j' || MJ(qr) (∇/q)^2 || n l j>
+{
+	double MJNablaSquare = 0.0 ;
+
+	return MJNablaSquare;
+};
+
+
+// MJLSigmaNablaSquare_MatrixElement
+double MJLSigmaNablaSquare_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, int L, double q)
+// Calculate the (reduced) matrix element :
+//    <n' l' j' || (MJL(qr) σ) (∇/q)^2 || n l j>
+{
+	double MJLSigmaNablaSquare = 0.0 ;
+
+	return MJLSigmaNablaSquare;
+};	
+
+
+// MJLSigmaNablaSigmaNabla_MatrixElement
+double MJLNablaSigmaNabla_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, int L, double q)
+// Calculate the (reduced) matrix element :
+//    <n' l' j' || (MJL(qr) ∇/q) (σ ∇/q) || n l j>
+{
+	double MJLSigmaNablaSigmaNabla = 0.0 ;
+	double prefactor = (1/std::sqrt(4 * M_PI) * std::pow(-1, li+lf+1) * std::sqrt(6)
+					   * am::Hat2(2*J) * am::Hat2(2*li) * am::Hat2(2*L) * am::Hat2(2*ji) * am::Hat2(2*jf) ) ;
+
+	double j6_symbol1 = am::Wigner6J2(2*lf, 2*(li+1), 2*J, 2*ji, 2*jf, 2*0.5) ;
+	double j6_symbol2 = am::Wigner6J2(2*li, 2*1, 2*(li+1), 2*0.5, 2*ji, 2*0.5) ;
+	double prefactor1 = j6_symbol1 * j6_symbol2 * std::sqrt((li + 1) * (2*li + 3))
+	
+	double j6_symbol_term1 = am::Wigner6J2(2*L, 2*J, 2*1.0, 2*(li+1), 2*(li+2), 2*lf) ;
+	double j3_symbol1_term1 = am::Wigner3J2(2*lf,2*L, 2*(li+2), 0, 0, 0) ;
+	double j3_symbol2_term1 = am::Wigner3J2(2*(li+2), 2*1.0, 2*(li+1), 0, 0, 0) ;
+	double prefactor_term1 = j6_symbol_term1 * j3_symbol1_term1 / j3_symbol2_term1 * (li + 2) / (2*li + 3) ;
+	double term1 = prefactor_term1 * BesselMatrixElement_Minus_Minus(ni, li, bi, nf, lf, bf, L, q);
+
+	double j6_symbol_term2 = am::Wigner6J2(2*L, 2*J, 2*1.0, 2*(li+1), 2*li, 2*lf) ;
+	double j3_symbol1_term2 = am::Wigner3J2(2*lf,2*L, 2*li, 0, 0, 0) ;
+	double j3_symbol2_term2 = am::Wigner3J2(2*li, 2*1.0, 2*(li+1), 0, 0, 0) ;
+	double prefactor_term2 = j6_symbol_term2 * j3_symbol1_term2 / j3_symbol2_term2 * (li + 1) / (2*li + 3) ;
+	double term2 = prefactor_term2 * BesselMatrixElement_Minus_Plus(ni, li, bi, nf, lf, bf, L, q);
+
+	double j6_symbol3 = am::Wigner6J2(2*lf, 2*(li-1), 2*J, 2*ji, 2*jf, 2*0.5) ;
+	double j6_symbol4 = am::Wigner6J2(2*li, 2*1, 2*(li-1), 2*0.5, 2*ji, 2*0.5) ;
+	double prefactor2 = j6_symbol3 * j6_symbol4 * std::sqrt(li * (2*li + 1)) ;
+
+	double j6_symbol_term3 = am::Wigner6J2(2*L, 2*J, 2*1.0, 2*(li-1), 2*li, 2*lf) ;
+	double j3_symbol1_term3 = am::Wigner3J2(2*lf,2*L, 2*li, 0, 0, 0) ;
+	double j3_symbol2_term3 = am::Wigner3J2(2*li, 2*1.0, 2*(li-1), 0, 0, 0) ;
+	double prefactor_term3 = j6_symbol_term3 * j3_symbol1_term3 / j3_symbol2_term3 * li / (2*li - 1) ;
+	double term3 = prefactor_term3 * BesselMatrixElement_Plus_Minus(ni, li, bi, nf, lf, bf, L, q);
+
+	double j6_symbol_term4 = am::Wigner6J2(2*L, 2*J, 2*1.0, 2*(li-1), 2*(li-2), 2*lf) ;
+	double j3_symbol1_term4 = am::Wigner3J2(2*lif,2*L, 2*(li-2), 0, 0, 0) ;
+	double j3_symbol2_term4 = am::Wigner3J2(2*(li-2), 2*1.0, 2*(li-1), 0, 0, 0) ;
+	double prefactor_term4 = j6_symbol_term4 * j3_symbol1_term4 / j3_symbol2_term4 * (li - 1) / (2*li - 1) ;
+	double term4 = prefactor_term4 * BesselMatrixElement_Plus_Plus(ni, li, bi, nf, lf, bf, L, q);
+
+	MJLSigmaNablaSigmaNabla = prefactor * (
+									       prefactor1 * (term1 + term2)
+									       - prefactor2 * (term3 +  term4)
+									   );
+
+	return MJLSigmaNablaSigmaNabla;
+};
+
+
+// MJLSigmaCrossNabla_MatrixElement
+double MJLSigmaCrossNabla_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, int L, double q)
+// Calculate the (reduced) matrix element :
+//    <n' l' j' || i MJL(qr) (σ x ∇/q) || n l j>
+{
+	double MJLSigmaCrossNabla = 0.0 ;
+
+	return MJLSigmaCrossNabla;
+};
+
+
+// MKSigmaLNablaJ_MatrixElement
+double MKSigmaLNablaJ_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, int K, double q)
+// Calculate the (reduced) matrix element :
+//    <n' l' j' || [MK(qr) σ)_L ∇/ q]_J || n l j>
+{	
+	double MKSigmaLNablaJ = 0.0 ;
+
+	return MKSigmaLNablaJ;
+};
+
+
+// MKNablaLSigmaJ_MatrixElement
+double MKNablaLSigmaJ_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, int K, int L, double q)
+// Calculate the (reduced) matrix element :
+//    <n' l' j' || [MK(qr) ∇/q)_L σ]_J || n l j>
+{
+	double MKSigmaNablaLJ = 0.0 ;
+
+	return MKSigmaNablaLJ;
+};
+
+
 // Seven basis single-particle operators
 // Here we calculate <n' l' j' || \hat{O}_J(qr) || n l j>
 // where the operator \hat{O}_J(qr) corresponds to eq.(1) in ref [1] :
@@ -638,6 +799,200 @@ double OmegaJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int l
 	
 	return OmegaJP ;
 };
+
+
+// Other 'seven' operators which appear in [3]
+// Δ''_J(qr) ; Ω''_J(qr) ; 
+// Θ_J(qr) ; Θ'_J(qr) ; Θ''_J(qr)
+// Π_J(qr) ; Π'_J(qr) ; Π''_J(qr) 
+// Φ_J(qr) ; Φ'_J(qr) ; Φ''_J(qr)
+// Ξ_J(qr) ; Ξ'_J(qr) 
+// Γ_J(qr) ; Γ'_J(qr) ; Γ''_J(qr)
+
+// DeltaJPP_SevenOperator
+double DeltaJPP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Δ''_J(qr) || n l j>
+{
+	double DeltaJPP = 1/am::Hat2(2*J) * (std::sqrt(J + 1) * MJLNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
+									     + std::sqrt(J) * MJLNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
+
+	return DeltaJPP ;
+};
+
+
+// OmegaJPP_SevenOperator
+double OmegaJPP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Ω''_J(qr) || n l j>
+{
+	double OmegaJPP = MJNablaSquare_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, q) ;
+	
+	return OmegaJPP ;
+};
+
+
+// ThetaJ_SevenOperator
+double ThetaJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Θ_J(qr) || n l j>
+{	
+	double ThetaJ = MJLSigmaNablaSquare_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J, q) ;
+	
+	return ThetaJ ;
+};
+
+
+// ThetaJP_SevenOperator
+double ThetaJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Θ'_J(qr) || n l j>
+{	double ThetaJP = 1/am::Hat2(2*J) * (- std::sqrt(J) * MJLSigmaNablaSquare_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
+									    + std::sqrt(J + 1) * MJLSigmaNablaSquare_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));	
+	
+	return ThetaJP ;
+};
+
+
+// ThetaJPP_SevenOperator
+double ThetaJPP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Θ''_J(qr) || n l j>
+{
+	double ThetaJPP =  1/am::Hat2(2*J) * (std::sqrt(J + 1) * MJLSigmaNablaSquare_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
+									      + std::sqrt(J) * MJLSigmaNablaSquare_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
+
+	return ThetaJPP ;
+};
+
+
+// PiJ_SevenOperator
+double PiJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Π_J(qr) || n l j>
+{	
+	double PiJ = MJLNablaSigmaNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J, q) ;
+
+	return PiJ ;
+};
+
+
+// PiJP_SevenOperator
+double PiJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Π'_J(qr) || n l j>
+{
+	double PiJP = 1/am::Hat2(2*J) * (- std::sqrt(J) * MJLNablaSigmaNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
+									 + std::sqrt(J + 1) * MJLNablaSigmaNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
+
+	return PiJP ;
+};
+
+
+// PiJPP_SevenOperator
+double PiJPP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Π''_J(qr) || n l j>
+{
+	double PiJPP = 1/am::Hat2(2*J) * (std::sqrt(J + 1) * MJLNablaSigmaNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
+									   + std::sqrt(J) * MJLNablaSigmaNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
+
+	return PiJPP ;
+};
+
+
+// PhiJ_SevenOperator
+double PhiJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Φ_J(qr) || n l j>
+{
+	double PhiJ = MJLSigmaCrossNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J, q) ;
+
+	return PhiJ ;
+};
+
+
+// PhiJP_SevenOperator
+double PhiJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Φ'_J(qr) || n l j>
+{
+	double PhiJP = 1/am::Hat2(2*J) * (- std::sqrt(J) * MJLSigmaCrossNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
+									  + std::sqrt(J + 1) * MJLSigmaCrossNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
+
+	return PhiJP ;
+};
+
+
+// PhiJPP_SevenOperator
+double PhiJPP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Φ''_J(qr) || n l j>
+{
+	double PhiJPP = 1/am::Hat2(2*J) * (std::sqrt(J + 1) * MJLSigmaCrossNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
+									   + std::sqrt(J) * MJLSigmaCrossNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
+
+	return PhiJPP ;
+};
+
+
+// XiJ_SevenOperator
+double XiJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Ξ_J(qr) || n l j>
+{	
+	double XiJ = MKSigmaLNablaJ_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J, q);
+
+	return XiJ ;
+};
+
+
+// XiJP_SevenOperator
+double XiJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Ξ'_J(qr) || n l j>
+{
+	double XiJP = 1/am::Hat2(2*J) * (- std::sqrt(J) * MKSigmaLNablaJ_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
+									 + std::sqrt(J + 1) * MKSigmaLNablaJ_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));	
+
+	return XiJP ;
+};
+
+
+// GammaJ_SevenOperator
+double GammaJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Γ_J(qr) || n l j>
+{	
+	double GammaJ = MKNablaLSigmaJ_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J, q) ;
+
+	return GammaJ ;
+};
+
+
+// GammaJP_SevenOperator
+double GammaJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Γ'_J(qr) || n l j>
+{
+	double GammaJP = 1/am::Hat2(2*J) * (- std::sqrt(J) * MKNablaLSigmaJ_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
+									    + std::sqrt(J + 1) * MKNablaLSigmaJ_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
+
+	return GammaJP ;
+};
+
+
+// GammaJPP_SevenOperator	
+double GammaJPP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+// Calculate the (reduced) matrix element : 
+//    <n' l' j' || Γ''_J(qr) || n l j>
+{
+	double GammaJPP = 1/am::Hat2(2*J) * (std::sqrt(J + 1) * MKNablaLSigmaJ_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
+									     + std::sqrt(J) * MKNablaLSigmaJ_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
+
+	return GammaJPP ;
+};
+
 
 
 ////////////////////////////////////////////////////////////////
