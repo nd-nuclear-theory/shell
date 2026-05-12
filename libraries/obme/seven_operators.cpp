@@ -52,8 +52,20 @@ double SphericalBesselFunctionEval(double r, void * p)
     SphericalBesselParams* params = static_cast< SphericalBesselParams*>(p);
     int order = (params->order);
     double q = (params->q);
+	double jl ;
+	if (q < 0) {
+		if (order % 2 == 0) {
+			jl = gsl_sf_bessel_jl(order, std::abs(q)*r);
+		}
+		else {
+			jl = -gsl_sf_bessel_jl(order, std::abs(q)*r);
+		}
+	}  
+	else {
+		jl = gsl_sf_bessel_jl(order, q*r);
+	}
 
-    return gsl_sf_bessel_jl(order, q*r);
+    return jl;
 };
 
 
@@ -1125,7 +1137,7 @@ void SevenOperatorsOneBodyOperator(
         const int nf = bra_state.n();
         const int ni = ket_state.n();
 
-		//q = TranslationallyInvariantTerm(A) * q;
+		q = TranslationallyInvariantTerm(A) * q;
 
         sector_matrix(row, col) = SevenOperator(
             operator_type,
