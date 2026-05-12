@@ -86,6 +86,7 @@ struct RunParameters {
   double q = 1.0;
   double b = 1.0;
   int    Tz0 = 0;   // 0 = isoscalar (same species); ±1 = isovector (beta decay)
+  int    A = 1;    // nucleon number (for translational invariance correction)
 };
 
 const std::unordered_map<std::string, shell::SevenOperatorType> kOperatorNameMap = {
@@ -155,6 +156,12 @@ RunParameters ReadParameters()
       ss >> p.b;
       mcutils::ParsingCheck(ss, line_count, line);
     }
+    else if (keyword == "set-nucleon-number") {
+      ss >> p.A;
+      mcutils::ParsingCheck(ss, line_count, line);
+      if (p.A <= 0)
+        mcutils::ParsingError(line_count, line, "set-nucleon-number: A must be positive");
+    }
     else {
       mcutils::ParsingError(line_count, line, "Unrecognized keyword");
     }
@@ -196,6 +203,7 @@ int main(int argc, char** argv)
             << "Tz0      : " << Tz0 << "\n"
             << "q        : " << p.q << "\n"
             << "b        : " << p.b << "\n"
+            << "A        : " << p.A << "\n"
             << "Output   : " << p.output_filename << "\n\n";
 
   // Build sectors consistent with the operator's selection rules
@@ -205,7 +213,7 @@ int main(int argc, char** argv)
   // Generate single-particle RMEs
   basis::OperatorBlocks<double> matrices;
   shell::SevenOperatorsOneBodyOperator(
-      p.operator_type, p.J, p.q, p.b,
+      p.operator_type, p.J, p.q, p.b, p.A,
       space, sectors, matrices);
 
   // Write to OBME file (readable by obscalc-ob)
