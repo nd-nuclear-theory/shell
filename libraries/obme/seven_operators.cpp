@@ -142,6 +142,15 @@ bool AbnormalPhysicalCondition(int li, double ji, int lf, double jf, int J)
 };
 
 
+// Translationally invariant term for one-body matrix elements
+// Translationally invariant matrix elements of general one-body operators, Petr Navrátil, 2021
+
+double TranslationallyInvariantTerm(int A)
+//
+{
+	return -std::sqrt((A-1.0)/A);
+}
+
 // We give the relation to calculate the 3 'Bessel' matrix elements which appear in eq.3 in ref [1]
 // <n' l' j' | j_L(rho) | n l j> ; <n' l' j' | j_L(rho)(d_rho - l/rho) | n l j> ; <n' l' j' | j_L(rho)(d_rho + (l+1)/rho) | n l j> 
 // BesselMatrixElement
@@ -481,7 +490,7 @@ double BesselMatrixElement_Plus_Minus(int ni, int li, int bi, int nf, int lf, in
 // <n' l' j' || MJ(qr) || n l j> ; <n' l' j' || MJL(qr) σ || n l j>
 // <n' l' j' || MJL(qr) ∇/q || n l j> ; <n' l' j' || MJ(qr) σ ∇/q || n l j>
 // MJ_MatrixElement
-double MJ_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+double MJ_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q, int A)
 // Calculate the (reduced) matrix element :
 //    <n' l' j' || MJ(qr) || n l j>
 {
@@ -501,7 +510,7 @@ double MJ_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, do
 
 
 // MJLSigma_MatrixElement
-double MJLSigma_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, int L, double q)
+double MJLSigma_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, int L, double q, int A)
 // Calculate the (reduced) matrix element :
 //    <n' l' j' || MJL(qr) \sigma || n l j>
 {
@@ -521,7 +530,7 @@ double MJLSigma_MatrixElement(int ni, int li, double ji, double bi, int nf, int 
 
 
 // MJLNabla_MatrixElement
-double MJLNabla_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, int L, double q)
+double MJLNabla_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, int L, double q, int A)
 // Calculate the (reduced) matrix element :
 //    <n' l' j' || MJL(qr) \nabla / q || n l j>
 {
@@ -536,7 +545,7 @@ double MJLNabla_MatrixElement(int ni, int li, double ji, double bi, int nf, int 
 		double j6_symbol_term1 = am::Wigner6J2(2*L, 2*1, 2*J, 2*li, 2*lf, 2*(li+1)) ;
 		double j3_symbol_term1 = am::Wigner3J2(2*lf, 2*L, 2*(li+1), 0, 0, 0) ;
 		double prefactor_term1 = std::sqrt(li + 1) * am::Hat2(2*(li+1)) * j6_symbol_term1 * j3_symbol_term1 ; 
-		double term1 = BesselMatrixElement_Minus(ni, li, bi, nf, lf, bf, L, q);
+		double term1 = TranslationallyInvariantTerm(A) * BesselMatrixElement_Minus(ni, li, bi, nf, lf, bf, L, q);
 
 		// Calculation of 2nd term
 		// li > 0 
@@ -546,7 +555,7 @@ double MJLNabla_MatrixElement(int ni, int li, double ji, double bi, int nf, int 
 			double j6_symbol_term2 = am::Wigner6J2(2*L, 2*1, 2*J, 2*li, 2*lf, 2*(li-1)) ;
 			double j3_symbol_term2 = am::Wigner3J2(2*lf, 2*L, 2*(li-1), 0, 0, 0) ;
 			prefactor_term2 = std::sqrt(li) * am::Hat2(2*(li-1)) * j6_symbol_term2 * j3_symbol_term2 ; 
-			term2 = BesselMatrixElement_Plus(ni, li, bi, nf, lf, bf, L, q);
+			term2 = TranslationallyInvariantTerm(A) * BesselMatrixElement_Plus(ni, li, bi, nf, lf, bf, L, q);
 		}
 
 		// MJLNabla matrix element calculation
@@ -560,7 +569,7 @@ double MJLNabla_MatrixElement(int ni, int li, double ji, double bi, int nf, int 
 
 
 // MJSigmaNabla_MatrixElement
-double MJSigmaNabla_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+double MJSigmaNabla_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q, int A)
 // Calculate the (reduced) matrix element :
 //    <n' l' j' || MJ(qr) \sigma \nabla / q|| n l j>
 {
@@ -577,12 +586,12 @@ double MJSigmaNabla_MatrixElement(int ni, int li, double ji, double bi, int nf, 
 
 		// Calculation of 1st term
 		if (ji==(li+0.5)) {
-			term1 = BesselMatrixElement_Minus(ni, li, bi, nf, lf, bf, J, q);
+			term1 = TranslationallyInvariantTerm(A) * BesselMatrixElement_Minus(ni, li, bi, nf, lf, bf, J, q);
 		}
 		
 		// Calculation of 2nd term
 		if (ji==(li-0.5)) {
-			term2 = BesselMatrixElement_Plus(ni, li, bi, nf, lf, bf, J, q);
+			term2 = TranslationallyInvariantTerm(A) * BesselMatrixElement_Plus(ni, li, bi, nf, lf, bf, J, q);
 		}
 
 		// MJSigmaNabla matrix element calculation
@@ -597,7 +606,7 @@ double MJSigmaNabla_MatrixElement(int ni, int li, double ji, double bi, int nf, 
 // <n' l' j' || MJ(qr) (∇/q)^2 || n l j>  ; <n' l' j' || (MJL(qr) σ) (∇/q)^2 || n l j>
 // <n' l' j' || (MJL(qr) ∇/q) (σ ∇/q) || n l j>  ; <n' l' j' || i MJL(qr) (σ x ∇/q) || n l j>
 // <n' l' j' || [MK(qr) σ)_L ∇/q]_J || n l j>  ; <n' l' j' || [MK(qr) ∇/q)_L σ]_J || n l j>
-
+/*
 // MJNablaSquare_MatrixElement
 double MJNablaSquare_MatrixElement(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
 // Calculate the (reduced) matrix element :
@@ -701,7 +710,7 @@ double MKNablaLSigmaJ_MatrixElement(int ni, int li, double ji, double bi, int nf
 
 	return MKSigmaNablaLJ;
 };
-
+*/
 
 // Seven basis single-particle operators
 // Here we calculate <n' l' j' || \hat{O}_J(qr) || n l j>
@@ -710,92 +719,95 @@ double MKNablaLSigmaJ_MatrixElement(int ni, int li, double ji, double bi, int nf
 // MUST satisfy the Abnormal parity : Δ_J(qr) ; Σ'_J(qr) ; Σ''_J(qr) ; Ω_J(qr) ; Ω'_J(qr)
 
 // MJ_SevenOprator
-double MJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+double MJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q, int A)
 // Calculate the (reduced) matrix element : 
 //    <n' l' j' || M_J(qr) || n l j>
 {
-    double MJ = MJ_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, q) ;
+    double MJ = MJ_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, q, A) ;
 
 	return MJ ;
 };
 
 
 // DeltaJ_SevenOperator
-double DeltaJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+double DeltaJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q, int A)
 // Calculate the (reduced) matrix element : 
 //    <n' l' j' || Δ_J(qr) || n l j>
 {
-	double DeltaJ = MJLNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J, q) ;
+	double DeltaJ = TranslationallyInvariantTerm(A) * MJLNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J, q, A) ;
 	
 	return DeltaJ ;
 };
 
 
 // DeltaJP_SevenOperator
-double DeltaJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+double DeltaJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q, int A)
 // Calculate the (reduced) matrix element : 
 //    <n' l' j' || Δ'_J(qr) || n l j>
 {
-	double DeltaJP = 1/am::Hat2(2*J) * (- std::sqrt(J) * MJLNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
-									    + std::sqrt(J + 1) * MJLNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
+	double DeltaJP = TranslationallyInvariantTerm(A) * 1/am::Hat2(2*J) * (
+										- std::sqrt(J) * MJLNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q, A) 
+									    + std::sqrt(J + 1) * MJLNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q, A));
 	
 	return DeltaJP ;
 };
 
 
 // SigmaJ_SevenOperator
-double SigmaJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+double SigmaJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q, int A)
 // Calculate the (reduced) matrix element : 
 //    <n' l' j' || Σ_J(qr) || n l j>
 {
-	double SigmaJ = MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J, q) ;
+	double SigmaJ = MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J, q, A) ;
 	
 	return SigmaJ ;
 };
 
 
 // SigmaJP_SevenOperator
-double SigmaJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+double SigmaJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q, int A)
 // Calculate the (reduced) matrix element : 
 //    <n' l' j' || Σ'_J(qr) || n l j>
 {
-	double SigmaJP = 1/am::Hat2(2*J) * (- std::sqrt(J) * MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
-										+ std::sqrt(J + 1) * MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
+	double SigmaJP = TranslationallyInvariantTerm(A) * 1/am::Hat2(2*J) * (
+										- std::sqrt(J) * MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q, A) 
+										+ std::sqrt(J + 1) * MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q, A));
 	
 	return SigmaJP ;
 };
 
 
 // SigmaJPP_SevenOperator
-double SigmaJPP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+double SigmaJPP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q, int A)
 // Calculate the (reduced) matrix element : 
 //    <n' l' j' || Σ''_J(qr) || n l j>
 {
-	double SigmaJPP = 1/am::Hat2(2*J) * (std::sqrt(J + 1) * MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q) 
-										 + std::sqrt(J) * MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q));
+	double SigmaJPP = TranslationallyInvariantTerm(A) * 1/am::Hat2(2*J) * (
+										 std::sqrt(J + 1) * MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J+1, q, A) 
+										 + std::sqrt(J) * MJLSigma_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, J-1, q, A));
 	
 	return SigmaJPP ;
 };
 
 
 // OmegaJ_SevenOperator
-double OmegaJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+double OmegaJ_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q, int A)
 // Calculate the (reduced) matrix element : 
 //    <n' l' j' || Ω_J(qr) || n l j>
 {
-	double OmegaJ = MJSigmaNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, q) ;
+	double OmegaJ = MJSigmaNabla_MatrixElement(ni, li, ji, bi, nf, lf, jf, bf, J, q, A) ;
 		
 	return OmegaJ ;
 };
 
 
 // OmegaJP_SevenOperator
-double OmegaJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
+double OmegaJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q, int A)
 // Calculate the (reduced) matrix element : 
 //    <n' l' j' || Ω'_J(qr) || n l j>
 {
-	double OmegaJP = (OmegaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q) 
-					  + 0.5 * SigmaJPP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q)) ;
+	double OmegaJP = (OmegaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A) 
+					  + 0.5 * SigmaJPP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A)) ;
 	
 	return OmegaJP ;
 };
@@ -808,7 +820,7 @@ double OmegaJP_SevenOperator(int ni, int li, double ji, double bi, int nf, int l
 // Φ_J(qr) ; Φ'_J(qr) ; Φ''_J(qr)
 // Ξ_J(qr) ; Ξ'_J(qr) 
 // Γ_J(qr) ; Γ'_J(qr) ; Γ''_J(qr)
-
+/*
 // DeltaJPP_SevenOperator
 double DeltaJPP_SevenOperator(int ni, int li, double ji, double bi, int nf, int lf, double jf, double bf, int J, double q)
 // Calculate the (reduced) matrix element : 
@@ -992,7 +1004,7 @@ double GammaJPP_SevenOperator(int ni, int li, double ji, double bi, int nf, int 
 
 	return GammaJPP ;
 };
-
+*/
 
 
 ////////////////////////////////////////////////////////////////
@@ -1021,7 +1033,7 @@ double SevenOperator(
 	SevenOperatorType operator_type,
     int ni, int li, double ji, double bi,
     int nf, int lf, double jf, double bf,
-    int J, double q)
+    int J, double q, int A)
 {
   // Parity selection rule
   bool allowed = false;
@@ -1044,21 +1056,21 @@ double SevenOperator(
   // Dispatch to the appropriate single-particle function
    switch (operator_type) {
      case SevenOperatorType::kMJ:
-       return MJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q);
+       return MJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
      case SevenOperatorType::kDeltaJ:
-       return DeltaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q);
+       return DeltaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
      case SevenOperatorType::kDeltaJP:
-       return DeltaJP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q);
+       return DeltaJP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
      case SevenOperatorType::kSigmaJ:
-       return SigmaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q);
+       return SigmaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
      case SevenOperatorType::kSigmaJP:
-       return SigmaJP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q);
+       return SigmaJP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
      case SevenOperatorType::kSigmaJPP:
-       return SigmaJPP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q);
+       return SigmaJPP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
      case SevenOperatorType::kOmegaJ:
-       return OmegaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q);
+       return OmegaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
      case SevenOperatorType::kOmegaJP:
-       return OmegaJP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q);
+       return OmegaJP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
    }
    return 0.;
 };
@@ -1069,6 +1081,7 @@ void SevenOperatorsOneBodyOperator(
     int J,
     double q,
     double b,
+	int A,
     const basis::OrbitalSpaceLJPN& space,
     const basis::OrbitalSectorsLJPN& sectors,
     basis::OperatorBlocks<double>& matrices)
@@ -1076,7 +1089,7 @@ void SevenOperatorsOneBodyOperator(
   // Validate that sectors have the correct quantum numbers
   assert(sectors.J0()  == J);
   assert(sectors.g0()  == SevenOperatorParityChange(operator_type, J));
-  assert(sectors.Tz0() == 0);
+  assert(sectors.Tz0() == 0 || sectors.Tz0() == 1 || sectors.Tz0() == -1);
 
   // Initialise all blocks to zero
   basis::SetOperatorToZero(sectors, matrices);
@@ -1112,11 +1125,13 @@ void SevenOperatorsOneBodyOperator(
         const int nf = bra_state.n();
         const int ni = ket_state.n();
 
+		//q = TranslationallyInvariantTerm(A) * q;
+
         sector_matrix(row, col) = SevenOperator(
             operator_type,
             ni, li, ji, b,
             nf, lf, jf, b,
-            J, q
+            J, q, A
           );
       }
     }

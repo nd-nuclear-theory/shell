@@ -76,7 +76,7 @@ double SevenOperator(
     SevenOperatorType operator_type,
     int ni, int li, double ji, double bi,
     int nf, int lf, double jf, double bf,
-    int J, double q
+    int J, double q, int A
   );
 // Compute the reduced matrix element
 //    <nf lf jf || T_J(q) || ni li ji>
@@ -98,6 +98,7 @@ void SevenOperatorsOneBodyOperator(
     int J,
     double q,
     double b,
+    int A,
     const basis::OrbitalSpaceLJPN& space,
     const basis::OrbitalSectorsLJPN& sectors,
     basis::OperatorBlocks<double>& matrices
