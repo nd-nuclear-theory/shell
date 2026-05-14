@@ -59,6 +59,8 @@
     - Reorder loops over operators and densities.
   + 08/14/20 (pjf): Add append mode to allow repeated calls to obscalc-ob.
   + 10/12/23 (pjf): Fix for corrected normalization of OBDMEs.
+  + 05/14/26 (mac): Refactor matrix element calculation to obme/ob_observable.
+
 ******************************************************************************/
 
 #include <sys/stat.h>
@@ -79,6 +81,7 @@
 #include "mcutils/parsing.h"
 #include "obme/obme_operator.h"
 #include "obme/obme_io.h"
+#include "obme/ob_observable.h"
 
 // Store one-body operators
 struct OneBodyOperator {
@@ -189,77 +192,6 @@ void ReadParameters(RunParameters& run_parameters) {
   }
 }
 
-double CalculateMatrixElement(
-    const RunParameters& run_parameters,
-    const OneBodyOperator& op,
-    const std::unique_ptr<shell::InOBDMEStream>& density_stream
-  )
-{
-  // return value for disallowed matrix element
-  constexpr double double_NaN = std::numeric_limits<double>::quiet_NaN();
-
-  // extract operator infomation
-  const basis::OrbitalSpaceLJPN& space = run_parameters.space;
-  const basis::OrbitalSectorsLJPN sectors = op.sectors;
-  const basis::OperatorBlocks<double>& operator_blocks = op.blocks;
-
-  // convenience dereference of density stream pointer
-  const shell::InOBDMEStream& obdme_s = *density_stream;
-
-  // convenience quantum numbers
-  HalfInt J_bra = obdme_s.J_bra(), J_ket = obdme_s.J_ket();
-  HalfInt M_bra = obdme_s.M_bra(), M_ket = obdme_s.M_ket();
-  assert(IsInteger(M_bra-M_ket));
-  int M0 = int(M_bra-M_ket);
-  int J0 = op.sectors.J0();
-  int g0 = op.sectors.g0();
-  int Tz0 = op.sectors.Tz0();
-
-  // check for parity and isospin-projection; return NaN if disallowed
-  if (obdme_s.g0() != g0) return double_NaN;
-  if (obdme_s.Tz0() != Tz0) return double_NaN;
-
-  // check for triangularity; return NaN if triangle-disallowed
-  if (!am::AllowedTriangle(J_bra, J0, J_ket)) return double_NaN;
-
-  // check for Clebsch zero; return NaN if accidental zero
-  double cg_coeff = am::Wigner3J(J_bra, J0, J_ket, -M_bra, M0, M_ket);
-  if (std::abs(cg_coeff) < 1e-8) return double_NaN;
-
-  // output NaN if obdmes missing
-  if ((J0 < obdme_s.J0_min()) || (J0 > obdme_s.J0_max())) return double_NaN;
-
-  // get necessary density sectors
-  basis::OrbitalSectorsLJPN density_sectors;
-  basis::OperatorBlocks<double> density_blocks;
-  obdme_s.GetMultipole(op.sectors.J0(), density_sectors, density_blocks);
-
-  // loop and sum over \sum_{a,b} rho_{ab} T_{ab}
-  double value = 0.;
-  for (std::size_t subspace_index_a=0; subspace_index_a<space.size(); ++subspace_index_a)
-  {
-    for (std::size_t subspace_index_b=0; subspace_index_b<space.size(); ++subspace_index_b)
-    {
-      const auto& subspace_a = space.GetSubspace(subspace_index_a);
-      const auto& subspace_b = space.GetSubspace(subspace_index_b);
-      auto sector_index =
-          sectors.LookUpSectorIndex(subspace_index_a, subspace_index_b);
-      if (sector_index == basis::kNone) continue;
-
-      for (std::size_t state_index_a = 0; state_index_a < subspace_a.size(); ++state_index_a) {
-        for (std::size_t state_index_b = 0; state_index_b < subspace_b.size(); ++state_index_b) {
-          value += operator_blocks[sector_index](state_index_a, state_index_b)
-                  * density_blocks[sector_index](state_index_a, state_index_b);
-        }
-      }
-    }
-  }
-  // convert to Edmonds convention
-  value *= Hat(J_bra);
-  // store value for return
-  return value;
-}
-
 int main(int argc, char** argv) {
   // header
   std::cout << std::endl;
@@ -306,7 +238,9 @@ int main(int argc, char** argv) {
     std::size_t count = 0;
     for (const auto& density_stream : run_parameters.density_streams)
     {
-      auto matrix_element = CalculateMatrixElement(run_parameters, op, density_stream);
+      auto matrix_element = shell::CalculateOneBodyObservableMatrixElement(
+          // run_parameters.space, op.sectors, op.blocks, density_stream
+        );
       if (std::isnan(matrix_element)) continue;
       ++count;
       section_stream << fmt::format(
