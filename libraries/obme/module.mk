@@ -5,7 +5,7 @@ $(eval $(begin-module))
 ################################################################
 
 module_units_h :=
-module_units_cpp-h := obme_io radial obme obme_operator seven_operators
+module_units_cpp-h := obme_io radial obme obme_operator seven_operators ob_observable
 # module_units_f :=
 module_programs_cpp_test := obme_io_test obme_test seven_operators_test
 

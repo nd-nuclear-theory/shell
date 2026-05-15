@@ -18,6 +18,8 @@
 
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_sf_bessel.h>
+#include <gsl/gsl_sf_gamma.h>
+#include <gsl/gsl_sf_hyperg.h>
 
 #include "am/halfint.h"
 #include "am/wigner_gsl_twice.h"
@@ -156,296 +158,178 @@ bool AbnormalPhysicalCondition(int li, double ji, int lf, double jf, int J)
 
 // Translationally invariant term for one-body matrix elements
 // Translationally invariant matrix elements of general one-body operators, Petr Navrátil, 2021
-
 double TranslationallyInvariantTerm(int A)
 //
 {
-	return -std::sqrt((A-1.0)/A);
+	if (A <= 1) {
+		return 1.0;
+	}
+	else {
+		return -std::sqrt((A-1.0)/A);
+	}
+}
+
+
+// Calculate the double factorial (2n+1)!!
+double factorial2(int n) {
+    if (n <= 0) return 1.0;
+    double result = 1.0;
+    for (int k = 1; k <= n; ++k) {
+        result *= (2 * k + 1);
+    }
+    return result;
 }
 
 // We give the relation to calculate the 3 'Bessel' matrix elements which appear in eq.3 in ref [1]
+// with the analytical expression for HO basis eq.17 18 & 19 in ref [2]
 // <n' l' j' | j_L(rho) | n l j> ; <n' l' j' | j_L(rho)(d_rho - l/rho) | n l j> ; <n' l' j' | j_L(rho)(d_rho + (l+1)/rho) | n l j> 
+// --- Implementation of Basic Functions ---
+double BF1(double y, int ni, int li, int nf, int lf, int L) {
+    return (std::pow(2.0, L) / factorial2(L) *
+            std::pow(y, L / 2.0) * std::exp(-y) *
+            std::sqrt(gsl_sf_fact(ni - 1) * gsl_sf_fact(nf - 1)));
+}
+
+double BF2(double y, int ni, int li, int nf, int lf, int L) {
+    return std::sqrt(gsl_sf_gamma(nf + lf + 0.5) * gsl_sf_gamma(ni + li + 0.5));
+}
+
+double S1(int ni, int li, int mi, int nf, int lf, int mf) {
+    return (std::pow(-1.0, mi + mf) /
+            (gsl_sf_fact(mi) * gsl_sf_fact(mf) *
+             gsl_sf_fact(ni - 1 - mi) * gsl_sf_fact(nf - 1 - mf)));
+}
+
+double S2(int ni, int li, int mi, int nf, int lf, int mf, int L) {
+    double numerator = gsl_sf_gamma((li + lf + L + 2 * mi + 2 * mf + 3) / 2.0);
+    double denominator = gsl_sf_gamma(li + mi + 1.5) * gsl_sf_gamma(lf + mf + 1.5);
+    return numerator / denominator;
+}
+
+double S3(double y, int ni, int li, int mi, int nf, int lf, int mf, int L) {
+    double a = (L - li - lf - 2 * mi - 2 * mf) / 2.0;
+    double b = L + 1.5;
+    return gsl_sf_hyperg_1F1(a, b, y);
+}
+
+double BF3(double y, int ni, int li, int nf, int lf, int L) {
+    double total = 0.0;
+    for (int mi = 0; mi < ni; ++mi) {
+        for (int mf = 0; mf < nf; ++mf) {
+            total += S1(ni, li, mi, nf, lf, mf) *
+                     S2(ni, li, mi, nf, lf, mf, L) *
+                     S3(y, ni, li, mi, nf, lf, mf, L);
+        }
+    }
+    return total;
+}
+
+// --- BesselElement ---
+double BesselElement(double y, int ni, int li, int nf, int lf, int L) {
+    return BF1(y, ni, li, nf, lf, L) * BF2(y, ni, li, nf, lf, L) * BF3(y, ni, li, nf, lf, L);
+}
+
+// --- Gradiant Bessel Elements (Minus) ---
+double BF1A(double y, int ni, int li, int nf, int lf, int L) {
+    return (std::pow(2.0, L - 1) / factorial2(L) *
+            std::pow(y, (L - 1) / 2.0) * std::exp(-y) *
+            std::sqrt(gsl_sf_fact(ni - 1) * gsl_sf_fact(nf - 1)));
+}
+
+double S2A(int ni, int li, int mi, int nf, int lf, int mf, int L) {
+    double numerator = gsl_sf_gamma((L + li + lf + 2 * mi + 2 * mf + 2) / 2.0);
+    double denominator = gsl_sf_gamma(li + mi + 1.5) * gsl_sf_gamma(lf + mf + 1.5);
+    return numerator / denominator;
+}
+
+double S3A(double y, int ni, int li, int mi, int nf, int lf, int mf, int L) {
+    double a1 = (L - li - lf - 2 * mi - 2 * mf - 1) / 2.0;
+    double a2 = (L - li - lf - 2 * mi - 2 * mf + 1) / 2.0;
+    double b = L + 1.5;
+    return (-(li + lf + L + 2 * mi + 2 * mf + 2) / 2.0 * gsl_sf_hyperg_1F1(a1, b, y) +
+            2 * mi * gsl_sf_hyperg_1F1(a2, b, y));
+}
+
+double BF3A(double y, int ni, int li, int nf, int lf, int L) {
+    double total = 0.0;
+    for (int mi = 0; mi < ni; ++mi) {
+        for (int mf = 0; mf < nf; ++mf) {
+            total += S1(ni, li, mi, nf, lf, mf) *
+                     S2A(ni, li, mi, nf, lf, mf, L) *
+                     S3A(y, ni, li, mi, nf, lf, mf, L);
+        }
+    }
+    return total;
+}
+
+double BesselElementMinus(double y, int ni, int li, int nf, int lf, int L) {
+    return BF1A(y, ni, li, nf, lf, L) * BF2(y, ni, li, nf, lf, L) * BF3A(y, ni, li, nf, lf, L);
+}
+
+// --- Gradiant Bessel Elements (Plus) ---
+double S4A(double y, int ni, int li, int mi, int nf, int lf, int mf, int L) {
+    double a1 = (L - li - lf - 2 * mi - 2 * mf - 1) / 2.0;
+    double a2 = (L - li - lf - 2 * mi - 2 * mf + 1) / 2.0;
+    double b = L + 1.5;
+    return (-(li + lf + L + 2 * mi + 2 * mf + 2) / 2.0 * gsl_sf_hyperg_1F1(a1, b, y) +
+            (2 * li + 2 * mi + 1) * gsl_sf_hyperg_1F1(a2, b, y));
+}
+
+double BF4A(double y, int ni, int li, int nf, int lf, int L) {
+    double total = 0.0;
+    for (int mi = 0; mi < ni; ++mi) {
+        for (int mf = 0; mf < nf; ++mf) {
+            total += S1(ni, li, mi, nf, lf, mf) *
+                     S2A(ni, li, mi, nf, lf, mf, L) *
+                     S4A(y, ni, li, mi, nf, lf, mf, L);
+        }
+    }
+    return total;
+}
+
+double BesselElementPlus(double y, int ni, int li, int nf, int lf, int L) {
+    return BF1A(y, ni, li, nf, lf, L) * BF2(y, ni, li, nf, lf, L) * BF4A(y, ni, li, nf, lf, L);
+}
+
+
+// --- Wrappers ---
 // BesselMatrixElement
 double BesselMatrixElement(int ni, int li, int bi, int nf, int lf, int bf, int L, double q) 
-// Arguments :
-//   ni, nf : initial/final principal quantum number 
-//   li, lf : initial/final angular momentum 
-//   bi, bf : initial/final harmonic oscillator parameter
-//   L : rank
-//   q : impulsion
 // Return the matrix element :
 //   <n' l' | j_L(qr) | n l>
 {
-	double me_tot ;
-	double me1 ; 
-
-	gsl_function f;
-	struct SphericalBesselParams params = {L, q};
-	f.function = &SphericalBesselFunctionEval;
-	f.params = &params;
-
-	me1 = spline::RadialMatrixElementOfFunction(
-	    ni, li, bi, spline::BasisType::kOscillator,
-	    nf, lf, bf, spline::BasisType::kOscillator,
-	    spline::OperatorType::kR, &f
-	  );
-
-	me_tot = me1 ;
-
-	return me_tot;
-};
+    double b = bi; 
+    double y = y_var(q, b);
+	ni = ni + 1; // conevntion with n>0
+	nf = nf + 1; // conevntion with n>0
+    return BesselElement(y, ni, li, nf, lf, L);
+}
 
 
 // BesselMatrixElement_Minus
-double BesselMatrixElement_Minus(int ni, int li, int bi, int nf, int lf, int bf, int L, double q)
+double BesselMatrixElement_Minus(int ni, int li, int bi, int nf, int lf, int bf, int L, double q) 
 // Return the matrix element :
 //   <n' l' | j_L(qr)(d_r - l/r) | n l>
 {
-	double me_tot ;
-	int Ni = NodalQuantumNumber(ni, li); // the reccurence relations are deduced in function of the Nodal quantum number
-	if (ni==0) {
-		double me1 ;
-
-		double y = y_var(q, bi);
-		double prefactor = -std::pow(8*y, -0.5);
-		double prefactor_me1 = am::Hat2(2*(li+1)); 
-
-		gsl_function f;
-		struct SphericalBesselParams params = {L, q};
-		f.function = &SphericalBesselFunctionEval;
-		f.params = &params;
-
-		me1 = spline::RadialMatrixElementOfFunction(
-			    ni, li+1, bi, spline::BasisType::kOscillator,
-			    nf, lf, bf, spline::BasisType::kOscillator,
-			    spline::OperatorType::kR, &f
-			  );
-
-		me_tot = prefactor * prefactor_me1 * me1;
-		
-	} 
-	else if (ni==1) {
-		double me1, me2 ;
-
-		double y = y_var(q, bi);
-		double prefactor = -std::pow(8*y, -0.5) / std::sqrt(2);
-		double prefactor_me1 = am::Hat2(2*(li+1)) * am::Hat2(2*(li+1)) ;
-		double prefactor_me2 = am::Hat2(2*(li+2)) * am::Hat2(2*(li+3));
-
-		gsl_function f;
-		struct SphericalBesselParams params = {L, q};
-		f.function = &SphericalBesselFunctionEval;
-		f.params = &params;
-
-		me1 = spline::RadialMatrixElementOfFunction(
-					    ni, li+1, bi, spline::BasisType::kOscillator,
-					    nf, lf, bf, spline::BasisType::kOscillator,
-					    spline::OperatorType::kR, &f
-					  );
-
-		me2 = spline::RadialMatrixElementOfFunction(
-							    ni, li+3, bi, spline::BasisType::kOscillator,
-							    nf, lf, bf, spline::BasisType::kOscillator,
-							    spline::OperatorType::kR, &f
-							  );
-
-		me_tot = prefactor * (
-							  prefactor_me1 * me1 
-							  - prefactor_me2 * me2
-							  );
-	}
-	else if (ni==2) {
-		double me1, me2, me3 ;
-
-		double y = y_var(q, bi);
-		double prefactor = -std::pow(8*y, -0.5) / std::sqrt(8);
-		double prefactor_me1 = am::Hat2(2*(li+1)) * am::Hat2(2*(li+2)) * am::Hat2(2*(li+1));
-		double prefactor_me2 = 2 * am::Hat2(2*(li+2)) * am::Hat2(2*(li+2)) * am::Hat2(2*(li+3));
-		double prefactor_me3 = am::Hat2(2*(li+3)) * am::Hat2(2*(li+4)) * am::Hat2(2*(li+5));
-
-		gsl_function f;
-		struct SphericalBesselParams params = {L, q};
-		f.function = &SphericalBesselFunctionEval;
-		f.params = &params;
-
-		me1 = spline::RadialMatrixElementOfFunction(
-					    ni, li+1, bi, spline::BasisType::kOscillator,
-					    nf, lf, bf, spline::BasisType::kOscillator,
-					    spline::OperatorType::kR, &f
-					  );
-
-		me2 = spline::RadialMatrixElementOfFunction(
-					    ni, li+3, bi, spline::BasisType::kOscillator,
-					    nf, lf, bf, spline::BasisType::kOscillator,
-					    spline::OperatorType::kR, &f
-					  );
-
-		me3 = spline::RadialMatrixElementOfFunction(
-					    ni, li+5, bi, spline::BasisType::kOscillator,
-					    nf, lf, bf, spline::BasisType::kOscillator,
-					    spline::OperatorType::kR, &f
-					  );	
-
-		me_tot = prefactor * (
-							  prefactor_me1 * me1 
-							  - prefactor_me2 * me2
-							  + prefactor_me3 * me3
-							 );
-	}
-
-	return me_tot;
-};
+    double b = bi; 
+    double y = y_var(q, b);
+	ni = ni + 1; // conevntion with n>0
+	nf = nf + 1; // conevntion with n>0
+    return BesselElementMinus(y, ni, li, nf, lf, L);
+}
 
 
 // BesselMatrixElement_Plus
-double BesselMatrixElement_Plus(int ni, int li, int bi, int nf, int lf, int bf, int L, double q)
+double BesselMatrixElement_Plus(int ni, int li, int bi, int nf, int lf, int bf, int L, double q) 
 // Return the matrix element :
 //   <n' l' | j_L(qr)(d_r + (l+1)/r) | n l>
 {
-	double me_tot ;
-	int Ni = NodalQuantumNumber(ni, li); // the reccurence relations are deduced in function of the Nodal quantum number
-	if (ni==0) {
-		double me1, me2 ;
-
-		double y = y_var(q, bi);
-		double prefactor = std::pow(8*y, -0.5);
-		double prefactor_me1 = 2 * am::Hat2(2*li); 
-		double prefactor_me2 = am::Hat2(2*(li+1));
-
-		gsl_function f;
-		struct SphericalBesselParams params = {L, q};
-		f.function = &SphericalBesselFunctionEval;
-		f.params = &params;
-
-		me1 = spline::RadialMatrixElementOfFunction(
-			    ni, li-1, bi, spline::BasisType::kOscillator,
-			    nf, lf, bf, spline::BasisType::kOscillator,
-			    spline::OperatorType::kR, &f
-			  );
-
-		me2 = spline::RadialMatrixElementOfFunction(
-			    ni, li+1, bi, spline::BasisType::kOscillator,
-			    nf, lf, bf, spline::BasisType::kOscillator,
-			    spline::OperatorType::kR, &f
-			  );
-
-		me_tot = prefactor * (
-							  prefactor_me1 * me1
-							  - prefactor_me2 * me2
-							 );
-		
-	} 
-	else if (ni==1) {
-		double me1, me2, me3, me4 ;
-
-		double y = y_var(q, bi);
-		double prefactor = std::pow(8*y, -0.5) / std::sqrt(2);
-		double prefactor_me1 = am::Hat2(2*(li+1)) * 2*am::Hat2(2*li) ;
-		double prefactor_me2 = am::Hat2(2*(li+1)) * am::Hat2(2*(li+1)) ;
-		double prefactor_me3 = am::Hat2(2*(li+2)) * 2*am::Hat2(2*(li+2));
-		double prefactor_me4 = am::Hat2(2*(li+2)) * am::Hat2(2*(li+3));
-
-		gsl_function f;
-		struct SphericalBesselParams params = {L, q};
-		f.function = &SphericalBesselFunctionEval;
-		f.params = &params;
-
-		me1 = spline::RadialMatrixElementOfFunction(
-					    ni, li-1, bi, spline::BasisType::kOscillator,
-					    nf, lf, bf, spline::BasisType::kOscillator,
-					    spline::OperatorType::kR, &f
-					  );
-
-		me2 = spline::RadialMatrixElementOfFunction(
-					    ni, li+1, bi, spline::BasisType::kOscillator,
-					    nf, lf, bf, spline::BasisType::kOscillator,
-					    spline::OperatorType::kR, &f
-					  );
-
-		me3 = spline::RadialMatrixElementOfFunction(
-					    ni, li+1, bi, spline::BasisType::kOscillator,
-					    nf, lf, bf, spline::BasisType::kOscillator,
-					    spline::OperatorType::kR, &f
-					  );
-
-		me4 = spline::RadialMatrixElementOfFunction(
-					    ni, li+3, bi, spline::BasisType::kOscillator,
-					    nf, lf, bf, spline::BasisType::kOscillator,
-					    spline::OperatorType::kR, &f
-					  );
-
-		me_tot = prefactor * (
-			prefactor_me1 * me1
-			- prefactor_me2 * me2
-			- prefactor_me3 * me3
-			+ prefactor_me4 * me4
-		);
-	}
-	else if (ni==2) {
-		double me1, me2, me3, me4, me5, me6 ;
-
-		double y = y_var(q, bi);
-		double prefactor = std::pow(8*y, -0.5) / std::sqrt(8);
-		double prefactor_me1 = am::Hat2(2*(li+1)) * am::Hat2(2*(li+2)) * 2*am::Hat2(2*li);
-		double prefactor_me2 = am::Hat2(2*(li+1)) * am::Hat2(2*(li+2)) * am::Hat2(2*(li+1));
-		double prefactor_me3 = 2*am::Hat2(2*(li+2)) * am::Hat2(2*(li+2)) * 2*am::Hat2(2*(li+2));
-		double prefactor_me4 = 2*am::Hat2(2*(li+2)) * am::Hat2(2*(li+2)) * am::Hat2(2*(li+3));
-		double prefactor_me5 = am::Hat2(2*(li+3)) * am::Hat2(2*(li+4)) * 2*am::Hat2(2*(li+4));
-		double prefactor_me6 = am::Hat2(2*(li+3)) * am::Hat2(2*(li+4)) * am::Hat2(2*(li+5));
-
-		gsl_function f;
-		struct SphericalBesselParams params = {L, q};
-		f.function = &SphericalBesselFunctionEval;
-		f.params = &params;
-
-		me1 = spline::RadialMatrixElementOfFunction(
-					    ni, li-1, bi, spline::BasisType::kOscillator,
-					    nf, lf, bf, spline::BasisType::kOscillator,
-					    spline::OperatorType::kR, &f
-					  );
-
-		me2 = spline::RadialMatrixElementOfFunction(
-					    ni, li+1, bi, spline::BasisType::kOscillator,
-					    nf, lf, bf, spline::BasisType::kOscillator,
-					    spline::OperatorType::kR, &f
-					  );
-
-		me3 = spline::RadialMatrixElementOfFunction(
-					    ni, li+1, bi, spline::BasisType::kOscillator,
-					    nf, lf, bf, spline::BasisType::kOscillator,
-					    spline::OperatorType::kR, &f
-					  );
-
-		me4 = spline::RadialMatrixElementOfFunction(
-					    ni, li+3, bi, spline::BasisType::kOscillator,
-					    nf, lf, bf, spline::BasisType::kOscillator,
-					    spline::OperatorType::kR, &f
-					  );
-
-		me5 = spline::RadialMatrixElementOfFunction(
-					    ni, li+3, bi, spline::BasisType::kOscillator,
-					    nf, lf, bf, spline::BasisType::kOscillator,
-					    spline::OperatorType::kR, &f
-					  );
-
-		me6 = spline::RadialMatrixElementOfFunction(
-					    ni, li+5, bi, spline::BasisType::kOscillator,
-					    nf, lf, bf, spline::BasisType::kOscillator,
-					    spline::OperatorType::kR, &f
-					  );
-
-		me_tot = prefactor * (
-			prefactor_me1 * me1
-			- prefactor_me2 * me2
-			- prefactor_me3 * me3
-			+ prefactor_me4 * me4
-			+ prefactor_me5 * me5
-			- prefactor_me6 * me6
-		);
-	}
-
-	return me_tot ;
-};
+    double b = bi; 
+    double y = y_var(q, b);
+	ni = ni + 1; // conevntion with n>0
+	nf = nf + 1; // conevntion with n>0
+    return BesselElementPlus(y, ni, li, nf, lf, L);
+}
 
 
 // We give the 4 'Bessel' matrix elements which appear in [3]
