@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <iostream>  // for debugging
+#include <tuple>
 
 #include "gsl/gsl_sf_gamma.h"  // for factorial
 #include "gsl/gsl_math.h" // for integer powers
@@ -19,7 +20,6 @@
 #include "am/wigner_gsl.h"
 #include "mcutils/arithmetic.h"  // for ONLYIF
 #include "mcutils/memoizer.h"
-#include "mcutils/vector_tuple.h"
 
 namespace moshinsky {
 
@@ -36,6 +36,10 @@ namespace moshinsky {
   double MoshinskyACoefficient (
       int l1, int l1_dot, int l2, int l2_dot, int kappa
     )
+  // Calculate coefficient A(l1, l1_dot, l2, l2_dot, kappa) entering into
+  // expression for seed Moshinsky coefficient with n1=n2=0.
+  //
+  // Defined in (64) or [Moshinsky1959] or (2.12) of [TTB].
   {
     // compute prefactor
     double prefactor = sqrt(
@@ -74,6 +78,10 @@ namespace moshinsky {
       int l1, int l2,
       int Lambda
     )
+  // Calculate seed Moshinsky coefficient with n1=n2=0.
+  //
+  // Expression is provided in (63) or [Moshinsky1959] or (2.11) of [TTB].  This
+  // is a simplification of (10.30) of [HO].
   {
     // compute prefactor
     double prefactor = ParitySign(n1_dot+l1_dot+l2_dot-Lambda)
@@ -120,6 +128,14 @@ namespace moshinsky {
       int n1, int l1, int n2, int l2,
       int Lambda
     )
+  // Implements recurrence relation (10.36) of [HO], for recurrence on n1.  When
+  // n1 vanishes, the symmetry relation (10.38) of [HO] is used to swap n1 and
+  // n2.  Thus, both n1 and n2 are reduced to zero, reducing the problem to
+  // evaluation of seed Moshinsky coefficients with n1=n2=0.
+  //
+  // See also mac notes 11/09/16.
+  //
+  // A static (persistent) cache is used to memoize computed values.
   {
 
     // tracing output
@@ -136,7 +152,8 @@ namespace moshinsky {
     if ( (n1_dot < 0) || (l1_dot < 0) || (n2_dot < 0) || (l2_dot < 0)
          || (n1 < 0) || (l1 < 0) || (n2 < 0) || (l2 < 0) )
       {
-        std::cerr << "Moshinsky negative arg???" << std::endl;
+        if (trace_moshinsky)
+          std::cerr << "Moshinsky negative arg???" << std::endl;
         return 0.;
       }
 
@@ -145,20 +162,10 @@ namespace moshinsky {
     int rho = 2*n1 + l1 + 2*n2 + l2;
 
     // set up caching key
-    typedef mcutils::VectorTuple<int,9,1> KeyType;
+    typedef std::tuple<int, int, int, int, int, int, int, int, int> KeyType;
     static mcutils::Memoizer<KeyType,double> m;
-    KeyType memo_key;
-
-    memo_key[1] = n1_dot;
-    memo_key[2] = l1_dot;
-    memo_key[3] = n2_dot;
-    memo_key[4] = l2_dot;
-    memo_key[5] = n1;
-    memo_key[6] = l1;
-    memo_key[7] = n2;
-    memo_key[8] = l2;
-    memo_key[9] = Lambda;
-
+    KeyType memo_key(n1_dot, l1_dot, n2_dot, l2_dot, n1, l1, n2, l2, Lambda);
+    
     // evaluate bracket
     double value;
     if (m.Seek(memo_key))

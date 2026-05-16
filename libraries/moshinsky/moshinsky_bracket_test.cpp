@@ -21,10 +21,8 @@
 
 #include "moshinsky/moshinsky_bracket.h"
 
-
-int main(int argc, char **argv)
+void SpotChecks()
 {
-
   ////////////////////////////////
   // spot checks
   ////////////////////////////////
@@ -56,16 +54,15 @@ int main(int argc, char **argv)
 
   // <0 1 1 0 ; 1 | 0 0 1 1 ; 1>
   // expect -0.45643548 (TTB p. 47)
-  trace_moshinsky = true;
+  moshinsky::trace_moshinsky = true;
   std::cout << moshinsky::MoshinskyBracket(0,1,1,0,0,0,1,1,1) << std::endl;
-  trace_moshinsky = false;
+  moshinsky::trace_moshinsky = false;
 
   std::cout << "****" << std::endl;
+}
 
-  ////////////////////////////////
-  // loop by N_max
-  ////////////////////////////////
-
+void NormalizationChecks()
+{
   std::cout << "Normalization checks" << std::endl;
 
   int N_max = 50;
@@ -75,6 +72,7 @@ int main(int argc, char **argv)
         std::cout << "N " << std::setw(2) << N << ", "
                   << "L " << std::setw(3) << L << ": ";
 
+        // TODO 05/17/26 (mac): Rewrite for updated indexing with TwoBodySpaceNL gone.
         TwoBodyStateSetNl states = TwoBodySpaceNL(N,L);
         std::size_t two_body_dim = states.size();
         std::cout << "dim " << std::setw(5) << two_body_dim << std::endl;
@@ -82,7 +80,7 @@ int main(int argc, char **argv)
         int diag_count = 0, off_diag_count = 0;
         double max_diag_error = 0., max_off_diag_error = 0.;
 
-        Timer t;
+        mcutils::SteadyTimer t;
         t.Start();
         for (std::size_t i_ket = 0; i_ket < two_body_dim; ++i_ket)
           // for each ket
@@ -127,7 +125,15 @@ int main(int argc, char **argv)
         std::cout << std::endl;
 
       }
+}
 
+int main(int argc, char **argv)
+{
+
+  SpotChecks();
+
+  NormalizationChecks();
+  
   // termination
-  return 0;
+  return EXIT_SUCCESS;
 }

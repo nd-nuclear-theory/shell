@@ -30,17 +30,13 @@
             for (N2,l2)
               [subject to N1+N2=N and triangle(l1,l2,L)]
 
-
-  The implementation uses the (N1,l1,N2,l2;L) basis wrappers defined
-  in shell_indexing_nl, rather than directly working with these
-  labels.
-
   M. A. Caprio
   University of Notre Dame
 
   02/12/16 (mac): Created from code in moshinsky_bracket_test.
   07/04/16 (mac): Comment and namespace updates in restructuring of shell package.
   07/18/23 (pjf): Rewrite for updated indexing.
+  05/16/26 (mac): Add output header comment lines.
 
 ******************************************************************************/
 
@@ -62,6 +58,11 @@ int main(int argc, char **argv)
   auto relcm_space = basis::RelativeCMSpaceLSJTN(4);
   auto twobody_space = basis::TwoBodySpaceLSJTN(basis::Rank::kOneBody, 2);
 
+  // write header
+  fmt::print("# [L S J T g ; N]\n");
+  fmt::print("#     (Nr, lr, Nc, lc)  (N1, l1, N2, l2) -> bracket\n");
+  fmt::print("\n");
+  
   // iterate over sectors
   for (const auto& relcm_subspace : relcm_space)
   {
@@ -89,6 +90,7 @@ int main(int argc, char **argv)
           );
       }
   }
+
   // termination
-  return 0;
+  return EXIT_SUCCESS;
 }
