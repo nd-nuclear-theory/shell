@@ -9,6 +9,8 @@
   Victor Duménil
   University of Notre Dame & LPC Caen
 
+  + 05/2026 (vd): Created.
+
 ****************************************************************/
 
 #include "obme/seven_operators.h"
@@ -294,7 +296,7 @@ double BesselElementPlus(double y, int ni, int li, int nf, int lf, int L) {
 
 // --- Wrappers ---
 // BesselMatrixElement
-double BesselMatrixElement(int ni, int li, int bi, int nf, int lf, int bf, int L, double q) 
+double BesselMatrixElement(int ni, int li, double bi, int nf, int lf, double bf, int L, double q) 
 // Return the matrix element :
 //   <n' l' | j_L(qr) | n l>
 {
@@ -307,7 +309,7 @@ double BesselMatrixElement(int ni, int li, int bi, int nf, int lf, int bf, int L
 
 
 // BesselMatrixElement_Minus
-double BesselMatrixElement_Minus(int ni, int li, int bi, int nf, int lf, int bf, int L, double q) 
+double BesselMatrixElement_Minus(int ni, int li, double bi, int nf, int lf, double bf, int L, double q) 
 // Return the matrix element :
 //   <n' l' | j_L(qr)(d_r - l/r) | n l>
 {
@@ -320,7 +322,7 @@ double BesselMatrixElement_Minus(int ni, int li, int bi, int nf, int lf, int bf,
 
 
 // BesselMatrixElement_Plus
-double BesselMatrixElement_Plus(int ni, int li, int bi, int nf, int lf, int bf, int L, double q) 
+double BesselMatrixElement_Plus(int ni, int li, double bi, int nf, int lf, double bf, int L, double q) 
 // Return the matrix element :
 //   <n' l' | j_L(qr)(d_r + (l+1)/r) | n l>
 {
@@ -339,7 +341,7 @@ double BesselMatrixElement_Plus(int ni, int li, int bi, int nf, int lf, int bf, 
 // BesselMatrixElement_Plus_Minus = <n' l' j' | j_L(rho)(d_rho - (l-1)/rho)(d_rho + (l+1)/rho) | n l j> ;
 
 // BesselMatrixElement_Minus_Minus
-double BesselMatrixElement_Minus_Minus(int ni, int li, int bi, int nf, int lf, int bf, int L, double q)
+double BesselMatrixElement_Minus_Minus(int ni, int li, double bi, int nf, int lf, double bf, int L, double q)
 // Return the matrix element :
 //   <n' l' | j_L(qr)(d_r - (l+1)/r)(d_r - l/r) | n l>
 {
@@ -350,7 +352,7 @@ double BesselMatrixElement_Minus_Minus(int ni, int li, int bi, int nf, int lf, i
 
 
 // BesselMatrixElement_Minus_Plus
-double BesselMatrixElement_Minus_Plus(int ni, int li, int bi, int nf, int lf, int bf, int L, double q)
+double BesselMatrixElement_Minus_Plus(int ni, int li, double bi, int nf, int lf, double bf, int L, double q)
 // Return the matrix element :
 //   <n' l' | j_L(qr)(d_r + (l+2)/r)(d_r - l/r) | n l>
 {
@@ -361,7 +363,7 @@ double BesselMatrixElement_Minus_Plus(int ni, int li, int bi, int nf, int lf, in
 
 
 // BesselMatrixElement_Plus_Plus
-double BesselMatrixElement_Plus_Plus(int ni, int li, int bi, int nf, int lf, int bf, int L, double q)
+double BesselMatrixElement_Plus_Plus(int ni, int li, double bi, int nf, int lf, double bf, int L, double q)
 // Return the matrix element :
 //   <n' l' | j_L(qr)(d_r + (l)/r)(d_r + (l+1)/r) | n l>
 {
@@ -372,7 +374,7 @@ double BesselMatrixElement_Plus_Plus(int ni, int li, int bi, int nf, int lf, int
 
 
 // BesselMatrixElement_Plus_Minus
-double BesselMatrixElement_Plus_Minus(int ni, int li, int bi, int nf, int lf, int bf, int L, double q)
+double BesselMatrixElement_Plus_Minus(int ni, int li, double bi, int nf, int lf, double bf, int L, double q)
 // Return the matrix element :
 //   <n' l' | j_L(qr)(d_r - (l-1)/r)(d_r + (l+1)/r) | n l>
 {
@@ -949,24 +951,26 @@ double SevenOperator(
   if (!TriangularCondition(ji, jf, J)) return 0.;
   if (J < 0)               			   return 0.;
 
+  // phase 
+  double phase = std::pow(-1, (li + lf)/2);
   // Dispatch to the appropriate single-particle function
    switch (operator_type) {
      case SevenOperatorType::kMJ:
-       return MJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
+       return phase * MJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
      case SevenOperatorType::kDeltaJ:
-       return DeltaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
+       return phase * DeltaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
      case SevenOperatorType::kDeltaJP:
-       return DeltaJP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
+       return phase * DeltaJP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
      case SevenOperatorType::kSigmaJ:
-       return SigmaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
+       return phase * SigmaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
      case SevenOperatorType::kSigmaJP:
-       return SigmaJP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
+       return phase * SigmaJP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
      case SevenOperatorType::kSigmaJPP:
-       return SigmaJPP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
+       return phase * SigmaJPP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
      case SevenOperatorType::kOmegaJ:
-       return OmegaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
+       return phase * OmegaJ_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
      case SevenOperatorType::kOmegaJP:
-       return OmegaJP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
+       return phase * OmegaJP_SevenOperator(ni, li, ji, bi, nf, lf, jf, bf, J, q, A);
    }
    return 0.;
 };
@@ -989,6 +993,9 @@ void SevenOperatorsOneBodyOperator(
 
   // Initialise all blocks to zero
   basis::SetOperatorToZero(sectors, matrices);
+
+  // 
+  const double q_intrinsic = TranslationallyInvariantTerm(A) * q;
   
   // Loop over sectors
   for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
@@ -1021,13 +1028,11 @@ void SevenOperatorsOneBodyOperator(
         const int nf = bra_state.n();
         const int ni = ket_state.n();
 
-		q = TranslationallyInvariantTerm(A) * q;
-
         sector_matrix(row, col) = SevenOperator(
             operator_type,
             ni, li, ji, b,
             nf, lf, jf, b,
-            J, q, A
+            J, q_intrinsic, A
           );
       }
     }

@@ -1,0 +1,9 @@
+set-indexing            /pscratch/sd/v/vdumenil/runs/runvid0014/task-0086.dir/orbitals.dat
+set-output-file         obme-SigmaJP-J1-q-Nmax06.dat
+set-operator            SigmaJP
+set-rank                1
+set-tz0                 1
+set-oscillator-length   1.0
+set-nucleon-number      6
+set-q-range             0.0 0.3 0.01
+define-densities        1.0 0 1  0.0 0 1  /pscratch/sd/v/vdumenil/runs/runvid0014/results/obdme/Z2-N4-N2LOopt500-coul0-hw15.000-Nmax06-Mj0.0/transitions.robdme.2J02.g0.n01.2J00.g0.n01

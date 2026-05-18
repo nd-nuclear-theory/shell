@@ -239,7 +239,7 @@ int main(int argc, char** argv) {
     for (const auto& density_stream : run_parameters.density_streams)
     {
       auto matrix_element = shell::CalculateOneBodyObservableMatrixElement(
-          // run_parameters.space, op.sectors, op.blocks, density_stream
+           run_parameters.space, op.sectors, op.blocks, density_stream
         );
       if (std::isnan(matrix_element)) continue;
       ++count;

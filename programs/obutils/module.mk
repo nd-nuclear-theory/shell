@@ -16,6 +16,7 @@ module_programs_cpp += number-op-gen
 module_programs_cpp += obme2dens
 # module_programs_cpp_test := obdme-compare_test
 module_programs_cpp += seven-op-gen
+module_programs_cpp += seven-op-calc
 
 # module_programs_f :=
 # module_generated :=
