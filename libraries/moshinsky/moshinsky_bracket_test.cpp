@@ -238,6 +238,9 @@ void OrthonormalityChecksForBra()
 
                     double factor1 = moshinsky::MoshinskyBracket(n1_dot, l1_dot, n2_dot, l2_dot, n1, l1, n2, l2, L);
                     double factor2 =  moshinsky::MoshinskyBracket(n1_dot_prime, l1_dot_prime, n2_dot_prime, l2_dot_prime, n1, l1, n2, l2, L);
+                    // double d = 1.;
+                    // double factor1 = moshinsky::GeneralizedMoshinskyBracket(n1_dot, l1_dot, n2_dot, l2_dot, n1, l1, n2, l2, L, d);
+                    // double factor2 =  moshinsky::GeneralizedMoshinskyBracket(n1_dot_prime, l1_dot_prime, n2_dot_prime, l2_dot_prime, n1, l1, n2, l2, L, d);
                     norm_sum += factor1 * factor2;
 
                   }

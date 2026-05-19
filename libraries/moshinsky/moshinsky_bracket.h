@@ -3,17 +3,26 @@
 
   Implements recursive calculation of harmonic oscillator Moshinsky brackets.
 
-  References:
+  References (Moshinsky bracket):
 
-  [Moshinsky1959] M. Moshinsky, Transformation brackets for harmonic oscillator
-  functions, Nucl. Phys. 13, 104 (1959). DOI 10.1016/0029-5582(59)90143-9.
+    [Moshinsky (1959)] M. Moshinsky, Transformation brackets for harmonic
+    oscillator functions, Nucl. Phys. 13, 104 (1959). DOI
+    10.1016/0029-5582(59)90143-9.
 
-  [HO] M. Moshinsky and Y. F. Smirnov, The harmonic oscillator in modern physics
-  (Harwood Academic Publishers, Amsterdam, 1996).
+    [HOMP] M. Moshinsky and Y. F. Smirnov, The harmonic oscillator in modern
+    physics (Harwood Academic Publishers, Amsterdam, 1996).
 
-  [TTB] T. A. Brody and M. Moshinsky, Tables of transformation brackets for
-  nuclear shell-model calculations, Monografias del Instituto de Fisica,
-  Universidad Nacional Autonoma de Mexico, Mexico, 1960.
+    [TTB] T. A. Brody and M. Moshinsky, Tables of transformation brackets for
+    nuclear shell-model calculations, Monografias del Instituto de Fisica,
+    Universidad Nacional Autonoma de Mexico, Mexico, 1960.
+
+  References (generalized Moshinsky bracket):
+
+    [Trlifaj (1972)] PRC 5, 5 (1972).  [In fact, PRC 5(5), 5...]
+
+    [Bevelacqua (1978)] CJP 57, 1136 (1979).
+
+    [Kamuntavicius (2001)] NPA 695, 191 (2001).
 
   Language: C++11
 
@@ -53,23 +62,52 @@ namespace moshinsky {
       int n1, int l1, int n2, int l2,
       int Lambda
     );
-  // Returns Moshinsky bracket between relative/cm (dotted) and
-  // single-particle (undotted) oscillator product states.
+  // Return Moshinsky bracket between relative/cm (dotted) and single-particle
+  // (undotted) oscillator product states.
   //
   // Args:
-  //   n1_dot (int): Relative radial quantum number.
-  //   l1_dot (int): Relative orbital angular momentum.
-  //   n2_dot (int): Center-of-mass radial quantum number.
-  //   l2_dot (int): Center-of-mass orbital angular momentum.
-  //   n1 (int): Particle 1 radial quantum number.
-  //   l1 (int): Particle 1 orbital angular momentum.
-  //   n2 (int): Particle 2 radial quantum number.
-  //   l2 (int): Particle 2 orbital angular momentum.
-  //   Lambda (int): Coupled orbital angular momentum.
+  //   n1_dot (input): Relative radial quantum number.
+  //   l1_dot (input): Relative orbital angular momentum.
+  //   n2_dot (input): Center-of-mass radial quantum number.
+  //   l2_dot (input): Center-of-mass orbital angular momentum.
+  //   n1 (input): Particle 1 radial quantum number.
+  //   l1 (input): Particle 1 orbital angular momentum.
+  //   n2 (input): Particle 2 radial quantum number.
+  //   l2 (input): Particle 2 orbital angular momentum.
+  //   Lambda (input): Coupled orbital angular momentum.
   //
   //  Returns:
   //    Moshinsky bracket.
 
+  double GeneralizedMoshinskyBracket(
+      int n1_dot, int l1_dot,
+      int n2_dot, int l2_dot,
+      int n1, int l1, int n2, int l2,
+      int Lambda,
+      double d
+    );
+  // Return generalized Moshinsky bracket between relative/cm (dotted) and
+  // single-particle (undotted) oscillator product states, that is, generalized
+  // to arbitrary mass ratio.
+  //
+  // Limitation: Initial implementation is restricted to case in which either
+  // l1_dot=0 or l2_dot=0.
+  //
+  // Args:
+  //   n1_dot (input): Relative radial quantum number.
+  //   l1_dot (input): Relative orbital angular momentum.
+  //   n2_dot (input): Center-of-mass radial quantum number.
+  //   l2_dot (input): Center-of-mass orbital angular momentum.
+  //   n1 (input): Particle 1 radial quantum number.
+  //   l1 (input): Particle 1 orbital angular momentum.
+  //   n2 (input): Particle 2 radial quantum number.
+  //   l2 (input): Particle 2 orbital angular momentum.
+  //   Lambda (input): Coupled orbital angular momentum.
+  //   d (input): Mass ratio parameter.
+  //
+  //  Returns:
+  //    Generalized Moshinsky bracket.
+  
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
 } // namespace

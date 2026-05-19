@@ -10,6 +10,7 @@
 #include "moshinsky_bracket.h"
 
 #include <algorithm>
+#include <cassert>
 #include <iostream>  // for debugging
 #include <tuple>
 
@@ -30,16 +31,16 @@ namespace moshinsky {
   bool trace_moshinsky = false;
 
   ////////////////////////////////////////////////////////////////
-  // Moshinsky bracket prerequisites
+  // Moshinsky bracket seed generation
   ////////////////////////////////////////////////////////////////
 
-  double MoshinskyACoefficient (
+  double MoshinskyACoefficient(
       int l1, int l1_dot, int l2, int l2_dot, int kappa
     )
   // Calculate coefficient A(l1, l1_dot, l2, l2_dot, kappa) entering into
   // expression for seed Moshinsky coefficient with n1=n2=0.
   //
-  // Defined in (64) or [Moshinsky1959] or (2.12) of [TTB].
+  // Defined in (64) of Moshinsky (1959) or (2.12) of TTB.
   {
     // compute prefactor
     double prefactor = sqrt(
@@ -73,15 +74,15 @@ namespace moshinsky {
 
   }
 
-  double SeedMoshinskyBracket (
+  double SeedMoshinskyBracket(
       int n1_dot, int l1_dot, int n2_dot, int l2_dot,
       int l1, int l2,
       int Lambda
     )
   // Calculate seed Moshinsky coefficient with n1=n2=0.
   //
-  // Expression is provided in (63) or [Moshinsky1959] or (2.11) of [TTB].  This
-  // is a simplification of (10.30) of [HO].
+  // Expression is provided in (63) of Moshinsky (1959) or (2.11) of TTB.  This
+  // is a simplification of (10.30) of HO.
   {
     // compute prefactor
     double prefactor = ParitySign(n1_dot+l1_dot+l2_dot-Lambda)
@@ -118,18 +119,19 @@ namespace moshinsky {
     return prefactor * sum;
   }
 
+  
   ////////////////////////////////////////////////////////////////
   // MoshinskyBracket
   ////////////////////////////////////////////////////////////////
 
-  double MoshinskyBracket (
+  double MoshinskyBracket(
       int n1_dot, int l1_dot,
       int n2_dot, int l2_dot,
       int n1, int l1, int n2, int l2,
       int Lambda
     )
-  // Implements recurrence relation (10.36) of [HO], for recurrence on n1.  When
-  // n1 vanishes, the symmetry relation (10.38) of [HO] is used to swap n1 and
+  // Implements recurrence relation (10.36) of HOMP, for recurrence on n1.  When
+  // n1 vanishes, the symmetry relation (10.38) of HOMP is used to swap n1 and
   // n2.  Thus, both n1 and n2 are reduced to zero, reducing the problem to
   // evaluation of seed Moshinsky coefficients with n1=n2=0.
   //
@@ -271,6 +273,226 @@ namespace moshinsky {
 
   }
 
+
+  ////////////////////////////////////////////////////////////////
+  // generalized Moshinsky bracket seed generation
+  ////////////////////////////////////////////////////////////////
+
+  double SeedGeneralizedMoshinskyBracket(
+      int n1_dot, int l1_dot, int n2_dot, int l2_dot,
+      int l1, int l2,
+      int Lambda,
+      double d
+    )
+  // Calculate seed generalized Moshinsky coefficient with n1=n2=0.
+  //
+  // Limitation: Initial implementation is only for cases in which either l1_dot=0, as in (11) of Trlifaj
+  // (1972), or l2_dot=0, which can then be obtained by 1<->2 interchange, with the phase factor of (10.38) of HO,
+  //  as verified for generalized Moshinsky brackets in
+  // (15) of Kamuntavicius (2001).  Note that center-of-mass free (CMF)
+  // Moshinsky brackets, for which n2_dot=l2_dot=0, are obtained as an important special case.
+  //
+  // For future general implementation, one would specialize either (23) of
+  // Trlifaj (1972) or (27) of Kamuntavicius (2001) to n1=n2=0, and then apply
+  // simplifications as in going from (60) to (63) of Moshinsky (1959).
+  {
+
+    // short circuit: perform 1<->2 swap if needed
+    if ((l2_dot != 0) && (l1_dot ==0))
+      {
+        if (trace_moshinsky) std::cerr << "   " <<  "case: perform 1<->2 swap for l1_dot==0" << std::endl;
+        double value = ParitySign(l1-Lambda)
+          * SeedGeneralizedMoshinskyBracket(n2_dot, l2_dot, n1_dot, l1_dot, l1, l2, Lambda, d);
+        return value;
+      }
+
+    // restrict to case (l2_dot=0) of (11) of Trlifaj (1972)
+    assert( l2_dot == 0 );
+
+    // evaluate seed
+    // TODO (mac): implement
+    double value = 1.;
+
+    // PLACEHOLDER: use seed for ordinary Moshinsky bracket
+    assert(d == 1.);
+    value = SeedMoshinskyBracket(
+        n1_dot, l1_dot, n2_dot, l2_dot,
+        l1, l2,
+        Lambda
+      );
+      
+    return value;
+  }
+
+  
+  ////////////////////////////////////////////////////////////////
+  // GeneralizedMoshinskyBracket
+  ////////////////////////////////////////////////////////////////
+
+  double GeneralizedMoshinskyBracket(
+      int n1_dot, int l1_dot,
+      int n2_dot, int l2_dot,
+      int n1, int l1, int n2, int l2,
+      int Lambda,
+      double d
+    )
+  // Implements recurrence relation (10.36) of HOMP, as modified for generalized Moshinsky brackets in
+  // Bevelacqua (1979), for recurrence on n1.  When n1 vanishes, the symmetry
+  // relation (10.38) of HOMP, as verified for generalized Moshinsky brackets in
+  // (14) of Kamuntavicius (2001), is used to swap n1 and n2.  Thus, both n1 and n2
+  // are reduced to zero, reducing the problem to evaluation of seed Moshinsky
+  // coefficients with n1=n2=0.
+  //
+  // A persistent cache is used to memoize computed values.  This cache cannot
+  // be shared between calculations with distinct d.  Beware that caching
+  // retrieval relies on floating point comparison of d, which should be
+  // successful if d is not independently recalculated between different calls
+  // to GeneralizedMoshinskyBracket.
+  {
+
+    // tracing output
+    if (trace_moshinsky)
+      {
+        std::cerr << "<" <<  n1_dot << " " << l1_dot << " "  << n2_dot << " " << l2_dot << " ; " << Lambda
+                  << " | "
+                  << n1  << " " << l1 << " " << n2 << " " << l2 << " ; " << Lambda << ">"
+                  << std::endl;
+      }
+
+    // validate bracket
+    //   return 0. for negative argument cases
+    if ( (n1_dot < 0) || (l1_dot < 0) || (n2_dot < 0) || (l2_dot < 0)
+         || (n1 < 0) || (l1 < 0) || (n2 < 0) || (l2 < 0) )
+      {
+        if (trace_moshinsky)
+          std::cerr << "Moshinsky negative arg???" << std::endl;
+        return 0.;
+      }
+
+    // compute phonon parameters
+    int rho_dot = 2*n1_dot + l1_dot + 2*n2_dot + l2_dot;
+    int rho = 2*n1 + l1 + 2*n2 + l2;
+
+    // set up caching key
+    typedef std::tuple<int, int, int, int, int, int, int, int, int, double> KeyType;
+    static mcutils::Memoizer<KeyType,double> m;
+    KeyType memo_key(n1_dot, l1_dot, n2_dot, l2_dot, n1, l1, n2, l2, Lambda, d);
+    
+    // evaluate bracket
+    double value;
+    if (m.Seek(memo_key))
+      // key found
+      {
+        // retrieve stored value
+        value = m.GetValue();
+      }
+    else
+      {
+        // calculate new value
+        if ( (rho_dot != rho)
+             || !am::AllowedTriangle(l1_dot,l2_dot,Lambda)
+             || !am::AllowedTriangle(l1,l2,Lambda)
+          )
+          // case: phonon or angular-momentum forbidden
+          {
+            if (trace_moshinsky) std::cerr << "   " <<  "case: forbidden" << std::endl;
+            value = 0.;
+          }
+        else if ( (n1 == 0) && (n2 == 0) )
+          // case: at seed value on RHS
+          {
+            if (trace_moshinsky) std::cerr << "   " <<  "case: seed" << std::endl;
+            value = SeedGeneralizedMoshinskyBracket(n1_dot,l1_dot,n2_dot,l2_dot,l1,l2,Lambda,d);
+          }
+        else if (n1 == 0)
+          // case: cannot recurse n1 further but can recurse n2
+          {
+            if (trace_moshinsky) std::cerr << "   " <<  "case: reverse ket" << std::endl;
+            value = ParitySign(l2_dot-Lambda)
+              * GeneralizedMoshinskyBracket(n1_dot,l1_dot,n2_dot,l2_dot,n2,l2,n1,l1,Lambda,d);
+          }
+        else
+          // otherwise: recurse n1
+          {
+            if (trace_moshinsky) std::cerr << "   " <<  "case: recurse" << std::endl;
+
+            // TODO (mac): Add prefactors from Bevelacqua
+            double prefactor = (
+                2 / (1+d)  // modification factor for generalized Moshinsky bracket
+                * 1 / sqrt( n1 * (n1 + l1 + 1/2.) )
+              );
+            double terms =
+              ONLYIF( n1_dot != 0 ,
+                      d *  // modification factor for generalized Moshinsky bracket
+                      1/2.*sqrt(n1_dot*(n1_dot+l1_dot+1/2.))
+                      * GeneralizedMoshinskyBracket(
+                          n1_dot-1, l1_dot, n2_dot, l2_dot,
+                          n1-1, l1, n2, l2,
+                          Lambda, d
+                        )
+                )
+              + ONLYIF( n2_dot != 0 ,
+                        1. *  // modification factor for generalized Moshinsky bracket
+                        1/2.*sqrt(n2_dot*(n2_dot+l2_dot+1/2.))
+                        * GeneralizedMoshinskyBracket(
+                            n1_dot, l1_dot, n2_dot-1, l2_dot,
+                            n1-1, l1, n2, l2,
+                            Lambda, d
+                          )
+                )
+              + ONLYIF( (n1_dot != 0) && (n2_dot != 0) ,
+                        sqrt(d) *  // modification factor for generalized Moshinsky bracket
+                        ParitySign(l1_dot+l2_dot+Lambda)*sqrt((n1_dot)*(n2_dot)*(l1_dot+1)*(l2_dot+1))
+                        * am::Wigner6J(l1_dot, l1_dot+1, 1, l2_dot+1, l2_dot, Lambda)
+                        * GeneralizedMoshinskyBracket(
+                            n1_dot-1, l1_dot+1, n2_dot-1, l2_dot+1,
+                            n1-1, l1, n2, l2,
+                            Lambda, d
+                          )
+                )
+              + ONLYIF( (n1_dot != 0) && (l2_dot != 0) ,
+                        sqrt(d) *  // modification factor for generalized Moshinsky bracket
+                        ParitySign(l1_dot+l2_dot+Lambda)*sqrt((n1_dot)*(n2_dot+l2_dot+1/2.)*(l1_dot+1)*(l2_dot))
+                        * am::Wigner6J(l1_dot, l1_dot+1, 1, l2_dot-1, l2_dot, Lambda)
+                        * GeneralizedMoshinskyBracket(
+                            n1_dot-1, l1_dot+1, n2_dot, l2_dot-1,
+                            n1-1, l1, n2, l2,
+                            Lambda, d
+                          )
+                )
+              + ONLYIF( (l1_dot != 0) && (n2_dot != 0) ,
+                        sqrt(d) *  // modification factor for generalized Moshinsky bracket
+                        ParitySign(l1_dot+l2_dot+Lambda)*sqrt((n1_dot+l1_dot+1/2.)*(n2_dot)*(l1_dot)*(l2_dot+1))
+                        * am::Wigner6J(l1_dot, l1_dot-1, 1, l2_dot+1, l2_dot, Lambda)
+                        * GeneralizedMoshinskyBracket(
+                            n1_dot, l1_dot-1, n2_dot-1, l2_dot+1,
+                            n1-1, l1, n2, l2,
+                            Lambda, d
+                          )
+                )
+              + ONLYIF( (l1_dot != 0) && (l2_dot != 0) ,
+                        sqrt(d) *  // modification factor for generalized Moshinsky bracket
+                        ParitySign(l1_dot+l2_dot+Lambda)*sqrt((n1_dot+l1_dot+1/2.)*(n2_dot+l2_dot+1/2.)*(l1_dot)*(l2_dot))
+                        * am::Wigner6J(l1_dot, l1_dot-1, 1, l2_dot-1, l2_dot, Lambda)
+                        * GeneralizedMoshinskyBracket(
+                            n1_dot, l1_dot-1, n2_dot, l2_dot-1,
+                            n1-1, l1, n2, l2,
+                            Lambda, d
+                          )
+                );
+            value = prefactor * terms;
+          }
+
+        // store new value
+        m.SetValue(memo_key,value);
+      }
+
+    if (trace_moshinsky) std::cerr << "   " <<  value << std::endl;
+
+    return value;
+
+  }
+  
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
 } // namespace
