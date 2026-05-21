@@ -1,0 +1,8 @@
+[One-body operator momentum mesh]
+# operator J0 Tz0
+SigmaJP 1 +1
+#   Jf  gf  nf    Ji  gi  ni
+   1.0   0   1   0.0   0   1
+#          q [fm^-1]                    rme
+      0.00000000e+00    -8.391434443893e-01
+

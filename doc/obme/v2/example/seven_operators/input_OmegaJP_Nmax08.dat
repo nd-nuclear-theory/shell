@@ -1,0 +1,8 @@
+set-indexing            orbitals-Nmax08.dat
+set-output-file         obme-OmegaJP-J1-q0001-Nmax08.dat
+set-operator            OmegaJP
+set-rank                1
+set-momentum-transfer   0.0001
+set-oscillator-length   1.0
+set-nucleon-number      6
+

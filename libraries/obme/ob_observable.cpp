@@ -60,6 +60,7 @@ namespace shell
 
     // loop and sum over \sum_{a,b} rho_{ab} T_{ab}
     double value = 0.;
+    double val;
     for (std::size_t subspace_index_a=0; subspace_index_a<space.size(); ++subspace_index_a)
       {
         for (std::size_t subspace_index_b=0; subspace_index_b<space.size(); ++subspace_index_b)
@@ -69,17 +70,52 @@ namespace shell
             auto sector_index =
               sectors.LookUpSectorIndex(subspace_index_a, subspace_index_b);
             if (sector_index == basis::kNone) continue;
+            
+            std::cout << "size a : " <<  subspace_a.size() << "\n";
+            std::cout << "size b : " <<  subspace_b.size() << "\n";
 
             for (std::size_t state_index_a = 0; state_index_a < subspace_a.size(); ++state_index_a) {
               for (std::size_t state_index_b = 0; state_index_b < subspace_b.size(); ++state_index_b) {
-                value += blocks[sector_index](state_index_a, state_index_b)
-                  * density_blocks[sector_index](state_index_a, state_index_b);
+                
+                const auto& state_a = subspace_a.GetState(state_index_a);
+                const auto& state_b = subspace_b.GetState(state_index_b);
+
+                double jb = double(state_b.j());
+                double ja = double(state_a.j());
+                
+                // Debug : print the first term
+                static int debug_count = 0;
+                if (debug_count < 275) {
+                  const auto& state_a = subspace_a.GetState(state_index_a);
+                  const auto& state_b = subspace_b.GetState(state_index_b);
+                  std::cout << "na=" << state_a.n() << " la=" << state_a.l()
+                            << " ja=" << state_a.j()
+                            << " nb=" << state_b.n() << " lb=" << state_b.l()
+                            << " jb=" << state_b.j()
+                            << " OBME=" << blocks[sector_index](state_index_a, state_index_b)
+                            << " ROBDME=" << density_blocks[sector_index](state_index_a, state_index_b) * 3 * 1/std::sqrt(2*ja+1)
+                            << " term=" << blocks[sector_index](state_index_a, state_index_b)
+                                            * density_blocks[sector_index](state_index_a, state_index_b) * 3 * 1/std::sqrt(2*ja+1)
+                            << "\n";
+                  ++debug_count;
+                }
+                
+
+                val = blocks[sector_index](state_index_a, state_index_b)
+                      * density_blocks[sector_index](state_index_a, state_index_b) * 3 * 1/std::sqrt(2*ja+1);
+
+                if (std::abs(val) < 1e-5) {
+                  val = 0.0;
+                };
+                value += val;
+                std::cout << " value=" << value << "\n";
               }
             }
           }
       }
+    
     // convert to Edmonds convention
-    value *= Hat(J_bra);
+    //value *= Hat(J_bra);
     // store value for return
     return value;
   }

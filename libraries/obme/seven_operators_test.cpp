@@ -173,12 +173,12 @@ bool AbnormalPhysicalCondition(int li, double ji, int lf, double jf, int J)
 double TranslationallyInvariantTerm(int A)
 //
 {
-	/*if (A <= 1) {
+	if (A <= 1) {
 		return 1.0;
 	}
 	else {
 		return -std::sqrt((A-1.0)/A);
-	}*/
+	}
 	return 1.0;
 }
 
@@ -1011,8 +1011,9 @@ int main(int argc, char **argv)
 {
   double y = 0.25 ;
   double b = 1.0 ;
-  double q = 1.0 ;
+  double q = 0.0 ;
   int A = 6 ;
+  double qcm = TranslationallyInvariantTerm(A) * q ;
   // Bessel Matrix Element
   //Test_BesselMatrixElement(0, 0, 1.0, 0, 0, 1.0, 0, q);
   //Test_BesselMatrixElement(0, 0, 1.0, 0, 0, 1.0, 1, q);
@@ -1120,6 +1121,20 @@ int main(int argc, char **argv)
   std::cout << "Expected value : " << 1/std::sqrt(4.0*M_PI) * std::pow(y, (2.0-1.0)/2.0) * std::exp(-y) * 1.0/5.0 * std::sqrt(15.0) * (-1.0 + 0.0*y) << "\n" << std::endl;
     
   
+  std::cout << "other Tests : " << std::endl;
+  std::cout << "SigmaJP : " << SigmaJP_SevenOperator(0, 0, 0.5, b, 0, 0, 0.5, b, 1, qcm, A) << std::endl;
+
+  std::cout << "SigmaJP : " << SigmaJP_SevenOperator(0, 2, 1.5, b, 0, 0, 0.5, b, 1, qcm, A) << std::endl;
+
+  std::cout << "SigmaJP : " << SigmaJP_SevenOperator(0, 1, 1.5, b, 0, 1, 1.5, b, 1, qcm, A) << std::endl;
+
+  std::cout << "SigmaJP : " << SigmaJP_SevenOperator(2, 2, 1.5, b, 0, 0, 0.5, b, 1, qcm, A) << std::endl;
+
+  std::cout << "SigmaJP : " << SigmaJP_SevenOperator(0, 1, 0.5, b, 0, 1, 0.5, b, 1, qcm, A) << std::endl;
+
+  std::cout << "SigmaJP : " << SigmaJP_SevenOperator(0, 7, 6.5, b, 0, 7, 6.5, b, 1, qcm, A) << std::endl;
+
+  std::cout << "SigmaJP : " << SigmaJP_SevenOperator(0, 1, 1.5, b, 0, 1, 0.5, b, 1, qcm, A) << std::endl;
   // termination
   return 0;
 }

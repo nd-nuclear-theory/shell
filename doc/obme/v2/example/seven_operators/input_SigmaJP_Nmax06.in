@@ -1,0 +1,7 @@
+set-indexing            data/orbitals-Nmax06.dat
+set-output-file         obme-SigmaJP-J1-q0000-Nmax06.dat
+set-operator            SigmaJP
+set-rank                1
+set-momentum-transfer   0.0
+set-oscillator-length   1.0
+set-nucleon-number      6

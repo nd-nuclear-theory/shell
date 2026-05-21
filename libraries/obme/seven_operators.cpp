@@ -952,7 +952,7 @@ double SevenOperator(
   if (J < 0)               			   return 0.;
 
   // phase 
-  double phase = std::pow(-1, (lf - li)/2);
+  double phase = 1.0 ; //std::pow(-1, (lf - li)/2);
   // Dispatch to the appropriate single-particle function
    switch (operator_type) {
      case SevenOperatorType::kMJ:

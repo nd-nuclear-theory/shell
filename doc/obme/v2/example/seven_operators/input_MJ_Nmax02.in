@@ -1,0 +1,6 @@
+set-indexing            orbitals-Nmax02.dat
+set-output-file         obme-MJ-J1-q1_Nmax02.dat
+set-operator            MJ
+set-rank                1
+set-momentum-transfer   1.0
+set-oscillator-length   1.0
