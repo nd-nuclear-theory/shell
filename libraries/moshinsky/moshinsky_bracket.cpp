@@ -296,33 +296,45 @@ namespace moshinsky {
   // Trlifaj (1972) or (27) of Kamuntavicius (2001) to n1=n2=0, and then apply
   // simplifications as in going from (60) to (63) of Moshinsky (1959).
   {
+    double value = 0.0;
 
     // short circuit: perform 1<->2 swap if needed
     if ((l2_dot != 0) && (l1_dot ==0))
       {
         if (trace_moshinsky) std::cerr << "   " <<  "case: perform 1<->2 swap for l1_dot==0" << std::endl;
-        double value = ParitySign(l1-Lambda)
+        value = ParitySign(l1-Lambda)
           * SeedGeneralizedMoshinskyBracket(n2_dot, l2_dot, n1_dot, l1_dot, l1, l2, Lambda, d);
         return value;
       }
-
-    // restrict to case (l2_dot=0) of (11) of Trlifaj (1972)
+    
     assert( l2_dot == 0 );
 
-    // evaluate seed
-    // TODO (mac): implement
-    double value = 1.;
-
     // PLACEHOLDER: use seed for ordinary Moshinsky bracket
-    assert(d == 1.);
-    value = SeedMoshinskyBracket(
-        n1_dot, l1_dot, n2_dot, l2_dot,
-        l1, l2,
-        Lambda
-      );
+    if (d == 1.) {
+      value = SeedMoshinskyBracket(
+          n1_dot, l1_dot, n2_dot, l2_dot,
+          l1, l2,
+          Lambda
+        );
+      return value;
+    }
+
+    // restrict to case (l2_dot=0) of (11) of Trlifaj (1972)
+    // with n1=n2=0, which corespond to the seed
+    if ((2*n2_dot+2*n1_dot+l1_dot) == (l1+l2)) {
+        value  = std::pow(-1, n1_dot) * 0.5 * std::sqrt(M_PI) * std::pow(1+d, -0.5*l1) * std::pow(d/(1+d), 0.5*l2)
+                * am::ClebschGordan(l1, 0, l2, 0, l1_dot, 0)
+                * std::sqrt((2*l1+1) * (2*l2+1) * gsl_sf_fact(n2_dot))
+                / std::sqrt((2*l1_dot+1) * gsl_sf_fact(n1_dot) * gsl_sf_gamma(n2_dot+1.5) * gsl_sf_gamma(n1_dot+l1_dot+1.5))
+                * gsl_sf_fact(0.5*(l1+l2-l1_dot)) * gsl_sf_gamma(0.5*(l1+l2+l1_dot) + 1.5)
+                / gsl_sf_fact((l1+l2-l1_dot)/2 - n1_dot) 
+                / std::sqrt(gsl_sf_gamma(l1+1.5) * gsl_sf_gamma(l2+1.5));
+    } else {
+        value = 0.;
+    }
       
     return value;
-  }
+  };
 
   
   ////////////////////////////////////////////////////////////////
