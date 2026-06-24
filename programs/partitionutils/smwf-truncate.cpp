@@ -10,6 +10,7 @@
   + 01/22/25 (slv): Create ReadCoefficients function to read the amplitudes, of the 
     many body states, from mfdn_smwf001 file.
   + 02/18/26 (mac): Update mode names.
+  + 06/24/26 (mac): Exit with error if validation on state count fails.
 ****************************************************************/
 
 #include <fmt/format.h>
@@ -972,7 +973,11 @@ int main(int argc, char **argv){
 //      stream << fmt::format("{} : {:+16.7e}  \n", truncated_coeffs[i],truncated_coeffs_index[i]) << std::flush;
     //}
     if (count == current_num_states_short){
-      fmt::print("Validation of number of truncated states successful for state {:d}.. \n", run_parameters.state + 1);
+      fmt::print("Validation of number of truncated states successful for state {:d}.\n", run_parameters.state + 1);
+    }
+    else {
+      fmt::print("ERROR: Validation of number of truncated states failed for state {:d}.\n", run_parameters.state + 1);
+      std::exit(EXIT_FAILURE);
     }
 
     std::vector<float>::iterator it = truncated_coeffs.begin();
@@ -1045,6 +1050,10 @@ int main(int argc, char **argv){
       if (count == current_num_states_short){
         fmt::print("Validation of number of truncated states successful for state {:d}.. \n", st+1);
       }
+      else {
+        fmt::print("ERROR: Validation of number of truncated states failed for state {:d}.\n", st + 1);
+        std::exit(EXIT_FAILURE);
+      }
 
       fmt::print("Writing to output file .. state {:d} \n", st);
       mcutils::WriteFortranRecord(stream, truncated_coeffs);
@@ -1072,6 +1081,11 @@ int main(int argc, char **argv){
     if (count == current_num_states_short){
       fmt::print("Validation of number of truncated states successful for state {:d}.. \n", run_parameters.state + 1);
     }
+    else {
+      fmt::print("ERROR: Validation of number of truncated states failed for state {:d}.\n", run_parameters.state + 1);
+      std::exit(EXIT_FAILURE);
+    }
+
     fmt::print("Writing to output file .. state {:d} \n", run_parameters.state + 1);
     mcutils::WriteFortranRecord(stream, truncated_coeffs);
   }
