@@ -79,6 +79,37 @@ namespace moshinsky {
   //  Returns:
   //    Moshinsky bracket.
 
+
+  double TrlifajGeneralizedMoshinskyBracket(
+      int n1_dot, int l1_dot,
+      int n2_dot, int l2_dot,
+      int n1, int l1, int n2, int l2,
+      int Lambda,
+      double d
+    );
+  // Return generalized Moshinsky bracket between relative/cm (dotted) and
+  // single-particle (undotted) oscillator product states, that is, generalized
+  // to arbitrary mass ratio.
+  //
+  // Limitation: Initial implementation is restricted to case in which either
+  // l1_dot=0 or l2_dot=0.
+  //
+  // Args:
+  //   n1_dot (input): Relative radial quantum number.
+  //   l1_dot (input): Relative orbital angular momentum.
+  //   n2_dot (input): Center-of-mass radial quantum number.
+  //   l2_dot (input): Center-of-mass orbital angular momentum.
+  //   n1 (input): Particle 1 radial quantum number.
+  //   l1 (input): Particle 1 orbital angular momentum.
+  //   n2 (input): Particle 2 radial quantum number.
+  //   l2 (input): Particle 2 orbital angular momentum.
+  //   Lambda (input): Coupled orbital angular momentum.
+  //   d (input): Mass ratio parameter.
+  //
+  //  Returns:
+  //    Generalized Moshinsky bracket.
+
+
   double GeneralizedMoshinskyBracket(
       int n1_dot, int l1_dot,
       int n2_dot, int l2_dot,
