@@ -91,7 +91,7 @@ namespace shell
   //
   ///////////////////////////////////////////////////////////////
   //
-  // FundamentalOBODeltaN: fundamental one-body operators organized by Delta N
+  // OneBodyOperatorDeltaN: fundamental one-body operators organized by Delta N
   // 
   // ## Labeling ##
   //
@@ -191,21 +191,21 @@ namespace shell
   
   // declarations
 
-  class FundamentalOBODeltaNSubspace;
-  class FundamentalOBODeltaNState;  // not really a "state" in the physical sense!
-  class FundamentalOBODeltaNSpace;
+  class OneBodyOperatorDeltaNSubspace;
+  class OneBodyOperatorDeltaNState;  // not really a "state" in the physical sense!
+  class OneBodyOperatorDeltaNSpace;
 
   // labels
 
-  typedef std::tuple<int> FundamentalOBODeltaNSubspaceLabels;
-  typedef std::tuple<int,int,HalfInt,int,int,HalfInt> FundamentalOBODeltaNStateLabels;
+  typedef std::tuple<int> OneBodyOperatorDeltaNSubspaceLabels;
+  typedef std::tuple<int,int,HalfInt,int,int,HalfInt> OneBodyOperatorDeltaNStateLabels;
 
   // subspace
 
-  class FundamentalOBODeltaNSubspace
-    : public BaseSubspace<
-    FundamentalOBODeltaNSubspace,FundamentalOBODeltaNSubspaceLabels,
-    FundamentalOBODeltaNState,FundamentalOBODeltaNStateLabels
+  class OneBodyOperatorDeltaNSubspace
+    : public basis::BaseSubspace<
+    OneBodyOperatorDeltaNSubspace,OneBodyOperatorDeltaNSubspaceLabels,
+    OneBodyOperatorDeltaNState,OneBodyOperatorDeltaNStateLabels
     >
     {
 
@@ -213,11 +213,11 @@ namespace shell
 
       // constructor
 
-      FundamentalOBODeltaNSubspace() = default;
+      OneBodyOperatorDeltaNSubspace() = default;
       // default constructor -- provided since required for certain
       // purposes by STL container classes (e.g., std::vector::resize)
 
-      FundamentalOBODeltaNSubspace(int J0, int g0, int Delta_N, int N1max, int N2max);
+      OneBodyOperatorDeltaNSubspace(int J0, int g0, int Delta_N, int N1max, int N2max);
       // Set up indexing with truncation by oscillator quanta.
 
       // accessors -- subspace labels
@@ -251,21 +251,21 @@ namespace shell
 
   // state
 
-  class FundamentalOBODeltaNState
-    : public BaseState<FundamentalOBODeltaNSubspace>
+  class OneBodyOperatorDeltaNState
+    : public basis::BaseState<OneBodyOperatorDeltaNSubspace>
   {
 
     public:
 
     // pass-through constructors
 
-    FundamentalOBODeltaNState(const SubspaceType& subspace, std::size_t index)
+    OneBodyOperatorDeltaNState(const SubspaceType& subspace, std::size_t index)
       // Construct state by index.
-      : BaseState (subspace, index) {}
+      : basis::BaseState<OneBodyOperatorDeltaNSubspace> (subspace, index) {}
 
-    FundamentalOBODeltaNState(const SubspaceType& subspace, const StateLabelsType& state_labels)
+    OneBodyOperatorDeltaNState(const SubspaceType& subspace, const StateLabelsType& state_labels)
       // Construct state by reverse lookup on labels.
-      : BaseState (subspace, state_labels) {}
+      : basis::BaseState<OneBodyOperatorDeltaNSubspace> (subspace, state_labels) {}
 
     // pass-through accessors (from subspace)
     int J0() const {return subspace().J0();}
@@ -295,7 +295,7 @@ namespace shell
     // Provide string representation of state labels.
 
     // comparison
-    friend bool operator == (const basis::FundamentalOBODeltaNState& a1, const basis::FundamentalOBODeltaNState& a2)
+    friend bool operator == (const OneBodyOperatorDeltaNState& a1, const OneBodyOperatorDeltaNState& a2)
     // Equality test based on labels (so permits comparison across different subspace indexings).
       {
         return (a1.labels() == a2.labels()) && (a1.subspace().labels() == a2.subspace().labels());
@@ -305,19 +305,19 @@ namespace shell
 
   // space
 
-  class FundamentalOBODeltaNSpace
-    : public BaseSpace<FundamentalOBODeltaNSpace,FundamentalOBODeltaNSubspace>
+  class OneBodyOperatorDeltaNSpace
+    : public basis::BaseSpace<OneBodyOperatorDeltaNSpace,OneBodyOperatorDeltaNSubspace>
   {
 
     public:
 
     // constructor
 
-    FundamentalOBODeltaNSpace() = default;
+    OneBodyOperatorDeltaNSpace() = default;
     // default constructor -- provided since required for certain
     // purposes by STL container classes (e.g., std::vector::resize)
 
-    explicit FundamentalOBODeltaNSpace(int J0, int g0, int Delta_N_max, int N1max, int N2max);
+    explicit OneBodyOperatorDeltaNSpace(int J0, int g0, int Delta_N_max, int N1max, int N2max);
     // Set up indexing and weights in traditional oscillator Nmax
     // truncation.
 
@@ -343,26 +343,26 @@ namespace shell
 
   // sectors
 
-  class FundamentalOBODeltaNSectors
-    : public BaseSectors<FundamentalOBODeltaNSpace>
+  class OneBodyOperatorDeltaNSectors
+    : public basis::BaseSectors<OneBodyOperatorDeltaNSpace>
   {
 
     public:
 
     // constructor
 
-    FundamentalOBODeltaNSectors() = default;
+    OneBodyOperatorDeltaNSectors() = default;
     // default constructor -- provided since required for certain
     // purposes by STL container classes (e.g., std::vector::resize)
 
-    FundamentalOBODeltaNSectors(
-        const FundamentalOBODeltaNSpace& space,
+    OneBodyOperatorDeltaNSectors(
+        const OneBodyOperatorDeltaNSpace& space
       );
     // Enumerate diagonal sectors, as needed for M matrix.
     //
     // Arguments:
     //
-    //   space (const FundamentalOBODeltaNSpace& space): Underlying space.
+    //   space (const OneBodyOperatorDeltaNSpace& space): Underlying space.
 
    private:
 
