@@ -325,6 +325,7 @@ namespace shell
     int J0() const {return J0_;}
     int g0() const {return g0_;}
     int Delta_N_max() const {return Delta_N_max_;}
+    int N1max() const {return N1max_;}
     int N2max() const {return N2max_;}
 
     // diagnostic string

@@ -14,6 +14,7 @@
 #include <Eigen/Core>
 
 #include "am/am.h"
+#include "am/wigner_gsl.h"
 #include "fmt/format.h"
 #include "moshinsky/moshinsky_bracket.h"
 #include "obme/obme_operator.h"
@@ -94,6 +95,23 @@ namespace shell
 
     // TODO
 
+    std::string str;
+
+    for (std::size_t state_index=0; state_index<size(); ++state_index)
+      {
+        StateType state(*this,state_index);
+
+        str += fmt::format(
+            "  index {:3d}  n1 {:2d} l1 {:2d} j1 {:4s} N1 {:2d}"
+            "  n2 {:2d} l2 {:2d} j2 {:4s} N2 {:2d}\n",
+            state_index,
+            state.n1(), state.l1(), state.j1().Str(), state.N1(),
+            state.n2(), state.l2(), state.j2().Str(), state.N2()
+          );
+      }
+
+    return str;
+
   }
 
   ////////////////////////////////////////////////////////////////
@@ -120,6 +138,11 @@ namespace shell
     // return os.str();
 
     // TODO
+
+    return fmt::format(
+        "[{} {} {} {} {} {} : index {}]",
+        n1(), l1(), j1().Str(), n2(), l2(), j2().Str(), index()
+      );
   }
 
   ////////////////////////////////////////////////////////////////
@@ -167,6 +190,25 @@ namespace shell
     // return os.str();
 
     // TODO
+
+    std::string str;
+
+    str += fmt::format(
+        "J0 {} g0 {} Delta_N_max {} N1max {} N2max {}\n",
+        J0(), g0(), Delta_N_max(), N1max(), N2max()
+      );
+
+    for (std::size_t subspace_index=0; subspace_index<size(); ++subspace_index)
+      {
+        const SubspaceType& subspace = GetSubspace(subspace_index);
+
+        str += fmt::format(
+            "  index {:3d}  dim {:4d}  labels {}\n",
+            subspace_index, subspace.dimension(), subspace.LabelStr()
+          );
+      }
+
+    return str;
 
   }
 
