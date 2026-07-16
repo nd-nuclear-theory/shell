@@ -7,7 +7,7 @@ $(eval $(begin-module))
 module_units_h :=
 module_units_cpp-h := obme_io radial obme obme_operator ob_observable intrinsic_obme_xform
 # module_units_f :=
-module_programs_cpp_test := obme_io_test obme_test
+module_programs_cpp_test := obme_io_test obme_test intrinsic_obme_xform_test
 
 # module_programs_f :=
 # module_generated :=

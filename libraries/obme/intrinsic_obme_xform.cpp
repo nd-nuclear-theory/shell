@@ -36,13 +36,27 @@ namespace shell
 
     // iterate over state labels
 
-    // for (int n = 0; n <= (Nmax-l)/2; ++n)
-    //   // DEBUGGING: Must use arguments Nmax and l (or data members Nmax_ and l_)
-    //   // here, instead of (hidden) accessors Nmax() and l().
-    //   PushStateLabels(StateLabelsType(n));
+    for (int N_tot = 0; N_tot <= N2max; ++N_tot)
+      for (int N1=0; N1 <= N1max; ++N1)
+        {
+          int N2 = N1+ Delta_N;
+          if ((N2<0) || (N2>N1max))
+            continue;
+          for (HalfInt j1 = HalfInt(1,2); j1 <= N1 + HalfInt(1,2); ++j1)
+            for (HalfInt j2 = HalfInt(1,2); j2 <= N2 + HalfInt(1,2); ++j2)
+              {
+                if (!am::AllowedTriangle(j2, J0, j1))
+                  continue;
 
-    // TODO
-
+                // recover derived quantum numbers (n,l) from (N,j)
+                int l1 = (TwiceValue(j1)-1)/2 + (N1+(TwiceValue(j1)-1)/2)%2;
+                int n1 = (N1-l1)/2;
+                int l2 = (TwiceValue(j2)-1)/2 + (N2+(TwiceValue(j2)-1)/2)%2;;
+                int n2 = (N2-l2)/2;
+                
+                PushStateLabels(StateLabelsType(n1, l1, j1, n2, l2, j2));
+              }
+        }
   }
 
   bool OneBodyOperatorDeltaNSubspace::ValidLabels() const
@@ -56,7 +70,8 @@ namespace shell
     // // nonemptiness in given Nmax truncation
     // valid &= l()<=Nmax();
 
-    // TODO
+    // TODO -- Nothing to check regarding Delta_N?  Or check not larger than
+    // N1max?  Oh, check Delta_N~g0.
     
     return valid;
   }
@@ -71,29 +86,6 @@ namespace shell
 
   std::string OneBodyOperatorDeltaNSubspace::DebugStr() const
   {
-
-    // // TODO (mac): reimplement in terms of fmt library
-    // std::ostringstream os;
-    // 
-    // const int width = 3;
-    // 
-    // for (std::size_t state_index=0; state_index<size(); ++state_index)
-    //   {
-    //     StateType state(*this,state_index);
-    // 
-    //     os
-    //       << " " << "index"
-    //       << " " << std::setw(width) << state_index
-    //       << " " << "n"
-    //       << " " << std::setw(width) << state.n()
-    //       << " " << "=> " << "N"
-    //       << " " << std::setw(width) << state.N()
-    //       << std::endl;
-    //   }
-    // 
-    // return os.str();
-
-    // TODO
 
     std::string str;
 
@@ -120,25 +112,6 @@ namespace shell
 
   std::string OneBodyOperatorDeltaNState::LabelStr() const
   {
-    // // TODO (mac): reimplement in terms of fmt library
-    // std::ostringstream os;
-    // 
-    // const int width = 0;  // for now, no fixed width
-    // 
-    // os << "["
-    //    << " " << "l"
-    //    << " " << std::setw(width) << l()
-    //    << " " << "index"
-    //    << " " << std::setw(width) << index()
-    //    << " :"
-    //    << " " << "n"
-    //    << " " << std::setw(width) << n()
-    //    << " " << "]";
-    // 
-    // return os.str();
-
-    // TODO
-
     return fmt::format(
         "[{} {} {} {} {} {} : index {}]",
         n1(), l1(), j1().Str(), n2(), l2(), j2().Str(), index()
@@ -153,14 +126,12 @@ namespace shell
     : J0_{J0}, g0_{g0}, Delta_N_max_{Delta_N_max}, N1max_{N1max}, N2max_{N2max}
   {
 
-    // // iterate over l
-    // for (int l=0; l<=Nmax_; ++l)
-    //   {
-    //     SubspaceType subspace(l,Nmax);
-    //     PushSubspace(subspace);
-    //   }
-
-    // TODO
+    assert((Delta_N_max-J0)%2==0);
+    for (int Delta_N=-Delta_N_max; Delta_N<=Delta_N_max; Delta_N+=2)
+      {
+        SubspaceType subspace(J0, g0, Delta_N, N1max, N2max);
+        PushSubspace(subspace);
+      }
   }
   
   std::string OneBodyOperatorDeltaNSpace::DebugStr() const

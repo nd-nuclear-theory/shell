@@ -88,7 +88,8 @@ namespace shell
   // the overall "state" indexing becomes (s1,n1,l1,j1,s2,n2,l2,j2), and the
   // orbitals (s1,n1,l1,j1) and (s2,n2,l2,j2) must also now combine to give
   // specified Tz0 for the one-body operator.
-  //
+  ///////////////////////////////////////////////////////////////
+
   ///////////////////////////////////////////////////////////////
   //
   // OneBodyOperatorDeltaN: fundamental one-body operators organized by Delta N
@@ -134,13 +135,19 @@ namespace shell
   // Within a full space defined by fixed (J0, g0), and subject to
   // single-particle truncation Nmax, subspaces are ordered by:
   //
-  //    * Increasing Delta_N (Delta_N=0,1,...,Nmax=Nmax_op), either all even or all odd,
-  //      as given by constraint delta_N~g0.
+  //    * Increasing Delta_N
+  //      (Delta_N=-Delta_N_max,-Delta_N_max+2,...,Delta_N_max), either all even
+  //      or all odd, as given by constraint delta_N~g0.
   //
-  // For purposes of truncating Delta_N, we may, more specifically, use the
-  // one-body truncaiton Nmax=Nmax_op applied to the orbitals on which the OBMEs
-  // and densities appearing in (31) are defined.  Compare Nmax_mat below, used
-  // for the intermediate step of matrix inversion.
+  // The |Delta_N| of an operator can be no larger than the single-particle
+  // N1max.  This maximal value is obtained by destroying a N=0 particle and
+  // creating an N=N1max particle, or vice versa.  All operations we wish to
+  // carry out on the matrix M (in particular, inversion) will preserve Delta_N
+  // subspaces, and in the end we are only interested in operators and densities
+  // appearing in (31).  Therefore, for purposes of truncating Delta_N, we may,
+  // more specifically, use the one-body truncation Nmax=Nmax_op applied to the
+  // orbitals on which the OBMEs and densities appearing in (31) are defined.
+  // Compare Nmax_mat below, used for the intermediate step of matrix inversion.
   //
   // The truncation parameter for subspaces within the space, regardless of how
   // its value may be chosen, is specified as:
