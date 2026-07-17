@@ -128,8 +128,8 @@ void TestOneBodyOperatorDeltaNSubspace()
   //     const basis::OscillatorOrbitalState state = subspace.GetState(basis::OscillatorOrbitalState::StateLabelsType(n));
   //     std::cout << "index " << state.index() << " N " << state.N() << std::endl;
   //   };
-  // 
-  // std::cout << std::endl;
+
+  std::cout << std::endl;
 
 }
 
@@ -142,12 +142,25 @@ void TestOneBodyOperatorDeltaNSpace()
 
   // construct space
   const shell::OneBodyOperatorDeltaNSpace space(0, 0, 2, 2, 4);  // J0=0, g0=0, Delta_N_max=2, N1max=2, N2max=4
-
+  // const shell::OneBodyOperatorDeltaNSpace space(0, 0, 1, 2, 4);  // J0=0, g0=0, Delta_N_max=1, N1max=2, N2max=4  -- parity inconsistent (assertion fails)
+  // const shell::OneBodyOperatorDeltaNSpace space(0, 1, 1, 2, 4);  // J0=0, g0=1, Delta_N_max=1, N1max=2, N2max=4
+  // const shell::OneBodyOperatorDeltaNSpace space(1, 0, 2, 2, 4);  // J0=1, g0=0, Delta_N_max=2, N1max=2, N2max=4
+  // const shell::OneBodyOperatorDeltaNSpace space(2, 0, 2, 2, 4);  // J0=2, g0=0, Delta_N_max=2, N1max=2, N2max=4
+ 
   // print diagnostics
   std::cout << space.DebugStr();
 
   std::cout << std::endl;
 
+  // dump subspace contents
+  for (std::size_t subspace_index=0; subspace_index<space.size(); ++subspace_index)
+    {
+      const auto& subspace = space.GetSubspace(subspace_index);
+      std::cout << subspace.LabelStr() << std::endl
+                << subspace.DebugStr()
+                << std::endl;
+    }
+    
   // try out accessors
   // std::cout << "Try out accessors" << std::endl;
   // std::cout << "Nmax " << space.Nmax() << std::endl;
@@ -161,73 +174,73 @@ void TestOneBodyOperatorDeltaNSpace()
   // std::cout << "LookUpSubspace with a reference variable " << subspace.LabelStr() << std::endl;
 }
 
-// void TestOneBodyOperatorDeltaNSectors()
-// {
-// 
-//   std::cout << "Sectors construction" << std::endl;
-//   std::cout << std::endl;
-// 
-//   // construct space
-//   int Nmax = 4;
-//   basis::OneBodyOperatorDeltaNSpace space(Nmax);
-// 
-//   // construct sectors -- L0=0, g0=0 (Hamiltonian-like)
-//   basis::OneBodyOperatorDeltaNSectors hamiltonian_sectors(space, 0, 0);
-//   std::cout << "hamiltonian_sectors" << std::endl
-//             << hamiltonian_sectors.DebugStr()
-//             << std::endl;
-// 
-//   // find indices for a matrix element from labels
-//   std::cout << "Find indices for a matrix element from labels" << std::endl;
-//   std::size_t bra_subspace_index=space.LookUpSubspaceIndex(basis::OneBodyOperatorDeltaNSubspace::SubspaceLabelsType(2));
-//   std::size_t ket_subspace_index=space.LookUpSubspaceIndex(basis::OneBodyOperatorDeltaNSubspace::SubspaceLabelsType(2));
-//   std::size_t sector_index=hamiltonian_sectors.LookUpSectorIndex(bra_subspace_index,ket_subspace_index);
-//   std::cout << "sector index " << sector_index << std::endl;
-//   basis::OneBodyOperatorDeltaNSectors::SectorType sector=hamiltonian_sectors.GetSector(sector_index);
-//   // const basis::OneBodyOperatorDeltaNSectors::SectorType::BraSubspaceType& bra_subspace=sector.bra_subspace();
-//   // const basis::OneBodyOperatorDeltaNSectors::SectorType::KetSubspaceType& ket_subspace=sector.ket_subspace();
-//   const basis::OneBodyOperatorDeltaNSubspace& bra_subspace=sector.bra_subspace();
-//   const basis::OneBodyOperatorDeltaNSubspace& ket_subspace=sector.ket_subspace();
-//   // auto& bra_subspace=sector.bra_subspace();
-//   // auto& ket_subspace=sector.ket_subspace();
-//   std::cout << "bra_subspace " << bra_subspace.LabelStr() << std::endl;
-//   std::cout << "ket_subspace " << ket_subspace.LabelStr() << std::endl;
-//   std::cout << "bra_subspace " << std::endl << bra_subspace.DebugStr() << std::endl;
-//   std::cout << "ket_subspace " << std::endl << ket_subspace.DebugStr() << std::endl;
-//   std::size_t bra_state_index=bra_subspace.LookUpStateIndex(basis::OneBodyOperatorDeltaNState::StateLabelsType(0));
-//   std::size_t ket_state_index=ket_subspace.LookUpStateIndex(basis::OneBodyOperatorDeltaNState::StateLabelsType(1));
-//   std::cout << "bra state index " << bra_state_index << std::endl;
-//   std::cout << "ket state index " << ket_state_index << std::endl;
-// 
-//   // construct sectors -- L0=1, g0=1 (E1-like)
-//   basis::OneBodyOperatorDeltaNSectors e1_sectors(space, 1, 1);
-//   std::cout << "e1_sectors" << std::endl
-//             << e1_sectors.DebugStr()
-//             << std::endl;
-// 
-//   // construct sectors -- L0=1, g0=1 (E1-like) -- but including noncanonical ("lower-triangle") sectors
-//   basis::OneBodyOperatorDeltaNSectors e1_sectors_both_ways(
-//       space, 1, 1,
-//       basis::SectorDirection::kBoth
-//     );
-//   std::cout << "e1_sectors_both_ways" << std::endl
-//             << e1_sectors_both_ways.DebugStr()
-//             << std::endl;
-// 
-// 
-//   // construct sectors -- L0=2, g0=0 (E2-like)
-//   basis::OneBodyOperatorDeltaNSectors e2_sectors(space, 2, 0);
-//   std::cout << "e2_sectors" << std::endl
-//             << e2_sectors.DebugStr()
-//             << std::endl;
-// 
-//   // construct sectors -- L0=2, g0=1 (M2-like)
-//   basis::OneBodyOperatorDeltaNSectors m2_sectors(space, 2, 1);
-//   std::cout << "n2_sectors" << std::endl
-//             << m2_sectors.DebugStr()
-//             << std::endl;
-// 
-// }
+void TestOneBodyOperatorDeltaNSectors()
+{
+
+  std::cout << "Sectors construction" << std::endl;
+  std::cout << std::endl;
+
+  // construct space
+  const shell::OneBodyOperatorDeltaNSpace space(0, 0, 2, 2, 4);  // J0=0, g0=0, Delta_N_max=2, N1max=2, N2max=4
+  std::cout << space.DebugStr()
+            << std::endl;
+
+  // construct sectors
+  const shell::OneBodyOperatorDeltaNSectors sectors(space);
+  std::cout << sectors.DebugStr()
+            << std::endl;
+
+  // // find indices for a matrix element from labels
+  // std::cout << "Find indices for a matrix element from labels" << std::endl;
+  // std::size_t bra_subspace_index=space.LookUpSubspaceIndex(basis::OneBodyOperatorDeltaNSubspace::SubspaceLabelsType(2));
+  // std::size_t ket_subspace_index=space.LookUpSubspaceIndex(basis::OneBodyOperatorDeltaNSubspace::SubspaceLabelsType(2));
+  // std::size_t sector_index=hamiltonian_sectors.LookUpSectorIndex(bra_subspace_index,ket_subspace_index);
+  // std::cout << "sector index " << sector_index << std::endl;
+  // basis::OneBodyOperatorDeltaNSectors::SectorType sector=hamiltonian_sectors.GetSector(sector_index);
+  // // const basis::OneBodyOperatorDeltaNSectors::SectorType::BraSubspaceType& bra_subspace=sector.bra_subspace();
+  // // const basis::OneBodyOperatorDeltaNSectors::SectorType::KetSubspaceType& ket_subspace=sector.ket_subspace();
+  // const basis::OneBodyOperatorDeltaNSubspace& bra_subspace=sector.bra_subspace();
+  // const basis::OneBodyOperatorDeltaNSubspace& ket_subspace=sector.ket_subspace();
+  // // auto& bra_subspace=sector.bra_subspace();
+  // // auto& ket_subspace=sector.ket_subspace();
+  // std::cout << "bra_subspace " << bra_subspace.LabelStr() << std::endl;
+  // std::cout << "ket_subspace " << ket_subspace.LabelStr() << std::endl;
+  // std::cout << "bra_subspace " << std::endl << bra_subspace.DebugStr() << std::endl;
+  // std::cout << "ket_subspace " << std::endl << ket_subspace.DebugStr() << std::endl;
+  // std::size_t bra_state_index=bra_subspace.LookUpStateIndex(basis::OneBodyOperatorDeltaNState::StateLabelsType(0));
+  // std::size_t ket_state_index=ket_subspace.LookUpStateIndex(basis::OneBodyOperatorDeltaNState::StateLabelsType(1));
+  // std::cout << "bra state index " << bra_state_index << std::endl;
+  // std::cout << "ket state index " << ket_state_index << std::endl;
+  // 
+  // // construct sectors -- L0=1, g0=1 (E1-like)
+  // basis::OneBodyOperatorDeltaNSectors e1_sectors(space, 1, 1);
+  // std::cout << "e1_sectors" << std::endl
+  //           << e1_sectors.DebugStr()
+  //           << std::endl;
+  // 
+  // // construct sectors -- L0=1, g0=1 (E1-like) -- but including noncanonical ("lower-triangle") sectors
+  // basis::OneBodyOperatorDeltaNSectors e1_sectors_both_ways(
+  //     space, 1, 1,
+  //     basis::SectorDirection::kBoth
+  //   );
+  // std::cout << "e1_sectors_both_ways" << std::endl
+  //           << e1_sectors_both_ways.DebugStr()
+  //           << std::endl;
+  // 
+  // 
+  // // construct sectors -- L0=2, g0=0 (E2-like)
+  // basis::OneBodyOperatorDeltaNSectors e2_sectors(space, 2, 0);
+  // std::cout << "e2_sectors" << std::endl
+  //           << e2_sectors.DebugStr()
+  //           << std::endl;
+  // 
+  // // construct sectors -- L0=2, g0=1 (M2-like)
+  // basis::OneBodyOperatorDeltaNSectors m2_sectors(space, 2, 1);
+  // std::cout << "n2_sectors" << std::endl
+  //           << m2_sectors.DebugStr()
+  //           << std::endl;
+
+}
 
 
 ////////////////////////////////////////////////////////////////
@@ -239,7 +252,8 @@ int main(int argc, char **argv)
 
   TestOneBodyOperatorDeltaNSubspace();
   TestOneBodyOperatorDeltaNSpace();
-    
+  TestOneBodyOperatorDeltaNSectors();
+  
   // termination
   return EXIT_SUCCESS;
 }

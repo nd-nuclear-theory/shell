@@ -103,34 +103,17 @@ namespace shell
   //
   //   * g0 (int): Grade (=0,1) for the parity P.
   //
-  // subspace labels: (Delta_N)
-  //
-  //   * Delta_N (int): Difference in principal quantum number (N2-N1).
-  //
-  //   Note that Delta_N is constrained by its relation g0~Delta_N to the
-  //   parity grade.
-  //
-  // state labels within subspace: (n1, l1, j1, n2, l2, j2)
-  //
-  //   * n1 (int): Radial quantum number (0,1,...).
-  //   * l1 (int): Orbital angular momentum.
-  //   * j1 (HalfInt): Total angular momentum.
-  //   * n2 (int): Radial quantum number (0,1,...).
-  //   * l2 (int): Orbital angular momentum.
-  //   * j2 (HalfInt): Total angular momentum.
-  //
-  //   These labels exhibit some redundancy, as n2 may be deduced from the
-  //   others for given Delta_N.
-  //
-  //   The oscillator quantum number is deduced from the
-  //   n and l quantum numbers:
-  //
-  //   * N1 (int): Oscillator quanta (N1=2*n1+l1).
-  //   * N2 (int): Oscillator quanta (N2=2*n2+l2).
-  //
   ///////////////////////////////////////////////////////////////
   //
   // ## Subspaces ##
+  //
+  // subspace labels: (Delta_N)
+  //
+  //   * Delta_N (int): Difference in principal quantum numbers of creation and
+  //     annihilation operators (Delta_N=N1-N2).
+  //
+  //   Note that Delta_N is constrained by its relation g0~Delta_N to the
+  //   parity grade.
   //
   // Within a full space defined by fixed (J0, g0), and subject to
   // single-particle truncation Nmax, subspaces are ordered by:
@@ -160,11 +143,27 @@ namespace shell
   //
   // ## States ##
   //
+  // state labels within subspace: (n1, l1, j1, n2, l2, j2)
+  //
+  //   * n1 (int): Radial quantum number (0,1,...).
+  //   * l1 (int): Orbital angular momentum.
+  //   * j1 (HalfInt): Total angular momentum.
+  //   * n2 (int): Radial quantum number (0,1,...).
+  //   * l2 (int): Orbital angular momentum.
+  //   * j2 (HalfInt): Total angular momentum.
+  //
+  //   These labels exhibit some redundancy, as n2 may be deduced from the
+  //   others for given Delta_N.
+  //
+  //   The oscillator quantum number is deduced from the
+  //   n and l quantum numbers:
+  //
+  //   * N1 (int): Oscillator quanta (N1=2*n1+l1).
+  //   * N2 (int): Oscillator quanta (N2=2*n2+l2).
+  //
   // Within a subspace, the states are ordered by:
   //
-  //   * Increasing N_tot=N1+N2 (Ntot=0,1,...,2*Nmax-Delta_N),
-  //
-  //   * Increasing N1 (N1=0,1,...,Ntot).
+  //   * Increasing N1 (N1=0,1,...,N1max).
   //
   //   * Then N2 is determined by N2=N1+Delta_N.
   //
