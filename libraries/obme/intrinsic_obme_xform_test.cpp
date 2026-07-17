@@ -9,6 +9,7 @@
 #include <Eigen/Core>
 
 #include "basis/operator.h"
+#include "mcutils/eigen.h"
 
 #include "obme/intrinsic_obme_xform.h"
 
@@ -242,7 +243,73 @@ void TestOneBodyOperatorDeltaNSectors()
 
 }
 
+void PopulateOperator()
+{
 
+  std::cout << "Populating operator" << std::endl;
+  std::cout << std::endl;
+
+  // set multipolarity
+  int J0 = 0;
+  int g0 = 0;
+
+  // set truncation
+  int Delta_N_max=2;
+  int N1max=2;
+  int N2max=4;
+
+  // set up data structures
+  const shell::OneBodyOperatorDeltaNSpace space(J0, g0, Delta_N_max, N1max, N2max);
+  const shell::OneBodyOperatorDeltaNSectors sectors(space);
+  basis::OperatorBlocks<double> matrices;
+  basis::SetOperatorToZero(sectors, matrices);
+
+  // populate blocks
+  for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
+  {
+    // make aliases for sector and block
+    const auto& sector = sectors.GetSector(sector_index);
+    auto& sector_matrix = matrices[sector_index];
+
+    // get subspaces
+    const auto& bra_subspace = sector.bra_subspace();
+    const auto& ket_subspace = sector.ket_subspace();
+
+    // loop over matrix elements in block
+    //
+    // #pragma omp parallel for collapse(2)
+    for (std::size_t bra_index = 0; bra_index < bra_subspace.size(); ++bra_index)
+      {
+        for (std::size_t ket_index = 0; ket_index < ket_subspace.size(); ++ket_index)
+          {
+            // get states
+            const auto& bra_state = bra_subspace.GetState(bra_index);
+            const auto& ket_state = ket_subspace.GetState(ket_index);
+
+            // extract labels
+            int bra_n1, bra_l1, bra_n2, bra_l2; HalfInt bra_j1, bra_j2;
+            std::tie(bra_n1, bra_l1, bra_j1, bra_n2, bra_l2, bra_j2) = bra_state.labels();
+            // TODO: and similarly for ket...
+            const int bra_N1 = bra_state.N1();
+            const int bra_N2 = bra_state.N2();
+            const int ket_N1 = ket_state.N1();
+            const int ket_N2 = ket_state.N2();
+            
+            // calculate matrix element
+            float matrix_element = 42.;  // TODO implement matrix element calculations
+              
+            // save full matrix element
+            sector_matrix(bra_index, ket_index) = matrix_element;
+          }
+      }
+    
+    // print diagnostic
+    std::cout << mcutils::FormatMatrix(sector_matrix, "+.8e") << std::endl
+              << std::endl;
+
+  }
+
+}
 ////////////////////////////////////////////////////////////////
 // main
 ////////////////////////////////////////////////////////////////
@@ -253,6 +320,7 @@ int main(int argc, char **argv)
   TestOneBodyOperatorDeltaNSubspace();
   TestOneBodyOperatorDeltaNSpace();
   TestOneBodyOperatorDeltaNSectors();
+  PopulateOperator();
   
   // termination
   return EXIT_SUCCESS;
