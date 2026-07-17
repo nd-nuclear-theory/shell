@@ -27,7 +27,7 @@ namespace shell
   // OneBodyOperatorDeltaNSubspace
   ////////////////////////////////////////////////////////////////
 
-  OneBodyOperatorDeltaNSubspace::OneBodyOperatorDeltaNSubspace(int J0, int g0, int Delta_N, int N1max, int N2max)
+  /*OneBodyOperatorDeltaNSubspace::OneBodyOperatorDeltaNSubspace(int J0, int g0, int Delta_N, int N1max, int N2max)
   : BaseSubspace{{Delta_N}}, J0_{J0}, g0_{g0}, N1max_{N1max}, N2max_{N2max}
   {
 
@@ -57,6 +57,66 @@ namespace shell
                 PushStateLabels(StateLabelsType(n1, l1, j1, n2, l2, j2));
               }
         }
+  }*/
+
+  OneBodyOperatorDeltaNSubspace::OneBodyOperatorDeltaNSubspace(int J0, int g0, int Delta_N, int N1max, int N2max)
+  : BaseSubspace{{Delta_N}}, J0_{J0}, g0_{g0}, N1max_{N1max}, N2max_{N2max}
+  {
+
+    // validate subspace labels
+    assert(ValidLabels());
+
+    // iterate over state labels (n1,l1,j1,n2,l2,j2)
+    //
+    // DEBUGGING: Must use arguments J0, g0, Delta_N, N1max, N2max (or data
+    // members) here, instead of (hidden) accessors, since labels() is not yet
+    // established during base class construction.
+
+    // iterate over N1 (with N2=N1+Delta_N determined); apply square
+    // truncation N1,N2<=N1max and triangular truncation N1+N2<=N2max
+    for (int N1=0; N1<=N1max; ++N1)
+      {
+        int N2 = N1+Delta_N;
+        if (N2>N1max)
+          continue;
+        if ((N1+N2)>N2max)
+          continue;
+
+        // iterate over l1 (same parity as N1, since n1=(N1-l1)/2 integer)
+        for (int l1=N1%2; l1<=N1; l1+=2)
+          {
+            int n1 = (N1-l1)/2;
+
+            // iterate over l2 (same parity as N2)
+            for (int l2=N2%2; l2<=N2; l2+=2)
+              {
+                int n2 = (N2-l2)/2;
+
+                // enforce orbital parity constraint l1+l2~g0
+                if (((l1+l2)%2)!=g0)
+                  continue;
+
+                // iterate over j1=l1+/-1/2 (only j1=1/2 for l1=0)
+                HalfInt j1_min = (l1==0) ? HalfInt(1,2) : HalfInt(2*l1-1,2);
+                for (HalfInt j1=j1_min; j1<=HalfInt(2*l1+1,2); j1=j1+1)
+                  {
+
+                    // iterate over j2=l2+/-1/2 (only j2=1/2 for l2=0)
+                    HalfInt j2_min = (l2==0) ? HalfInt(1,2) : HalfInt(2*l2-1,2);
+                    for (HalfInt j2=j2_min; j2<=HalfInt(2*l2+1,2); j2=j2+1)
+                      {
+
+                        // enforce multipole triangularity (j1,j2,J0)
+                        if (!am::AllowedTriangle(j1,j2,J0))
+                          continue;
+
+                        PushStateLabels(StateLabelsType(n1,l1,j1,n2,l2,j2));
+                      }
+                  }
+              }
+          }
+      }
+
   }
 
   bool OneBodyOperatorDeltaNSubspace::ValidLabels() const
@@ -217,6 +277,15 @@ namespace shell
     //     }
 
     // TODO
+
+    // The M matrix (13) of Navratil (2021) is block diagonal in Delta_N, as
+    // established by oscillator quanta conservation of the constituent
+    // Moshinsky brackets (see remarks in intrinsic_obme_xform.h).  Since each
+    // subspace of OneBodyOperatorDeltaNSpace already corresponds to a single
+    // value of Delta_N, only diagonal sectors (bra subspace = ket subspace)
+    // are populated.
+    for (std::size_t subspace_index=0; subspace_index<space.size(); ++subspace_index)
+      PushSector(subspace_index,subspace_index);
   }
 
   
