@@ -268,19 +268,83 @@ namespace shell
                     if (!am::AllowedTriangle(lp,L1,l2))
                       continue;
 
+                    // 07/20/26 (mac): Linkage debugging
+                    //
+                    // Bizarrely, a call here simply to
+                    // moshinsky::TrlifajGeneralizedMoshinskyBracket fails at
+                    // link time, when linking intrinsic_obme_xform_test.cpp
+                    // (under gcc version 11.4.0):
+                    //
+                    // ----------------------------------------------------------------
+                    //
+                    //  g++ -std=c++17 -fopenmp -O3 -DHAVE_INLINE
+                    // -D'VCS_REVISION="1.1.0-83-gf803879-dirty"' -DBASIS_HASH -DBASIS_BOOST_HASH
+                    // -DSPLINE_NO_FANCY_INTEGRATION -I/home/mcaprio/local/opt/eigen-3.4.1/include
+                    // -I/home/mcaprio/local/opt/eigen-3.4.1/include/eigen3 -I./libraries -I./contrib
+                    // -DUSE_DAEJEON16 -L/home/mcaprio/local/opt/eigen-3.4.1/lib
+                    // libraries/obme/intrinsic_obme_xform_test.cpp contrib/Daejeon16/libDaejeon16.a
+                    // libraries/relative/librelative.a libraries/moshinsky/libmoshinsky.a
+                    // libraries/tbme/libtbme.a libraries/obme/libobme.a libraries/density/libdensity.a
+                    // libraries/basis/libbasis.a libraries/mcutils/libmcutils.a
+                    // libraries/spline/libspline.a libraries/fmt/libfmt.a -lgsl -lgslcblas -lgfortran
+                    // -lquadmath -o libraries/obme/intrinsic_obme_xform_test
+                    // 
+                    // /usr/bin/ld:
+                    // libraries/obme/libobme.a(intrinsic_obme_xform.o): in function
+                    // `shell::ConstructOneBodyOperatorDeltaNMatrix(shell::OneBodyOperatorDeltaNSpace
+                    // const&, shell::OneBodyOperatorDeltaNSectors const&, int,
+                    // std::vector<Eigen::Matrix<double, -1, -1, 0, -1, -1>,
+                    // std::allocator<Eigen::Matrix<double, -1, -1, 0, -1, -1> > >&)':
+                    // 
+                    // intrinsic_obme_xform.cpp:(.text+0x1511): undefined reference to `moshinsky::TrlifajGeneralizedMoshinskyBracket(int, int, int, int, int, int, int, int, int, double)'
+                    // /usr/bin/ld: intrinsic_obme_xform.cpp:(.text+0x155f): undefined reference to `moshinsky::TrlifajGeneralizedMoshinskyBracket(int, int, int, int, int, int, int, int, int, double)'
+                    // 
+                    // collect2: error: ld returned 1 exit status
+                    // make: *** [<builtin>: libraries/obme/intrinsic_obme_xform_test] Error 1
+                    // 
+                    // ----------------------------------------------------------------
+                    //
+                    // This linkage error was initially resolved by ensuring
+                    // there was a call to
+                    // moshinsky::TrlifajGeneralizedMoshinskyBracket in
+                    // intrinsic_obme_xform_test.cpp itself.  The one apparent
+                    // difference was that a call there is from the global
+                    // namespace, while the call here is from within the shell
+                    // namespace.  This suggests a namespace resolution issue,
+                    // with a possible overloaded resolution to a nonexistent
+                    // shell::moshinsky::TrlifajGeneralizedMoshinskyBracket.
+                    //
+                    // In fact, even referencing another identifier in the same
+                    // namespace from the main function of
+                    // intrinsic_obme_xform_test.cpp seems to resolve the
+                    // linkage issue:
+                    //
+                    // moshinsky::MoshinskyBracket(0,0,0,0,0,0,0,0,0);
+                    //
+                    // But a similar invocation before entering namespace
+                    // shell at the top of the present file does not work.
+                    //
+                    // Also, explicitly qualifying the name as being relative to
+                    // the global namespace, as
+                    // ::moshinsky::TrlifajGeneralizedMoshinskyBracket, in the
+                    // call below does not seem to help.  (Anyway, no such
+                    // ambiguity arises for any other identifiers, involving
+                    // namespaces.  But is there perhaps a namespace
+                    // shell::moshinsky lurking elsewhere in the code?)
+                    
                     double bracket1 = moshinsky::TrlifajGeneralizedMoshinskyBracket(
                                       n, l,  0, 0,
-                                      N1,L1, n1,l1,
+                                      N1, L1, n1, l1,
                                       l, d
-                                    );
+                      );
                     if (bracket1==0.)
                       continue;
-
+                    
                     double bracket2 = moshinsky::TrlifajGeneralizedMoshinskyBracket(
-                                      np,lp, 0, 0,
-                                      N1,L1, n2,l2,
+                                      np, lp, 0, 0,
+                                      N1, L1, n2, l2,
                                       lp, d
-                                    );
+                      );
                     if (bracket2==0.)
                       continue;
 
