@@ -12,6 +12,7 @@
 #include "mcutils/eigen.h"
 
 #include "obme/intrinsic_obme_xform.h"
+#include "moshinsky/moshinsky_bracket.h"
 
 ////////////////////////////////////////////////////////////////
 // test code
@@ -310,6 +311,43 @@ void PopulateOperator()
   }
 
 }
+
+void PopulateOperator2()
+{
+
+  std::cout << "Populating operator" << std::endl;
+  std::cout << std::endl;
+
+  // set multipolarity
+  int J0 = 0;
+  int g0 = 0;
+
+  // set truncation
+  int Delta_N_max=2;
+  int N1max=2;
+  int N2max=4;
+
+  // set number of nucleons (needed for Moshinsky bracket mass ratio 1/(A-1))
+  int A = 6;
+
+  // set up data structures
+  const shell::OneBodyOperatorDeltaNSpace space(J0, g0, Delta_N_max, N1max, N2max);
+  const shell::OneBodyOperatorDeltaNSectors sectors(space);
+  basis::OperatorBlocks<double> matrices;
+
+  // populate blocks -- calls ConstructOneBodyOperatorDeltaNMatrix directly,
+  // which fills in matrices for all sectors at once
+  shell::ConstructOneBodyOperatorDeltaNMatrix(space, sectors, A, matrices);
+
+  // print diagnostic
+  for (std::size_t sector_index = 0; sector_index < sectors.size(); ++sector_index)
+    {
+      const auto& sector_matrix = matrices[sector_index];
+      std::cout << mcutils::FormatMatrix(sector_matrix, "+.8e") << std::endl
+                << std::endl;
+    }
+
+}
 ////////////////////////////////////////////////////////////////
 // main
 ////////////////////////////////////////////////////////////////
@@ -321,6 +359,7 @@ int main(int argc, char **argv)
   TestOneBodyOperatorDeltaNSpace();
   TestOneBodyOperatorDeltaNSectors();
   PopulateOperator();
+  PopulateOperator2();
   
   // termination
   return EXIT_SUCCESS;

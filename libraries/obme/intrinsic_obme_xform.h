@@ -22,6 +22,9 @@
 
 #include "basis/basis.h"
 
+#include "moshinsky/moshinsky_bracket.h"
+
+
 namespace shell
 {
 
@@ -374,6 +377,28 @@ namespace shell
    private:
 
   };
+
+  void ConstructOneBodyOperatorDeltaNMatrix(
+      const OneBodyOperatorDeltaNSpace& space,
+      const OneBodyOperatorDeltaNSectors& sectors,
+      int A,
+      basis::OperatorBlocks<double>& matrices
+    );
+  // Construct the M_{J0} matrix (13) of Navratil (2021), block by block, for
+  // each (diagonal) sector of the given space/sectors.
+  //
+  // Arguments:
+  //   space (const OneBodyOperatorDeltaNSpace&): space providing indexing for
+  //     the M matrix, for given (J0,g0).
+  //
+  //   sectors (const OneBodyOperatorDeltaNSectors&): sectors (diagonal in
+  //     Delta_N) enumerated over the given space.
+  //
+  //   A (int): number of nucleons, entering the generalized Moshinsky bracket
+  //     mass ratio 1/(A-1) [see Trlifaj (1972)].
+  //
+  //   matrices (basis::OperatorBlocks<double>&, output): dense matrix blocks,
+  //     one per sector, containing the M_{J0} submatrices.
 
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////

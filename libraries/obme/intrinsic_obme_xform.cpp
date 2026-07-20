@@ -16,9 +16,9 @@
 #include "am/am.h"
 #include "am/wigner_gsl.h"
 #include "fmt/format.h"
-#include "moshinsky/moshinsky_bracket.h"
 #include "obme/obme_operator.h"
 #include "obme/intrinsic_obme_xform.h"
+#include "moshinsky/moshinsky_bracket.h"
 
 namespace shell
 {
@@ -189,5 +189,125 @@ namespace shell
       PushSector(subspace_index,subspace_index);
   }
 
+  ////////////////////////////////////////////////////////////////
+  // one-body transformation matrix M
+  ////////////////////////////////////////////////////////////////
+
+  void ConstructOneBodyOperatorDeltaNMatrix(
+      const OneBodyOperatorDeltaNSpace& space,
+      const OneBodyOperatorDeltaNSectors& sectors,
+      int A,
+      basis::OperatorBlocks<double>& matrices
+    )
+  {
+
+    // generalized Moshinsky bracket mass ratio parameter (Navratil 2021,
+    // below eq. (2); Trlifaj 1972), for the (A-1)-nucleon "core" vs. the
+    // single active nucleon
+    double d = 1. / (A - 1.);
+
+    matrices.resize(sectors.size());
+
+    for (std::size_t sector_index=0; sector_index<sectors.size(); ++sector_index)
+      {
+
+        const auto& sector = sectors.GetSector(sector_index);
+        const auto& bra_subspace = sector.bra_subspace();
+        const auto& ket_subspace = sector.ket_subspace();
+        int J0 = bra_subspace.J0();
+
+        Eigen::MatrixXd matrix
+          = Eigen::MatrixXd::Zero(bra_subspace.dimension(),ket_subspace.dimension());
+
+        // bra "state" (n1,l1,j1,n2,l2,j2): orbital-pair matrix element labels
+        for (std::size_t bra_index=0; bra_index<bra_subspace.dimension(); ++bra_index)
+          {
+            OneBodyOperatorDeltaNState bra_state(bra_subspace,bra_index);
+            int n1 = bra_state.n1();
+            int l1 = bra_state.l1();
+            HalfInt j1 = bra_state.j1();
+            int n2 = bra_state.n2();
+            int l2 = bra_state.l2();
+            HalfInt j2 = bra_state.j2();
+
+            // ket "state" (n,l,j,n',l',j'): fundamental Jacobi-coordinate
+            // one-body operator matrix element labels
+            for (std::size_t ket_index=0; ket_index<ket_subspace.dimension(); ++ket_index)
+              {
+                OneBodyOperatorDeltaNState ket_state(ket_subspace,ket_index);
+                int n = ket_state.n1();
+                int l = ket_state.l1();
+                HalfInt j = ket_state.j1();
+                int np = ket_state.n2();
+                int lp = ket_state.l2();
+                HalfInt jp = ket_state.j2();
+
+                // sum over N1,L1 (cm-like quantum numbers of the "dotted"
+                // Jacobi bracket pair), constrained by oscillator quanta
+                // conservation:
+                //   2*N1+L1+2*n+l = 2*n1+l1   (bracket 1)
+                //   2*N1+L1+2*np+lp = 2*n2+l2 (bracket 2)
+                // and by triangularity (l L1 l1) and (l' L1 l2).
+                double sum = 0.;
+
+                int rhs1 = (2 * n1 + l1) - (2 * n + l);
+                int rhs2 = (2 * n2 + l2) - (2 * np + lp);
+                if (rhs1!=rhs2)
+                  continue;  // no consistent (N1,L1) exists for this bra/ket pair
+                int rhs = rhs1;
+                if (rhs<0)
+                  continue;
+
+                for (int N1=0; 2*N1<=rhs; ++N1)
+                  {
+                    int L1 = rhs - 2 * N1;
+
+                    // triangularity for the two brackets' coupled Lambda=l, l'
+                    if (!am::AllowedTriangle(l,L1,l1))
+                      continue;
+                    if (!am::AllowedTriangle(lp,L1,l2))
+                      continue;
+
+                    double bracket1 = moshinsky::TrlifajGeneralizedMoshinskyBracket(
+                                      n, l,  0, 0,
+                                      N1,L1, n1,l1,
+                                      l, d
+                                    );
+                    if (bracket1==0.)
+                      continue;
+
+                    double bracket2 = moshinsky::TrlifajGeneralizedMoshinskyBracket(
+                                      np,lp, 0, 0,
+                                      N1,L1, n2,l2,
+                                      lp, d
+                                    );
+                    if (bracket2==0.)
+                      continue;
+
+                    double sixj_a = am::Wigner6J(j, L1,j2,l2,HalfInt(1,2),lp);
+                    double sixj_b = am::Wigner6J(j1,L1,jp,lp,HalfInt(1,2),l1);
+                    double sixj_c = am::Wigner6J(j1,L1,jp,j, J0,          j2);
+
+                    double phase = ParitySign(J0+L1+l1+l2+jp+j2);
+
+                    double term
+                      = Hat(j1) * Hat(j2) * Hat(j) * Hat(jp) * Hat(l) * Hat(lp)
+                        * phase
+                        * sixj_a * sixj_b * sixj_c
+                        * bracket1 * bracket2;
+
+                    sum += term;
+                  }
+
+                matrix(bra_index,ket_index) = sum;
+
+              }
+          }
+
+        matrices[sector_index] = matrix;
+
+      }
+
+  }
   
 }  // namespace shell
