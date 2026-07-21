@@ -364,7 +364,7 @@ int main(int argc, char **argv)
   // throw-away call to resolve linkage error
   //
   // See debugging note 07/20/26 in intrinsic_obme_xform.cpp.
-  moshinsky::TrlifajGeneralizedMoshinskyBracket(0,0,0,0,0,0,0,0,0,1.0);
+  // moshinsky::TrlifajGeneralizedMoshinskyBracket(0,0,0,0,0,0,0,0,0,1.0);
   
   // termination
   return EXIT_SUCCESS;

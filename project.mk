@@ -35,8 +35,8 @@ modules += programs/partitionutils
 ################
 
 modules += contrib/Daejeon16
-modules += libraries/relative libraries/moshinsky
 modules += libraries/tbme libraries/obme libraries/density libraries/analytic
+modules += libraries/relative libraries/moshinsky
 modules += libraries/quadrature
 
 # legacy libraries -- DEPRECATED
