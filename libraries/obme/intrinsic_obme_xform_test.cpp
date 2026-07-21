@@ -8,6 +8,7 @@
 
 #include <Eigen/Core>
 
+#include "basis/nlj_orbital.h"
 #include "basis/operator.h"
 #include "mcutils/eigen.h"
 
@@ -245,8 +246,8 @@ void TestOneBodyOperatorDeltaNSectors()
 }
 
 void PopulateOperator()
+// Populate M matrices with dummy values
 {
-
   std::cout << "Populating operator" << std::endl;
   std::cout << std::endl;
 
@@ -313,13 +314,14 @@ void PopulateOperator()
 }
 
 void PopulateOperator2()
+// Populate M matrices with actual computed values
 {
 
-  std::cout << "Populating operator" << std::endl;
+  std::cout << "Populating operator (M)" << std::endl;
   std::cout << std::endl;
 
   // set multipolarity
-  int J0 = 0;
+  int J0 = 2;
   int g0 = 0;
 
   // set truncation
@@ -348,6 +350,137 @@ void PopulateOperator2()
     }
 
 }
+
+void SerializeOneBodyOperator()
+// Testbed code for serializing OBMEs (i.e., packing them into a vector) subject
+// to the M matrix indexing scheme.
+{
+
+  // set multipolarity
+  int J0 = 0;
+  int g0 = 0;
+  int Tz0 = 0;
+
+  // set up OBO in native format
+  int orbital_Nmax = 2;
+  basis::OrbitalSpaceLJPN orbital_space(orbital_Nmax);
+  basis::OrbitalSectorsLJPN obo_sectors(orbital_space, orbital_space, J0, g0, Tz0);
+  basis::OperatorBlocks<double> obo_matrices;
+  basis::SetOperatorToZero(obo_sectors, obo_matrices);
+  std::cout << "Orbital space" << std::endl
+            << orbital_space.DebugStr()
+            << std::endl
+            << "Native OBO sectors" << std::endl
+            << obo_sectors.DebugStr()
+            << std::endl;
+    
+  // set M truncation
+  int Delta_N_max=2;
+  int N1max=2;
+  int N2max=4;
+  
+  // set up M matrix data structures
+  const shell::OneBodyOperatorDeltaNSpace space(J0, g0, Delta_N_max, N1max, N2max);
+  const shell::OneBodyOperatorDeltaNSectors sectors(space);
+  basis::OperatorBlocks<double> matrices;
+  std::cout << "M matrix space" << std::endl
+            << space.DebugStr()
+            << std::endl
+            << "M matrix sectors" << std::endl
+            << sectors.DebugStr()
+            << std::endl;
+
+// Orbital space
+//  index   0 species   0 dim   2 
+//  index   1 species   0 dim   1 
+//  index   2 species   0 dim   1 
+//  index   3 species   0 dim   1 
+//  index   4 species   0 dim   1 
+//  index   5 species   1 dim   2 
+//  index   6 species   1 dim   1 
+//  index   7 species   1 dim   1 
+//  index   8 species   1 dim   1 
+//  index   9 species   1 dim   1 
+// 
+// Native OBO sectors
+//   0 bra   0 (0, 0, 1/2) ket   0 (0, 0, 1/2)
+//   1 bra   1 (0, 1, 1/2) ket   1 (0, 1, 1/2)
+//   2 bra   2 (0, 1, 3/2) ket   2 (0, 1, 3/2)
+//   3 bra   3 (0, 2, 3/2) ket   3 (0, 2, 3/2)
+//   4 bra   4 (0, 2, 5/2) ket   4 (0, 2, 5/2)
+//   5 bra   5 (1, 0, 1/2) ket   5 (1, 0, 1/2)
+//   6 bra   6 (1, 1, 1/2) ket   6 (1, 1, 1/2)
+//   7 bra   7 (1, 1, 3/2) ket   7 (1, 1, 3/2)
+//   8 bra   8 (1, 2, 3/2) ket   8 (1, 2, 3/2)
+//   9 bra   9 (1, 2, 5/2) ket   9 (1, 2, 5/2)
+// 
+// M matrix space
+// J0 0 g0 0 Delta_N_max 2 N1max 2 N2max 4
+//   index   0  dim    1  labels [-2]
+//   index   1  dim    6  labels [0]
+//   index   2  dim    1  labels [2]
+// 
+// M matrix sectors
+//   sector 0  bra index 0 labels [-2] size 1 dim 1  ket index 0 labels [-2] size 1 dim 1  multiplicity index 1  elements 1
+//   sector 1  bra index 1 labels [0] size 6 dim 6  ket index 1 labels [0] size 6 dim 6  multiplicity index 1  elements 36
+//   sector 2  bra index 2 labels [2] size 1 dim 1  ket index 2 labels [2] size 1 dim 1  multiplicity index 1  elements 1
+
+  // What we need to do...
+  //
+  // Pick which species we are dealing with.
+  //
+  // Approach #1: Iterating over target, and retrieving source matrix elements on demand... 
+  //
+  // Approach #2: Iterating over source, and inserting target matrix elements on demand... 
+  //
+  // Lookups in the source operator seem more tedious, so maybe take Approach #2?
+  //
+  // Do we ever expect one of these structures to "overrrun" the other?  Yes,
+  // perhaps the M matrix indexing, but we will probably want to truncate the M
+  // matrix to match the operator before applying the transformation?  Or maybe
+  // that is not necessary?  (The matvec will be cheap compared to the prior
+  // matrix inversion.)  So iterate over the smaller structure, which will be
+  // the native OBO.
+
+  // select species for transformation (Tz conserving)
+  basis::OrbitalSpeciesPN species = basis::OrbitalSpeciesPN::kP;
+  
+  for (std::size_t obo_sector_index=0; obo_sector_index < obo_sectors.size(); ++obo_sector_index)
+    {
+    // get sector
+    const auto obo_sector = obo_sectors.GetSector(obo_sector_index);
+    const auto& obo_bra_subspace = obo_sector.bra_subspace();
+    const auto& obo_ket_subspace = obo_sector.ket_subspace();
+
+    // short circuit select for species of interest
+    if ((obo_bra_subspace.orbital_species() != species) || (obo_ket_subspace.orbital_species() != species))
+      continue;
+    
+    for (std::size_t obo_bra_index = 0; obo_bra_index < obo_bra_subspace.size(); ++obo_bra_index)
+      for (std::size_t obo_ket_index = 0; obo_ket_index < obo_ket_subspace.size(); ++obo_ket_index)
+          {
+            // unpack orbital info
+            const auto& obo_bra_state = obo_bra_subspace.GetState(obo_bra_index);
+            const auto& obo_ket_state = obo_ket_subspace.GetState(obo_ket_index);
+            int n1 = obo_bra_state.n();
+            int l1 = obo_bra_state.l();
+            HalfInt j1 = obo_bra_state.j();
+            int N1 = obo_bra_state.N();
+            int n2 = obo_ket_state.n();
+            int l2 = obo_ket_state.l();
+            HalfInt j2 = obo_ket_state.j();
+            int N2 = obo_ket_state.N();
+
+            // look up target index
+
+            // copy value
+          }
+      }
+    
+
+}
+
+
 ////////////////////////////////////////////////////////////////
 // main
 ////////////////////////////////////////////////////////////////
@@ -355,16 +488,13 @@ void PopulateOperator2()
 int main(int argc, char **argv)
 {
 
-  TestOneBodyOperatorDeltaNSubspace();
-  TestOneBodyOperatorDeltaNSpace();
-  TestOneBodyOperatorDeltaNSectors();
-  PopulateOperator();
-  PopulateOperator2();
+  // TestOneBodyOperatorDeltaNSubspace();
+  // TestOneBodyOperatorDeltaNSpace();
+  // TestOneBodyOperatorDeltaNSectors();
+  // PopulateOperator();
+  // PopulateOperator2();
 
-  // throw-away call to resolve linkage error
-  //
-  // See debugging note 07/20/26 in intrinsic_obme_xform.cpp.
-  // moshinsky::TrlifajGeneralizedMoshinskyBracket(0,0,0,0,0,0,0,0,0,1.0);
+  SerializeOneBodyOperator();
   
   // termination
   return EXIT_SUCCESS;
