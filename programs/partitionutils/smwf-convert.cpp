@@ -649,7 +649,7 @@ void ReadTrwfn(
     );
   auto stream = std::ifstream(filename, std::ios_base::in);
 
-  for(int i =0; i<4; i++)
+  for(int i =0; i<3; i++)
   {
     mcutils::GetLine(stream, line, line_count);
     if(i ==0){
