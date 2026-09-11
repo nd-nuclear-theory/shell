@@ -641,9 +641,10 @@ void ReadTrwfn(
   // open trwfn file
   fmt::print(" Reading trwfn file .. \n");
   int count =0;
-
+  int num_mb_states;
   std::string line;
   int line_count = 0;
+
   mcutils::FileExistCheck(
       filename, /*exit_on_nonexist=*/true, /*warn_on_overwrite=*/false
     );
@@ -680,7 +681,11 @@ void ReadTrwfn(
     std::istringstream line_stream(line);
     line_stream >> trwfn_info.Nmax;
   }
-   mcutils::GetLine(stream, line, line_count); // ignored reading number of many-body configuration
+  { 
+    mcutils::GetLine(stream, line, line_count); // ignored reading number of many-body configuration
+    std::istringstream line_stream(line);
+    line_stream >> num_mb_states;
+  } 
   {  
     mcutils::GetLine(stream, line, line_count);
     std::istringstream line_stream(line);
@@ -738,26 +743,33 @@ void ReadTrwfn(
         count++;
       }
   }
-  {
-    while(mcutils::GetLine(stream, line, line_count)){
-      // set up for parsing
-      std::istringstream line_stream(line);
-      std::vector<uint16_t> spIndices(trwfn_info.Z + trwfn_info.N, 0);
-      for(int i = 0; i < trwfn_info.Z + trwfn_info.N; i++ ){
-        line_stream>>spIndices[i];
-      }
-      mb_state_list_template.push_back(spIndices);
-      mcutils::GetLine(stream, line, line_count); // Ignore next line
-    }
-  }
-
   if(count != trwfn_info.num_sp_states){
     std::cerr << "ERROR: Missing sp states in trwfn file" << std::endl;
     std::exit(EXIT_FAILURE);
   }
   
+{
+  int mb_counter = 0; //counter for many body configurations
+  while(mb_counter != num_mb_states){
+    int num_line_count = (trwfn_info.Z + trwfn_info.N)/10;
+    int count = trwfn_info.Z + trwfn_info.N;
+    std::vector<uint16_t> spIndices(trwfn_info.Z + trwfn_info.N, 0);
+    for(int j =0; j<=num_line_count; j++){
+      if(count ==0) continue;
+      mcutils::GetLine(stream, line, line_count);
+      std::istringstream line_stream(line);
+      for(int i=0; i<std::min(count, 10); i++){
+        line_stream>>spIndices[i + j*10];
+      }
+      count-=10;
+    }
+    mb_state_list_template.push_back(spIndices);
+    mcutils::GetLine(stream, line, line_count); // Ignore next line
+    mb_counter++;
+  }
+  fmt::print(" number of states in mb_state_list_template read {:d}\n  \n", mb_state_list_template.size());
 }
-
+}
 void FindAndReplaceSPIndices(std::vector<std::vector<int16_t> > &sp_state_list, 
                             std::vector<std::vector<int16_t> > &sp_state_list_template,
                             std::vector<std::vector<uint16_t> > &mb_state_list,
@@ -814,9 +826,16 @@ void SortMBBasisStates(std::vector<std::vector<uint16_t> > &mb_state_list,
   */
 
   fmt::print("Sorting SP Indices .. \n ");
+  // fmt::print("first element on mb_state_list {:d} \n", mb_state_list[0][10]);
+  // fmt::print("first element on mb_state_list size columns {:d} \n", mb_state_list[0].size());
+  // fmt::print("first element on mb_state_list size rows {:d} \n", mb_state_list.size());
+
+  // fmt::print("Z swap complete .. {:>4d}", fmt::join(mb_state_list[0], " "));
+
   for(std::vector<std::vector<uint16_t> >::iterator it= mb_state_list.begin(); it !=mb_state_list.end(); it++ ) {
     std::vector<uint16_t> mbstate = *it; 
     std::vector<double> Coeffs(num_eigenvectors, 0);
+
     int phase = 1;
     for(int i =0; i < Z; i++){  
       for(int j = i+1 ; j < Z; j++){
@@ -826,6 +845,7 @@ void SortMBBasisStates(std::vector<std::vector<uint16_t> > &mb_state_list,
         }
       }
     }
+
     for(int i =Z; i < Z+N; i++){  
       for(int j = i+1 ; j < Z+N; j++){
         if( mbstate[i]>mbstate[j]){
@@ -834,7 +854,6 @@ void SortMBBasisStates(std::vector<std::vector<uint16_t> > &mb_state_list,
         }
       }
     }
-    
     for(int i =0; i< num_eigenvectors; i++){
       Coeffs[i] = (coefficients_list[i])[it - mb_state_list.begin()] * phase;
     }
@@ -842,6 +861,7 @@ void SortMBBasisStates(std::vector<std::vector<uint16_t> > &mb_state_list,
     phaseFactor.push_back(phase);
     mb_states_bigstick[mbstate] = Coeffs;
   }
+  fmt::print("Sorting complete .. \n");
 }
 
 ////////////////////////////////////////////////////////////////
@@ -1032,6 +1052,23 @@ int main(int argc, char* argv[])
     std::vector<std::vector<uint16_t> > mb_state_list_template;
     ReadTrwfn(run_parameters.template_filename, trwfn_info, sp_state_list_template, mb_state_list_template);
     
+    //Validation checks
+
+    if (trwfn_info.Z != smwf_info.Z || trwfn_info.N != smwf_info.N){
+      std::cerr << "ERROR: The proton and neutron number in the template trwfn and the smwf do not match" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
+    if (trwfn_info.parity != smwf_info.parity){
+      std::cerr << "ERROR: The parity of the template trwfn and the smwf do not match" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
+    if (trwfn_info.two_Jz != smwf_info.twoM){
+      std::cerr << "ERROR: The Jz of the template trwfn and the smwf do not match" << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+    
     // check dimensions of single particle bases
     if (trwfn_info.num_sp_states != num_sp_states){
       std::cout << fmt::format("WARNING: Mismatched number of sp states: trwfn template {}, smwf {}", trwfn_info.num_sp_states, num_sp_states) << std::endl;
@@ -1073,6 +1110,7 @@ int main(int argc, char* argv[])
 
     // print mb states and amplitudes
     int mbstateCount = 0;
+    
     for(int index = 0; index < num_states; index++){
       auto it = mb_states_bigstick.find(mb_state_list_template[index]);
       if(it !=mb_states_bigstick.end()){
@@ -1082,8 +1120,12 @@ int main(int argc, char* argv[])
       }
     }
       
-    if (mbstateCount != num_states) {
-      std::cout  << "Mismatched number of states" << std::endl;
+    if (mbstateCount == num_states) {
+      fmt::print("Validation successful! num states : {:d}    mbstateCount : {:d} \n", num_states, mbstateCount);
+    }
+    else {
+      fmt::print("num states : {:d}    mbstateCount : {:d} \n", num_states, mbstateCount);
+      std::cerr  << fmt::format("Mismatched number of states. Number of MB states in trwfn: {}", mb_state_list_template.size()) << std::endl;
       std::exit(EXIT_FAILURE);
     }
     
