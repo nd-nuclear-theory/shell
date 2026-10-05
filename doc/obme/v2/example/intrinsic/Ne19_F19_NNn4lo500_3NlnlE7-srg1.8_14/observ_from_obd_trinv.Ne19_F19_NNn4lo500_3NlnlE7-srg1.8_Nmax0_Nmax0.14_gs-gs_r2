@@ -1,0 +1,36 @@
+ *** Translationally Invariant OBD: -sqrt((A-1)/A) factor applied ***
+ Nucleus:
+ A= 19   Z= 10   N=  9
+ 2*MJ=  1   2*MT=  1  parity= +
+ hbar Omega= 14.0000   Nhw= 18   dimension=     128   nhme=         0
+ k1max= -1   mxnwd=  1   mxsps=      64   major= 2   iparity= 0
+
+ J= 0.5000    T= 0.5000     Energy=    -97.6552     Ex=      0.0000
+
+ N1_max=   2   N12_max=   4   Nasps=  20
+
+ wave functions of the states #  1- #  1 used
+ Nucleus:
+ A= 19   Z=  9   N= 10
+ 2*MJ=  1   2*MT= -1  parity= +
+ hbar Omega= 14.0000   Nhw= 18   dimension=     128   nhme=         0
+ k1max= -1   mxnwd=  1   mxsps=      64   major= 2   iparity= 0
+
+ J= 0.5000    T= 0.5001     Energy=   -101.6929     Ex=      0.0000
+
+ N1_max=   2   N12_max=   4   Nasps=  20
+
+ wave functions of the states #  1- #  1 used
+ 
+ number of single-nucleon states =   6
+
+ *** Transition matrix elements for states: ***
+ #  1 [2*(J,T),Ex]_f=  1 1 -4.0377   #  1 [2*(J,T),Ex]_i=  1 1  0.0000
+ Fermi matrix element=     0.99988147   B(F)=   0.99976
+
+ BE0 matrix elements:
+ L= 0 E0p=  0.0000   E0n=  0.2821     B(E0)=  0.0796
+ Gamow-Teller matrix element=    -1.56845996    B(GT)=   2.46007
+ rho = |g_a|*    -1.56864589 =    -1.99139596
+ Gamow-Teller tensor matrix element= A*g_a*     0.01685582
+ ***************************************************************

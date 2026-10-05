@@ -1,0 +1,26 @@
+# Notes for /doc/obme/v2/example/intrinsic/
+#
+# This folder contains the Ne19_F19_NNn4lo500_3NlnlE7-srg1.8_14 folder, which contains 4 types of files.
+#
+# This folder was sent by Petr Navratil to Leendert Hayen and Victor Dumenil for a project to compute 
+# the beta-nu angular correlation (a_{\beta\nu}), the beta asymmetry (A_\beta), and the shape factor.
+#
+# The Ne19_F19_NNn4lo500_3NlnlE7-srg1.8_14 folder contains:
+#   - 'trdens' file, which contains the one-body density matrix elements (OBDME) WITHOUT translational invariance.
+#   - 'obd_trinv' file, which contains the one-body density matrix elements (OBDME) WITH translational invariance,
+#     as defined in the Petr Navratil paper from 2021.
+#   - 'observ' file, which contains the calculation of one-body matrix elements (here Fermi and GT)
+#     from the 'trdens' file.
+#   - 'oberv_from_obd_trinv' file, which contains the calculation of one-body matrix elements (here Fermi and GT)
+#     from the 'obd_trinv' file.
+#
+# Here, these are used to benchmark the translationally invariant (M^K matrix and its inverse) with the code:
+# - intrinsic_obme_xform.cpp
+# - intrinsic_obme_xform.h
+# - intrinsic_obme_xform_test.cpp
+#
+# The goal is to use the OBDME from the 'trdens' file to find the same values as in 'obd_trinv'.
+# For example:
+#   ~/code/shell/libraries/obme/intrinsic_obme_xform_test \
+#   doc/obme/v2/example/intrinsic/Ne19_F19_NNn4lo500_3NlnlE7-srg1.8_14/trdens.Ne19_F19_NNn4lo500_3NlnlE7-srg1.8_Nmax0_Nmax0.14_gs-gs \
+#   doc/obme/v2/example/intrinsic/Ne19_F19_NNn4lo500_3NlnlE7-srg1.8_14/obd_trinv.Ne19_F19_NNn4lo500_3NlnlE7-srg1.8_Nmax0_Nmax0.14_gs-gs
