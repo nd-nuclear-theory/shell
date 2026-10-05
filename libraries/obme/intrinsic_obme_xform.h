@@ -399,7 +399,35 @@ namespace shell
   //
   //   matrices (basis::OperatorBlocks<double>&, output): dense matrix blocks,
   //     one per sector, containing the M_{J0} submatrices.
+  
 
+  void InvertOneBodyOperatorDeltaNMatrix(
+      const basis::OperatorBlocks<double>& matrices,
+      basis::OperatorBlocks<double>& inverse_matrices,
+      double* max_condition_number = nullptr
+    );
+  // Invert the M_{J0} matrix (13) of Navratil (2021), block by block, as
+  // needed for the translationally invariant matrix elements (14).
+  //
+  // Each block (one per Delta_N sector) is inverted independently, since M is
+  // block diagonal in Delta_N.  The inverse is taken of the matrix *as
+  // truncated* (N1max, N2max): the blocks are square, with identical row and
+  // column indexing.
+  //
+  // Arguments:
+  //   matrices (const basis::OperatorBlocks<double>&): blocks of M_{J0}, as
+  //     produced by ConstructOneBodyOperatorDeltaNMatrix.
+  //
+  //   inverse_matrices (basis::OperatorBlocks<double>&, output): blocks of the
+  //     inverse, same sector indexing as the input.  Row indices are those
+  //     of the Jacobi-type (n,l,j,n',l',j') labels, column indices those of
+  //     the orbital pair (n1,l1,j1,n2,l2,j2), i.e., (M^-1)_{nljn'l'j',n1l1j1n2l2j2}
+  //     as in (14).
+  //
+  //   max_condition_number (double*, optional output): largest 2-norm
+  //     condition number among the blocks (diagnostic).
+
+  
   ////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////
   

@@ -6,12 +6,17 @@
 
 ****************************************************************/
 
+#include <algorithm>
+#include <cassert>
+#include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <string>
 
 #include <Eigen/Core>
+#include <Eigen/LU>
+#include <Eigen/SVD>
 
 #include "am/am.h"
 #include "am/wigner_gsl.h"
@@ -245,18 +250,32 @@ namespace shell
                 // sum over N1,L1 (cm-like quantum numbers of the "dotted"
                 // Jacobi bracket pair), constrained by oscillator quanta
                 // conservation:
+                // wrong order of terms in the oscillator quanta conservation equations (before modification)
                 //   2*N1+L1+2*n+l = 2*n1+l1   (bracket 1)
                 //   2*N1+L1+2*np+lp = 2*n2+l2 (bracket 2)
+                // 
+                // right order (after modification)
+                //   2*N1+L1+2*n1+l1 = 2*n+l      (bracket 1)
+                //   2*N1+L1+2*n2+l2 = 2*np+lp    (bracket 2)
+                //
                 // and by triangularity (l L1 l1) and (l' L1 l2).
                 double sum = 0.;
 
-                int rhs1 = (2 * n1 + l1) - (2 * n + l);
+                // previous version
+                /*int rhs1 = (2 * n1 + l1) - (2 * n + l);
                 int rhs2 = (2 * n2 + l2) - (2 * np + lp);
                 if (rhs1!=rhs2)
                   continue;  // no consistent (N1,L1) exists for this bra/ket pair
                 int rhs = rhs1;
                 if (rhs<0)
-                  continue;
+                  continue;*/
+
+                // new version in the right order
+                int rhs1 = (2 * n  + l ) - (2 * n1 + l1);   // = 2N1+L1 (bracket 1)
+                int rhs2 = (2 * np + lp) - (2 * n2 + l2);   // = 2N1+L1 (bracket 2)
+                if (rhs1 != rhs2) continue;
+                int rhs = rhs1;
+                if (rhs < 0) continue;
 
                 for (int N1=0; 2*N1<=rhs; ++N1)
                   {
@@ -284,9 +303,9 @@ namespace shell
                     if (bracket2==0.)
                       continue;
 
-                    double sixj_a = am::Wigner6J(j, L1,j2,l2,HalfInt(1,2),lp);
-                    double sixj_b = am::Wigner6J(j1,L1,jp,lp,HalfInt(1,2),l1);
-                    double sixj_c = am::Wigner6J(j1,L1,jp,j, J0,          j2);
+                    double sixj_a = am::Wigner6J(jp,L1,j2,l2,HalfInt(1,2),lp);
+                    double sixj_b = am::Wigner6J(j1,L1,j, l, HalfInt(1,2),l1);
+                    double sixj_c = am::Wigner6J(j1,L1,j, jp,J0,          j2);
 
                     double phase = ParitySign(J0+L1+l1+l2+jp+j2);
 
@@ -309,5 +328,54 @@ namespace shell
       }
 
   }
+
+  ////////////////////////////////////////////////////////////////
+  // inverse of one-body transformation matrix M
+  ////////////////////////////////////////////////////////////////
+  void InvertOneBodyOperatorDeltaNMatrix(
+      const basis::OperatorBlocks<double>& matrices,
+      basis::OperatorBlocks<double>& inverse_matrices,
+      double* max_condition_number
+    )
+  {
+
+    inverse_matrices.resize(matrices.size());
+    double max_cond = 1.;
+
+    for (std::size_t sector_index=0; sector_index<matrices.size(); ++sector_index)
+      {
+        const Eigen::MatrixXd& matrix = matrices[sector_index];
+
+        // M blocks are square: same (n1,l1,j1,n2,l2,j2) indexing on both sides
+        assert(matrix.rows()==matrix.cols());
+
+        // trivial (empty) block
+        if (matrix.size()==0)
+          {
+            inverse_matrices[sector_index] = matrix;
+            continue;
+          }
+
+        // LU decomposition with full pivoting (robust for rank detection)
+        Eigen::FullPivLU<Eigen::MatrixXd> lu(matrix);
+        if (!lu.isInvertible())
+          {
+            std::cerr << "ERROR: M matrix block " << sector_index
+                      << " is singular (rank " << lu.rank()
+                      << " of dimension " << matrix.rows() << ")" << std::endl;
+            std::exit(EXIT_FAILURE);
+          }
+        inverse_matrices[sector_index] = lu.inverse();
+
+        // condition number (2-norm), as a diagnostic of numerical reliability
+        Eigen::JacobiSVD<Eigen::MatrixXd> svd(matrix);
+        const auto& s = svd.singularValues();
+        double cond = s(0) / s(s.size()-1);
+        max_cond = std::max(max_cond, cond);
+      }
+
+    if (max_condition_number != nullptr)
+      *max_condition_number = max_cond;
+  };
   
 }  // namespace shell

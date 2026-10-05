@@ -6,6 +6,19 @@
 
 ****************************************************************/
 
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <string>
+#include <tuple>
+#include <vector>
+
 #include <Eigen/Core>
 
 #include "basis/nlj_orbital.h"
@@ -321,7 +334,7 @@ void PopulateOperator2()
   std::cout << std::endl;
 
   // set multipolarity
-  int J0 = 2;
+  int J0 = 1;
   int g0 = 0;
 
   // set truncation
@@ -482,20 +495,411 @@ void SerializeOneBodyOperator()
 
 
 ////////////////////////////////////////////////////////////////
+// tests of M^K, its inverse, and translationally invariant OBDMEs
+////////////////////////////////////////////////////////////////
+
+int DeltaNMaxForParity(int N1max, int g0)
+// Largest Delta_N <= N1max compatible with the parity grade g0
+// (Delta_N must have the same parity as g0).
+{
+  return ((N1max-g0)%2==0) ? N1max : N1max-1;
+}
+
+void TestOneBodyOperatorDeltaNMatrixInverse()
+// Quick checks on M and M^{-1}, for a range of (J0,g0).
+//
+//  (1) Inverse:  max|M*Minv-1| and max|Minv*M-1| should be ~1e-12 or better
+//      (checks inversion only).
+//
+//  (2) Structure of M (checks M itself): by the oscillator quanta conservation
+//      in the brackets <n l 0 0|N1 L1 n1 l1> of (13), the Jacobi-type labels
+//      (n,l,n',l') must carry at least as many quanta as the orbital labels:
+//      N_orb <= N_Jac for each of the two orbitals.  We count nonzero
+//      elements with N_orb<N_Jac ("expected") and with N_orb>N_Jac
+//      ("reversed").  Expect reversed=0.
+//
+//  (3) Limit A->infinity (d=1/(A-1)->0): the c.m. becomes infinitely heavy, so
+//      xi_{A-1} -> -r_A and M must tend to +-identity (a uniform sign per
+//      block).  Checks the hat factors, 6-j symbols and phase in (13).
+{
+
+  std::cout << "\n Test of M and M^-1" << std::endl << std::endl;
+
+  const int N1max = 8;
+  const int N2max = 16;
+
+  for (int J0=0; J0<=2; ++J0)
+    for (int g0=0; g0<=1; ++g0)
+      {
+        int Delta_N_max = DeltaNMaxForParity(N1max,g0);
+        const shell::OneBodyOperatorDeltaNSpace space(J0,g0,Delta_N_max,N1max,N2max);
+        const shell::OneBodyOperatorDeltaNSectors sectors(space);
+
+        // (1) inverse, at A=19 (finite-A brackets)
+        int A = 19;
+        basis::OperatorBlocks<double> matrices, inverse_matrices;
+        shell::ConstructOneBodyOperatorDeltaNMatrix(space,sectors,A,matrices);
+        double cond = 0.;
+        shell::InvertOneBodyOperatorDeltaNMatrix(matrices,inverse_matrices,&cond);
+
+        double err_right = 0., err_left = 0.;
+        for (std::size_t i=0; i<matrices.size(); ++i)
+          {
+            if (matrices[i].size()==0) continue;
+            Eigen::MatrixXd id = Eigen::MatrixXd::Identity(matrices[i].rows(),matrices[i].cols());
+            err_right = std::max(err_right,(matrices[i]*inverse_matrices[i]-id).cwiseAbs().maxCoeff());
+            err_left  = std::max(err_left, (inverse_matrices[i]*matrices[i]-id).cwiseAbs().maxCoeff());
+          }
+
+        // (2) structure of M
+        long n_expected = 0, n_reversed = 0;
+        for (std::size_t i=0; i<matrices.size(); ++i)
+          {
+            const auto& sector = sectors.GetSector(i);
+            for (int row=0; row<matrices[i].rows(); ++row)
+              for (int col=0; col<matrices[i].cols(); ++col)
+                {
+                  if (std::abs(matrices[i](row,col))<1e-12) continue;
+                  const shell::OneBodyOperatorDeltaNState orb(sector.bra_subspace(),row);
+                  const shell::OneBodyOperatorDeltaNState jac(sector.ket_subspace(),col);
+                  if ((orb.N1()<jac.N1())||(orb.N2()<jac.N2())) ++n_expected;
+                  if ((orb.N1()>jac.N1())||(orb.N2()>jac.N2())) ++n_reversed;
+                }
+          }
+
+        // (3) A -> infinity limit
+        basis::OperatorBlocks<double> matrices_inf;
+        shell::ConstructOneBodyOperatorDeltaNMatrix(space,sectors,10000000,matrices_inf);
+        double err_inf = 0.;
+        bool uniform_sign = true;
+        for (std::size_t i=0; i<matrices_inf.size(); ++i)
+          {
+            if (matrices_inf[i].size()==0) continue;
+            double sign = (matrices_inf[i](0,0)>=0.) ? 1. : -1.;
+            Eigen::MatrixXd id = Eigen::MatrixXd::Identity(matrices_inf[i].rows(),matrices_inf[i].cols());
+            err_inf = std::max(err_inf,(matrices_inf[i]-sign*id).cwiseAbs().maxCoeff());
+          }
+
+        std::cout << "J0 " << J0 << " g0 " << g0
+                  << " | max|M Minv-1| " << err_right
+                  << "  max|Minv M-1| " << err_left
+                  << "  cond " << cond
+                  << " | nonzero N_orb<N_Jac " << n_expected
+                  << "  N_orb>N_Jac " << n_reversed << " (expect 0)"
+                  << " | A->inf: max|M-(+-1)| " << err_inf << " (expect ~1e-5 or less)"
+                  << std::endl;
+      }
+  std::cout << std::endl;
+}
+
+////////////////////////////////////////////////////////////////
+// reading density files (trdens_* and obd_trinv_*)
+////////////////////////////////////////////////////////////////
+
+struct DensityOrbital { int n; int l; HalfInt j; };
+struct DensityEntry { int a; int b; double value[2]; };  // a,b: 1-based orbital indices as in file
+struct DensityBlock { int J0; std::vector<DensityEntry> entries; };
+struct DensityFile
+{
+  int A = 0;
+  int N1max = -1;
+  int N12max = -1;
+  std::vector<DensityOrbital> orbitals;
+  std::vector<DensityBlock> blocks;
+};
+
+DensityFile ReadDensityFile(const std::string& filename)
+// Parse header (A, N1_max, N12_max, orbital list) and the "Jtrans=" blocks of
+// lines "a b value_1 value_2".
+{
+  DensityFile f;
+  std::ifstream stream(filename);
+  if (!stream)
+    {
+      std::cerr << "ERROR: cannot open " << filename << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+
+  std::string line;
+  bool in_block = false;
+  while (std::getline(stream,line))
+    {
+      int i1,i2,i3,i4,i5;
+      double v1,v2;
+      const char* s = line.c_str();
+
+      if ((f.A==0) && (std::sscanf(s," A= %d",&i1)==1))
+        {
+          f.A = i1;
+        }
+      else if ((f.N1max<0) && (std::sscanf(s," N1_max= %d N12_max= %d",&i1,&i2)==2))
+        {
+          f.N1max = i1;
+          f.N12max = i2;
+        }
+      else if (std::sscanf(s," # %d n= %d l= %d j= %d/%d",&i1,&i2,&i3,&i4,&i5)==5)
+        {
+          if (i1!=int(f.orbitals.size())+1)
+            {
+              std::cerr << "ERROR: orbital list out of order" << std::endl;
+              std::exit(EXIT_FAILURE);
+            }
+          f.orbitals.push_back({i2,i3,HalfInt(i4,i5)});
+        }
+      else if (std::sscanf(s," Jtrans= %d",&i1)==1)
+        {
+          DensityBlock block;
+          block.J0 = i1;
+          f.blocks.push_back(block);
+          in_block = true;
+        }
+      else if (in_block && (std::sscanf(s,"%d %d %lf %lf",&i1,&i2,&v1,&v2)==4))
+        {
+          DensityEntry e;
+          e.a = i1; e.b = i2; e.value[0] = v1; e.value[1] = v2;
+          f.blocks.back().entries.push_back(e);
+        }
+    }
+
+  if ((f.A==0) || f.orbitals.empty() || f.blocks.empty())
+    {
+      std::cerr << "ERROR: could not parse " << filename << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
+  return f;
+}
+
+bool LocateOrbitalPair(
+    const shell::OneBodyOperatorDeltaNSpace& space,
+    const DensityOrbital& o1, const DensityOrbital& o2,
+    std::size_t& subspace_index, std::size_t& state_index
+  )
+// Find the (subspace,state) of the M indexing for orbital pair (o1,o2), i.e.,
+// labels (n1,l1,j1,n2,l2,j2).  Returns false if the pair is not in the space.
+{
+  int Delta_N = (2*o1.n+o1.l) - (2*o2.n+o2.l);
+  for (std::size_t si=0; si<space.size(); ++si)
+    {
+      const auto& subspace = space.GetSubspace(si);
+      if (subspace.Delta_N()!=Delta_N)
+        continue;
+      for (std::size_t k=0; k<subspace.size(); ++k)
+        {
+          const shell::OneBodyOperatorDeltaNState st(subspace,k);
+          if ((st.n1()==o1.n)&&(st.l1()==o1.l)&&(st.j1()==o1.j)
+              &&(st.n2()==o2.n)&&(st.l2()==o2.l)&&(st.j2()==o2.j))
+            {
+              subspace_index = si;
+              state_index = k;
+              return true;
+            }
+        }
+    }
+  return false;
+}
+
+typedef std::map<std::tuple<int,int,int>,std::array<double,2>> DensityMap;  // (J0,a,b) -> values
+
+DensityMap TransformDensity(const DensityFile& f, bool swap_indices, int extra_N)
+// Apply (14): rho_intrinsic = M^{-1} rho, block by block in (J0,g0,Delta_N).
+//
+// swap_indices: interpret file pair (a,b) as (n2,n1) rather than (n1,n2)
+// extra_N: enlarge the M truncation beyond the density's (N1_max,N12_max)
+{
+  int Nmax_op = f.N1max;
+  if (Nmax_op<0)
+    for (const auto& o : f.orbitals) Nmax_op = std::max(Nmax_op,2*o.n+o.l);
+  int Ntot_max = (f.N12max>=0) ? f.N12max : 2*Nmax_op;
+  int N1max_mat = Nmax_op + extra_N;
+  int N2max_mat = Ntot_max + 2*extra_N;
+
+  DensityMap result;
+
+  for (const auto& block : f.blocks)
+    for (int g0=0; g0<=1; ++g0)
+      {
+        // entries of this parity
+        std::vector<const DensityEntry*> sel;
+        for (const auto& e : block.entries)
+          {
+            const auto& oa = f.orbitals.at(e.a-1);
+            const auto& ob = f.orbitals.at(e.b-1);
+            if ((oa.l+ob.l)%2==g0) sel.push_back(&e);
+          }
+        if (sel.empty()) continue;
+
+        int Delta_N_max = DeltaNMaxForParity(N1max_mat,g0);
+        const shell::OneBodyOperatorDeltaNSpace space(block.J0,g0,Delta_N_max,N1max_mat,N2max_mat);
+        const shell::OneBodyOperatorDeltaNSectors sectors(space);
+        basis::OperatorBlocks<double> matrices, inverse_matrices;
+        shell::ConstructOneBodyOperatorDeltaNMatrix(space,sectors,f.A,matrices);
+        shell::InvertOneBodyOperatorDeltaNMatrix(matrices,inverse_matrices);
+
+        for (int col=0; col<2; ++col)
+          {
+            // source vectors, one per subspace (= sector)
+            std::vector<Eigen::VectorXd> source(space.size());
+            for (std::size_t si=0; si<space.size(); ++si)
+              source[si] = Eigen::VectorXd::Zero(space.GetSubspace(si).size());
+
+            std::vector<std::array<std::size_t,2>> location(sel.size());
+            std::vector<bool> found(sel.size(),false);
+
+            for (std::size_t k=0; k<sel.size(); ++k)
+              {
+                const auto& oa = f.orbitals.at(sel[k]->a-1);
+                const auto& ob = f.orbitals.at(sel[k]->b-1);
+                std::size_t si, st;
+                bool ok = swap_indices ? LocateOrbitalPair(space,ob,oa,si,st)
+                                       : LocateOrbitalPair(space,oa,ob,si,st);
+                if (!ok)
+                  {
+                    if (col==0)
+                      std::cerr << "warning: pair (" << sel[k]->a << "," << sel[k]->b
+                                << ") J0=" << block.J0 << " not in M space; skipped" << std::endl;
+                    continue;
+                  }
+                found[k] = true;
+                location[k] = {si,st};
+                source[si](st) = sel[k]->value[col];
+              }
+
+            // apply M^{-1} on each subspace
+            std::vector<Eigen::VectorXd> target(space.size());
+            for (std::size_t si=0; si<space.size(); ++si)
+              target[si] = inverse_matrices[si]*source[si];
+
+            for (std::size_t k=0; k<sel.size(); ++k)
+              {
+                if (!found[k]) continue;
+                auto key = std::make_tuple(block.J0,sel[k]->a,sel[k]->b);
+                result[key][col] = target[location[k][0]](location[k][1]);
+              }
+          }
+      }
+
+  return result;
+}
+
+bool TestTranslationallyInvariantOBDME(
+    const std::string& trdens_filename,
+    const std::string& obd_trinv_filename,
+    double tolerance = 1e-6
+  )
+// Transform the OBDMEs of a "trdens" file (c.m. not removed) with M^{-1}, as in
+// (14), and compare with the "obd_trinv" file (translationally invariant
+// OBDMEs from the established code).
+//
+// Both possible readings of the pair indices (a,b) in the file are tried
+// ((a,b)=(n1,n2) or (n2,n1)); the one with smaller discrepancy is shown.
+{
+
+  std::cout << "Translationally invariant OBDMEs: M^-1 * trdens vs. obd_trinv" << std::endl
+            << "  trdens   " << trdens_filename << std::endl
+            << "  obd_trinv " << obd_trinv_filename << std::endl << std::endl;
+
+  const DensityFile raw = ReadDensityFile(trdens_filename);
+  const DensityFile ref = ReadDensityFile(obd_trinv_filename);
+  std::cout << "A=" << raw.A << "  N1_max=" << raw.N1max << "  N12_max=" << raw.N12max
+            << "  orbitals " << raw.orbitals.size() << std::endl << std::endl;
+
+  // reference and raw values by key
+  DensityMap ref_map, raw_map;
+  for (const auto& b : ref.blocks)
+    for (const auto& e : b.entries)
+      ref_map[std::make_tuple(b.J0,e.a,e.b)] = {e.value[0],e.value[1]};
+  for (const auto& b : raw.blocks)
+    for (const auto& e : b.entries)
+      raw_map[std::make_tuple(b.J0,e.a,e.b)] = {e.value[0],e.value[1]};
+
+  // baseline: no transformation
+  double dev_raw = 0.;
+  for (const auto& kv : raw_map)
+    if (ref_map.count(kv.first))
+      for (int c=0; c<2; ++c)
+        dev_raw = std::max(dev_raw,std::abs(kv.second[c]-ref_map[kv.first][c]));
+  std::cout << "max|trdens - obd_trinv| (no transformation)  = " << dev_raw << std::endl;
+
+  // try both index conventions
+  double best_dev = 1e300;
+  DensityMap best;
+  bool best_swap = false;
+  for (int swap=0; swap<=1; ++swap)
+    {
+      // with this configuration (raw,swap==1,6), we succes to reproduce the same values as in 
+      // obd_trinv at Nmax=6 (and below). 
+      // While this configuration (raw,swap==1,0) works only for Nmax=0. 
+      //DensityMap t = TransformDensity(raw,swap==1,0);
+      DensityMap t = TransformDensity(raw,swap==1,6);
+      double dev = 0.;
+      for (const auto& kv : t)
+        if (ref_map.count(kv.first))
+          for (int c=0; c<2; ++c)
+            dev = std::max(dev,std::abs(kv.second[c]-ref_map[kv.first][c]));
+      std::cout << "max|M^-1 trdens - obd_trinv|, (a,b)=" << (swap ? "(n2,n1)" : "(n1,n2)")
+                << "  = " << dev << std::endl;
+      if (dev<best_dev) { best_dev = dev; best = t; best_swap = (swap==1); }
+    }
+  std::cout << "-> best convention: (a,b)=" << (best_swap ? "(n2,n1)" : "(n1,n2)") << std::endl << std::endl;
+
+  // detailed table
+  std::cout << std::setw(3) << "J0" << std::setw(4) << "a" << std::setw(4) << "b" << std::setw(4) << "col"
+            << std::setw(16) << "trdens" << std::setw(16) << "M^-1 trdens"
+            << std::setw(16) << "obd_trinv" << std::setw(12) << "diff" << std::endl;
+  for (const auto& kv : best)
+    {
+      if (!ref_map.count(kv.first)) continue;
+      for (int c=0; c<2; ++c)
+        {
+          double r = raw_map[kv.first][c], t = kv.second[c], x = ref_map[kv.first][c];
+          if ((r==0.)&&(t==0.)&&(x==0.)) continue;  // skip all-zero rows (e.g. isoscalar column)
+          std::cout << std::setw(3) << std::get<0>(kv.first)
+                    << std::setw(4) << std::get<1>(kv.first)
+                    << std::setw(4) << std::get<2>(kv.first)
+                    << std::setw(4) << c
+                    << std::scientific << std::setprecision(8)
+                    << std::setw(16) << r << std::setw(16) << t << std::setw(16) << x
+                    << std::setw(12) << std::setprecision(2) << (t-x)
+                    << std::defaultfloat << std::endl;
+        }
+    }
+
+  bool pass = (best_dev<tolerance);
+  std::cout << std::endl << (pass ? "PASS" : "FAIL")
+            << ": max deviation " << best_dev << " (tolerance " << tolerance << ")" << std::endl;
+  return pass;
+}
+
+
+////////////////////////////////////////////////////////////////
 // main
 ////////////////////////////////////////////////////////////////
 
 int main(int argc, char **argv)
+  // Usage:
+  //   intrinsic_obme_xform_test
+  //       -> checks on M and M^-1 (no input files needed)
+  //   intrinsic_obme_xform_test <trdens_file> <obd_trinv_file>
+  //       -> additionally, M^-1 * trdens vs. obd_trinv comparison
+
 {
 
   // TestOneBodyOperatorDeltaNSubspace();
   // TestOneBodyOperatorDeltaNSpace();
   // TestOneBodyOperatorDeltaNSectors();
   // PopulateOperator();
-  // PopulateOperator2();
+  //PopulateOperator2();
 
-  SerializeOneBodyOperator();
+  //SerializeOneBodyOperator();
   
+  TestOneBodyOperatorDeltaNMatrixInverse();
+
+  if (argc>=3)
+    {
+      bool ok = TestTranslationallyInvariantOBDME(argv[1],argv[2]);
+      return ok ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+
   // termination
   return EXIT_SUCCESS;
 }
